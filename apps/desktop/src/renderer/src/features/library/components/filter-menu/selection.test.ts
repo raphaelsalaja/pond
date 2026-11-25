@@ -17,7 +17,10 @@ const tagged: Predicate = {
   operator: "some",
   value: ["design"],
 };
-const query = (rules: Predicate[]): Query => ({ combinator: "and", rules });
+const query = (rules: Array<Predicate>): Query => ({
+  combinator: "and",
+  rules,
+});
 
 describe("filter menu selections", () => {
   it("matches either selected type while still requiring the selected tag", () => {

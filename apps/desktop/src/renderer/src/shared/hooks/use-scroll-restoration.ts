@@ -50,7 +50,9 @@ export function recallScroll(key: string): number {
 
 export function recallScrollAnchor(key: string): ScrollAnchor | null {
   const position = positions.get(key);
-  if (!position?.anchorId || position.anchorOffset == null) return null;
+  if (!position?.anchorId || position.anchorOffset === undefined) {
+    return null;
+  }
   return { id: position.anchorId, offset: position.anchorOffset };
 }
 
@@ -109,7 +111,9 @@ export function useScrollRestoration(key: string) {
       if (saveFrame !== 0) cancelAnimationFrame(saveFrame);
       element.removeEventListener("scroll", save);
       delete element.dataset.restoringScroll;
-      if (element.closest("[data-suppressed]") != null) return;
+      if (element.closest("[data-suppressed]") !== null) {
+        return;
+      }
       rememberScroll(key, restoring ? recallScroll(key) : element.scrollTop);
     };
   }, [key]);

@@ -65,8 +65,9 @@ export function registerCoreCommands(program: Command, version: string): void {
     config.command("set").argument("<key>").argument("<value>"),
     async (key, value) => {
       const parsedKey = z.enum(["baseUrl", "token", "timeout"]).safeParse(key);
-      if (!parsedKey.success)
+      if (!parsedKey.success) {
         throw new Error("Config key must be baseUrl, token, or timeout.");
+      }
       const parsedValue = StringSchema.parse(value);
       const current = await readConfig();
       if (parsedKey.data === "timeout") {

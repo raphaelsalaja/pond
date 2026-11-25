@@ -1,9 +1,5 @@
-import {
-  type Box,
-  cardBox,
-  type StrokePoint,
-  type Viewport,
-} from "@pond/video";
+import { cardBox } from "@pond/video";
+import type { Box, StrokePoint, Viewport } from "@pond/video";
 
 export const media = (id: string) => `/media/${id}.jpg`;
 
@@ -61,13 +57,16 @@ export const NOTE: Box = { x: 640, y: 450, width: 192, height: 192 };
 export const NOTE_TEXT = "Shoulder line for the spring shoot.";
 
 /** A hand-drawn loop around the cabin's roofline: a little over one turn, wobbling as a hand does. */
-export const LOOP: StrokePoint[] = Array.from({ length: 64 }, (_, index) => {
-  const p = index / 63;
-  const angle = -2.7 + p * Math.PI * 2 * 1.1;
-  const wobble = 1 + Math.sin(p * 11) * 0.035 + p * 0.06;
-  return [
-    735 + Math.cos(angle) * 168 * wobble,
-    222 + Math.sin(angle) * 86 * wobble,
-    0.5,
-  ];
-});
+export const LOOP: Array<StrokePoint> = Array.from(
+  { length: 64 },
+  (_, index) => {
+    const p = index / 63;
+    const angle = -2.7 + p * Math.PI * 2 * 1.1;
+    const wobble = 1 + Math.sin(p * 11) * 0.035 + p * 0.06;
+    return [
+      735 + Math.cos(angle) * 168 * wobble,
+      222 + Math.sin(angle) * 86 * wobble,
+      0.5,
+    ];
+  },
+);

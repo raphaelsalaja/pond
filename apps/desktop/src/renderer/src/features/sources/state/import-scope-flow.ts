@@ -13,10 +13,8 @@ import {
 } from "@shared/import-scope";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
-import {
-  type SincePreset,
-  sinceForPreset,
-} from "@/features/sources/lib/import-scope";
+import { sinceForPreset } from "@/features/sources/lib/import-scope";
+import type { SincePreset } from "@/features/sources/lib/import-scope";
 
 export interface ImportScopeAccount {
   id: string;
@@ -33,13 +31,13 @@ interface ImportScopeFlowState {
   source: Source | null;
   /** A pending Account saves each change but fetches nothing until Start Import. */
   starts: boolean;
-  listKinds: readonly ListKind[];
+  listKinds: ReadonlyArray<ListKind>;
   /** Empty imports the whole saved list. */
-  collections: readonly ImportCollection[];
+  collections: ReadonlyArray<ImportCollection>;
   /** Unset follows the default: picked collections file, and none picked doesn't. */
   addToFolders: boolean | undefined;
   /** Empty imports every kind. */
-  mediaKinds: readonly ImportMediaKind[];
+  mediaKinds: ReadonlyArray<ImportMediaKind>;
   /** Local `YYYY-MM-DD`; empty imports every date. */
   since: string;
   sincePreset: SincePreset;
@@ -122,13 +120,13 @@ function createImportScopeFlow() {
           : s.listKinds.filter((k) => k !== kind),
       }));
     },
-    setCollections(collections: readonly ImportCollection[]): void {
+    setCollections(collections: ReadonlyArray<ImportCollection>): void {
       store.setState((s) => ({ ...s, collections, error: null }));
     },
     setAddToFolders(addToFolders: boolean): void {
       store.setState((s) => ({ ...s, addToFolders, error: null }));
     },
-    setMediaKinds(mediaKinds: readonly ImportMediaKind[]): void {
+    setMediaKinds(mediaKinds: ReadonlyArray<ImportMediaKind>): void {
       store.setState((s) => ({ ...s, mediaKinds, error: null }));
     },
     setSincePreset(sincePreset: SincePreset): void {

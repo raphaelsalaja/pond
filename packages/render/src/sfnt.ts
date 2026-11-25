@@ -19,15 +19,16 @@ function checksum(buf: Buffer): number {
 
 interface Face {
   version: number;
-  tables: Table[];
+  tables: Array<Table>;
 }
 
 function readFace(ttc: Buffer, face: number): Face {
-  if (ttc.toString("latin1", 0, 4) !== "ttcf")
+  if (ttc.toString("latin1", 0, 4) !== "ttcf") {
     throw new Error("not a font collection");
+  }
   const offset = ttc.readUInt32BE(12 + face * 4);
   const count = ttc.readUInt16BE(offset + 4);
-  const tables: Table[] = [];
+  const tables: Array<Table> = [];
   for (let i = 0; i < count; i++) {
     const rec = offset + 12 + i * 16;
     const start = ttc.readUInt32BE(rec + 8);
@@ -40,7 +41,7 @@ function readFace(ttc: Buffer, face: number): Face {
   return { version: ttc.readUInt32BE(offset), tables };
 }
 
-function writeFont(version: number, tables: Table[]): Buffer {
+function writeFont(version: number, tables: Array<Table>): Buffer {
   tables.sort((a, b) => (a.tag < b.tag ? -1 : a.tag > b.tag ? 1 : 0));
   const head = tables.find((t) => t.tag === "head");
   if (head && head.data.length >= 12) head.data.writeUInt32BE(0, 8);
@@ -66,8 +67,9 @@ function writeFont(version: number, tables: Table[]): Buffer {
     t.data.copy(out, cursor);
     cursor += (t.data.length + 3) & ~3;
   });
-  if (headAt >= 0)
-    out.writeUInt32BE((0xb1b0afba - checksum(out)) >>> 0, headAt + 8);
+  if (headAt >= 0) {
+    out.writeUInt32BE((0xb1_b0_af_ba - checksum(out)) >>> 0, headAt + 8);
+  }
   return out;
 }
 

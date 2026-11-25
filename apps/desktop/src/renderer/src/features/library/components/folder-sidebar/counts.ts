@@ -1,7 +1,7 @@
 export interface SidebarSave {
   id: string;
   deletedAt: number | null;
-  tags: readonly string[];
+  tags: ReadonlyArray<string>;
 }
 
 export interface SidebarCounts {
@@ -13,8 +13,8 @@ export interface SidebarCounts {
 }
 
 export function countSidebarSaves(
-  saves: readonly SidebarSave[],
-  memberships: Record<string, readonly string[]>,
+  saves: ReadonlyArray<SidebarSave>,
+  memberships: Record<string, ReadonlyArray<string>>,
 ): SidebarCounts {
   let library = 0;
   let uncategorized = 0;

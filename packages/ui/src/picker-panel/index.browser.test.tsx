@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { PickerPanel, usePickerCursor } from ".";
 
 const FOLDERS = ["Inbox", "Design", "Recipes", "Reading List", "Travel"];
@@ -9,7 +9,7 @@ const folderId = (name: string) => name;
 
 function Folders({ onActivate }: { onActivate: (name: string) => void }) {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<readonly string[]>([]);
+  const [selected, setSelected] = useState<ReadonlyArray<string>>([]);
   const folders = useMemo(
     () =>
       FOLDERS.filter((name) =>
@@ -56,7 +56,7 @@ function Folders({ onActivate }: { onActivate: (name: string) => void }) {
 }
 
 async function setup() {
-  const activated: string[] = [];
+  const activated: Array<string> = [];
   const screen = await render(
     <Folders onActivate={(name) => activated.push(name)} />,
   );

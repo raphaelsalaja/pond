@@ -1,7 +1,8 @@
 import { Checkbox } from "@pond/ui";
 import type { DuplicateGroup } from "@shared/duplicate-contracts";
 import { useSelector } from "@tanstack/react-store";
-import { type ReactNode, useEffect, useId } from "react";
+import { useEffect, useId } from "react";
+import type { ReactNode } from "react";
 import { SaveTile } from "@/features/saves";
 import { pickPrimaryFile } from "@/features/saves/media";
 import {
@@ -29,7 +30,7 @@ function rank(save: Save | undefined) {
 
 /** Highest resolution wins, then the larger file, then the order Pond returned. */
 export function defaultKeeper(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   lookup: (id: string) => Save | undefined,
 ) {
   let best = ids[0] ?? "";

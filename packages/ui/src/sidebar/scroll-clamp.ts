@@ -1,4 +1,5 @@
-import { type RefObject, useEffect } from "react";
+import { useEffect } from "react";
+import type { RefObject } from "react";
 import { prefersReducedMotion } from "../shared/reduced-motion";
 
 interface ScrollClampInput {
@@ -12,7 +13,7 @@ interface ScrollClampInput {
 }
 
 function clampHeight(content: number, natural: number | undefined): number {
-  return natural != null && natural < content ? natural : content;
+  return natural !== undefined && natural < content ? natural : content;
 }
 
 /** Space the content needs below it to keep `scrollTop` reachable after shrinking, or null when no clamp happened. */

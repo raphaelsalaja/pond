@@ -1,12 +1,15 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import type { SyncSchedule } from "@shared/sync-schedule";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { LaunchFetchControl, ScheduleEditor } from "./";
 
 let root: Root;
 let host: HTMLDivElement;
-const save = vi.fn<(schedule: SyncSchedule) => void | Promise<void>>();
+type Save = (schedule: SyncSchedule) => void | Promise<void>;
+const save = vi.fn<Save>();
 beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
@@ -18,9 +21,9 @@ afterEach(async () => {
   host.remove();
   vi.unstubAllGlobals();
 });
-async function render(initial: SyncSchedule | null) {
+async function render(initial: SyncSchedule | null, onSave: Save = save) {
   await act(async () =>
-    root.render(<ScheduleEditor initial={initial} onSave={save} />),
+    root.render(<ScheduleEditor initial={initial} onSave={onSave} />),
   );
 }
 async function renderLaunch(initial: boolean | null) {
@@ -35,8 +38,9 @@ async function choose(label: string, optionLabel: string) {
   const option = [...document.querySelectorAll('[role="option"]')].find(
     (item) => item.textContent === optionLabel,
   );
-  if (!(option instanceof HTMLElement))
+  if (!isHTMLElement(option)) {
     throw new Error(`Missing ${optionLabel} option`);
+  }
   await act(async () => option.click());
 }
 async function toggleSchedule() {
@@ -120,13 +124,18 @@ it("saves manual mode without a calendar rule", async () => {
 });
 
 it("shows a save failure and keeps the draft available to retry", async () => {
-  save.mockRejectedValueOnce(new Error("disk unavailable"));
-  await render({ enabled: true, intervalHours: 12 });
+  const attempts: Array<SyncSchedule> = [];
+  await render({ enabled: true, intervalHours: 12 }, async (schedule) => {
+    attempts.push(schedule);
+    if (attempts.length === 1) {
+      throw new Error("disk unavailable");
+    }
+  });
   await choose("Repeat", "days");
   expect(host.textContent).toContain("Couldn't save your schedule");
   expect(host.textContent).not.toContain("Schedule saved.");
   await choose("Repeat", "weeks");
-  expect(save).toHaveBeenCalledTimes(2);
+  expect(attempts).toHaveLength(2);
   expect(host.querySelector('[role="alert"]')).toBeNull();
 });
 
@@ -168,19 +177,18 @@ it("retains monthly settings when toggling the schedule off and on", async () =>
 
 it("saves rapid changes in order while keeping the controls available", async () => {
   const firstSave = Promise.withResolvers<void>();
-  save.mockReturnValueOnce(firstSave.promise);
-  await render({ enabled: true, intervalHours: 12 });
+  const saved: Array<SyncSchedule> = [];
+  await render({ enabled: true, intervalHours: 12 }, (schedule) => {
+    saved.push(schedule);
+    return saved.length === 1 ? firstSave.promise : undefined;
+  });
   await toggleSchedule();
   await toggleSchedule();
-  expect(save).toHaveBeenCalledTimes(1);
+  expect(saved).toHaveLength(1);
   expect(host.querySelector('input[aria-label="Start date"]')).not.toBeNull();
   await act(async () => firstSave.resolve());
-  expect(save).toHaveBeenCalledTimes(2);
-  expect(save).toHaveBeenNthCalledWith(
-    1,
+  expect(saved).toEqual([
     expect.objectContaining({ enabled: false }),
-  );
-  expect(save).toHaveBeenLastCalledWith(
     expect.objectContaining({ enabled: true }),
-  );
+  ]);
 });

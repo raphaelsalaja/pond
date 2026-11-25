@@ -1,7 +1,7 @@
-import {
-  type DuplicateGroup,
-  type DuplicatePair,
-  relationRank,
+import { relationRank } from "../../../shared/duplicate-contracts";
+import type {
+  DuplicateGroup,
+  DuplicatePair,
 } from "../../../shared/duplicate-contracts";
 import { pairKey } from "./types";
 
@@ -10,11 +10,11 @@ class UnionFind {
 
   find(id: string): string {
     let root = id;
-    for (let next = this.#parent.get(root); next && next !== root; ) {
+    for (let next = this.#parent.get(root); next && next !== root;) {
       root = next;
       next = this.#parent.get(root);
     }
-    for (let node = id; node !== root; ) {
+    for (let node = id; node !== root;) {
       const next = this.#parent.get(node) ?? root;
       this.#parent.set(node, root);
       node = next;
@@ -40,23 +40,27 @@ class UnionFind {
 }
 
 function pairsAmong(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   index: ReadonlyMap<string, number>,
-): number[] {
-  const found: number[] = [];
-  for (const [offset, left] of ids.entries())
+): Array<number> {
+  const found: Array<number> = [];
+  for (const [offset, left] of ids.entries()) {
     for (const right of ids.slice(offset + 1)) {
       const position = index.get(pairKey(left, right));
       if (position !== undefined) found.push(position);
     }
+  }
   return found.sort((a, b) => a - b);
 }
 
 /** Exact matches are transitive and union; near matches are not, so a near group only admits Saves that match every member, and absorbs any exact group it touches. */
-export function groupPairs(pairs: readonly DuplicatePair[]): DuplicateGroup[] {
+export function groupPairs(
+  pairs: ReadonlyArray<DuplicatePair>,
+): Array<DuplicateGroup> {
   const index = new Map<string, number>();
-  for (const [position, pair] of pairs.entries())
+  for (const [position, pair] of pairs.entries()) {
     index.set(pairKey(pair.ids[0], pair.ids[1]), position);
+  }
   const exact = new UnionFind();
   for (const pair of pairs) {
     if (pair.relation !== "exact") continue;
@@ -93,23 +97,27 @@ export function groupPairs(pairs: readonly DuplicatePair[]): DuplicateGroup[] {
     link(right, left);
   }
 
-  const groups: DuplicateGroup[] = [];
+  const groups: Array<DuplicateGroup> = [];
   const nearGroupOf = new Map<string, number>();
   for (const pair of pairs) {
     if (pair.relation !== "near") continue;
     const left = node(pair.ids[0]);
     const right = node(pair.ids[1]);
-    if (left === right || nearGroupOf.has(left) || nearGroupOf.has(right))
+    if (left === right || nearGroupOf.has(left) || nearGroupOf.has(right)) {
       continue;
+    }
     const nodes = [left, right];
     const candidates = new Set([
       ...(near.get(left) ?? []),
       ...(near.get(right) ?? []),
     ]);
     for (const candidate of [...candidates].sort()) {
-      if (nodes.includes(candidate) || nearGroupOf.has(candidate)) continue;
-      if (nodes.every((member) => near.get(member)?.has(candidate)))
+      if (nodes.includes(candidate) || nearGroupOf.has(candidate)) {
+        continue;
+      }
+      if (nodes.every((member) => near.get(member)?.has(candidate))) {
         nodes.push(candidate);
+      }
     }
     const position = groups.length;
     for (const member of nodes) nearGroupOf.set(member, position);

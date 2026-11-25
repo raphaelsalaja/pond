@@ -1,23 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
+
+const loadChrome = () => import("./library-chrome");
 
 describe("library chrome", () => {
-  beforeEach(() => {
-    vi.resetModules();
-    const memory = new Map<string, string>();
-    vi.stubGlobal("localStorage", {
-      getItem: (key: string) => memory.get(key) ?? null,
-      setItem: (key: string, value: string) => memory.set(key, value),
-    });
+  let chrome: Awaited<ReturnType<typeof loadChrome>>;
+  let loadedWidth: number;
+
+  beforeAll(async () => {
+    localStorage.clear();
+    localStorage.setItem("pond.sidebarWidth", "180");
+    chrome = await loadChrome();
+    loadedWidth = chrome.libraryChrome.getState().sidebarWidth;
   });
 
-  afterEach(() => vi.unstubAllGlobals());
-
-  it("raises old sidebar widths to the tab-safe minimum", async () => {
-    localStorage.setItem("pond.sidebarWidth", "180");
-    const { libraryChrome, SIDEBAR_WIDTH_MIN } = await import(
-      "./library-chrome"
-    );
-    expect(libraryChrome.getState().sidebarWidth).toBe(SIDEBAR_WIDTH_MIN);
+  it("raises old sidebar widths to the tab-safe minimum", () => {
+    const { libraryChrome, SIDEBAR_WIDTH_MIN } = chrome;
+    expect(loadedWidth).toBe(SIDEBAR_WIDTH_MIN);
     libraryChrome.setSidebarWidth(200);
     expect(libraryChrome.getState().sidebarWidth).toBe(SIDEBAR_WIDTH_MIN);
     expect(localStorage.getItem("pond.sidebarWidth")).toBe(
@@ -25,8 +23,8 @@ describe("library chrome", () => {
     );
   });
 
-  it("preserves the saved sidebar width through closing and reopening", async () => {
-    const { libraryChrome } = await import("./library-chrome");
+  it("preserves the saved sidebar width through closing and reopening", () => {
+    const { libraryChrome } = chrome;
     libraryChrome.setSidebarWidth(300);
     libraryChrome.toggleSidebar();
     expect(libraryChrome.getState().sidebarOpen).toBe(false);

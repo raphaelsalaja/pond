@@ -3,9 +3,9 @@ import { Button, Popover } from "@pond/ui";
 import {
   hostSetupCommands,
   isMcpInstallHost,
-  type McpHostDefinition,
   mcpHostConfigPath,
 } from "@shared/mcp-hosts";
+import type { McpHostDefinition } from "@shared/mcp-hosts";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { z } from "zod";

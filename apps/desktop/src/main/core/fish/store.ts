@@ -9,21 +9,23 @@ import {
   FISH_ROUTINE_CAP,
   FISH_RUN_CAP,
   FISH_SPECIES,
-  type Fish,
-  type FishPatch,
   FishPatchSchema,
-  type FishPlacement,
   FishPlacementSchema,
-  type FishRoutine,
-  type FishRoutineInput,
   FishRoutineInputSchema,
-  type FishRoutinePatch,
   FishRoutinePatchSchema,
-  type FishRun,
   FishSchema,
-  type FishSection,
   FishSectionSchema,
-  type FishWhen,
+} from "../../../shared/fish-contracts";
+import type {
+  Fish,
+  FishPatch,
+  FishPlacement,
+  FishRoutine,
+  FishRoutineInput,
+  FishRoutinePatch,
+  FishRun,
+  FishSection,
+  FishWhen,
 } from "../../../shared/fish-contracts";
 import { readBundleJson, writeBundleJson } from "../../lib/library-config";
 import { resolvePaths } from "../../paths";
@@ -53,7 +55,7 @@ function defaultFish(now: number): Fish {
   };
 }
 
-function uniqueName(base: string, taken: readonly Fish[]): string {
+function uniqueName(base: string, taken: ReadonlyArray<Fish>): string {
   const names = new Set(taken.map((fish) => fish.name.toLocaleLowerCase()));
   if (!names.has(base.toLocaleLowerCase())) return base;
   let suffix = 2;
@@ -113,7 +115,7 @@ const StoredFishSchema = z.preprocess((raw) => {
   };
 }, FishSchema);
 
-function write(root: string, school: readonly Fish[]): void {
+function write(root: string, school: ReadonlyArray<Fish>): void {
   writeBundleJson(fishFile(root), z.array(FishSchema).parse(school));
 }
 
@@ -121,9 +123,9 @@ function write(root: string, school: readonly Fish[]): void {
 export function listFish(
   root = resolvePaths().libraryRoot,
   now = Date.now(),
-): Fish[] {
+): Array<Fish> {
   const file = fishFile(root);
-  const stored = readBundleJson<unknown>(file);
+  const stored = readBundleJson(file);
   if (!stored) {
     if (existsSync(file)) throw new Error("Your fish could not be read.");
     return [defaultFish(now)];
@@ -141,7 +143,7 @@ export function readFish(
   return listFish(root).find((fish) => fish.id === id) ?? null;
 }
 
-function requireFish(school: readonly Fish[], id: string): Fish {
+function requireFish(school: ReadonlyArray<Fish>, id: string): Fish {
   const fish = school.find((entry) => entry.id === id);
   if (!fish) throw new Error("This fish no longer exists.");
   return fish;
@@ -257,11 +259,13 @@ export function deleteFish(
   id: string,
   root = resolvePaths().libraryRoot,
 ): { ok: true } | { ok: false; error: string } {
-  if (id === DEFAULT_FISH_ID)
+  if (id === DEFAULT_FISH_ID) {
     return { ok: false, error: "Your first fish stays in the pond." };
+  }
   const school = listFish(root);
-  if (!school.some((fish) => fish.id === id))
+  if (!school.some((fish) => fish.id === id)) {
     return { ok: false, error: "This fish no longer exists." };
+  }
   write(
     root,
     school.filter((fish) => fish.id !== id),
@@ -271,12 +275,13 @@ export function deleteFish(
 
 export function listFishSections(
   root = resolvePaths().libraryRoot,
-): FishSection[] {
+): Array<FishSection> {
   const file = sectionsFile(root);
-  const stored = readBundleJson<unknown>(file);
+  const stored = readBundleJson(file);
   if (!stored) {
-    if (existsSync(file))
+    if (existsSync(file)) {
       throw new Error("Your fish sections could not be read.");
+    }
     return [];
   }
   return z.array(FishSectionSchema).parse(stored.data);
@@ -284,9 +289,9 @@ export function listFishSections(
 
 /** Replaces the section list; fish in a removed section return to the loose list. */
 export function setFishSections(
-  sections: readonly FishSection[],
+  sections: ReadonlyArray<FishSection>,
   root = resolvePaths().libraryRoot,
-): FishSection[] {
+): Array<FishSection> {
   const parsed = z.array(FishSectionSchema).parse(sections);
   const next = [
     ...new Map(parsed.map((section) => [section.id, section])).values(),
@@ -294,7 +299,7 @@ export function setFishSections(
   const seen = new Set(next.map((section) => section.id));
   writeBundleJson(sectionsFile(root), next);
   const school = listFish(root);
-  if (school.some((fish) => fish.section && !seen.has(fish.section)))
+  if (school.some((fish) => fish.section && !seen.has(fish.section))) {
     write(
       root,
       school.map((fish) =>
@@ -303,12 +308,13 @@ export function setFishSections(
           : fish,
       ),
     );
+  }
   return next;
 }
 
 /** Fish missing from `placements` keep their place after the placed ones. */
 export function arrangeFish(
-  placements: readonly FishPlacement[],
+  placements: ReadonlyArray<FishPlacement>,
   root = resolvePaths().libraryRoot,
 ): void {
   const parsed = z.array(FishPlacementSchema).parse(placements);
@@ -316,7 +322,7 @@ export function arrangeFish(
   const sections = new Set(listFishSections(root).map((section) => section.id));
   const byId = new Map(school.map((fish) => [fish.id, fish]));
   const placed = new Set<string>();
-  const arranged: Fish[] = [];
+  const arranged: Array<Fish> = [];
   for (const placement of parsed) {
     const fish = byId.get(placement.id);
     if (!fish || placed.has(fish.id)) continue;
@@ -338,7 +344,7 @@ function requireRoutine(fish: Fish, routineId: string): FishRoutine {
 
 function writeRoutines(
   id: string,
-  edit: (fish: Fish) => FishRoutine[],
+  edit: (fish: Fish) => Array<FishRoutine>,
   root: string,
   now: number,
 ): Fish {
@@ -379,10 +385,11 @@ export function createRoutine(
   const fish = writeRoutines(
     fishId,
     (current) => {
-      if (current.routines.length >= FISH_ROUTINE_CAP)
+      if (current.routines.length >= FISH_ROUTINE_CAP) {
         throw new Error(
           `A fish can have up to ${FISH_ROUTINE_CAP} routines. Delete one first.`,
         );
+      }
       return [...current.routines, routine];
     },
     root,

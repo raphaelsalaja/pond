@@ -156,7 +156,7 @@ function siteOf(domain: string | null | undefined, url: string): string {
 }
 
 function positive(value: number | null | undefined): number | null {
-  return value != null && value > 0 ? value : null;
+  return value !== null && value !== undefined && value > 0 ? value : null;
 }
 
 function bestThumbnail(
@@ -173,8 +173,8 @@ function bestThumbnail(
 
 function playlistEntries(
   entries: NonNullable<YtdlpProbeInfo["entries"]>,
-): DownloadPlaylistEntry[] {
-  const out: DownloadPlaylistEntry[] = [];
+): Array<DownloadPlaylistEntry> {
+  const out: Array<DownloadPlaylistEntry> = [];
   for (const entry of entries) {
     const url = entry.webpage_url || entry.url;
     if (!url?.startsWith("http")) continue;
@@ -189,13 +189,15 @@ function playlistEntries(
   return out;
 }
 
-function heatmapOf(heatmap: YtdlpProbeInfo["heatmap"]): DownloadHeatPoint[] {
-  const points: DownloadHeatPoint[] = [];
+function heatmapOf(
+  heatmap: YtdlpProbeInfo["heatmap"],
+): Array<DownloadHeatPoint> {
+  const points: Array<DownloadHeatPoint> = [];
   for (const point of heatmap ?? []) {
-    const start = point.start_time;
-    const end = point.end_time;
-    const value = point.value;
-    if (start == null || end == null || value == null || end <= start) {
+    const start = point.start_time ?? null;
+    const end = point.end_time ?? null;
+    const value = point.value ?? null;
+    if (start === null || end === null || value === null || end <= start) {
       continue;
     }
     points.push({ start, end, value: Math.max(0, value) });
@@ -208,12 +210,14 @@ function heatmapOf(heatmap: YtdlpProbeInfo["heatmap"]): DownloadHeatPoint[] {
 function chaptersOf(
   chapters: YtdlpProbeInfo["chapters"],
   duration: number | null,
-): DownloadChapter[] {
-  const out: DownloadChapter[] = [];
+): Array<DownloadChapter> {
+  const out: Array<DownloadChapter> = [];
   for (const chapter of chapters ?? []) {
     const start = chapter.start_time ?? null;
     const end = chapter.end_time ?? duration;
-    if (start == null || end == null || end <= start) continue;
+    if (start === null || end === null || end <= start) {
+      continue;
+    }
     out.push({ start, end, title: chapter.title?.trim() || "Chapter" });
   }
   return out;
@@ -223,7 +227,7 @@ function isStoryboard(format: Format): boolean {
   return format.format_note === "storyboard" || format.ext === "mhtml";
 }
 
-function storyboardOf(formats: Format[]): DownloadStoryboard | null {
+function storyboardOf(formats: Array<Format>): DownloadStoryboard | null {
   let best: DownloadStoryboard | null = null;
   for (const format of formats) {
     if (!isStoryboard(format)) continue;
@@ -254,9 +258,12 @@ function storyboardOf(formats: Format[]): DownloadStoryboard | null {
 
 function sizeOf(format: Format, duration: number | null): number | null {
   const reported = format.filesize ?? format.filesize_approx;
-  if (reported && reported > 0) return reported;
-  if (format.tbr && duration)
+  if (reported && reported > 0) {
+    return reported;
+  }
+  if (format.tbr && duration) {
     return Math.round((format.tbr * 1000 * duration) / 8);
+  }
   return null;
 }
 
@@ -274,7 +281,7 @@ function hasVideo(format: Format): boolean {
 
 /** yt-dlp lists formats worst to best, so the last match is the one `ba` would pick. */
 function bestAudio(
-  formats: Format[],
+  formats: Array<Format>,
   duration: number | null,
 ): { size: number | null } | null {
   let best: { size: number | null } | null = null;
@@ -288,9 +295,9 @@ function bestAudio(
 
 /** The last format at each height, which is what `bv*[height<=N]` downloads. */
 function videoOptionsOf(
-  formats: Format[],
+  formats: Array<Format>,
   duration: number | null,
-): DownloadVideoOption[] {
+): Array<DownloadVideoOption> {
   const audio = bestAudio(formats, duration);
   const byHeight = new Map<number, DownloadVideoOption>();
   for (const format of formats) {
@@ -299,7 +306,7 @@ function videoOptionsOf(
     if (height < 144 || !hasVideo(format)) continue;
     const own = sizeOf(format, duration);
     const muxed = format.acodec !== "none";
-    const size = own == null ? null : muxed ? own : own + (audio?.size ?? 0);
+    const size = own === null ? null : muxed ? own : own + (audio?.size ?? 0);
     byHeight.set(height, { height, fps: format.fps ?? null, size });
   }
   return [...byHeight.values()].sort((a, b) => b.height - a.height);
@@ -318,8 +325,9 @@ function playableUrl(format: Format): string | null {
     Object.keys(format.http_headers ?? {}).some((key) =>
       GATED_HEADERS.test(key),
     )
-  )
+  ) {
     return null;
+  }
   let ext = format.ext;
   if (!ext) {
     try {
@@ -332,7 +340,7 @@ function playableUrl(format: Format): string | null {
 }
 
 /** A direct stream the editor can play: sound and picture together, sharpest up to 720p. */
-function previewOf(formats: Format[]): string | null {
+function previewOf(formats: Array<Format>): string | null {
   let best: { url: string; height: number } | null = null;
   let audioOnly: string | null = null;
   for (const format of formats) {
@@ -367,10 +375,18 @@ export function frameSourceOf(info: YtdlpProbeInfo): FrameSource | null {
   if (!duration) return null;
   let best: { format: Format; height: number } | null = null;
   for (const format of info.formats ?? []) {
-    if (isStoryboard(format) || !hasVideo(format)) continue;
-    if (!format.url?.startsWith("http")) continue;
-    if (format.protocol && !/^(https?|m3u8|m3u8_native)$/.test(format.protocol))
+    if (isStoryboard(format) || !hasVideo(format)) {
       continue;
+    }
+    if (!format.url?.startsWith("http")) {
+      continue;
+    }
+    if (
+      format.protocol &&
+      !/^(https?|m3u8|m3u8_native)$/.test(format.protocol)
+    ) {
+      continue;
+    }
     const height = format.height ?? 0;
     if (height < 144) continue;
     if (best && best.height <= height) continue;
@@ -387,8 +403,8 @@ export function frameSourceOf(info: YtdlpProbeInfo): FrameSource | null {
 function captionsOf(
   manual: YtdlpProbeInfo["subtitles"],
   automatic: YtdlpProbeInfo["automatic_captions"],
-): DownloadCaption[] {
-  const out: DownloadCaption[] = [];
+): Array<DownloadCaption> {
+  const out: Array<DownloadCaption> = [];
   const seen = new Set<string>();
   for (const [lang, tracks] of Object.entries(manual ?? {})) {
     if (lang === "live_chat" || tracks.length === 0) continue;

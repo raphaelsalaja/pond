@@ -1,16 +1,15 @@
 import { Button, Dialog } from "@pond/ui";
-import {
-  type ConversionCapability,
-  type ConversionPreset,
-  ConversionPresetSchema,
+import { ConversionPresetSchema } from "@shared/conversion-contracts";
+import type {
+  ConversionCapability,
+  ConversionPreset,
 } from "@shared/conversion-contracts";
 import { useSelector } from "@tanstack/react-store";
+import log from "electron-log/renderer";
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import {
-  closeConversionDialog,
-  type ExportMode,
-} from "@/features/library/state/conversion-dialog";
+import { closeConversionDialog } from "@/features/library/state/conversion-dialog";
+import type { ExportMode } from "@/features/library/state/conversion-dialog";
 import {
   ensureSaves,
   savesStore,
@@ -18,18 +17,15 @@ import {
 } from "@/features/saves/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
-import {
-  canConvert,
-  formatLabel,
-  type SizeMode,
-  sizeModeFor,
-} from "./export-plan";
+import { canConvert, formatLabel, sizeModeFor } from "./export-plan";
+import type { SizeMode } from "./export-plan";
 import { ExportSettings } from "./export-settings";
 import { ExportField } from "./fields";
-import { type ExportRow, FileList } from "./file-list";
+import { FileList } from "./file-list";
+import type { ExportRow } from "./file-list";
 import { SavePreset } from "./save-preset";
-import styles from "./styles.module.css";
 import { useConversionJob } from "./use-conversion-job";
+import styles from "./styles.module.css";
 
 const EXPORT_MODE_ITEMS: Array<{ value: ExportMode; label: string }> = [
   { value: "files", label: "Original Files" },
@@ -45,7 +41,7 @@ export function ConversionDialog({
   initialMode,
   open,
 }: {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   fileIndex: number;
   initialMode: ExportMode;
   open: boolean;
@@ -60,8 +56,10 @@ export function ConversionDialog({
   );
   const [sizeMode, setSizeMode] = useState<SizeMode>(() => sizeModeFor(preset));
   const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
-  const [presets, setPresets] = useState<ConversionPreset[]>([]);
-  const [capabilities, setCapabilities] = useState<ConversionCapability[]>([]);
+  const [presets, setPresets] = useState<Array<ConversionPreset>>([]);
+  const [capabilities, setCapabilities] = useState<Array<ConversionCapability>>(
+    [],
+  );
   const [conversionOptionsLoaded, setConversionOptionsLoaded] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   const fields = useRef<HTMLFieldSetElement>(null);
@@ -80,7 +78,7 @@ export function ConversionDialog({
         a.length === b.length && a.every((save, index) => save === b[index]),
     },
   );
-  const rows: ExportRow[] = included.map((id, index) => {
+  const rows: Array<ExportRow> = included.map((id, index) => {
     const save = saves[index];
     const file = save ? (save.files?.[fileIndex] ?? null) : null;
     return {
@@ -93,7 +91,7 @@ export function ConversionDialog({
         (!file || !canConvert(file, selectedCapability)),
     };
   });
-  const exportIds = rows.filter((row) => !row.skipped).map((row) => row.id);
+  const exportIds = rows.flatMap((row) => (row.skipped ? [] : [row.id]));
   const sizeValid =
     sizeMode === "original" ||
     (sizeMode !== "height" && preset.width !== null) ||
@@ -111,7 +109,9 @@ export function ConversionDialog({
   }
   useRetainedSaves(ids);
   useEffect(() => {
-    void ensureSaves(ids).catch(() => undefined);
+    void ensureSaves(ids).catch((cause: unknown) => {
+      log.warn("[pond export] loading saves failed", cause);
+    });
   }, [ids]);
   useEffect(() => {
     if (!converting || conversionOptionsLoaded) return;
@@ -124,7 +124,7 @@ export function ConversionDialog({
         setCapabilities(supportedFormats);
         setConversionOptionsLoaded(true);
       })
-      .catch((cause) =>
+      .catch((cause: unknown) =>
         setError(errorCopy(cause, "Couldn't load presets. Try again.")),
       );
   }, [converting, conversionOptionsLoaded, setError]);

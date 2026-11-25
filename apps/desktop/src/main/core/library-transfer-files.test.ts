@@ -11,13 +11,14 @@ import {
 import { hostname, tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { z } from "zod";
 import { writeBundleJson } from "../lib/library-config";
 import { StoredInfoDocSchema } from "../lib/library-format";
 import { exportFiles } from "./export-files";
 import { copyPackageToLibrary, packageLibrary } from "./library-transfer-files";
 import { PackageOrganizationSchema } from "./package-organization";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -155,7 +156,10 @@ describe("copy into an inactive library", () => {
       await readFile(join(target, "organization.json"), "utf8"),
     );
     expect(
-      organization.data.folders.map((folder: { name: string }) => folder.name),
+      z
+        .array(z.object({ name: z.string() }))
+        .parse(organization.data.folders)
+        .map((folder) => folder.name),
     ).toEqual(["Keep", "Research"]);
     const preferences = JSON.parse(
       await readFile(join(target, "settings.json"), "utf8"),

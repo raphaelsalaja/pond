@@ -2,24 +2,24 @@ const { app } = require("electron");
 const assert = require("node:assert/strict");
 const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join, resolve } = require("node:path");
+const path = require("node:path");
 
 // Opt-in live check. Uses the CLI's saved plan sign-in and an isolated Library.
 const provider = process.env.POND_SMOKE_PROVIDER || "codex";
 assert.ok(["codex", "claude-code"].includes(provider));
-const sandbox = mkdtempSync(join(tmpdir(), "pond-subscription-smoke-"));
-mkdirSync(join(sandbox, "app-data"));
+const sandbox = mkdtempSync(path.join(tmpdir(), "pond-subscription-smoke-"));
+mkdirSync(path.join(sandbox, "app-data"));
 // The sandbox disables the loopback service. Its fixture token avoids opening
 // the OS keychain while a CI desktop is locked; no user credentials are copied.
 writeFileSync(
-  join(sandbox, "app-data/secrets.json"),
+  path.join(sandbox, "app-data/secrets.json"),
   JSON.stringify({
     "so.pond.desktop:ingest-token": `raw:${Buffer.from("isolated-smoke-token").toString("base64")}`,
   }),
   { mode: 0o600 },
 );
-const output = resolve(
-  process.env.POND_SMOKE_OUTPUT || join(sandbox, "results"),
+const output = path.resolve(
+  process.env.POND_SMOKE_OUTPUT || path.join(sandbox, "results"),
 );
 mkdirSync(output, { recursive: true });
 process.env.POND_SANDBOX = sandbox;
@@ -36,14 +36,18 @@ const timeout = setTimeout(() => {
 app.on("web-contents-created", (_, contents) => {
   contents.setBackgroundThrottling(false);
   contents.on("console-message", (event) => {
-    if (event.message?.startsWith("SUBSCRIPTION_STAGE"))
+    if (event.message?.startsWith("SUBSCRIPTION_STAGE")) {
       console.log(event.message);
+    }
   });
-  contents.on("did-finish-load", async () => {
-    if (started || !contents.getURL().includes("index.html")) return;
-    started = true;
-    try {
-      const result = await contents.executeJavaScript(`(async () => {
+  contents.on("did-finish-load", () => {
+    void (async () => {
+      if (started || !contents.getURL().includes("index.html")) {
+        return;
+      }
+      started = true;
+      try {
+        const result = await contents.executeJavaScript(`(async () => {
         const waitUntil = async (predicate) => {
           const deadline = Date.now() + 15_000;
           while (!predicate()) {
@@ -91,19 +95,19 @@ app.on("web-contents-created", (_, contents) => {
           libraryIsolated: (await window.pond.query("library.info")).path.startsWith(${JSON.stringify(sandbox)}),
         };
       })()`);
-      assert.equal(result.connection, true);
-      assert.equal(result.libraryIsolated, true);
-      assert.ok(result.overviewText.trim());
-      assert.ok(result.completedTools > 0);
-      assert.ok(result.pendingReviews > 0);
-      assert.equal(result.foldersBefore, 0);
-      assert.equal(result.reviewSucceeded, true);
-      assert.equal(result.appliedFolder, true);
-      await contents.executeJavaScript(
-        `window.pond.query("settings.setPrefs", {agent: {addedProviders: ["codex", "claude-code"]}})`,
-      );
-      contents.send("pond:nav", "/settings/models");
-      const settings = await contents.executeJavaScript(`(async () => {
+        assert.equal(result.connection, true);
+        assert.equal(result.libraryIsolated, true);
+        assert.ok(result.overviewText.trim());
+        assert.ok(result.completedTools > 0);
+        assert.ok(result.pendingReviews > 0);
+        assert.equal(result.foldersBefore, 0);
+        assert.equal(result.reviewSucceeded, true);
+        assert.equal(result.appliedFolder, true);
+        await contents.executeJavaScript(
+          `window.pond.query("settings.setPrefs", {agent: {addedProviders: ["codex", "claude-code"]}})`,
+        );
+        contents.send("pond:nav", "/settings/models");
+        const settings = await contents.executeJavaScript(`(async () => {
         const deadline = Date.now() + 15_000;
         while (!document.querySelector('[aria-label="Subscriptions"] [aria-label="Claude Code"]')) {
           if (Date.now() > deadline) throw new Error("Subscription settings did not render");
@@ -116,36 +120,40 @@ app.on("web-contents-created", (_, contents) => {
           hasApiKeyField: Boolean(section.querySelector('[aria-label="API Key"]')),
         };
       })()`);
-      assert.equal(settings.hasCodex, true);
-      assert.equal(settings.hasClaudeLogin, true);
-      assert.equal(settings.hasApiKeyField, false);
-      result.settings = settings;
-      const screenshot = await contents.capturePage();
-      writeFileSync(join(output, `${provider}.png`), screenshot.toPNG());
-      writeFileSync(
-        join(output, `${provider}.json`),
-        JSON.stringify({ status: "passed", ...result }, null, 2),
-      );
-      clearTimeout(timeout);
-      complete = true;
-      console.log("SUBSCRIPTION_SMOKE_PASSED", JSON.stringify(result));
-      if (!output.startsWith(sandbox))
-        rmSync(sandbox, { recursive: true, force: true });
-      app.exit(0);
-    } catch (error) {
-      clearTimeout(timeout);
-      writeFileSync(
-        join(output, `${provider}.json`),
-        JSON.stringify({ status: "failed", error: error.message }, null, 2),
-      );
-      console.error("SUBSCRIPTION_SMOKE_FAILED", error);
-      app.exit(1);
-    }
+        assert.equal(settings.hasCodex, true);
+        assert.equal(settings.hasClaudeLogin, true);
+        assert.equal(settings.hasApiKeyField, false);
+        result.settings = settings;
+        const screenshot = await contents.capturePage();
+        writeFileSync(path.join(output, `${provider}.png`), screenshot.toPNG());
+        writeFileSync(
+          path.join(output, `${provider}.json`),
+          JSON.stringify({ status: "passed", ...result }, null, 2),
+        );
+        clearTimeout(timeout);
+        complete = true;
+        console.log("SUBSCRIPTION_SMOKE_PASSED", JSON.stringify(result));
+        if (!output.startsWith(sandbox)) {
+          rmSync(sandbox, { recursive: true, force: true });
+        }
+        app.exit(0);
+      } catch (error) {
+        clearTimeout(timeout);
+        writeFileSync(
+          path.join(output, `${provider}.json`),
+          JSON.stringify({ status: "failed", error: error.message }, null, 2),
+        );
+        console.error("SUBSCRIPTION_SMOKE_FAILED", error);
+        app.exit(1);
+      }
+    })();
   });
 });
 
-import("../out/main/index.js").catch((error) => {
+function fail(error) {
   clearTimeout(timeout);
   console.error("SUBSCRIPTION_SMOKE_FAILED", error);
   app.exit(1);
-});
+}
+
+import("../out/main/index.js").catch(fail);

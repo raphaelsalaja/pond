@@ -3,15 +3,15 @@ import { z } from "zod";
 /** Mirrors `SchemaNode` and `PropertyNode` in `apple-model/main.swift`; rename keys on both sides together. */
 export type AppleSchema =
   | { kind: "string" | "integer" | "number" | "boolean" }
-  | { kind: "choice"; name: string; choices: string[] }
+  | { kind: "choice"; name: string; choices: Array<string> }
   | { kind: "array"; items: AppleSchema; max?: number }
   | {
       kind: "object";
       name: string;
       description?: string;
-      properties: AppleProperty[];
+      properties: Array<AppleProperty>;
     }
-  | { kind: "anyOf"; name: string; variants: AppleSchema[] };
+  | { kind: "anyOf"; name: string; variants: Array<AppleSchema> };
 
 export interface AppleProperty {
   name: string;
@@ -22,15 +22,15 @@ export interface AppleProperty {
 
 /** The JSON Schema keywords the converter reads, so SDK and Zod schemas both fit. */
 export interface JsonSchemaNode {
-  type?: string | string[];
+  type?: string | Array<string>;
   description?: string;
-  enum?: readonly unknown[];
+  enum?: ReadonlyArray<unknown>;
   properties?: Readonly<Record<string, JsonSchemaDefinition>>;
-  required?: readonly string[];
-  items?: JsonSchemaDefinition | JsonSchemaDefinition[];
+  required?: ReadonlyArray<string>;
+  items?: JsonSchemaDefinition | Array<JsonSchemaDefinition>;
   maxItems?: number;
-  anyOf?: readonly JsonSchemaDefinition[];
-  oneOf?: readonly JsonSchemaDefinition[];
+  anyOf?: ReadonlyArray<JsonSchemaDefinition>;
+  oneOf?: ReadonlyArray<JsonSchemaDefinition>;
 }
 
 type JsonSchemaDefinition = JsonSchemaNode | boolean;
@@ -122,7 +122,7 @@ export function toAppleSchema(
   return convert(json, name, 0);
 }
 
-export function replySchemaFor(tools: readonly AppleTool[]): AppleSchema {
+export function replySchemaFor(tools: ReadonlyArray<AppleTool>): AppleSchema {
   const text: AppleProperty = {
     name: "text",
     description: "Your answer to the user. Leave empty when you call a tool.",
@@ -132,29 +132,27 @@ export function replySchemaFor(tools: readonly AppleTool[]): AppleSchema {
   if (tools.length === 0) {
     return { kind: "object", name: "Reply", properties: [text] };
   }
-  const variants = tools.map(
-    (tool): AppleSchema => ({
-      kind: "object",
-      name: `Call_${tool.name}`,
-      description: tool.description,
-      properties: [
-        {
-          name: "tool",
-          optional: false,
-          schema: {
-            kind: "choice",
-            name: `Tool_${tool.name}`,
-            choices: [tool.name],
-          },
+  const variants = tools.map((tool): AppleSchema => ({
+    kind: "object",
+    name: `Call_${tool.name}`,
+    description: tool.description,
+    properties: [
+      {
+        name: "tool",
+        optional: false,
+        schema: {
+          kind: "choice",
+          name: `Tool_${tool.name}`,
+          choices: [tool.name],
         },
-        {
-          name: "arguments",
-          optional: false,
-          schema: toAppleSchema(tool.inputSchema, `Args_${tool.name}`),
-        },
-      ],
-    }),
-  );
+      },
+      {
+        name: "arguments",
+        optional: false,
+        schema: toAppleSchema(tool.inputSchema, `Args_${tool.name}`),
+      },
+    ],
+  }));
   return {
     kind: "object",
     name: "Reply",

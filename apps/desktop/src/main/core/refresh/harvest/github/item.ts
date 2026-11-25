@@ -3,7 +3,8 @@
 import type { JsonValue } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
 import { z } from "zod";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 import { selectRepositoryPreview } from "./open-graph";
 
@@ -44,8 +45,12 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   const readme = (): HTMLElement | null =>
     document.querySelector<HTMLElement>("article.markdown-body");
   while (Date.now() < deadline) {
-    if (readme() || aboutHeading()) break;
-    await new Promise((r) => setTimeout(r, 250));
+    if (readme() || aboutHeading()) {
+      break;
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   /** A missing or private repo serves a 404 page without the repo meta. */
   const name = meta("octolytics-dimension-repository_nwo");
@@ -79,7 +84,6 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   const text = [
     about,
     topics.length > 0 ? `Topics: ${topics.join(", ")}` : "",
-    // biome-ignore lint/performance/useDomNodeTextContent: the saved text needs rendered line breaks between README blocks.
     body?.innerText?.trim() ?? "",
   ]
     .filter(Boolean)
@@ -99,7 +103,9 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
   /** Resolves links and images against the page, and moves heading anchors onto their headings. */
   function readmeHtml(source: HTMLElement): string {
     const copy = source.cloneNode(true);
-    if (!(copy instanceof HTMLElement)) return "";
+    if (!isElementNode(copy)) {
+      return "";
+    }
     for (const chrome of copy.querySelectorAll(
       ".zeroclipboard-container, clipboard-copy",
     )) {
@@ -130,7 +136,11 @@ async function inPageGithubHarvest(): Promise<GithubRepoPage | null> {
     return copy.innerHTML;
   }
 
-  function openGraphImages(): string[] {
+  function isElementNode(node: Node): node is Element {
+    return node.nodeType === Node.ELEMENT_NODE;
+  }
+
+  function openGraphImages(): Array<string> {
     return Array.from(
       document.querySelectorAll(
         'meta[property="og:image"], meta[name="og:image"]',

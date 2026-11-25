@@ -22,7 +22,7 @@ function webUrl(url: string): string | null {
   return /^https?:\/\//i.test(url) ? url : null;
 }
 
-export function saveItems(saves: readonly AlfredSave[]): AlfredItem[] {
+export function saveItems(saves: ReadonlyArray<AlfredSave>): Array<AlfredItem> {
   return saves.map((save) => {
     const pond = `pond://item/${save.id}`;
     const link = webUrl(save.url);
@@ -44,7 +44,7 @@ export function saveItems(saves: readonly AlfredSave[]): AlfredItem[] {
   });
 }
 
-export function errorItems(failure: ApiFailure): AlfredItem[] {
+export function errorItems(failure: ApiFailure): Array<AlfredItem> {
   switch (failure) {
     case "offline":
       return [

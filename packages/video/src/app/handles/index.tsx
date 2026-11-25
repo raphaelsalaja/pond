@@ -2,7 +2,7 @@ import styles from "./styles.module.css";
 
 export type Side = "top" | "right" | "bottom" | "left";
 
-const SIDES: Side[] = ["top", "right", "bottom", "left"];
+const SIDES: Array<Side> = ["top", "right", "bottom", "left"];
 
 interface HandlesProps {
   opacity: number;

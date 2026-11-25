@@ -8,7 +8,8 @@ import { backfillVecBatch } from "../core/vec-index";
 import { readOrCreateLibraryId } from "../lib/library-id";
 import { pinOpenLibrary } from "../lib/library-placement";
 import { resolvePaths } from "../paths";
-import { type Db, GLOBAL_CACHE_KIB, openSqlite, wrapSqlite } from "./client";
+import { GLOBAL_CACHE_KIB, openSqlite, wrapSqlite } from "./client";
+import type { Db } from "./client";
 import { migrateGlobal } from "./migrations";
 import { initializePondSchema } from "./pond-schema";
 
@@ -37,7 +38,9 @@ export async function getDb(): Promise<Db> {
 }
 
 async function openPondDb(): Promise<Db> {
-  await new Promise<void>((resolve) => setImmediate(resolve));
+  await new Promise<void>((resolve) => {
+    setImmediate(resolve);
+  });
 
   const paths = resolvePaths();
   log.info("[pond db] opening pond index", paths.indexDb);
@@ -54,7 +57,7 @@ async function openPondDb(): Promise<Db> {
       (batchId) =>
         sqlite
           .prepare("SELECT 1 FROM mutation_commits WHERE batch_id = ?")
-          .get(batchId) != null,
+          .get(batchId) !== undefined,
     );
     sqlite.exec("DELETE FROM mutation_commits");
     hydrateOrganizationBundle(opened, paths.libraryRoot);
@@ -80,10 +83,11 @@ function scheduleDataMigrations(
     if (!sqlite.open || cachedPond?.$raw !== sqlite) return;
     try {
       const updated = backfillFontActivationIndex(sqlite);
-      if (updated > 0)
+      if (updated > 0) {
         log.info("[pond db] font activation backfill", { updated });
-    } catch (err) {
-      log.warn("[pond db] font activation backfill failed", err);
+      }
+    } catch (error) {
+      log.warn("[pond db] font activation backfill failed", error);
     }
   });
 
@@ -94,9 +98,11 @@ function scheduleDataMigrations(
       if (result.processed > 0) {
         log.info("[pond db] vec backfill batch", result);
       }
-      if (result.hasMore) setImmediate(runVecBatch);
-    } catch (err) {
-      log.warn("[pond db] vec backfill failed", err);
+      if (result.hasMore) {
+        setImmediate(runVecBatch);
+      }
+    } catch (error) {
+      log.warn("[pond db] vec backfill failed", error);
     }
   };
   if (vectorEnabled) setImmediate(runVecBatch);
@@ -106,8 +112,8 @@ export function closeDb(): void {
   if (cachedPond) {
     try {
       cachedPond.$raw.close();
-    } catch (err) {
-      log.warn("[pond db] close failed", err);
+    } catch (error) {
+      log.warn("[pond db] close failed", error);
     }
     cachedPond = null;
   }

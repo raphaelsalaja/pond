@@ -22,10 +22,8 @@ import {
   skipDownloadRows,
   trashDownloadRows,
 } from "@/features/downloads/components/lib/actions";
-import {
-  type DownloadRow,
-  statusFeed,
-} from "@/features/downloads/lib/status-feed";
+import { statusFeed } from "@/features/downloads/lib/status-feed";
+import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { humanizeError } from "@/features/downloads/lib/status-feed/queue";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import { openSave } from "@/features/saves/navigation";
@@ -58,14 +56,14 @@ function downloadErrorText(row: DownloadRow): string {
   return row.lastError?.trim() ? humanizeError(row.lastError) : "";
 }
 
-function menuTargets(row: DownloadRow): readonly DownloadRow[] {
+function menuTargets(row: DownloadRow): ReadonlyArray<DownloadRow> {
   const selected = downloadsSelection.snapshot();
   return selected.some((item) => item.id === row.id) ? selected : [row];
 }
 
 export function buildDownloadMenuItems(
-  rows: readonly DownloadRow[],
-): MenuItemSpec[] {
+  rows: ReadonlyArray<DownloadRow>,
+): Array<MenuItemSpec> {
   const plural = rows.length > 1;
   const single = plural ? undefined : rows[0];
   const url = single?.url.trim() ?? "";
@@ -133,7 +131,7 @@ export function buildDownloadMenuItems(
     {
       label: "Clear Selection",
       icon: <IconCircleXmark />,
-      onClick: downloadsSelection.clear,
+      onClick: () => downloadsSelection.clear(),
     },
   ];
 }

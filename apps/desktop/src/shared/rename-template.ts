@@ -29,7 +29,7 @@ export interface RenameTemplateValues extends RenameOptions {
   id: string;
   family?: string | null;
   date?: Date | string | number | null;
-  tags?: readonly string[];
+  tags?: ReadonlyArray<string>;
   original?: string | null;
 }
 
@@ -38,7 +38,7 @@ export function literalReplacement(
   replace: string,
 ): z.input<typeof RenameReplacementSchema> {
   return {
-    find: find.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    find: find.replaceAll(/[.*+?^${}()|[\]\\]/g, String.raw`\$&`),
     replace: replace.replaceAll("$", "$$$$"),
     flags: "g",
   };
@@ -56,9 +56,10 @@ function applyTextCase(
     case "title":
       return name
         .toLowerCase()
-        .replace(
+        .replaceAll(
           /(^|[\s_\-./])(\p{L})/gu,
-          (_match, gap: string, letter) => `${gap}${letter.toUpperCase()}`,
+          (_match, gap: string, letter: string) =>
+            `${gap}${letter.toUpperCase()}`,
         );
     default:
       return name;
@@ -69,8 +70,11 @@ function formattedDate(
   value: RenameTemplateValues["date"],
   format?: string,
 ): string {
-  const date = value == null ? new Date() : new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  const date =
+    value === null || value === undefined ? new Date() : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
   const iso = date.toISOString();
   switch (format) {
     case "compact":
@@ -103,7 +107,7 @@ export function applyRenameTemplate(
   const title = replaceSource(values.title, values.replacement);
   const sequence = (values.start ?? 1) + values.index;
   const expanded = template
-    .replace(TOKEN, (_match, token: string, tokenPadding?: string) => {
+    .replaceAll(TOKEN, (_match, token: string, tokenPadding?: string) => {
       switch (token) {
         case "n":
           return String(sequence).padStart(

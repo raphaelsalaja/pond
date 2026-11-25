@@ -8,12 +8,12 @@ import { buildFolderTreeMenu } from "@/shared/lib/folder-tree-menu";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
 
-function blockedIds(all: readonly Folder[], ids: readonly string[]) {
+function blockedIds(all: ReadonlyArray<Folder>, ids: ReadonlyArray<string>) {
   const blocked = new Set(ids);
   let grew = true;
   while (grew) {
     grew = false;
-    for (const folder of all)
+    for (const folder of all) {
       if (
         folder.parentId &&
         blocked.has(folder.parentId) &&
@@ -22,12 +22,13 @@ function blockedIds(all: readonly Folder[], ids: readonly string[]) {
         blocked.add(folder.id);
         grew = true;
       }
+    }
   }
   return blocked;
 }
 
 async function moveFolders(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   parentId: string | null,
   destination: string,
   subject: string,
@@ -53,7 +54,9 @@ async function moveFolders(
   }
 }
 
-export function buildMoveFolderItems(ids: readonly string[]): MenuItemSpec[] {
+export function buildMoveFolderItems(
+  ids: ReadonlyArray<string>,
+): Array<MenuItemSpec> {
   const all = folders.snapshot();
   const moving = all.filter((folder) => ids.includes(folder.id));
   const blocked = blockedIds(all, ids);

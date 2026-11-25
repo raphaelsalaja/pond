@@ -1,11 +1,10 @@
 import { existsSync } from "node:fs";
-import {
-  DEFAULT_PREFS,
-  type DeepPartial,
-  type Prefs,
-  type PrefsPatchDeep,
-  PrefsSchema,
-  type StoredPrefsEnvelope,
+import { DEFAULT_PREFS, PrefsSchema } from "@pond/schema/db";
+import type {
+  DeepPartial,
+  Prefs,
+  PrefsPatchDeep,
+  StoredPrefsEnvelope,
 } from "@pond/schema/db";
 import { z } from "zod";
 import { readBundleJson, writeBundleJson } from "../lib/library-config";
@@ -29,7 +28,7 @@ const POND_PREF_KEYS = [
   "allTags",
   "saveRecents",
   "notices",
-] as const satisfies readonly (keyof Prefs)[];
+] as const satisfies ReadonlyArray<keyof Prefs>;
 
 type PondPrefKey = (typeof POND_PREF_KEYS)[number];
 type AppPrefKey = Exclude<keyof Prefs, PondPrefKey>;
@@ -60,7 +59,7 @@ const APP_PREF_KEYS = [
   "extension",
   "folderAppearance",
   "folderTemplates",
-] as const satisfies readonly AppPrefKey[];
+] as const satisfies ReadonlyArray<AppPrefKey>;
 
 const _DEFAULT_APP_PREFS: AppPrefs = pickPrefs(DEFAULT_PREFS, APP_PREF_KEYS);
 const _DEFAULT_POND_PREFS: PondPrefs = pickPrefs(DEFAULT_PREFS, POND_PREF_KEYS);
@@ -73,9 +72,11 @@ export function isUnboundLibraryId(libraryId: string): boolean {
   return libraryId === UNBOUND_LIBRARY_ID;
 }
 
-const StoredSliceSchema = z.custom<PrefsPatchDeep>(
-  (value) => value instanceof Object && !Array.isArray(value),
-);
+function isStoredSlice(value: unknown): value is PrefsPatchDeep {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+const StoredSliceSchema = z.custom<PrefsPatchDeep>(isStoredSlice);
 
 export type StoredPrefsInput =
   | StoredPrefsEnvelope
@@ -212,7 +213,7 @@ function withoutIds<T>(
 /** Removes folders' view settings and Auto-Tags, which a merge patch can only add to. */
 export function withoutFolderPrefs(
   slice: DeepPartial<PondPrefs>,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): DeepPartial<PondPrefs> {
   const drop = new Set(ids);
   return {
@@ -224,11 +225,10 @@ export function withoutFolderPrefs(
 
 export function readBundlePondPrefs(): DeepPartial<PondPrefs> | null {
   const paths = resolvePaths();
-  if (!existsSync(paths.settingsFile)) return null;
-  const read = readBundleJson<Partial<PondPrefs>>(
-    paths.settingsFile,
-    paths.backupDir,
-  );
+  if (!existsSync(paths.settingsFile)) {
+    return null;
+  }
+  const read = readBundleJson(paths.settingsFile, paths.backupDir);
   const slice = StoredSliceSchema.safeParse(read?.data);
   return slice.success ? storedSlice(slice.data) : null;
 }
@@ -259,16 +259,26 @@ function assignSlice<T extends object, K extends keyof Prefs>(
   key: K,
   value: DeepPartial<Prefs>[K],
 ): void {
-  /** SAFETY: `key` indexes both objects with the same `Prefs` key, so the value type matches. */
-  (target as Record<K, DeepPartial<Prefs>[K]>)[key] = value;
+  Object.assign(target, { [key]: value });
 }
 
 function pickPrefs<K extends keyof Prefs>(
   prefs: Prefs,
-  keys: readonly K[],
+  keys: ReadonlyArray<K>,
 ): Pick<Prefs, K> {
-  /** SAFETY: filled from `keys` on the line below, which is exactly the picked key set. */
-  const out = {} as Pick<Prefs, K>;
-  for (const key of keys) out[key] = prefs[key];
+  const out: Partial<Pick<Prefs, K>> = {};
+  for (const key of keys) {
+    out[key] = prefs[key];
+  }
+  if (!hasPickedKeys(out, keys)) {
+    throw new Error("Picked preferences are missing a key");
+  }
   return out;
+}
+
+function hasPickedKeys<K extends keyof Prefs>(
+  value: Partial<Pick<Prefs, K>>,
+  keys: ReadonlyArray<K>,
+): value is Pick<Prefs, K> {
+  return keys.every((key) => Object.hasOwn(value, key));
 }

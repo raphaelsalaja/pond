@@ -51,10 +51,10 @@ async function fetchJson<T>(
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     const reason =
-      err instanceof Error && err.name === "TimeoutError"
+      error instanceof Error && error.name === "TimeoutError"
         ? "timeout"
         : "network";
     log.warn("[pond arena:api]", reason, url, message);
@@ -64,8 +64,8 @@ async function fetchJson<T>(
   if (res.status === 429 && attempt === 0) {
     const retryAfter = Number(res.headers.get("retry-after") ?? "1");
     const waitMs = Number.isFinite(retryAfter)
-      ? Math.max(1_000, retryAfter * 1_000)
-      : 1_000;
+      ? Math.max(1000, retryAfter * 1000)
+      : 1000;
     log.info("[pond arena:api] 429; retrying after", waitMs, url);
     await delay(waitMs);
     return fetchJson(url, schema, attempt + 1);
@@ -85,8 +85,8 @@ async function fetchJson<T>(
   }
   try {
     return { ok: true, value: schema.parse(await res.json()) };
-  } catch (err) {
-    log.warn("[pond arena:api] bad json", url, err);
+  } catch (error) {
+    log.warn("[pond arena:api] bad json", url, error);
     return { ok: false, status: res.status, reason: "network" };
   }
 }
@@ -234,12 +234,14 @@ function pickMediaUrlAndDims(block: ArenaBlock): ArenaPickedMedia {
   };
 }
 
-function channelsFromBlock(block: ArenaBlock): ArenaChannelInfo[] {
-  const out: ArenaChannelInfo[] = [];
+function channelsFromBlock(block: ArenaBlock): Array<ArenaChannelInfo> {
+  const out: Array<ArenaChannelInfo> = [];
   const seen = new Set<string>();
   for (const c of block.channels ?? []) {
-    if (!c) continue;
-    const id = c.id != null ? String(c.id) : undefined;
+    if (!c) {
+      continue;
+    }
+    const id = c.id !== undefined ? String(c.id) : undefined;
     const key = id ?? c.slug ?? c.title;
     if (!key || seen.has(key)) continue;
     seen.add(key);
@@ -254,12 +256,12 @@ function channelsFromBlock(block: ArenaBlock): ArenaChannelInfo[] {
 }
 
 function clampDescription(value: string): string {
-  return value.length > 4_000 ? `${value.slice(0, 4_000)}…` : value;
+  return value.length > 4000 ? `${value.slice(0, 4000)}…` : value;
 }
 
 type ArenaExtras = {
   blockClass?: string;
-  channels?: ArenaChannelInfo[];
+  channels?: Array<ArenaChannelInfo>;
 };
 
 type ArenaCaptureResult =
@@ -275,9 +277,8 @@ async function extractWebPage(
   url: URL,
   signal?: AbortSignal,
 ): Promise<Capture> {
-  const { WebPageExtractor } = await import(
-    "../../../pipeline/extractors/sources/web"
-  );
+  const { WebPageExtractor } =
+    await import("../../../pipeline/extractors/sources/web");
   return new WebPageExtractor().extract({ url, signal });
 }
 
@@ -315,12 +316,12 @@ export async function withLinkedPageCapture(
   try {
     const page = await extractPage(new URL(linkUrl), signal);
     return withLinkedPage(capture, page);
-  } catch (err) {
+  } catch (error) {
     signal?.throwIfAborted();
     log.info(
       "[pond arena:api] linked page unavailable, keeping block preview",
       linkUrl,
-      err instanceof Error ? err.message : String(err),
+      error instanceof Error ? error.message : String(error),
     );
     return capture;
   }
@@ -345,15 +346,17 @@ function withLinkedPage(block: Capture, page: Capture): Capture {
 }
 
 /** A page without a cover image falls back to its favicon; Are.na's screenshot of the page shows more. */
-function linkedPageMedia(block: Capture, page: Capture): CaptureMedia[] {
+function linkedPageMedia(block: Capture, page: Capture): Array<CaptureMedia> {
   const cover = page.media[0];
   if (cover && cover.url !== page.extras?.faviconUrl) return page.media;
   return block.media.length > 0 ? block.media : page.media;
 }
 
 function captureFromBlock(block: ArenaBlock): Capture | null {
-  const id = block.id != null ? String(block.id) : null;
-  if (!id) return null;
+  const id = block.id !== undefined ? String(block.id) : null;
+  if (!id) {
+    return null;
+  }
 
   const arenaUrl = `https://www.are.na/block/${id}`;
 
@@ -381,17 +384,22 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
     return Object.keys(out).length > 0 ? out : undefined;
   })();
 
-  const media = ((): CaptureMedia[] => {
+  const media = ((): Array<CaptureMedia> => {
     const picked = pickMediaUrlAndDims(block);
     if (!picked.url) return [];
     const entry: CaptureMedia = {
       url: picked.url,
       type: picked.type === "video" ? "video" : "image",
     };
-    if (picked.width != null) entry.width = picked.width;
-    if (picked.height != null) entry.height = picked.height;
-    if (picked.poster && picked.type === "video")
+    if (picked.width !== null) {
+      entry.width = picked.width;
+    }
+    if (picked.height !== null) {
+      entry.height = picked.height;
+    }
+    if (picked.poster && picked.type === "video") {
       entry.posterUrl = picked.poster;
+    }
     return [entry];
   })();
 
@@ -415,7 +423,9 @@ function captureFromBlock(block: ArenaBlock): Capture | null {
       if (!candidate) continue;
       try {
         return { url: candidate, host: new URL(candidate).host };
-      } catch {}
+      } catch {
+        /** A malformed candidate falls through to the next one. */
+      }
     }
     return undefined;
   })();

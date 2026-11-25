@@ -1,13 +1,8 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { saves } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
-import {
-  ClipboardItem,
-  clipboard,
-  dialog,
-  type NativeImage,
-  nativeImage,
-} from "electron";
+import { ClipboardItem, clipboard, dialog, nativeImage } from "electron";
+import type { NativeImage } from "electron";
 import { z } from "zod";
 import type { QueryResult } from "../../../shared/query-contracts";
 import type { OkFailure } from "../../../shared/query-contracts-shared";
@@ -18,12 +13,8 @@ import { extractFrameAt, extractSampledFrames } from "../../lib/ffmpeg-frame";
 import { saveFile } from "../../paths";
 import { resolvePondSavePath } from "../helpers";
 import { toWireSave } from "../wire";
-import {
-  NumberParam,
-  type QueryHandlerMap,
-  query,
-  StringParam,
-} from "./params";
+import { NumberParam, query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 async function frameImage(
   resolved: { path: string } | null,
@@ -116,8 +107,9 @@ export const videoQueries = {
         defaultPath: `frame-${Date.now()}.png`,
         filters: [{ name: "Images", extensions: ["png"] }],
       });
-      if (result.canceled || !result.filePath)
+      if (result.canceled || !result.filePath) {
         return { ok: false, reason: "cancelled" };
+      }
       const img = await frameImage(resolved, params.timeSec);
       if (!img) return FRAME_UNAVAILABLE;
       await writeFile(result.filePath, img.toPNG());

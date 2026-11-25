@@ -4,17 +4,20 @@ import { agentOperationsForQueries } from "./agent-operations";
 import { query } from "./params";
 
 it("reuses the IPC handler and strips credentials from discovery", async () => {
-  const create = vi.fn(async (input: { name: string }) => ({
-    ...input,
-    id: "folder",
-    parentId: null,
-    color: null,
-    sortOrder: 0,
-    createdAt: new Date(0),
-  }));
+  const folders = {
+    create: async (input: { name: string }) => ({
+      ...input,
+      id: "folder",
+      parentId: null,
+      color: null,
+      sortOrder: 0,
+      createdAt: new Date(0),
+    }),
+  };
+  const create = vi.spyOn(folders, "create");
   const schema = z.object({ name: z.string().min(1) });
   const operations = agentOperationsForQueries({
-    "folders.create": query(schema, create),
+    "folders.create": query(schema, folders.create),
     "settings.ingestToken": async () => ({ token: "secret" }),
     "agent.keys": async () => [
       {

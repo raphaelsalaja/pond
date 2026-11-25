@@ -1,8 +1,7 @@
 import { debounce } from "@tanstack/pacer";
-import {
-  type SavePatch,
-  SavePatchesSchema,
-} from "@/features/saves/lib/reconcile";
+import log from "electron-log/renderer";
+import { SavePatchesSchema } from "@/features/saves/lib/reconcile";
+import type { SavePatch } from "@/features/saves/lib/reconcile";
 import { pool } from "@/features/saves/state/pool";
 import type { Save } from "@/features/saves/types";
 import { libraryScopedKey } from "@/shared/lib/library-scope";
@@ -12,15 +11,19 @@ const STORE = "snapshot";
 const VERSION = 1;
 const SNAPSHOT_LIMIT = 250;
 
-let dbPromise: Promise<IDBDatabase> | null = null;
+const dbPromises = new Map<string, Promise<IDBDatabase>>();
 
 function openDb(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise;
-  dbPromise = new Promise((resolve, reject) => {
+  const name = libraryScopedKey(DB_BASE_NAME);
+  const cached = dbPromises.get(name);
+  if (cached) {
+    return cached;
+  }
+  const opened = new Promise<IDBDatabase>((resolve, reject) => {
     try {
       /** An unscoped snapshot can hold another Library's Saves, so it is never read. */
       indexedDB.deleteDatabase(DB_BASE_NAME);
-      const req = indexedDB.open(libraryScopedKey(DB_BASE_NAME), VERSION);
+      const req = indexedDB.open(name, VERSION);
       req.onupgradeneeded = () => {
         const d = req.result;
         if (!d.objectStoreNames.contains(STORE)) {
@@ -30,11 +33,12 @@ function openDb(): Promise<IDBDatabase> {
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
       req.onblocked = () => reject(new Error("indexedDB blocked"));
-    } catch (err) {
-      reject(err);
+    } catch (error) {
+      reject(error);
     }
   });
-  return dbPromise;
+  dbPromises.set(name, opened);
+  return opened;
 }
 
 export async function readSnapshot(): Promise<Array<SavePatch | null>> {
@@ -47,8 +51,8 @@ export async function readSnapshot(): Promise<Array<SavePatch | null>> {
       req.onsuccess = () => resolve(SavePatchesSchema.parse(req.result ?? []));
       req.onerror = () => reject(req.error);
     });
-  } catch (err) {
-    console.warn("[pond pool] snapshot read failed", err);
+  } catch (error) {
+    log.warn("[pond pool] snapshot read failed", error);
     return [];
   }
 }
@@ -74,7 +78,7 @@ async function writeSnapshot(saves: ReadonlyArray<Save>): Promise<void> {
       store.clear();
       for (const save of saves) store.put(save);
     });
-  } catch (err) {
-    console.warn("[pond pool] snapshot write failed", err);
+  } catch (error) {
+    log.warn("[pond pool] snapshot write failed", error);
   }
 }

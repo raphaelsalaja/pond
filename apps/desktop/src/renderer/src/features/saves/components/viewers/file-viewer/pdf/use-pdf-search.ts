@@ -9,7 +9,7 @@ export function usePdfSearch(
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searching, setSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<number[]>([]);
+  const [searchResults, setSearchResults] = useState<Array<number>>([]);
   const [searchResultIndex, setSearchResultIndex] = useState(0);
 
   useEffect(
@@ -30,7 +30,7 @@ export function usePdfSearch(
     searchRunRef.current = run;
     setSearching(true);
     try {
-      const matches: number[] = [];
+      const matches: Array<number> = [];
       for (
         let pageNumber = 1;
         pageNumber <= document.numPages;

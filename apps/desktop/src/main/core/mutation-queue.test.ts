@@ -4,7 +4,7 @@ import { createMutationQueue } from "./mutation-queue";
 it("closes admission before draining accepted writes, including failures, and resumes explicitly", async () => {
   const queue = createMutationQueue();
   const release = Promise.withResolvers<void>();
-  const order: string[] = [];
+  const order: Array<string> = [];
   const first = queue.run(async () => {
     order.push("first");
     await release.promise;
@@ -42,7 +42,7 @@ it("keeps nested metadata writes in their admitted scope while shutdown waits", 
   const queue = createMutationQueue();
   const entered = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
-  const order: string[] = [];
+  const order: Array<string> = [];
   const write = queue.run(async () => {
     entered.resolve();
     await release.promise;

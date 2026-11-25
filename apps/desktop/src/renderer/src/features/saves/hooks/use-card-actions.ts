@@ -1,12 +1,13 @@
+import { isHTMLElement } from "@pond/ui/dom";
 import { useCallback, useEffect } from "react";
 import { canImportDrop } from "@/features/saves/lib/import-feedback";
 import type { SaveListMode } from "@/features/saves/lib/list";
 import {
   notifyUnsupportedDrop,
-  type PasteImportTarget,
   pasteImportOf,
   runPasteImport,
 } from "@/features/saves/lib/paste-import";
+import type { PasteImportTarget } from "@/features/saves/lib/paste-import";
 import { isPeekClick } from "@/features/saves/lib/peek-click";
 import {
   clearSaveSelection,
@@ -91,7 +92,7 @@ export function useCardActions(
     const onPaste = (e: ClipboardEvent) => {
       const el = document.activeElement;
       if (
-        el instanceof HTMLElement &&
+        isHTMLElement(el) &&
         (el.isContentEditable ||
           el.tagName === "TEXTAREA" ||
           el.tagName === "INPUT")
@@ -126,9 +127,11 @@ export function useCardActions(
       if (!dt || isLibrarySaveDrag(dt)) return;
 
       const plan = pasteImportOf(dt);
-      if (plan && plan.kind !== "clipboard")
+      if (plan && plan.kind !== "clipboard") {
         await runPasteImport(plan, importFolder);
-      else notifyUnsupportedDrop();
+      } else {
+        notifyUnsupportedDrop();
+      }
     },
     [importFolder],
   );

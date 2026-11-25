@@ -37,7 +37,7 @@ export interface XLink {
 export interface XPost {
   text: string;
   author: XAuthor;
-  media?: XMedia[];
+  media?: Array<XMedia>;
   /** Keyed by the URL as written in `text`. */
   links?: Record<string, XLink>;
   quote?: XPost;
@@ -78,8 +78,8 @@ export interface ThreadsMedia {
 
 export interface ThreadsNested {
   author: ThreadsAuthor;
-  text: TextRun[];
-  media: ThreadsMedia[];
+  text: Array<TextRun>;
+  media: Array<ThreadsMedia>;
 }
 
 /** The Threads layout's input. The relative time and counts arrive formatted. */
@@ -96,7 +96,7 @@ export interface ThreadsPost extends ThreadsNested {
   /** As the post header shows it: `18h`, `3d`, `11/18/26`. */
   time: string;
   /** Every action button in order; an empty `value` draws the icon alone. */
-  metrics: { icon: string; value: string }[];
+  metrics: Array<{ icon: string; value: string }>;
 }
 
 export interface BlueskyAuthor {
@@ -115,7 +115,7 @@ export interface BlueskyPicture {
 }
 
 export interface BlueskyMedia {
-  images: BlueskyPicture[];
+  images: Array<BlueskyPicture>;
   video?: BlueskyPicture;
 }
 
@@ -129,7 +129,7 @@ export interface BlueskyCard {
 /** The Bluesky layout's input. Dates, counts and facets arrive formatted. */
 export interface BlueskyPost {
   author: BlueskyAuthor;
-  text: TextRun[];
+  text: Array<TextRun>;
   emojiOnly?: boolean;
   media: BlueskyMedia;
   card?: BlueskyCard;
@@ -141,7 +141,7 @@ export interface BlueskyPost {
     card?: BlueskyCard;
   };
   date: string;
-  stats: { value: string; label: string }[];
+  stats: Array<{ value: string; label: string }>;
   controls: { replies: string; reposts: string; likes: string };
 }
 
@@ -159,7 +159,7 @@ export interface RenderedPost {
   png: Buffer;
   width: number;
   height: number;
-  warnings: string[];
+  warnings: Array<string>;
 }
 
 export interface PostBySource {
@@ -186,30 +186,92 @@ export interface PostRendererConfig {
   cacheDir?: string;
 }
 
+/** `host_faces` also sends `family` and `stack`, which the host never reads. */
 interface HostFace {
   file: string;
   pack: string;
-  family: string;
-  stack: string | null;
 }
+
+type RenderedHeader = Omit<RenderedPost, "png">;
 
 interface Exports {
   [name: string]: WebAssembly.ExportValue;
   memory: WebAssembly.Memory;
-  alloc(len: number): number;
-  dealloc(ptr: number, len: number): void;
-  out_ptr(): number;
-  out_len(): number;
-  register_font(
+  alloc: (len: number) => number;
+  dealloc: (ptr: number, len: number) => void;
+  out_ptr: () => number;
+  out_len: () => number;
+  register_font: (
     name: number,
     nameLen: number,
     data: number,
     dataLen: number,
     index: number,
-  ): number;
-  host_faces(): number;
-  missing_packs(ptr: number, len: number): number;
-  render_post(ptr: number, len: number): number;
+  ) => number;
+  host_faces: () => number;
+  missing_packs: (ptr: number, len: number) => number;
+  render_post: (ptr: number, len: number) => number;
+}
+
+const EXPORTED_FUNCTIONS = [
+  "alloc",
+  "dealloc",
+  "out_ptr",
+  "out_len",
+  "register_font",
+  "host_faces",
+  "missing_packs",
+  "render_post",
+] as const;
+
+function isExportedFunction(
+  value: WebAssembly.ExportValue | undefined,
+): value is WebAssembly.ExportValue & ((...args: Array<never>) => void) {
+  return typeof value === "function";
+}
+
+function isExports(exported: WebAssembly.Exports): exported is Exports {
+  const memory = exported.memory;
+  return (
+    memory !== undefined &&
+    "buffer" in memory &&
+    EXPORTED_FUNCTIONS.every((name) => isExportedFunction(exported[name]))
+  );
+}
+
+function isHostFace(face: unknown): face is HostFace {
+  return (
+    typeof face === "object" &&
+    face !== null &&
+    "file" in face &&
+    typeof face.file === "string" &&
+    "pack" in face &&
+    typeof face.pack === "string"
+  );
+}
+
+function isHostFaces(faces: unknown): faces is Array<HostFace> {
+  return Array.isArray(faces) && faces.every(isHostFace);
+}
+
+function isStrings(values: unknown): values is Array<string> {
+  return (
+    Array.isArray(values) &&
+    values.every((value): value is string => typeof value === "string")
+  );
+}
+
+function isRenderedHeader(header: unknown): header is RenderedHeader {
+  return (
+    typeof header === "object" &&
+    header !== null &&
+    "width" in header &&
+    typeof header.width === "number" &&
+    "height" in header &&
+    typeof header.height === "number" &&
+    "warnings" in header &&
+    isStrings(header.warnings)
+  );
 }
 
 /** Packs `missing_packs` asks for by script; every other pack is registered up front. */
@@ -264,6 +326,18 @@ const MAC_FACES = new Map<string, MacFace>([
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
+function parseWasmJson<T>(
+  bytes: Uint8Array,
+  guard: (value: unknown) => value is T,
+  what: string,
+): T {
+  const value: unknown = JSON.parse(decoder.decode(bytes));
+  if (!guard(value)) {
+    throw new Error(`pond-render.wasm wrote an unexpected ${what}`);
+  }
+  return value;
+}
+
 /** Clipped text can end mid-surrogate pair; JSON.stringify escapes only lone halves, and serde rejects them. */
 const LONE_SURROGATE_ESCAPE = /(?<!\\)((?:\\\\)*)\\ud[89a-f][0-9a-f]{2}/gi;
 
@@ -272,8 +346,11 @@ export async function createPostRenderer(
 ): Promise<PostRenderer> {
   const module = await WebAssembly.compile(await readFile(config.wasmPath));
   const instance = await WebAssembly.instantiate(module, {});
-  /** SAFETY: `pond-render.wasm` is built from packages/render/crates and exports exactly these symbols. */
-  const wasm = instance.exports as Exports;
+  const exported = instance.exports;
+  if (!isExports(exported)) {
+    throw new Error("pond-render.wasm is missing its exports");
+  }
+  const wasm: Exports = exported;
   const registered = new Set<string>();
 
   const output = (): Uint8Array =>
@@ -311,8 +388,7 @@ export async function createPostRenderer(
   };
 
   wasm.host_faces();
-  /** SAFETY: `host_faces` writes a JSON array of `HostFace` records from the same wasm build. */
-  const faces = JSON.parse(decoder.decode(output())) as HostFace[];
+  const faces = parseWasmJson(output(), isHostFaces, "face list");
 
   const loadFace = async (face: HostFace) => {
     if (registered.has(face.file)) return;
@@ -347,23 +423,28 @@ export async function createPostRenderer(
     async render(source, post, options = {}) {
       if (disposed) throw new Error("Post renderer was disposed");
       const request = encoder.encode(
-        JSON.stringify({ source, post, options }).replace(
+        JSON.stringify({ source, post, options }).replaceAll(
           LONE_SURROGATE_ESCAPE,
-          "$1\\ufffd",
+          String.raw`$1\ufffd`,
         ),
       );
-      /** SAFETY: `missing_packs` writes a JSON array of pack names. */
-      const missing = JSON.parse(
-        decoder.decode(call(wasm.missing_packs, request)),
-      ) as string[];
-      if (missing.length > 0) await loadPacks(missing);
+      const missing = parseWasmJson(
+        call(wasm.missing_packs, request),
+        isStrings,
+        "pack list",
+      );
+      if (missing.length > 0) {
+        await loadPacks(missing);
+      }
       const out = call(wasm.render_post, request);
       const view = new DataView(out.buffer, out.byteOffset, out.byteLength);
       const headerLen = view.getUint32(0, true);
-      /** SAFETY: `render_post` prefixes the PNG with a JSON header holding width, height and warnings. */
-      const header = JSON.parse(
-        decoder.decode(out.subarray(4, 4 + headerLen)),
-      ) as Omit<RenderedPost, "png">;
+      /** `render_post` prefixes the PNG with a JSON header holding width, height and warnings. */
+      const header = parseWasmJson(
+        out.subarray(4, 4 + headerLen),
+        isRenderedHeader,
+        "render header",
+      );
       return { ...header, png: Buffer.from(out.subarray(4 + headerLen)) };
     },
     dispose() {

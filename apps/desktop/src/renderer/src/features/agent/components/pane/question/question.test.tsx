@@ -1,7 +1,11 @@
-import { act, type ComponentProps } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { KoiQuestion } from ".";
+
+type Answer = ComponentProps<typeof KoiQuestion>["onAnswer"];
 
 let host: HTMLDivElement;
 let root: Root;
@@ -34,7 +38,7 @@ async function renderQuestion(
       <KoiQuestion
         question="Which layout?"
         options={options}
-        onAnswer={vi.fn(async () => {})}
+        onAnswer={vi.fn<Answer>()}
         {...props}
       />,
     ),
@@ -58,7 +62,7 @@ it("lists each option with its number key and no free-text field", async () => {
 });
 
 it("sends the picked option", async () => {
-  const onAnswer = vi.fn(async () => {});
+  const onAnswer = vi.fn<Answer>();
   await renderQuestion({ onAnswer });
   const list = choices()[1];
   await act(async () => list?.click());
@@ -68,21 +72,21 @@ it("sends the picked option", async () => {
 });
 
 it("sends an option on Enter", async () => {
-  const onAnswer = vi.fn(async () => {});
+  const onAnswer = vi.fn<Answer>();
   await renderQuestion({ onAnswer });
   await press(choices()[0], "Enter");
   expect(onAnswer).toHaveBeenCalledWith("Grid");
 });
 
 it("sends the option a number key names", async () => {
-  const onAnswer = vi.fn(async () => {});
+  const onAnswer = vi.fn<Answer>();
   await renderQuestion({ onAnswer });
   await press(choices()[0], "2");
   expect(onAnswer).toHaveBeenCalledWith("List");
 });
 
 it("ignores a number key past the last option", async () => {
-  const onAnswer = vi.fn(async () => {});
+  const onAnswer = vi.fn<Answer>();
   await renderQuestion({ onAnswer });
   await press(choices()[0], "3");
   expect(onAnswer).not.toHaveBeenCalled();

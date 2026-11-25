@@ -8,10 +8,10 @@ const {
   writeFileSync,
 } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const nodePath = require("node:path");
 
-const IDLE_MS = 15000;
-const SETTLE_MS = 15000;
+const IDLE_MS = 15_000;
+const SETTLE_MS = 15_000;
 const SAMPLE_COUNT = 3;
 const SAMPLE_GAP_MS = 1000;
 const SEED_SAVES = 50;
@@ -24,11 +24,12 @@ const CATEGORIES = {
 };
 
 const budgets = JSON.parse(
-  readFileSync(join(__dirname, "memory-budgets.json"), "utf8"),
+  readFileSync(nodePath.join(__dirname, "memory-budgets.json"), "utf8"),
 );
 const reportPath =
-  process.env.POND_MEMORY_REPORT || join(tmpdir(), "pond-memory-report.json");
-const sandbox = mkdtempSync(join(tmpdir(), "pond-memory-smoke-"));
+  process.env.POND_MEMORY_REPORT ||
+  nodePath.join(tmpdir(), "pond-memory-report.json");
+const sandbox = mkdtempSync(nodePath.join(tmpdir(), "pond-memory-smoke-"));
 process.env.POND_SANDBOX = sandbox;
 process.once("exit", () => {
   try {
@@ -38,7 +39,7 @@ process.once("exit", () => {
   }
 });
 
-const timer = setTimeout(() => fail(new Error("timed out")), 180000);
+const timer = setTimeout(() => fail(new Error("timed out")), 180_000);
 const rendererReady = new Promise((resolve) => {
   ipcMain.once("pond:renderer-ready", (event) => resolve(event.sender));
 });
@@ -49,7 +50,10 @@ function fail(error) {
   app.exit(1);
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 
 /** Electron reports process memory in kilobytes. */
 const toMB = (kilobytes) => Math.round((kilobytes / 1024) * 10) / 10;
@@ -83,8 +87,10 @@ function snapshot() {
 
 /** macOS working set is RSS, which counts shared framework pages and reclaimable memory; Activity Monitor shows the physical footprint. */
 function footprintTotals(processes) {
-  if (process.platform !== "darwin") return undefined;
-  const file = join(sandbox, "footprint.json");
+  if (process.platform !== "darwin") {
+    return undefined;
+  }
+  const file = nodePath.join(sandbox, "footprint.json");
   try {
     execFileSync(
       "/usr/bin/footprint",
@@ -94,7 +100,7 @@ function footprintTotals(processes) {
         "--noCategories",
         ...processes.flatMap((entry) => ["-p", String(entry.pid)]),
       ],
-      { stdio: "ignore", timeout: 30000 },
+      { stdio: "ignore", timeout: 30_000 },
     );
     const report = JSON.parse(readFileSync(file, "utf8"));
     const byPid = new Map(
@@ -148,7 +154,7 @@ async function sample() {
 }
 
 function writeSeedImages() {
-  const directory = join(sandbox, "seed");
+  const directory = nodePath.join(sandbox, "seed");
   mkdirSync(directory);
   return Array.from({ length: SEED_SAVES }, (_, index) => {
     const bitmap = Buffer.alloc(SEED_SIZE * SEED_SIZE * 4);
@@ -159,7 +165,7 @@ function writeSeedImages() {
       bitmap[offset + 2] = (index * 41) & 255;
       bitmap[offset + 3] = 255;
     }
-    const path = join(directory, `seed-${index}.png`);
+    const path = nodePath.join(directory, `seed-${index}.png`);
     writeFileSync(
       path,
       nativeImage
@@ -177,8 +183,9 @@ async function measure() {
   const info = await contents.executeJavaScript(
     'window.pond.query("library.info")',
   );
-  if (!info.path.startsWith(sandbox))
+  if (!info.path.startsWith(sandbox)) {
     throw new Error("Library is not isolated");
+  }
   /** A fresh Library opens setup, whose animated demo would be measured instead of the idle Library. */
   await contents.executeJavaScript(
     'window.pond.query("settings.setPrefs", { setup: { version: Number.MAX_SAFE_INTEGER } })',
@@ -201,8 +208,9 @@ async function measure() {
     }
     return created;
   })()`);
-  if (created !== SEED_SAVES)
+  if (created !== SEED_SAVES) {
     throw new Error(`Seeded ${created} of ${SEED_SAVES} Saves`);
+  }
   await sleep(SETTLE_MS);
   scenarios["seeded-window-open"] = await sample();
 
@@ -226,13 +234,14 @@ function checkBudgets(scenarios) {
     const totals = scenarios[scenario]?.totalsMB;
     if (!totals) throw new Error(`No measurement for budget ${scenario}`);
     for (const [category, budgetMB] of Object.entries(limits)) {
-      if (totals[category] > budgetMB)
+      if (totals[category] > budgetMB) {
         failures.push({
           scenario,
           category,
           measuredMB: totals[category],
           budgetMB,
         });
+      }
     }
   }
   return failures;

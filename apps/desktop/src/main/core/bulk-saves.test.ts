@@ -1,9 +1,8 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { bulkEditSaves } from "./bulk-saves";
 
@@ -16,7 +15,7 @@ function nativeAvailable() {
     return false;
   }
 }
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
   for (const db of opened.splice(0)) db.close();
 });
@@ -24,9 +23,12 @@ function fixture() {
   const raw = new Database(":memory:");
   opened.push(raw);
   initializePondSchema(raw, () => false);
-  const db = Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  const db = Object.assign(
+    drizzle(raw, { schema: { ...libraryTables, ...eventTables } }),
+    {
+      $raw: raw,
+    },
+  );
   const insert = raw.prepare(
     "insert into saves(id,source,source_id,url,tags,suggested_tags,rating) values(?,'local',?,'','[\"original\"]','[\"Suggested\"]',1)",
   );
@@ -34,9 +36,9 @@ function fixture() {
   raw.transaction(() => {
     for (const id of ids) insert.run(id, id);
   })();
-  const batches: Transaction[][] = [];
-  const undo: Transaction[][] = [];
-  const commit = async (transactions: Transaction[]) => {
+  const batches: Array<Array<Transaction>> = [];
+  const undo: Array<Array<Transaction>> = [];
+  const commit = async (transactions: Array<Transaction>) => {
     batches.push(transactions);
   };
   return {
@@ -46,13 +48,17 @@ function fixture() {
     batches,
     undo,
     commit,
-    recordUndo: (transactions: Transaction[]) =>
+    recordUndo: (transactions: Array<Transaction>) =>
       `step-${undo.push(transactions)}`,
   };
 }
 describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
   it("builds one rating/tag/trash/purge operation across SQL chunks without renderer metadata", async () => {
     const f = fixture();
+    const committed = new Map<
+      string,
+      { batch: Array<Transaction>; undo: Array<Array<Transaction>> }
+    >();
     for (const operation of [
       { kind: "rating", rating: 5 },
       { kind: "tags", tags: ["#Reviewed", "Reviewed"] },
@@ -60,6 +66,7 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       { kind: "trash" },
       { kind: "purge" },
     ] as const) {
+      const undoBefore = f.undo.length;
       const result = await bulkEditSaves(
         {
           ids: [...f.ids, "save-0"],
@@ -78,13 +85,18 @@ describe.skipIf(!nativeAvailable())("complete bulk selections", () => {
       expect(
         new Set(batch.filter((tx) => tx.model === "save").map((tx) => tx.id)),
       ).toEqual(new Set(f.ids));
-      if (operation.kind !== "purge") expect(f.undo.at(-1)).toEqual(batch);
-      else expect(f.undo).toHaveLength(f.batches.length - 1);
-      if (operation.kind === "tags")
-        expect(
-          batch.filter((tx) => tx.kind === "create" && tx.model === "tag"),
-        ).toHaveLength(2);
+      committed.set(operation.kind, { batch, undo: f.undo.slice(undoBefore) });
     }
+    for (const kind of ["rating", "tags", "suggested-tags", "trash"]) {
+      const step = committed.get(kind);
+      expect(step?.undo).toEqual([step?.batch]);
+    }
+    expect(committed.get("purge")?.undo).toEqual([]);
+    expect(
+      committed
+        .get("tags")
+        ?.batch.filter((tx) => tx.kind === "create" && tx.model === "tag"),
+    ).toHaveLength(2);
   });
   it("does not silently commit a partial selection when a cold ID vanished", async () => {
     const f = fixture();

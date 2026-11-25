@@ -51,7 +51,7 @@ export class TumblrPostExtractor implements Extractor {
     return name === "sid" && (value === undefined || value.length > 0);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
     if (segments.length !== 1 || !first) return null;
     const blog = first.toLowerCase();

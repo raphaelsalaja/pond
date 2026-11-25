@@ -32,7 +32,7 @@ async function harvest(reply: { status: number; body?: object }) {
 </head><body></body></html>`,
     { url: PHOTO_URL, runScripts: "outside-only" },
   );
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   Object.assign(dom.window, {
     fetch: async (url: string) => {
       requested.push(url);

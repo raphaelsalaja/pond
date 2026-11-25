@@ -13,8 +13,9 @@ export async function flushPortableMetadata(): Promise<void> {
   writeOrganizationBundle(db, root);
   let cursor = "";
   while (true) {
-    if (libraryRoot() !== root)
+    if (libraryRoot() !== root) {
       throw new Error("The library changed while preparing its metadata.");
+    }
     const rows = await db
       .select()
       .from(saves)

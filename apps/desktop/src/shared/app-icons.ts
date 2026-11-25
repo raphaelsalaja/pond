@@ -31,8 +31,9 @@ export function pickIconGeneration(
   if (macosMajor === null) return null;
   let best: number | null = null;
   for (const generation of available) {
-    if (generation <= macosMajor && (best === null || generation > best))
+    if (generation <= macosMajor && (best === null || generation > best)) {
       best = generation;
+    }
   }
   return best;
 }
@@ -117,9 +118,9 @@ export function resolveAppIconId(
   return available.values().next().value ?? DEFAULT_APP_ICON;
 }
 
-export function sortAppIconIds(ids: Iterable<string>): string[] {
+export function sortAppIconIds(ids: Iterable<string>): Array<string> {
   const leftover = new Set(ids);
-  const ordered: string[] = [];
+  const ordered: Array<string> = [];
   for (const id of APP_ICON_ORDER) {
     if (!leftover.has(id)) continue;
     leftover.delete(id);

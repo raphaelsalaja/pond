@@ -1,4 +1,5 @@
-import { type RefObject, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
 
 const INTENT_DISTANCE = 5;
 const INTENT_MS = 500;

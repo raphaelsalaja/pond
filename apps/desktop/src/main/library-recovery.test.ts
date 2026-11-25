@@ -8,10 +8,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-  type MissingLibraryChoice,
-  type MissingLibraryPorts,
-  recoverMissingLibrary,
+import { recoverMissingLibrary } from "./library-recovery";
+import type {
+  MissingLibraryChoice,
+  MissingLibraryPorts,
 } from "./library-recovery";
 
 const NOT_A_LIBRARY = {
@@ -20,12 +20,12 @@ const NOT_A_LIBRARY = {
 };
 
 function fakePorts(
-  choices: MissingLibraryChoice[],
-  picks: (string | null)[] = [],
+  choices: Array<MissingLibraryChoice>,
+  picks: Array<string | null> = [],
   canCreate = true,
 ) {
-  const details: string[] = [];
-  const adopted: [string, string][] = [];
+  const details: Array<string> = [];
+  const adopted: Array<[string, string]> = [];
   let created = 0;
   const ports: MissingLibraryPorts = {
     ask: async (detail) => {

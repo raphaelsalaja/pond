@@ -39,7 +39,7 @@ export function isPathInside(
 
 export function readLibraryPointer(): string | null {
   try {
-    const raw = readFileSync(pointerPath(), "utf-8");
+    const raw = readFileSync(pointerPath(), "utf8");
     const parsed = StoredPointerSchema.safeParse(JSON.parse(raw));
     if (!parsed.success) return null;
     const candidate = parsed.data.path;
@@ -93,11 +93,13 @@ export function checkPointerSafety(target: string): PointerSafetyReport {
     } finally {
       try {
         unlinkSync(probe);
-      } catch {}
+      } catch {
+        /** A leftover probe file does not change whether the folder is writable. */
+      }
     }
     return { ok: true };
-  } catch (cause) {
-    if (errnoCode(cause) === "EACCES") {
+  } catch (error) {
+    if (errnoCode(error) === "EACCES") {
       return { ok: false, reason: "not_writable" };
     }
     return { ok: false, reason: "unknown_error" };

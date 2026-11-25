@@ -40,7 +40,7 @@ export class SaveeItemExtractor implements Extractor {
     return !/^(?:_ga|_gid|_gcl|ph_|OptanonConsent|__cf|cf_)/.test(name);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
     if (segments.length !== 1 || !first) return null;
     if (SAVEE_RESERVED.has(first.toLowerCase())) return null;

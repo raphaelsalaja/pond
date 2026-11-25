@@ -10,7 +10,7 @@ import { useSelectionCursor } from "@/features/saves/state/selection";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { useStableStrings } from "@/shared/hooks/use-stable-array";
 
-const NO_URLS: readonly string[] = [];
+const NO_URLS: ReadonlyArray<string> = [];
 
 export function ViewerPreload({ details }: { details: boolean }) {
   const theme = useResolvedTheme();

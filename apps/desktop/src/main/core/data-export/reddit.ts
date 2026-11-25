@@ -21,8 +21,10 @@ export const redditParser: ExportParser = {
     const directionAt = at("direction");
     if (linkAt < 0) return [];
     const votes = /post_votes\.csv$/i.test(path);
-    return rows.flatMap((row): ExportEntry[] => {
-      if (votes && row[directionAt]?.trim().toLowerCase() !== "up") return [];
+    return rows.flatMap((row): Array<ExportEntry> => {
+      if (votes && row[directionAt]?.trim().toLowerCase() !== "up") {
+        return [];
+      }
       const url = absolute(row[linkAt] ?? "");
       return url
         ? [{ url, listKind: votes ? "liked" : "saved", savedAt: null }]

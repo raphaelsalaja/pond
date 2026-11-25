@@ -17,7 +17,7 @@ export interface ArchiveManifest {
   rootUrl: string;
   archivedAt: string;
   scope: ArchiveScope;
-  pages: ArchiveManifestPage[];
+  pages: Array<ArchiveManifestPage>;
 }
 
 const ManifestSchema = z.object({
@@ -81,7 +81,7 @@ export function buildArchiveViewerUrl(
   const warc = archiveWarcFile(save);
   if (!warc) return null;
   const source = pondFileUrl(save.id, warc.path);
-  const coll = `${save.id}-${manifest.archivedAt.replace(/[^0-9]/g, "")}`;
+  const coll = `${save.id}-${manifest.archivedAt.replaceAll(/[^0-9]/g, "")}`;
   const params = new URLSearchParams({ source, url: pageUrl, coll });
   return `pond://_replay/index.html?${params.toString()}`;
 }

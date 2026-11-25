@@ -150,6 +150,12 @@ export interface PondApiOptions {
   allowRemote?: boolean;
 }
 
+function isTokenReader(
+  token: PondApiOptions["token"],
+): token is () => string | Promise<string> {
+  return typeof token === "function";
+}
+
 function endpoint(value: string, allowRemote: boolean): string {
   let url: URL;
   try {
@@ -186,7 +192,7 @@ export class PondApi {
       options.baseUrl ?? "http://127.0.0.1:41610/api/v2",
       options.allowRemote ?? false,
     );
-    if (options.token instanceof Function) {
+    if (isTokenReader(options.token)) {
       this.token = options.token;
     } else {
       const token = options.token;
@@ -232,13 +238,14 @@ export class PondApi {
     const body = ApiErrorBodySchema.safeParse(
       parsed.success ? parsed.data.error : null,
     );
-    if (body.success)
+    if (body.success) {
       return new PondApiError(
         body.data.message,
         failureKind(response.status, body.data.code),
         response.status,
         body.data.code,
       );
+    }
     const message = parsed.success
       ? Object(parsed.data.error) === parsed.data.error
         ? (JSON.stringify(parsed.data.error) ?? String(parsed.data.error))
@@ -263,19 +270,21 @@ export class PondApi {
     );
     const payload = decoded.success ? decoded.data : null;
     const envelope = apiSuccessSchema(ApiJsonSchema).safeParse(payload);
-    if (!envelope.success)
+    if (!envelope.success) {
       throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
       );
+    }
     const parsed = schema.safeParse(envelope.data.data);
-    if (!parsed.success)
+    if (!parsed.success) {
       throw new PondApiError(
         "Pond returned an unexpected response.",
         "response",
         response.status,
       );
+    }
     return parsed.data;
   }
 
@@ -359,7 +368,7 @@ export class PondApi {
     );
   }
 
-  status(ids: readonly string[]) {
+  status(ids: ReadonlyArray<string>) {
     return this.request(
       `/saves/status?${params({ ids: ids.join(",") })}`,
       ApiSaveStateSchema.array(),
@@ -375,21 +384,24 @@ export class PondApi {
       const thumbnail = await this.binary(
         `/saves/thumb?${params({ id, size })}`,
       );
-      if (!thumbnail.type.startsWith("image/"))
+      if (!thumbnail.type.startsWith("image/")) {
         throw new PondApiError(
           "Pond returned an unexpected response.",
           "response",
         );
+      }
       return thumbnail;
     } catch (error) {
-      if (error instanceof PondApiError && error.code === "no_thumbnail")
+      if (error instanceof PondApiError && error.code === "no_thumbnail") {
         return null;
+      }
       if (
         error instanceof PondApiError &&
         error.code === undefined &&
         error.status === 404
-      )
+      ) {
         return null;
+      }
       throw error;
     }
   }
@@ -410,14 +422,14 @@ export class PondApi {
     return this.post("/saves/folders", ApiEditResultSchema, input);
   }
 
-  trash(ids: readonly string[], libraryId?: string) {
+  trash(ids: ReadonlyArray<string>, libraryId?: string) {
     return this.post("/saves/trash", ApiEditResultSchema, {
       ids: [...ids],
       libraryId,
     });
   }
 
-  restore(ids: readonly string[], libraryId?: string) {
+  restore(ids: ReadonlyArray<string>, libraryId?: string) {
     return this.post("/saves/restore", ApiEditResultSchema, {
       ids: [...ids],
       libraryId,
@@ -432,7 +444,7 @@ export class PondApi {
     });
   }
 
-  setRating(ids: readonly string[], rating: number, libraryId?: string) {
+  setRating(ids: ReadonlyArray<string>, rating: number, libraryId?: string) {
     return this.post("/saves/rating", ApiEditResultSchema, {
       ids: [...ids],
       rating,
@@ -440,7 +452,11 @@ export class PondApi {
     });
   }
 
-  setFavorite(ids: readonly string[], favorite: boolean, libraryId?: string) {
+  setFavorite(
+    ids: ReadonlyArray<string>,
+    favorite: boolean,
+    libraryId?: string,
+  ) {
     return this.post("/saves/favorite", ApiEditResultSchema, {
       ids: [...ids],
       favorite,

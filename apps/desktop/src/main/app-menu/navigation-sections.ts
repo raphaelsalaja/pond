@@ -67,7 +67,7 @@ export function buildGoSection(context: AppMenuContext): AppMenuItem {
 
 export function buildHistorySection(
   context: AppMenuContext,
-  recentEntries: RecentMenuEntry[],
+  recentEntries: Array<RecentMenuEntry>,
 ): AppMenuItem {
   return {
     label: "History",

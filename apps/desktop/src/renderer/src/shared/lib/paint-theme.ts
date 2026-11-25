@@ -1,9 +1,5 @@
-import {
-  buildThemeTokens,
-  type Gamut,
-  type ThemeInput,
-  type ThemeMode,
-} from "@pond/theme/tokens";
+import { buildThemeTokens } from "@pond/theme/tokens";
+import type { Gamut, ThemeInput, ThemeMode } from "@pond/theme/tokens";
 
 export function displayGamut(): Gamut {
   return window.matchMedia("(color-gamut: p3)").matches ? "p3" : "srgb";

@@ -20,7 +20,7 @@ import {
 } from "./manifest.mjs";
 
 const check = process.argv.includes("--check");
-/** Skips index.ts so the manifest can be checked without Biome. */
+/** Skips index.ts so the manifest can be checked without oxfmt. */
 const reportOnly = process.argv.includes("--report");
 const command = "pnpm --filter @pond/icons generate";
 
@@ -28,7 +28,7 @@ const ROOT = /^<svg\b([^>]*\bviewBox="0 0 18 18"[^>]*)>([\s\S]*)<\/svg>\s*$/;
 const ELEMENT = /<(path|circle|rect)\s([^>]*?)\/>/g;
 const ATTRIBUTE = /([\w-]+)="([^"]*)"/g;
 
-const camel = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+const camel = (name) => name.replaceAll(/-(\w)/g, (_, c) => c.toUpperCase());
 const pascal = (file) =>
   file
     .split("-")
@@ -49,8 +49,10 @@ function parse(path) {
       ]),
     ),
   ]);
-  const rest = body.replace(ELEMENT, "").trim();
-  if (rest) throw new Error(`${path}: unsupported markup ${rest.slice(0, 40)}`);
+  const rest = body.replaceAll(ELEMENT, "").trim();
+  if (rest) {
+    throw new Error(`${path}: unsupported markup ${rest.slice(0, 40)}`);
+  }
   const style = nodes.some(([, attrs]) => attrs.className === "bg")
     ? "duo"
     : /\bfill="currentColor"/.test(root)
@@ -244,8 +246,9 @@ const staged = [
   ...stagedMisses(seedRoot, "seed"),
   ...stagedMisses(nextRoot, "next"),
 ];
-if (staged.length > 0)
+if (staged.length > 0) {
   console.warn(`${staged.length} drifts in the seed/ and next/ drafts.`);
+}
 const reportPath = resolve(packageRoot, "REPORT.md");
 if (misses.length > 0) {
   writeFileSync(reportPath, report(misses));

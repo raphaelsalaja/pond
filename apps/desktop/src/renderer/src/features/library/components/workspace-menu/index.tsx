@@ -28,7 +28,7 @@ function LibraryMenuContent({
   libraries,
   onCustomize,
 }: {
-  libraries: RecentLibrary[];
+  libraries: Array<RecentLibrary>;
   onCustomize: () => void;
 }) {
   return (

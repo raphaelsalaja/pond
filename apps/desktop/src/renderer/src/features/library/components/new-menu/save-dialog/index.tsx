@@ -38,8 +38,8 @@ export function SaveDialog({
         return;
       }
       onClose();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't save. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save. Try again."));
     } finally {
       submitting.current = false;
       setBusy(false);

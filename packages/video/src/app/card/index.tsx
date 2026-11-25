@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
-import { Handles, type Side } from "../handles";
+import { Handles } from "../handles";
+import type { Side } from "../handles";
 import styles from "./styles.module.css";
 
 /** Height of a save card's title and domain row. */

@@ -3,8 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { savePrefsSection, usePrefs } from "@/shared/state/prefs";
 import { ModelCatalogTable } from "./catalog-table";
 import { ModelsLoading } from "./loading";
-import styles from "./styles.module.css";
 import { useModelsCatalog } from "./use-models-catalog";
+import styles from "./styles.module.css";
 
 export { ModelCatalogTable } from "./catalog-table";
 export type { CatalogModel } from "./types";

@@ -13,7 +13,8 @@ import {
   Switch,
   Tooltip,
 } from "@pond/ui";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
+import type { ReactNode } from "react";
 import { z } from "zod";
 import type {
   Binding,
@@ -35,6 +36,12 @@ type ControlValue = z.infer<typeof ControlValueSchema>;
 
 const FiniteNumberSchema = z.number().refine(Number.isFinite);
 const HexColorSchema = z.string().catch("#000000");
+
+function isNumberList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return typeof value !== "number";
+}
 
 export function ItemView({ item, binding }: { item: Item; binding: Binding }) {
   const titleId = useId();
@@ -157,8 +164,8 @@ function FieldControl({
           max={item.max}
           step={item.step}
           value={toNumber(current, item.min)}
-          onValueChange={(next) => {
-            const n = Array.isArray(next) ? (next[0] ?? item.min) : next;
+          onValueChange={(next: number | ReadonlyArray<number>) => {
+            const n = isNumberList(next) ? (next[0] ?? item.min) : next;
             patch({ [item.key]: n });
           }}
         >

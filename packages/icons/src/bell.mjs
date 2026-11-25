@@ -1,7 +1,6 @@
-import bell from "./bell.mjs";
 import turn from "./parts/opens-turn.mjs";
 
-export default (_, s) => {
+const bell = (_, s) => {
   const [x0, y0, x1] = s.keylines.tall;
   const base = 12.625;
   const rr = (x1 - x0 - 1.5) / 2;
@@ -11,6 +10,8 @@ export default (_, s) => {
     `M 7.5 ${base + 1.5} A 1.5 1.5 0 0 0 10.5 ${base + 1.5}`,
   ];
 };
+
+export default bell;
 
 /** The bell swings about its centre, which keeps the clapper and flare inside the keyline. */
 export const open = (h, s) => bell(h, s).map((d) => turn(d, 9, 9, 12));

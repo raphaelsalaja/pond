@@ -6,7 +6,7 @@ import { leaseWindow } from "./harvest-window/pool";
 
 export { browserUserAgent } from "./harvest-window/constants";
 
-const RENDER_SETTLE_MS = 1_500;
+const RENDER_SETTLE_MS = 1500;
 const RENDER_READ_TIMEOUT_MS = 10_000;
 const RenderedHtmlSchema = z.string().trim().min(1);
 

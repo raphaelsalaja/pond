@@ -1,8 +1,7 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import {
   queryFolderDownloadingCount,
@@ -21,7 +20,7 @@ function nativeAvailable() {
   }
 }
 
-const opened: Database.Database[] = [];
+const opened: Array<Database.Database> = [];
 afterEach(() => {
   for (const db of opened.splice(0)) db.close();
 });
@@ -30,9 +29,12 @@ function seed() {
   const raw = new Database(":memory:");
   opened.push(raw);
   initializePondSchema(raw, () => false);
-  const db = Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  const db = Object.assign(
+    drizzle(raw, { schema: { ...libraryTables, ...eventTables } }),
+    {
+      $raw: raw,
+    },
+  );
   const folder = raw.prepare(
     "insert into folders(id,parent_id,name) values(?,?,?)",
   );

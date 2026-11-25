@@ -1,5 +1,5 @@
 import { THUMBNAIL_CACHE_VERSION } from "@shared/media-index";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { SaveFile } from "@/features/saves/types";
 import {
   buildPondUrl,
@@ -51,13 +51,12 @@ describe("buildPondUrl", () => {
   });
 });
 
+function widthOf(url: string) {
+  return new URL(url).searchParams.get("tw");
+}
+
 describe("thumbnail widths", () => {
   const original = "pond://01ABC/photo.png?v=abcdef123456";
-  const widthOf = (url: string) => new URL(url).searchParams.get("tw");
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
 
   it("asks for the bucket that covers the card", () => {
     expect(thumbUrlFor(original, 400)).toBe(
@@ -71,16 +70,12 @@ describe("thumbnail widths", () => {
   });
 
   it("scales the sharper bucket with the display density", () => {
-    vi.stubGlobal("devicePixelRatio", 2);
-
-    expect(widthOf(thumbUrlFor(original, 384))).toBe("768");
-    expect(widthOf(sharperThumbUrlFor(original, 384))).toBe("1024");
+    expect(widthOf(thumbUrlFor(original, 384, 2))).toBe("768");
+    expect(widthOf(sharperThumbUrlFor(original, 384, 2))).toBe("1024");
   });
 
   it("never asks for more than the largest thumbnail main renders", () => {
-    vi.stubGlobal("devicePixelRatio", 2);
-
-    expect(widthOf(sharperThumbUrlFor(original, 1600))).toBe("2048");
-    expect(sharperThumbUrlFor(original, 1600)).not.toBe(original);
+    expect(widthOf(sharperThumbUrlFor(original, 1600, 2))).toBe("2048");
+    expect(sharperThumbUrlFor(original, 1600, 2)).not.toBe(original);
   });
 });

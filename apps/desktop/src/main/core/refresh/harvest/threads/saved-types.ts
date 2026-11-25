@@ -2,7 +2,7 @@ import type { ListKind, MediaType } from "@pond/schema/db";
 import type { RichThread, SavedCapture } from "./graphql";
 
 export interface SavedHarvestArgs {
-  knownIds: string[];
+  knownIds: Array<string>;
 }
 
 export interface SavedEntry {
@@ -18,14 +18,14 @@ export interface SavedEntry {
     poster?: string;
   }>;
   rich?: RichThread;
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
 }
 
 export type SavedHarvestResult =
   | {
       ok: true;
-      entries: SavedEntry[];
-      captures: SavedCapture[];
+      entries: Array<SavedEntry>;
+      captures: Array<SavedCapture>;
       reachedEnd: boolean;
     }
   | {

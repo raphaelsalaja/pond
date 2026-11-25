@@ -1,4 +1,4 @@
-import * as z from "zod/mini";
+import { z } from "zod/mini";
 import type { InstagramMediaNode } from "../instagram/normalize";
 
 function optional<T extends z.ZodMiniType>(schema: T) {

@@ -35,8 +35,9 @@ async function readLogFile(root: string): Promise<AutoImportLog> {
   try {
     raw = await readFile(logPath(root), "utf8");
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return { entries: [] };
+    }
     throw error;
   }
   return AutoImportLogSchema.parse(JSON.parse(raw));
@@ -76,8 +77,9 @@ export async function startAutoImport(): Promise<void> {
     checkpointPath: join(root, "auto-import-checkpoints.json"),
     mode: cfg.mode,
     async ingest(input) {
-      if (resolve(libraryRoot()) !== root)
+      if (resolve(libraryRoot()) !== root) {
         throw new Error("The import library changed.");
+      }
       return createManualSave({
         filePaths: [input.path],
         sourceId: input.sourceId,
@@ -99,8 +101,8 @@ export async function startAutoImport(): Promise<void> {
         log.warn("[pond auto-import] import log not updated", error);
       }
       if (entry.ok) {
-        await emitFeedback("autoImport").catch((error) =>
-          log.warn("[pond auto-import] feedback failed", error),
+        await emitFeedback("autoImport").catch((cause: unknown) =>
+          log.warn("[pond auto-import] feedback failed", cause),
         );
       }
     },

@@ -31,31 +31,29 @@ import {
 
 interface ToolTestState {
   admitted: Array<{ id: string }>;
+  ftsRows: Awaited<ReturnType<typeof toolDependencies.grepRows>>;
 }
-const state: ToolTestState = { admitted: [] };
+const state: ToolTestState = { admitted: [], ftsRows: [] };
 const mock = {
   ...state,
   where: vi.fn<(condition: SQL | undefined) => void>(),
-  retrieve: vi
-    .fn<typeof toolDependencies.retrieveLibrary>()
-    .mockResolvedValue({ saves: [], hits: [] }),
-  fts: vi.fn<typeof toolDependencies.grepRows>().mockResolvedValue([]),
   broadcast: vi.fn(),
 };
 const deps = {
   ...toolDependencies,
-  retrieveLibrary: mock.retrieve,
+  retrieveLibrary: async () => ({ saves: [], hits: [] }),
   readRows: async (condition: SQL | undefined) => {
     mock.where(condition);
     return [];
   },
-  grepRows: mock.fts,
+  grepRows: async () => mock.ftsRows,
   admittedIds: async (condition: SQL | undefined) => {
     mock.where(condition);
     return mock.admitted;
   },
   folderIdsForSave: async () => [],
 };
+const retrieve = vi.spyOn(deps, "retrieveLibrary");
 const searchLibrary = (
   input: Parameters<typeof search>[0],
   scope: Parameters<typeof search>[1] = {},
@@ -81,7 +79,7 @@ const query = () => {
 beforeEach(() => {
   vi.clearAllMocks();
   mock.admitted = [];
-  mock.fts.mockResolvedValue([]);
+  mock.ftsRows = [];
 });
 
 describe("Assistant library boundaries", () => {
@@ -94,7 +92,7 @@ describe("Assistant library boundaries", () => {
       },
       { saveIds: ["attached"] },
     );
-    expect(mock.retrieve).toHaveBeenCalledExactlyOnceWith(
+    expect(retrieve).toHaveBeenCalledExactlyOnceWith(
       {
         query: "where is the URL parser?",
         task: "code",
@@ -106,7 +104,7 @@ describe("Assistant library boundaries", () => {
 
   it("does not turn an empty attachment scope into unrestricted search", async () => {
     await searchLibrary({}, { saveIds: [] });
-    expect(mock.retrieve).toHaveBeenCalledExactlyOnceWith({}, { saveIds: [] });
+    expect(retrieve).toHaveBeenCalledExactlyOnceWith({}, { saveIds: [] });
   });
   it("restricts guessed Save IDs to attached IDs and excludes Trash", async () => {
     expect(
@@ -121,7 +119,7 @@ describe("Assistant library boundaries", () => {
       { folderId: "model-folder" },
       { folderId: "selected-folder" },
     );
-    expect(mock.retrieve).toHaveBeenCalledExactlyOnceWith(
+    expect(retrieve).toHaveBeenCalledExactlyOnceWith(
       { folderId: "model-folder" },
       { folderId: "selected-folder" },
     );
@@ -186,7 +184,7 @@ it("reads favorite next to rating", async () => {
 });
 
 it("returns OCR snippets from library grep", async () => {
-  mock.fts.mockResolvedValue([
+  mock.ftsRows = [
     {
       id: "save",
       title: null,
@@ -196,19 +194,22 @@ it("returns OCR snippets from library grep", async () => {
       transcript: null,
       notes: null,
     },
-  ]);
+  ];
   mock.admitted = [{ id: "save" }];
   expect(await grepLibrary({ query: "invoice" })).toEqual({
     hits: [{ id: "save", snippets: ["invoice 441"] }],
   });
 });
 
-function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
-  if (schema === true || schema === false) return [path];
-  if (Array.isArray(schema))
+function untypedSchemaPaths(schema: JsonValue, path = "$"): Array<string> {
+  if (schema === true || schema === false) {
+    return [path];
+  }
+  if (Array.isArray(schema)) {
     return schema.flatMap((entry, index) =>
       untypedSchemaPaths(entry, `${path}[${index}]`),
     );
+  }
   const parsed = z.record(z.string(), z.json()).safeParse(schema);
   if (!parsed.success) return [];
   const node = parsed.data;
@@ -224,18 +225,22 @@ function untypedSchemaPaths(schema: JsonValue, path = "$"): string[] {
     z.string().safeParse(node.$ref).success;
   const hits = !typed && keys.length === 0 ? [path] : [];
   for (const [key, value] of Object.entries(node)) {
-    if (key === "$schema" || key === "$ref" || key === "additionalProperties")
+    if (key === "$schema" || key === "$ref" || key === "additionalProperties") {
       continue;
+    }
     const properties =
       key === "properties"
         ? z.record(z.string(), z.json()).safeParse(value)
         : null;
     if (properties?.success) {
-      for (const [name, property] of Object.entries(properties.data))
+      for (const [name, property] of Object.entries(properties.data)) {
         hits.push(
           ...untypedSchemaPaths(property, `${path}.properties.${name}`),
         );
-    } else hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
+      }
+    } else {
+      hits.push(...untypedSchemaPaths(value, `${path}.${key}`));
+    }
   }
   return hits;
 }

@@ -5,7 +5,7 @@ import { listViews } from "../../saved-views";
 
 const live = and(isNull(saves.deletedAt), ne(saves.status, "skipped"));
 
-export async function saveCards(ids: readonly string[]) {
+export async function saveCards(ids: ReadonlyArray<string>) {
   const db = await getDb();
   const rows = await db
     .select({

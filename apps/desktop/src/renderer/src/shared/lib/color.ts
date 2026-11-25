@@ -85,7 +85,7 @@ interface ColorFormat {
 
 export function colorCopyFormats(
   input: string,
-): { primary: ColorFormat[]; secondary: ColorFormat[] } | null {
+): { primary: Array<ColorFormat>; secondary: Array<ColorFormat> } | null {
   const parsed = parseHex(input);
   if (!parsed) return null;
   const { rgb, hex } = parsed;

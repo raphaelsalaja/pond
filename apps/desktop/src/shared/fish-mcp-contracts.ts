@@ -100,7 +100,7 @@ export interface FishMcpQueryInputs {
 }
 
 export interface FishMcpQueryResults {
-  "fishMcp.list": FishMcpServerStatus[];
+  "fishMcp.list": Array<FishMcpServerStatus>;
   "fishMcp.save": FishMcpServerStatus;
   "fishMcp.remove": OkResult;
   "fishMcp.test": FishMcpServerStatus;

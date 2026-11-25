@@ -105,7 +105,10 @@
     "weight": 400,
     "file": "KohinoorDevanagari.ttf",
     "pack": "scripts",
-    "ranges": [[2304, 2431], [43232, 43263]]
+    "ranges": [
+      [2304, 2431],
+      [43232, 43263]
+    ]
   },
   {
     "kind": "fallback",

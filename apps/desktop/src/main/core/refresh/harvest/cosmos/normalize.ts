@@ -20,7 +20,7 @@ export interface CosmosElementPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: CosmosElementPageMedia[];
+  mediaUrls?: Array<CosmosElementPageMedia>;
   mediaType?: MediaType;
   meta?: CosmosElementPageMeta;
 }

@@ -11,7 +11,7 @@ function file(
   return { path, kind, mimeType, sha256, size: 1 };
 }
 
-function save(files: SaveFile[]): Save {
+function save(files: Array<SaveFile>): Save {
   return {
     id: "viewer-items",
     source: "local",

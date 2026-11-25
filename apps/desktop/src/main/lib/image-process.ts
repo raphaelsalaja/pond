@@ -1,7 +1,8 @@
 import { extname } from "node:path";
 import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
-import sharp, { type Sharp } from "sharp";
+import sharp from "sharp";
+import type { Sharp } from "sharp";
 
 type ImageEncodeSettings = Omit<
   ImageDownloadSettings,
@@ -83,8 +84,8 @@ export async function processImage(
       filename: replaceExt(filename, ext),
       ...dims,
     };
-  } catch (err) {
-    log.warn("[pond image-process] failed, keeping original", filename, err);
+  } catch (error) {
+    log.warn("[pond image-process] failed, keeping original", filename, error);
     return null;
   }
 }

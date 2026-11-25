@@ -7,8 +7,12 @@ export const aestheticEnricher: Enricher = {
   id: "aesthetic",
   enabled: (prefs) => prefs?.ai?.enableAesthetic === true,
   eligible(save: Save) {
-    if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (!representativeImageUrl(save)) return false;
+    if (save.status !== "complete" || save.deletedAt !== null) {
+      return false;
+    }
+    if (!representativeImageUrl(save)) {
+      return false;
+    }
     return save.aestheticModel !== mediaModelVersion();
   },
   async run(save: Save) {

@@ -1,6 +1,6 @@
+import { ToggleGroup } from ".";
 import type { ComponentDocs } from "../shared/docs";
 import { Toggle } from "../toggle";
-import { ToggleGroup } from ".";
 
 export const docs: ComponentDocs = {
   slug: "toggle-group",

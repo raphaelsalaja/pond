@@ -3,17 +3,20 @@ import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
 import { useReducedMotionConfig } from "motion/react";
 import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
   createContext,
   forwardRef,
-  type ReactNode,
   useCallback,
   useContext,
   useEffect,
   useState,
 } from "react";
-import { type ScrollToBottom, useStickToBottom } from "use-stick-to-bottom";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
+} from "react";
+import { useStickToBottom } from "use-stick-to-bottom";
+import type { ScrollToBottom } from "use-stick-to-bottom";
 import { ComposerView } from "../composer-view";
 import styles from "./styles.module.css";
 
@@ -48,8 +51,9 @@ function Messages({
   children: ReactNode;
   empty?: ReactNode;
 }) {
-  if (!children || (Array.isArray(children) && children.length === 0))
+  if (!children || (Array.isArray(children) && children.length === 0)) {
     return empty ? <div className={styles.empty}>{empty}</div> : null;
+  }
   return <>{children}</>;
 }
 
@@ -108,7 +112,7 @@ const READ_LINE = 1 / 3;
 
 function useCurrentMark(
   viewport: HTMLElement | null,
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
 ): string | null {
   const [current, setCurrent] = useState<string | null>(null);
   const key = ids.join("\n");
@@ -126,8 +130,9 @@ function useCurrentMark(
       if (
         viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <
         4
-      )
+      ) {
         next = list.at(-1) ?? next;
+      }
       setCurrent(next);
     };
     update();
@@ -143,7 +148,7 @@ function useCurrentMark(
 }
 
 interface RailProps extends ComponentPropsWithoutRef<"nav"> {
-  marks: readonly ThreadMark[];
+  marks: ReadonlyArray<ThreadMark>;
   viewport: HTMLElement | null;
 }
 
@@ -217,7 +222,7 @@ function Conversation({
 }: ComponentProps<typeof Root> & {
   empty?: ReactNode;
   composer?: ReactNode;
-  marks?: readonly ThreadMark[];
+  marks?: ReadonlyArray<ThreadMark>;
   viewportProps?: Omit<ComponentProps<typeof Viewport>, "ref">;
 }) {
   const reduceMotion = useReducedMotionConfig();

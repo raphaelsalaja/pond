@@ -3,13 +3,15 @@ import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
   $generateNodesFromMarkdownString,
-  type MdastExportRule,
-  type MdastImportContext,
   MdastImportExtension,
-  type MdastImportRule,
-  type MdastNode,
-  type MdastParent,
-  type PhrasingContent,
+} from "@lexical/mdast";
+import type {
+  MdastExportRule,
+  MdastImportContext,
+  MdastImportRule,
+  MdastNode,
+  MdastParent,
+  PhrasingContent,
 } from "@lexical/mdast";
 import {
   $createParagraphNode,
@@ -17,10 +19,8 @@ import {
   $getRoot,
   $isTextNode,
   configExtension,
-  type LexicalEditor,
-  type LexicalNode,
-  type TextNode,
 } from "lexical";
+import type { LexicalEditor, LexicalNode, TextNode } from "lexical";
 import {
   $createCollapsibleContainerNode,
   $createCollapsibleContentNode,
@@ -47,10 +47,10 @@ type CollapseSegment = {
 
 type MarkdownSegment = { kind: "md"; value: string } | CollapseSegment;
 
-function splitPondMarkdown(source: string): MarkdownSegment[] {
+function splitPondMarkdown(source: string): Array<MarkdownSegment> {
   const lines = source.split("\n");
-  const segments: MarkdownSegment[] = [];
-  let buf: string[] = [];
+  const segments: Array<MarkdownSegment> = [];
+  let buf: Array<string> = [];
   const flush = () => {
     const value = buf.join("\n");
     buf = [];
@@ -64,12 +64,14 @@ function splitPondMarkdown(source: string): MarkdownSegment[] {
       continue;
     }
     flush();
-    const open = start[1] == null;
+    const open = start[1] === undefined;
     i += 1;
     const title = (lines[i] ?? "").trim();
     i += 1;
-    while (i < lines.length && (lines[i] ?? "").trim() === "") i += 1;
-    const body: string[] = [];
+    while (i < lines.length && (lines[i] ?? "").trim() === "") {
+      i += 1;
+    }
+    const body: Array<string> = [];
     while (i < lines.length && !/^:::\s*$/.test(lines[i] ?? "")) {
       body.push(lines[i] ?? "");
       i += 1;
@@ -87,7 +89,7 @@ function splitPondMarkdown(source: string): MarkdownSegment[] {
 
 function $splitUnderline(text: TextNode): void {
   const value = text.getTextContent();
-  const parts: { value: string; underline: boolean }[] = [];
+  const parts: Array<{ value: string; underline: boolean }> = [];
   let last = 0;
   for (const match of value.matchAll(/\+\+([^+]+)\+\+/g)) {
     const index = match.index ?? 0;
@@ -102,16 +104,17 @@ function $splitUnderline(text: TextNode): void {
     parts.push({ value: value.slice(last), underline: false });
   }
   const format = text.getFormat();
-  const nodes = parts
-    .filter((part) => part.value.length > 0)
-    .map((part) => {
-      const next = $createTextNode(part.value);
-      next.setFormat(format);
-      if (part.underline && !next.hasFormat("underline")) {
-        next.toggleFormat("underline");
-      }
-      return next;
-    });
+  const nodes = parts.flatMap((part) => {
+    if (part.value.length === 0) {
+      return [];
+    }
+    const next = $createTextNode(part.value);
+    next.setFormat(format);
+    if (part.underline && !next.hasFormat("underline")) {
+      next.toggleFormat("underline");
+    }
+    return [next];
+  });
   const first = nodes[0];
   if (!first) return;
   text.replace(first);
@@ -277,12 +280,12 @@ function linkLabel(node: MdastParent & { alt?: string | null }): string {
     .join("");
 }
 
-const importRules: MdastImportRule[] = [
+const importRules: Array<MdastImportRule> = [
   { type: "image", $import: $importImage },
   { type: "link", $import: $importLink },
 ];
 
-const exportRules: MdastExportRule[] = [
+const exportRules: Array<MdastExportRule> = [
   { type: "text", $export: $exportUnderline },
   { type: "collapsible-container", $export: $exportCollapse },
   { type: "image", $export: $exportImage },

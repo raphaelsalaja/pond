@@ -10,18 +10,20 @@ import { z } from "zod";
 import type { SortDir } from "@/features/library/hooks/use-filtered-saves";
 import {
   canSearchAllSaves,
-  type SearchScope,
-  type SearchView,
   searchViewKey,
+} from "@/features/library/lib/search-view";
+import type {
+  SearchScope,
+  SearchView,
 } from "@/features/library/lib/search-view";
 import { combineQueries } from "@/features/library/lib/smart-folders";
 import {
   isLayoutValue,
-  type LayoutValue,
   nextLayout,
   readViewPref,
   writeViewPref,
 } from "@/features/library/lib/view-prefs";
+import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import {
   clampZoom,
   ZOOM_DEFAULT,
@@ -32,10 +34,8 @@ import {
   predicateIsActive,
 } from "@/features/search/query";
 import { notify } from "@/shared/lib/toast";
-import {
-  type FolderPresentation,
-  saveFolderPresentation,
-} from "./folder-presentation";
+import { saveFolderPresentation } from "./folder-presentation";
+import type { FolderPresentation } from "./folder-presentation";
 
 export type Combinator = "and" | "or";
 
@@ -45,7 +45,7 @@ export interface Sort {
 }
 
 function deriveQuery(
-  rows: Predicate[],
+  rows: Array<Predicate>,
   combinator: Combinator,
   previous: Query = EMPTY_QUERY,
 ): Query {
@@ -66,14 +66,14 @@ function applyZoomVar(zoom: number): void {
 
 export type VisualProbe =
   | { kind: "saveId"; id: string; label: string }
-  | { kind: "vector"; model: string; values: number[]; label: string };
+  | { kind: "vector"; model: string; values: Array<number>; label: string };
 
 interface ViewStoreState {
   q: string;
   searchInput: string;
   /** Widening holds for the view it was chosen in; every other view searches itself. */
   searchAllView: string | null;
-  rows: Predicate[];
+  rows: Array<Predicate>;
   combinator: Combinator;
   query: Query;
   inheritedQuery: Query;
@@ -140,27 +140,31 @@ export function takeLegacyFilters(): PersistedFilters | null {
   return legacy.rows.length > 0 || legacy.semanticQuery ? legacy : null;
 }
 
-const store = new Store<ViewStoreState>({
-  q: "",
-  searchInput: "",
-  searchAllView: null,
-  rows: [],
-  combinator: "and",
-  query: EMPTY_QUERY,
-  inheritedQuery: EMPTY_QUERY,
-  presentationFolderId: null,
-  randomSeed: readViewPref("seed") ?? "pond",
-  layout: readInitialLayout(),
-  sortKey: readViewPref("sort") ?? "savedAt",
-  sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
-  urlSort: null,
-  zoom: readInitialZoom(),
-  capture: false,
-  activeViewId: null,
-  includeSubfolders: readViewPref("subfolders") !== "0",
-  semanticQuery: null,
-  visualProbe: null,
-});
+export function initialViewState(): ViewStoreState {
+  return {
+    q: "",
+    searchInput: "",
+    searchAllView: null,
+    rows: [],
+    combinator: "and",
+    query: EMPTY_QUERY,
+    inheritedQuery: EMPTY_QUERY,
+    presentationFolderId: null,
+    randomSeed: readViewPref("seed") ?? "pond",
+    layout: readInitialLayout(),
+    sortKey: readViewPref("sort") ?? "savedAt",
+    sortDir: readViewPref("dir") === "asc" ? "asc" : "desc",
+    urlSort: null,
+    zoom: readInitialZoom(),
+    capture: false,
+    activeViewId: null,
+    includeSubfolders: readViewPref("subfolders") !== "0",
+    semanticQuery: null,
+    visualProbe: null,
+  };
+}
+
+const store = new Store<ViewStoreState>(initialViewState());
 
 applyZoomVar(store.state.zoom);
 
@@ -238,10 +242,10 @@ export function useHasActiveSearch(): boolean {
   return useSelector(store, (s) =>
     Boolean(
       s.q.trim() ||
-        s.query.rules.length ||
-        s.inheritedQuery.rules.length ||
-        s.semanticQuery ||
-        s.visualProbe,
+      s.query.rules.length ||
+      s.inheritedQuery.rules.length ||
+      s.semanticQuery ||
+      s.visualProbe,
     ),
   );
 }
@@ -307,7 +311,7 @@ export function setQuery(query: Query): void {
 }
 
 export function setSearchInput(
-  predicates: Predicate[],
+  predicates: Array<Predicate>,
   q: string,
   verbatim?: string,
 ): void {
@@ -321,7 +325,7 @@ export function setSearchInput(
   }));
 }
 
-export function updateLocalFilters(rows: Predicate[]): void {
+export function updateLocalFilters(rows: Array<Predicate>): void {
   store.setState((s) => ({
     ...s,
     searchInput: s.q,
@@ -380,8 +384,9 @@ export function getOverlays() {
 }
 
 export function setIncludeSubfolders(include: boolean): void {
-  if (!store.state.presentationFolderId)
+  if (!store.state.presentationFolderId) {
     writeViewPref("subfolders", include ? "1" : "0");
+  }
   store.setState((s) => ({ ...s, includeSubfolders: include }));
   persistPresentation();
 }
@@ -563,7 +568,7 @@ export function setSort(next: { key: string; dir: SortDir }): void {
   persistPresentation();
 }
 
-const SORT_KEY_CYCLE: readonly string[] = [
+const SORT_KEY_CYCLE: ReadonlyArray<string> = [
   "savedAt",
   "createdAt",
   "publishedAt",
@@ -606,7 +611,9 @@ export function setZoom(zoom: number): void {
   if (globalThis.window && !store.state.presentationFolderId) {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(clamped));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory state still applies. */
+    }
   }
   applyZoomVar(clamped);
   store.setState((s) => ({ ...s, zoom: clamped }));
@@ -622,7 +629,9 @@ export function restoreDefaults(): void {
   if (globalThis.window && !store.state.presentationFolderId) {
     try {
       window.localStorage.setItem(ZOOM_STORAGE_KEY, String(ZOOM_DEFAULT));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory state still applies. */
+    }
   }
   applyZoomVar(ZOOM_DEFAULT);
   store.setState((s) => ({

@@ -6,8 +6,8 @@ import {
   applyFolderTemplate,
   deleteFolderTemplate,
   duplicateFolderTemplate,
-  type FolderTemplateRuntime,
 } from "./folder-templates";
+import type { FolderTemplateRuntime } from "./folder-templates";
 import type { UndoEffects } from "./undo";
 
 const custom: FolderTemplate = {
@@ -27,9 +27,10 @@ const custom: FolderTemplate = {
 
 function runtime(options: { failPrefs?: boolean } = {}) {
   let prefs = PrefsSchema.parse({ folderTemplates: { custom: [custom] } });
-  const executed: Transaction[][] = [];
-  const recorded: Array<{ txs: Transaction[]; effects?: UndoEffects }> = [];
-  const removed: string[][] = [];
+  const executed: Array<Array<Transaction>> = [];
+  const recorded: Array<{ txs: Array<Transaction>; effects?: UndoEffects }> =
+    [];
+  const removed: Array<Array<string>> = [];
   let next = 0;
   const value: FolderTemplateRuntime = {
     run: (operation) => operation(),

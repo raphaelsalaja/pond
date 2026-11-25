@@ -34,7 +34,7 @@ describe("PDF viewport controls", () => {
   it("reserves room for thumbnails and fits a page to the viewport", () => {
     expect(
       pdfPageWidth({
-        containerWidth: 1_000,
+        containerWidth: 1000,
         containerHeight: 700,
         pageAspectRatio: 8.5 / 11,
         thumbnailsOpen: true,
@@ -44,7 +44,7 @@ describe("PDF viewport controls", () => {
     ).toBe(820);
     expect(
       pdfPageWidth({
-        containerWidth: 1_000,
+        containerWidth: 1000,
         containerHeight: 700,
         pageAspectRatio: 8.5 / 11,
         thumbnailsOpen: false,

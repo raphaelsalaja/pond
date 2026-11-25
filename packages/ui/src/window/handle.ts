@@ -1,14 +1,16 @@
 import {
-  type ChangeDetails,
   createChange,
   createResize,
   definePrimitive,
   dragThreshold,
   isComposing,
   live,
-  type ResizeDraft,
-  type ResizeHandle,
-  type ResizeReason,
+} from "@ui-sdk/core";
+import type {
+  ChangeDetails,
+  ResizeDraft,
+  ResizeHandle,
+  ResizeReason,
 } from "@ui-sdk/core";
 
 export type WindowSide = "left" | "right";

@@ -1,4 +1,5 @@
-import { app, type BrowserWindow, dialog } from "electron";
+import { app, dialog } from "electron";
+import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import { IPC } from "../shared/constants";
 import { linkMatchesLibrary } from "../shared/library-links";
@@ -7,7 +8,7 @@ import { libraryId } from "./paths";
 
 let pendingDeepLink: string | null = null;
 
-export function deepLinkArg(argv: readonly string[]): string | null {
+export function deepLinkArg(argv: ReadonlyArray<string>): string | null {
   return argv.find((arg) => arg.startsWith("pond://")) ?? null;
 }
 
@@ -94,8 +95,8 @@ export function handleDeepLink(
     target.focus();
     target.webContents.send(IPC.nav, route);
     return "library";
-  } catch (err) {
-    log.warn("[pond deep-link] parse failed", url, err);
+  } catch (error) {
+    log.warn("[pond deep-link] parse failed", url, error);
   }
 }
 
@@ -110,7 +111,7 @@ type SecondInstanceDeps = {
 
 /** A second launch either carries a pond:// link or only asks to be shown. */
 export function handleSecondInstance(
-  argv: readonly string[],
+  argv: ReadonlyArray<string>,
   deps: SecondInstanceDeps,
 ): void {
   const url = deepLinkArg(argv);

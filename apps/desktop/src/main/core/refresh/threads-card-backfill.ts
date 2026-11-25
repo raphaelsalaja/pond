@@ -1,4 +1,5 @@
-import { type NewTask, saves, tasks } from "@pond/schema/db";
+import { saves, tasks } from "@pond/schema/db";
+import type { NewTask } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
@@ -45,8 +46,8 @@ export async function startThreadsCardBackfill(): Promise<{
   let recaptured = 0;
   let offset = 0;
   const limit = pLimit(MAX_INFLIGHT);
-  const jobs: Promise<void>[] = [];
-  const liveReplies: BackfillRow[] = [];
+  const jobs: Array<Promise<void>> = [];
+  const liveReplies: Array<BackfillRow> = [];
 
   for (;;) {
     const page = db
@@ -91,8 +92,8 @@ export async function startThreadsCardBackfill(): Promise<{
             ) {
               liveReplies.push({ id: row.id, source });
             }
-          } catch (err) {
-            log.warn("[pond native-card-backfill] failed", row.id, err);
+          } catch (error) {
+            log.warn("[pond native-card-backfill] failed", row.id, error);
           }
         }),
       );
@@ -120,7 +121,7 @@ function needsLiveReplyRecapture(rawJson: RawJson | null): boolean {
 
 /** Live screenshots hit X and Threads, so each stale reply is requeued at most once. */
 export async function requeueReplyCaptures(
-  rows: readonly BackfillRow[],
+  rows: ReadonlyArray<BackfillRow>,
   runtime: ReplyRecaptureRuntime = defaultRuntime,
 ): Promise<number> {
   if (rows.length === 0) return 0;

@@ -6,7 +6,7 @@ import { loadTrayIcon } from "./tray-icon";
 import { buildMenu, buildTooltip } from "./tray-menu";
 import { trayBadge } from "./tray-status";
 
-const BUSY_POLL_MS = 1_000;
+const BUSY_POLL_MS = 1000;
 
 export interface TrayHandle {
   tray: Tray;
@@ -49,9 +49,9 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
   let tray: Tray;
   try {
     tray = new Tray(loadTrayIcon());
-  } catch (err) {
-    log.error("[pond tray] failed to create tray", err);
-    throw err;
+  } catch (error) {
+    log.error("[pond tray] failed to create tray", error);
+    throw error;
   }
   tray.setToolTip("Pond");
   log.info("[pond tray] created");
@@ -81,8 +81,8 @@ export async function ensureTray(opts: TrayOptions): Promise<TrayHandle> {
         tray.setToolTip(await buildTooltip());
         setTrayCount(tray, running);
         scheduleBusyPoll(ingesting > 0 || running > 0);
-      } catch (err) {
-        log.warn("[pond tray] refresh failed", err);
+      } catch (error) {
+        log.warn("[pond tray] refresh failed", error);
       }
     },
     destroy() {

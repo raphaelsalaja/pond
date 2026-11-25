@@ -9,9 +9,7 @@
   &[data-drop="after"]::after {
     position: absolute;
     inset-inline-start: calc(
-      var(--folder-depth, 0) *
-      var(--folder-indent) +
-      6px
+      var(--folder-depth, 0) * var(--folder-indent) + 6px
     );
     inset-inline-end: 6px;
     z-index: 3;
@@ -49,9 +47,7 @@
   --ds-focus-offset: 0px;
   position: absolute;
   inset-inline-start: calc(
-    var(--folder-depth, 0) *
-    var(--folder-indent) +
-    var(--ds-space-sm)
+    var(--folder-depth, 0) * var(--folder-indent) + var(--ds-space-sm)
   );
   top: 6px;
   z-index: 2;

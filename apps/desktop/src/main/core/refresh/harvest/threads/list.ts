@@ -15,7 +15,7 @@ export type ThreadsListKind = Extract<ListKind, "saved" | "liked">;
 export const THREADS_LIST_PAGES = {
   saved: ["https://www.threads.com/saved"],
   liked: ["https://www.threads.com/liked", "https://www.threads.com/activity"],
-} as const satisfies Record<ThreadsListKind, readonly string[]>;
+} as const satisfies Record<ThreadsListKind, ReadonlyArray<string>>;
 
 export const THREADS_LIST_URL = THREADS_LIST_PAGES.saved[0];
 
@@ -31,7 +31,7 @@ interface ThreadsListEntry {
   title?: string;
   author?: string;
   mediaUrl?: string;
-  mediaUrls?: ThreadsListMedia[];
+  mediaUrls?: Array<ThreadsListMedia>;
   mediaType?: MediaType;
 }
 
@@ -56,7 +56,7 @@ async function inPageThreadsList(
   }
 
   function collectFn() {
-    const out: ThreadsListEntry[] = [];
+    const out: Array<ThreadsListEntry> = [];
     const seen = new Set<string>();
     const links = Array.from(
       document.querySelectorAll<HTMLAnchorElement>('a[href*="/post/"]'),
@@ -72,7 +72,9 @@ async function inPageThreadsList(
         const u = new URL(a.href, location.origin);
         pathname = u.pathname;
         href = u.href;
-      } catch {}
+      } catch {
+        /** An unparseable href keeps the anchor's own value and no handle. */
+      }
 
       const card =
         a.closest("[data-pressable-container], [role='article'], article") ??
@@ -91,7 +93,7 @@ async function inPageThreadsList(
         });
       const text = texts[0];
 
-      const mediaUrls: ThreadsListMedia[] = [];
+      const mediaUrls: Array<ThreadsListMedia> = [];
       const seenMedia = new Set<string>();
       const push = (
         url: string | undefined,

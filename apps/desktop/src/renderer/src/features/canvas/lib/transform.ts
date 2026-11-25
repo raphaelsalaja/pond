@@ -131,7 +131,7 @@ export function groupScale(
   bounds: Box,
   corner: Corner,
   point: XYPosition,
-  members: readonly (Size & { min: Size })[],
+  members: ReadonlyArray<Size & { min: Size }>,
   keepAspect: boolean,
 ): Scale {
   const signs = signsOf(corner);

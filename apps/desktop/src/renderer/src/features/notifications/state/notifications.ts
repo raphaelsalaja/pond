@@ -2,10 +2,11 @@ import type { InboxNotification } from "@shared/notification-contracts";
 import type { OkSuccess } from "@shared/query-contracts-shared";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 
 interface NotificationsState {
-  items: readonly InboxNotification[];
+  items: ReadonlyArray<InboxNotification>;
   loaded: boolean;
 }
 
@@ -13,6 +14,10 @@ const store = new Store<NotificationsState>({ items: [], loaded: false });
 let subscribers = 0;
 let unsubscribe: (() => void) | null = null;
 let ticket = 0;
+
+function warnRefreshFailed(cause: unknown): void {
+  log.warn("[pond notifications] refresh failed", cause);
+}
 
 async function refresh(): Promise<void> {
   const request = ++ticket;
@@ -23,16 +28,16 @@ async function refresh(): Promise<void> {
 
 /** Changes show at once; main's broadcast then brings the stored log back in line. */
 function optimistic(
-  change: (items: readonly InboxNotification[]) => InboxNotification[],
+  change: (items: ReadonlyArray<InboxNotification>) => Array<InboxNotification>,
   send: () => Promise<OkSuccess>,
 ): void {
   ticket += 1;
   store.setState((state) => ({ ...state, items: change(state.items) }));
-  void send().catch(() => refresh().catch(() => undefined));
+  void send().catch(() => refresh().catch(warnRefreshFailed));
 }
 
 function patch(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   change: (item: InboxNotification) => InboxNotification,
   send: () => Promise<OkSuccess>,
 ): void {
@@ -53,8 +58,10 @@ export function isUnread(item: InboxNotification): boolean {
 
 export const notifications = {
   refresh,
-  markRead(ids: readonly string[], read: boolean): void {
-    if (ids.length === 0) return;
+  markRead(ids: ReadonlyArray<string>, read: boolean): void {
+    if (ids.length === 0) {
+      return;
+    }
     const now = Date.now();
     patch(
       ids,
@@ -72,16 +79,20 @@ export const notifications = {
       true,
     );
   },
-  snooze(ids: readonly string[], until: number | null): void {
-    if (ids.length === 0) return;
+  snooze(ids: ReadonlyArray<string>, until: number | null): void {
+    if (ids.length === 0) {
+      return;
+    }
     patch(
       ids,
       (item) => ({ ...item, snoozedUntil: until ?? undefined }),
       () => window.pond.query("notifications.snooze", { ids: [...ids], until }),
     );
   },
-  remove(ids: readonly string[]): void {
-    if (ids.length === 0) return;
+  remove(ids: ReadonlyArray<string>): void {
+    if (ids.length === 0) {
+      return;
+    }
     const gone = new Set(ids);
     optimistic(
       (items) => items.filter((item) => !gone.has(item.id)),
@@ -104,9 +115,9 @@ export const notifications = {
 export function useHydrateNotifications(): void {
   useEffect(() => {
     if (subscribers++ === 0) {
-      void refresh().catch(() => undefined);
+      void refresh().catch(warnRefreshFailed);
       unsubscribe = window.pond.onNotifications(() => {
-        void refresh().catch(() => undefined);
+        void refresh().catch(warnRefreshFailed);
       });
     }
     return () => {
@@ -117,12 +128,12 @@ export function useHydrateNotifications(): void {
   }, []);
 }
 
-export function useNotifications(): readonly InboxNotification[] {
+export function useNotifications(): ReadonlyArray<InboxNotification> {
   return useSelector(store, (state) => state.items);
 }
 
 export function useNotification(id: string | null): InboxNotification | null {
   return useSelector(store, (state) =>
-    id == null ? null : (state.items.find((item) => item.id === id) ?? null),
+    id === null ? null : (state.items.find((item) => item.id === id) ?? null),
   );
 }

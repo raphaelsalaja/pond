@@ -103,7 +103,7 @@ const RelayPinSchema = z
 type RelayPin = z.infer<typeof RelayPinSchema>;
 
 const JsonObjectSchema = z.custom<JsonObject>(
-  (value) => value instanceof Object && !Array.isArray(value),
+  (value) => Object(value) === value && !Array.isArray(value),
 );
 
 const RelayEnvelopeSchema = z
@@ -174,8 +174,8 @@ export async function fetchPinterestCapture({
   let res: Response;
   try {
     res = await get(url);
-  } catch (err) {
-    log.warn("[pond refresh:pinterest-api] fetch failed", url, err);
+  } catch (error) {
+    log.warn("[pond refresh:pinterest-api] fetch failed", url, error);
     return { ok: false, reason: "fetch_failed" };
   }
   if (!res.ok) {
@@ -198,7 +198,7 @@ type PinPage =
 
 /** Logged-out HTML reports `PinNotFound` for secret, group, idea, and video pins that still exist. */
 export function parsePinPage(html: string): PinPage {
-  const candidates: JsonObject[] = [];
+  const candidates: Array<JsonObject> = [];
   let notFound = false;
   const callOpen = "__PWS_RELAY_REGISTER_COMPLETED_REQUEST__(";
   let cursor = 0;
@@ -215,9 +215,15 @@ export function parsePinPage(html: string): PinPage {
       try {
         const envelope = RelayEnvelopeSchema.parse(JSON.parse(jsonStr));
         const query = envelope.data?.v3GetPinQueryv2;
-        if (query?.data) candidates.push(query.data);
-        if (query?.__typename === "PinNotFound") notFound = true;
-      } catch {}
+        if (query?.data) {
+          candidates.push(query.data);
+        }
+        if (query?.__typename === "PinNotFound") {
+          notFound = true;
+        }
+      } catch {
+        /** A relay call whose payload isn't JSON carries no pin. */
+      }
     }
     cursor = callEnd + 1;
   }
@@ -227,7 +233,7 @@ export function parsePinPage(html: string): PinPage {
   return { kind: notFound ? "not_found" : "no_pin" };
 }
 
-function mergePins(pins: JsonObject[]): JsonObject {
+function mergePins(pins: Array<JsonObject>): JsonObject {
   const out: JsonObject = {};
   const keys = new Set<string>();
   for (const p of pins) {
@@ -238,9 +244,11 @@ function mergePins(pins: JsonObject[]): JsonObject {
     let bestScore = -1;
     for (const p of pins) {
       const v = p[key];
-      if (v == null) continue;
+      if (v === null || v === undefined) {
+        continue;
+      }
       const score =
-        v instanceof Object && !Array.isArray(v) ? Object.keys(v).length : 1;
+        Object(v) === v && !Array.isArray(v) ? Object.keys(v).length : 1;
       if (score > bestScore) {
         best = v;
         bestScore = score;
@@ -265,11 +273,15 @@ function findCallEnd(s: string, start: number): number {
       if (c === '"') inStr = false;
       continue;
     }
-    if (c === '"') inStr = true;
-    else if (c === "{") _depthBrace += 1;
-    else if (c === "}") _depthBrace -= 1;
-    else if (c === "(") depthParen += 1;
-    else if (c === ")") {
+    if (c === '"') {
+      inStr = true;
+    } else if (c === "{") {
+      _depthBrace += 1;
+    } else if (c === "}") {
+      _depthBrace -= 1;
+    } else if (c === "(") {
+      depthParen += 1;
+    } else if (c === ")") {
       depthParen -= 1;
       if (depthParen === 0) return i;
     }
@@ -291,13 +303,20 @@ function findSecondArgStart(inner: string): number {
       if (c === '"') inStr = false;
       continue;
     }
-    if (c === '"') inStr = true;
-    else if (c === "(") depthParen += 1;
-    else if (c === ")") depthParen -= 1;
-    else if (c === "{") {
-      if (depthParen === 0 && depthBrace === 0) return i;
+    if (c === '"') {
+      inStr = true;
+    } else if (c === "(") {
+      depthParen += 1;
+    } else if (c === ")") {
+      depthParen -= 1;
+    } else if (c === "{") {
+      if (depthParen === 0 && depthBrace === 0) {
+        return i;
+      }
       depthBrace += 1;
-    } else if (c === "}") depthBrace -= 1;
+    } else if (c === "}") {
+      depthBrace -= 1;
+    }
   }
   return -1;
 }
@@ -364,7 +383,7 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
         : `https://www.pinterest.com${pin.board.url}`;
       const slug = pin.board.url.replace(/\/+$/, "").split("/").pop();
       const boardName = slug
-        ? decodeURIComponent(slug).replace(/-/g, " ")
+        ? decodeURIComponent(slug).replaceAll("-", " ")
         : undefined;
       out.board = { name: boardName, url: boardUrl };
     }
@@ -389,7 +408,7 @@ function buildCapture(sourceId: string, url: string, pin: RelayPin): Capture {
 }
 
 /** Video, story, idea, and product pins often omit `images_orig`. */
-function mediaFromPin(pin: RelayPin): CaptureMedia[] {
+function mediaFromPin(pin: RelayPin): Array<CaptureMedia> {
   const still = pickStr([
     pin.images_orig?.url,
     pin.images?.orig?.url,
@@ -421,8 +440,10 @@ function mediaFromPin(pin: RelayPin): CaptureMedia[] {
 
 function videoListUrls(
   list: Record<string, { url?: string }> | undefined,
-): string[] {
-  if (!list) return [];
+): Array<string> {
+  if (!list) {
+    return [];
+  }
   const preferred = pickStr(
     ["V_720P", "V_EXP7", "V_HLSV3_MOBILE"].map((key) => list[key]?.url),
   );
@@ -430,12 +451,21 @@ function videoListUrls(
   return Object.values(list).flatMap((item) => (item.url ? [item.url] : []));
 }
 
-function httpUrls(value: JsonValue | undefined): string[] {
-  if (value === undefined) return [];
+function httpUrls(value: JsonValue | undefined): Array<string> {
+  if (value === undefined) {
+    return [];
+  }
   const text = z.string().safeParse(value);
-  if (text.success) return /^https?:\/\//.test(text.data) ? [text.data] : [];
-  if (Array.isArray(value)) return value.flatMap(httpUrls);
-  if (value instanceof Object) return Object.values(value).flatMap(httpUrls);
+  if (text.success) {
+    return /^https?:\/\//.test(text.data) ? [text.data] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(httpUrls);
+  }
+  const record = JsonObjectSchema.safeParse(value);
+  if (record.success) {
+    return Object.values(record.data).flatMap(httpUrls);
+  }
   return [];
 }
 

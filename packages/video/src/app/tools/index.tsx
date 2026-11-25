@@ -9,7 +9,8 @@ import {
 } from "@pond/icons";
 import { Button } from "@pond/ui/button";
 import { mix } from "../../motion";
-import { CANVAS_COLORS, type CanvasColor, INK } from "../board/colors";
+import { CANVAS_COLORS, INK } from "../board/colors";
+import type { CanvasColor } from "../board/colors";
 import styles from "./styles.module.css";
 
 /** The dock's buttons, in order, as the board's tools component lists them. */

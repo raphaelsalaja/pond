@@ -1,7 +1,8 @@
 import { Dialog } from "@pond/ui";
 import type { DownloadHealthRow } from "@/features/downloads/health";
 import { THIS_DEVICE } from "@/shared/lib/platform";
-import { categoryFact, type HealthCategory } from "../categories";
+import { categoryFact } from "../categories";
+import type { HealthCategory } from "../categories";
 import { HealthReview } from "../review";
 import styles from "./styles.module.css";
 
@@ -14,7 +15,7 @@ export function HealthDrilldown({
   category: HealthCategory | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  downloads: readonly DownloadHealthRow[];
+  downloads: ReadonlyArray<DownloadHealthRow>;
 }) {
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>

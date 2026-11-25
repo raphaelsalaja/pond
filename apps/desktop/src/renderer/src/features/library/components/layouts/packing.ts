@@ -8,7 +8,7 @@ export interface CardLayoutItem {
 }
 
 export interface CardLayoutResult {
-  items: CardLayoutItem[];
+  items: Array<CardLayoutItem>;
   totalHeight: number;
 }
 
@@ -104,7 +104,7 @@ export function packWaterfall(
   }
   const columns = columnMetrics(containerWidth, columnMinimum, gap);
   const heights = Array.from({ length: columns.count }, () => 0);
-  const items: CardLayoutItem[] = [];
+  const items: Array<CardLayoutItem> = [];
 
   for (const entry of entries) {
     const mediaHeight = columns.width / safeAspect(entry.aspect);
@@ -141,8 +141,8 @@ export function packJustified(
     return { items: [], totalHeight: 0 };
   }
 
-  const items: CardLayoutItem[] = [];
-  let row: AspectEntry[] = [];
+  const items: Array<CardLayoutItem> = [];
+  let row: Array<AspectEntry> = [];
   let aspectSum = 0;
   let top = 0;
 

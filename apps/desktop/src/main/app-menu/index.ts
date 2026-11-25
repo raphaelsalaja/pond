@@ -6,7 +6,7 @@ import { buildAppMenuTemplate } from "./template";
 
 export function applyAppMenu(
   deps: AppMenuRuntimeDeps,
-  recentEntries: RecentMenuEntry[],
+  recentEntries: Array<RecentMenuEntry>,
 ): void {
   const context = createAppMenuContext(deps);
   const template = buildAppMenuTemplate(context, recentEntries);

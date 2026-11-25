@@ -1,14 +1,11 @@
 import type { AgentRunControls } from "@pond/schema";
 import type { JsonObject, JsonValue } from "@pond/schema/json";
-import {
-  isStepCount,
-  type LanguageModel,
-  type ModelMessage,
-  type OnToolExecutionEndCallback,
-  type OnToolExecutionStartCallback,
-  pruneMessages,
-  ToolLoopAgent,
-  tool,
+import { isStepCount, pruneMessages, ToolLoopAgent, tool } from "ai";
+import type {
+  LanguageModel,
+  ModelMessage,
+  OnToolExecutionEndCallback,
+  OnToolExecutionStartCallback,
 } from "ai";
 import { z } from "zod";
 import type {
@@ -23,10 +20,8 @@ import {
   compactTools,
 } from "./apple-profile";
 import type { AgentProviderId } from "./keys";
-import {
-  type LocalRuntimeCoordinator,
-  localRuntimeCoordinator,
-} from "./local-runtime-coordinator";
+import { localRuntimeCoordinator } from "./local-runtime-coordinator";
+import type { LocalRuntimeCoordinator } from "./local-runtime-coordinator";
 import {
   answerProblem,
   conversation,
@@ -42,7 +37,7 @@ export type ChatMessage = {
 export type ToolResult =
   | JsonValue
   | Date
-  | ToolResult[]
+  | Array<ToolResult>
   | { [key: string]: ToolResult | undefined };
 
 export type ToolSpec = {
@@ -83,16 +78,16 @@ export interface CompletionInput {
   controls?: AgentRunControls;
   apiKey: string | null;
   baseUrl?: string;
-  messages: ChatMessage[];
+  messages: Array<ChatMessage>;
   threadId?: string;
-  canonicalMessages?: ModelMessage[];
+  canonicalMessages?: Array<ModelMessage>;
   context: string;
-  tools: ToolSpec[];
+  tools: Array<ToolSpec>;
   languageModel?: LanguageModel;
   onToolExecutionStart?: OnToolExecutionStartCallback;
   onToolExecutionEnd?: OnToolExecutionEndCallback;
-  attachments?: AssistantSource[];
-  sources?: () => AssistantSource[];
+  attachments?: Array<AssistantSource>;
+  sources?: () => Array<AssistantSource>;
   images?: Array<{ mimeType: string; data: string }>;
   files?: Array<{ name: string; mediaType: string; data: Buffer }>;
   onActivity?: (activity: AssistantActivity) => void;
@@ -105,14 +100,17 @@ const textChunkDelayMs = 50;
 const maxTextChunks = 40;
 
 const waitForTextChunk = (milliseconds: number) =>
-  new Promise<void>((resolve) => setTimeout(resolve, milliseconds));
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 
 function validatedTextChunks(text: string) {
   const words = text.match(/\S+\s*|\s+/g) ?? [];
   const wordsPerChunk = Math.max(1, Math.ceil(words.length / maxTextChunks));
-  const chunks: string[] = [];
-  for (let index = 0; index < words.length; index += wordsPerChunk)
+  const chunks: Array<string> = [];
+  for (let index = 0; index < words.length; index += wordsPerChunk) {
     chunks.push(words.slice(index, index + wordsPerChunk).join(""));
+  }
   return chunks;
 }
 
@@ -126,7 +124,9 @@ async function publishValidatedText(input: CompletionInput, text: string) {
   }
 }
 
-function uniqueSources(sources: AssistantSource[]): AssistantSource[] {
+function uniqueSources(
+  sources: Array<AssistantSource>,
+): Array<AssistantSource> {
   return [
     ...new Map(sources.map((source) => [source.id, source] as const)).values(),
   ];
@@ -141,15 +141,18 @@ function serializableMessage(message: ModelMessage) {
       if (
         kind.success &&
         (kind.data.type === "image" || kind.data.type === "file")
-      )
+      ) {
         return { ...part, image: "[binary]", data: "[binary]" };
+      }
       return part;
     }),
   };
 }
 
-function messageTurns(messages: ModelMessage[]): ModelMessage[][] {
-  const turns: ModelMessage[][] = [];
+function messageTurns(
+  messages: Array<ModelMessage>,
+): Array<Array<ModelMessage>> {
+  const turns: Array<Array<ModelMessage>> = [];
   for (const message of messages) {
     if (message.role === "user" || !turns.length) turns.push([message]);
     else turns.at(-1)?.push(message);
@@ -158,8 +161,8 @@ function messageTurns(messages: ModelMessage[]): ModelMessage[][] {
 }
 
 function turnTokens(
-  turn: ModelMessage[],
-  encode: (value: string) => number[],
+  turn: Array<ModelMessage>,
+  encode: (value: string) => Array<number>,
 ): number {
   const binaryParts = turn.reduce((total, message) => {
     if (!Array.isArray(message.content)) return total;
@@ -176,16 +179,16 @@ function turnTokens(
   }, 0);
   return (
     encode(JSON.stringify(turn.map(serializableMessage))).length +
-    binaryParts * 1_024
+    binaryParts * 1024
   );
 }
 
 export function budgetMessages(
-  messages: ModelMessage[],
+  messages: Array<ModelMessage>,
   inputBudget: number,
   fixedTokens: number,
-  encode: (value: string) => number[],
-): ModelMessage[] {
+  encode: (value: string) => Array<number>,
+): Array<ModelMessage> {
   const current = messages.findLastIndex((message) => message.role === "user");
   /** Tool rounds in the current turn stay intact, or each step forgets what the previous one found. */
   const pruned = [
@@ -199,10 +202,11 @@ export function budgetMessages(
   const turns = messageTurns(pruned);
   const latest = turns.at(-1) ?? [];
   const latestTokens = turnTokens(latest, encode);
-  if (fixedTokens + latestTokens > inputBudget)
+  if (fixedTokens + latestTokens > inputBudget) {
     throw new Error(
       "The selected Context is too small for this request. Choose a larger Context or remove attached Saves.",
     );
+  }
   let total = fixedTokens + latestTokens;
   const kept = [latest];
   for (let index = turns.length - 2; index >= 0; index--) {
@@ -228,10 +232,10 @@ function nativeFastOptions(
 }
 
 function toModelMessages(
-  history: ChatMessage[],
+  history: Array<ChatMessage>,
   images: Array<{ mimeType: string; data: string }>,
   files: Array<{ name: string; mediaType: string; data: Buffer }>,
-): ModelMessage[] {
+): Array<ModelMessage> {
   const filtered = conversation(history);
   return filtered.map((message, index): ModelMessage => {
     if (
@@ -273,11 +277,13 @@ function toModelMessages(
 }
 
 function attachFilesToLatestUserMessage(
-  messages: ModelMessage[],
+  messages: Array<ModelMessage>,
   images: Array<{ mimeType: string; data: string }>,
   files: Array<{ name: string; mediaType: string; data: Buffer }>,
-): ModelMessage[] {
-  if (!images.length && !files.length) return messages;
+): Array<ModelMessage> {
+  if (!images.length && !files.length) {
+    return messages;
+  }
   const index = messages.findLastIndex((message) => message.role === "user");
   if (index < 0) return messages;
   const message = messages[index];
@@ -342,8 +348,9 @@ function providerErrorMessage(error: z.infer<typeof providerError>): string {
     const nestedObject = z
       .object({ message: z.string().optional() })
       .safeParse(nested);
-    if (nestedObject.success && nestedObject.data.message?.trim())
+    if (nestedObject.success && nestedObject.data.message?.trim()) {
       return nestedObject.data.message;
+    }
   }
   return "The model could not reply.";
 }
@@ -397,7 +404,7 @@ export async function completeWithTools(
   };
   const outputReserve = compact
     ? APPLE_OUTPUT_RESERVE
-    : Math.max(2_048, Math.min(8_192, Math.floor(controls.contextTokens / 5)));
+    : Math.max(2048, Math.min(8192, Math.floor(controls.contextTokens / 5)));
   const inputBudget = controls.contextTokens - outputReserve;
   const { encode } = await import("gpt-tokenizer");
   const toolSchemas = JSON.stringify(
@@ -440,10 +447,12 @@ export async function completeWithTools(
     if (
       answerProblem(pending) ||
       evidenceAnswerProblem(pending, evidenceCount())
-    )
+    ) {
       return;
-    if (!assembled.trimEnd().endsWith(MESSAGE_BREAK))
+    }
+    if (!assembled.trimEnd().endsWith(MESSAGE_BREAK)) {
       assembled = `${assembled.trimEnd()}\n${MESSAGE_BREAK}\n`;
+    }
     await publishValidatedText(input, assembled.slice(published));
     published = assembled.length;
     writing = false;
@@ -505,17 +514,20 @@ export async function completeWithTools(
         /tensor "[^"]+" size overflow/.test(message)
         ? "Ollama couldn't load this model. Update it in Ollama or choose another model in Settings."
         : message,
+      { cause: error },
     );
   }
   input.abortController.signal.throwIfAborted();
   const problem = answerProblem(assembled, input.messages.at(-1)?.content);
   const evidenceProblem = evidenceAnswerProblem(assembled, evidenceCount());
-  if (assembled.trim() && (problem || evidenceProblem))
+  if (assembled.trim() && (problem || evidenceProblem)) {
     throw new Error(
       "The model returned an unreadable reply. Try again or choose another model.",
     );
+  }
   input.abortController.signal.throwIfAborted();
-  if (assembled.length > published)
+  if (assembled.length > published) {
     await publishValidatedText(input, assembled.slice(published));
+  }
   return assembled;
 }

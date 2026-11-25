@@ -27,7 +27,7 @@ export class RateLimitedError extends ExtractorError {
 
 export class GeoRestrictedError extends ExtractorError {
   constructor(
-    public countries?: string[],
+    public countries?: Array<string>,
     message?: string,
   ) {
     super(message ?? "geo restricted");

@@ -11,7 +11,7 @@ export interface Video {
   /** A settled moment, in ms, pulled as the poster. Never baked into frame 0. */
   poster: number;
   /** Every image URL the cut shows, decoded before the first frame is captured. */
-  media: string[];
+  media: Array<string>;
   Composition: (props: { t: number }) => ReactNode;
 }
 

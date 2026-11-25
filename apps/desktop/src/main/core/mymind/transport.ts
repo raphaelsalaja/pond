@@ -1,5 +1,6 @@
 import { acquire, report } from "../pipeline/rate-governor";
-import { createMymindClient, type MymindCredential } from "./client";
+import { createMymindClient } from "./client";
+import type { MymindCredential } from "./client";
 
 export function createConnectedMymindClient(
   credential: MymindCredential,

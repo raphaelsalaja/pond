@@ -8,16 +8,14 @@ import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
   CosmosClusterConnectionsDataSchema,
   CosmosClustersDataSchema,
-  type CosmosCollection,
   CosmosLibraryDataSchema,
   CosmosMeDataSchema,
-  type CosmosViewer,
-  type LibraryPage,
   pageFromClusterConnections,
   pageFromClusters,
   pageFromLibrary,
   viewerFromMeData,
 } from "./listing";
+import type { CosmosCollection, CosmosViewer, LibraryPage } from "./listing";
 
 const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
@@ -218,7 +216,8 @@ async function harvestCosmosPages(
 export async function listCosmosCollections(
   partition: string = PARTITION,
 ): Promise<
-  { ok: true; collections: CosmosCollection[] } | { ok: false; status: number }
+  | { ok: true; collections: Array<CosmosCollection> }
+  | { ok: false; status: number }
 > {
   const viewer = await fetchCosmosViewer(partition);
   if (!viewer) return { ok: false, status: 401 };
@@ -227,7 +226,7 @@ export async function listCosmosCollections(
     return { ok: false, status: 401 };
   }
 
-  const collections: CosmosCollection[] = [];
+  const collections: Array<CosmosCollection> = [];
   let pageCursor: string | undefined;
   for (let page = 0; page < MAX_PAGES; page++) {
     const result = await cosmosGraphql(
@@ -279,8 +278,8 @@ async function cosmosGraphql<T>(
       },
       body: JSON.stringify({ operationName, query, variables }),
     });
-  } catch (err) {
-    log.warn("[pond cosmos-api] fetch threw", operationName, err);
+  } catch (error) {
+    log.warn("[pond cosmos-api] fetch threw", operationName, error);
     return { ok: false, status: 0 };
   }
   if (res.status === 429) return { ok: false, status: 429 };
@@ -322,8 +321,8 @@ async function accessToken(partition: string): Promise<string | null> {
     const cookies = await session.fromPartition(partition).cookies.get({});
     const hit = cookies.find((cookie) => cookie.name === "csms_accessToken");
     return hit && hit.value.length > 0 ? hit.value : null;
-  } catch (err) {
-    log.warn("[pond cosmos-api] cookies.get failed", err);
+  } catch (error) {
+    log.warn("[pond cosmos-api] cookies.get failed", error);
     return null;
   }
 }

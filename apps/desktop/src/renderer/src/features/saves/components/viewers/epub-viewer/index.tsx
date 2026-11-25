@@ -1,7 +1,8 @@
 import { IconArrowLeft, IconArrowRight } from "@pond/icons";
 import { Select, Slider } from "@pond/ui";
 import type { Book, NavItem, Rendition } from "epubjs";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
@@ -14,8 +15,14 @@ interface EpubViewerProps {
   toolbarActions?: ReactNode;
 }
 
+function isValueList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return Array.isArray(value);
+}
+
 function flattenNavigation(
-  items: NavItem[],
+  items: Array<NavItem>,
   depth = 0,
 ): Array<NavItem & { depth: number }> {
   return items.flatMap((item) => [
@@ -120,9 +127,7 @@ export function EpubViewer({
                     step={1}
                     value={fontSize}
                     onValueChange={(next) => {
-                      const value = Array.isArray(next)
-                        ? (next[0] ?? 100)
-                        : next;
+                      const value = isValueList(next) ? (next[0] ?? 100) : next;
                       setFontSize(value);
                     }}
                   >

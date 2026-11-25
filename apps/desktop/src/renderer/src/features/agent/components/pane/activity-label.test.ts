@@ -3,7 +3,7 @@ import { expect, it } from "vitest";
 import { currentActivityLabel } from "./activity-label";
 
 it("follows tool starts, results, and the next action", () => {
-  const steps: AssistantToolStep[] = [];
+  const steps: Array<AssistantToolStep> = [];
   expect(currentActivityLabel("thinking", steps)).toBe("Thinking");
   const searchStep: AssistantToolStep = {
     id: "search",

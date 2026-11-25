@@ -1,10 +1,9 @@
-import {
-  type ConnectedAccount,
-  type Folder,
-  type ImportCollection,
-  type SourceSyncPrefs,
-  saveFolders,
-  saves,
+import { saveFolders, saves } from "@pond/schema/db";
+import type {
+  ConnectedAccount,
+  Folder,
+  ImportCollection,
+  SourceSyncPrefs,
 } from "@pond/schema/db";
 import { sourceLabel } from "@pond/schema/sources";
 import { and, eq, inArray, isNull, ne } from "drizzle-orm";
@@ -19,20 +18,20 @@ import { patchAccountSync } from "./accounts";
 
 export interface CollectionEntry {
   sourceId: string;
-  collectionIds?: string[];
+  collectionIds?: Array<string>;
 }
 
 export interface CollectionFolderStore {
-  listFolders: () => Promise<Folder[]>;
+  listFolders: () => Promise<Array<Folder>>;
   createFolder: (name: string, parentId: string | null) => Promise<Folder>;
   /** Save ids by source id, leaving out deleted saves and saves the import filters skipped. */
   saveIds: (
     source: ConnectedAccount["source"],
-    sourceIds: string[],
+    sourceIds: Array<string>,
   ) => Promise<Map<string, string>>;
-  folderIds: (saveIds: string[]) => Promise<Map<string, string[]>>;
+  folderIds: (saveIds: Array<string>) => Promise<Map<string, Array<string>>>;
   assign: (
-    assignments: Array<{ saveId: string; folderIds: string[] }>,
+    assignments: Array<{ saveId: string; folderIds: Array<string> }>,
   ) => Promise<void>;
   rememberFolders: (
     accountId: string,
@@ -42,8 +41,8 @@ export interface CollectionFolderStore {
 
 const CHUNK = 500;
 
-function chunks<T>(values: T[]): T[][] {
-  const out: T[][] = [];
+function chunks<T>(values: Array<T>): Array<Array<T>> {
+  const out: Array<Array<T>> = [];
   for (let i = 0; i < values.length; i += CHUNK) {
     out.push(values.slice(i, i + CHUNK));
   }
@@ -74,7 +73,7 @@ const defaultStore: CollectionFolderStore = {
   },
   async folderIds(saveIds) {
     const db = await getDb();
-    const found = new Map<string, string[]>();
+    const found = new Map<string, Array<string>>();
     for (const batch of chunks(saveIds)) {
       const rows = await db
         .select({ saveId: saveFolders.saveId, folderId: saveFolders.folderId })
@@ -103,7 +102,7 @@ function sameName(folder: Folder, name: string): boolean {
 /** Finds or creates `Source / collection` Folders, preferring the Folder this collection was filed into before. */
 async function resolveCollectionFolders(
   account: Pick<ConnectedAccount, "id" | "source" | "sync">,
-  collections: readonly ImportCollection[],
+  collections: ReadonlyArray<ImportCollection>,
   store: CollectionFolderStore = defaultStore,
 ): Promise<Map<string, string>> {
   const folders = await store.listFolders();
@@ -153,9 +152,9 @@ async function resolveCollectionFolders(
 /** Adds each save from a collection walk to that collection's Folder, keeping the Folders it already has. */
 export async function fileCollectionSaves(
   account: Pick<ConnectedAccount, "id" | "source" | "sync">,
-  entries: readonly CollectionEntry[],
+  entries: ReadonlyArray<CollectionEntry>,
   store: CollectionFolderStore = defaultStore,
-  everyCollection: readonly ImportCollection[] = [],
+  everyCollection: ReadonlyArray<ImportCollection> = [],
 ): Promise<number> {
   const scope = accountImportScope(account.source, account.sync);
   const filing = collectionFiling(account.source, scope);
@@ -175,7 +174,7 @@ export async function fileCollectionSaves(
     tagged.map((entry) => entry.sourceId),
   );
   const current = await store.folderIds([...saveIds.values()]);
-  const assignments: Array<{ saveId: string; folderIds: string[] }> = [];
+  const assignments: Array<{ saveId: string; folderIds: Array<string> }> = [];
   for (const entry of tagged) {
     const saveId = saveIds.get(entry.sourceId);
     if (!saveId) continue;
@@ -200,8 +199,8 @@ export async function fileCollectionSaves(
 /** Filing is a convenience on top of the import, so a failure is logged and the sync still completes. */
 export async function fileIntoFolders(
   account: Pick<ConnectedAccount, "id" | "source" | "sync">,
-  entries: readonly CollectionEntry[],
-  everyCollection: readonly ImportCollection[] = [],
+  entries: ReadonlyArray<CollectionEntry>,
+  everyCollection: ReadonlyArray<ImportCollection> = [],
 ): Promise<void> {
   try {
     await fileCollectionSaves(account, entries, defaultStore, everyCollection);
@@ -211,7 +210,9 @@ export async function fileIntoFolders(
 }
 
 /** A save can arrive from the list walk and from several collection walks in one run. */
-function mergeTags(entries: readonly CollectionEntry[]): CollectionEntry[] {
+function mergeTags(
+  entries: ReadonlyArray<CollectionEntry>,
+): Array<CollectionEntry> {
   const tags = new Map<string, Set<string>>();
   for (const entry of entries) {
     if (!entry.collectionIds?.length) continue;

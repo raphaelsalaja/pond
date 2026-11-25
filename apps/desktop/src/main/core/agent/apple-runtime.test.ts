@@ -4,6 +4,7 @@ import {
   appleStatus,
   parseHelperReply,
 } from "./apple-runtime";
+import type { AppleRequest } from "./apple-runtime";
 
 describe("parseHelperReply", () => {
   it("reads a success", () => {
@@ -43,11 +44,15 @@ describe("appleStatus", () => {
   });
 
   it("returns the context size when ready", async () => {
-    const run = vi.fn(async () => ({ ok: true as const, contextSize: 4096 }));
+    const calls: Array<[AppleRequest, AbortSignal | undefined]> = [];
+    const run = async (request: AppleRequest, signal?: AbortSignal) => {
+      calls.push([request, signal]);
+      return { ok: true as const, contextSize: 4096 };
+    };
     expect(await appleStatus({ platform: "darwin", run })).toEqual({
       ok: true,
       contextSize: 4096,
     });
-    expect(run).toHaveBeenCalledWith({ command: "status" }, undefined);
+    expect(calls).toEqual([[{ command: "status" }, undefined]]);
   });
 });

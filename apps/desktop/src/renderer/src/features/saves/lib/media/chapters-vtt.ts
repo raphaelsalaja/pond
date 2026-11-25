@@ -14,8 +14,10 @@ type ChapterLike =
 
 const SENTINEL_END_SEC = 359_999.999;
 
-function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
-  const cues: ChapterCue[] = [];
+function normalizeChapters(
+  input: ReadonlyArray<ChapterLike>,
+): Array<ChapterCue> {
+  const cues: Array<ChapterCue> = [];
   for (const c of input) {
     if (!c) continue;
     const title = (c.title ?? "").trim();
@@ -39,24 +41,28 @@ function normalizeChapters(input: readonly ChapterLike[]): ChapterCue[] {
   return cues;
 }
 
-function chaptersToVtt(input: readonly ChapterLike[]): string | null {
+function chaptersToVtt(input: ReadonlyArray<ChapterLike>): string | null {
   const cues = normalizeChapters(input);
   if (cues.length === 0) return null;
 
-  const lines: string[] = ["WEBVTT", ""];
+  const lines: Array<string> = ["WEBVTT", ""];
   for (let i = 0; i < cues.length; i++) {
     const cue = cues[i];
     if (!cue) continue;
     const next = cues[i + 1];
     const end = cue.endSec ?? next?.startSec ?? SENTINEL_END_SEC;
-    lines.push(`${formatVttTime(cue.startSec)} --> ${formatVttTime(end)}`);
-    lines.push(cue.title);
-    lines.push("");
+    lines.push(
+      `${formatVttTime(cue.startSec)} --> ${formatVttTime(end)}`,
+      cue.title,
+      "",
+    );
   }
   return lines.join("\n");
 }
 
-export function chaptersToVttUrl(input: readonly ChapterLike[]): string | null {
+export function chaptersToVttUrl(
+  input: ReadonlyArray<ChapterLike>,
+): string | null {
   const text = chaptersToVtt(input);
   if (!text) return null;
   const blob = new Blob([text], { type: "text/vtt" });
@@ -64,8 +70,8 @@ export function chaptersToVttUrl(input: readonly ChapterLike[]): string | null {
 }
 
 export function chaptersForSave(save: {
-  rawJson?: { ytdlp?: { chapters?: readonly ChapterLike[] } } | null;
-}): ChapterCue[] {
+  rawJson?: { ytdlp?: { chapters?: ReadonlyArray<ChapterLike> } } | null;
+}): Array<ChapterCue> {
   const raw = save.rawJson?.ytdlp?.chapters;
   if (!raw || raw.length === 0) return [];
   return normalizeChapters(raw);

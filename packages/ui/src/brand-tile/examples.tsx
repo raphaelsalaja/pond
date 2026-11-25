@@ -1,6 +1,6 @@
+import { BrandTile } from ".";
 import { Logo } from "../logo";
 import type { ComponentDocs } from "../shared/docs";
-import { BrandTile } from ".";
 
 export const docs: ComponentDocs = {
   slug: "brand-tile",

@@ -17,8 +17,13 @@ const HOVER_DELAY_MS = 450;
 function seekToStart(el: HTMLVideoElement) {
   try {
     el.currentTime = 0;
-  } catch {}
+  } catch {
+    /** Seeking throws while the media has no seekable range; the poster frame stays. */
+  }
 }
+
+/** Autoplay rejections are expected, and pausing before playback starts rejects `play()`. */
+function ignoreAutoplayRejection(): void {}
 
 export function HoverVideo({
   saveId,
@@ -76,15 +81,21 @@ export function HoverVideo({
     },
     [coverKey, hasVideoDims, onReady, saveId, src, unit.posterIsCrossFile],
   );
-  const poster = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
+  const {
+    ref: posterRef,
+    loaded: posterLoaded,
+    onLoad: onPosterLoad,
+  } = useImageReady(effectivePosterUrl ?? null, reportPosterReady);
 
   useEffect(() => {
     if (!active || !primed || !hoverEnabled) return;
     const el = internalRef.current;
-    if (!el) return;
-    /** Autoplay rejections are expected, and some Chromium builds return undefined here. */
+    if (!el) {
+      return;
+    }
+    /** Some Chromium builds return undefined from `play()`. */
     const play = (): void => {
-      el.play()?.catch(() => {});
+      el.play()?.catch(ignoreAutoplayRejection);
     };
     const pause = (): void => {
       el.pause();
@@ -190,23 +201,23 @@ export function HoverVideo({
   ]);
 
   const showHash =
-    Boolean(blurhash) && (effectivePosterUrl ? !poster.loaded : !videoReady);
+    Boolean(blurhash) && (effectivePosterUrl ? !posterLoaded : !videoReady);
 
   return (
     <>
       {showHash && blurhash ? <BlurHash hash={blurhash} /> : null}
       {effectivePosterUrl ? (
         <img
-          ref={poster.ref}
+          ref={posterRef}
           src={effectivePosterUrl}
           alt=""
           decoding="async"
           fetchPriority="auto"
           className={styles.poster}
           data-fit={prefs.galleryFit}
-          data-loaded={!blurhash || poster.loaded ? "true" : "false"}
+          data-loaded={!blurhash || posterLoaded ? "true" : "false"}
           draggable={false}
-          onLoad={poster.onLoad}
+          onLoad={onPosterLoad}
           onError={() => setPosterBroken(true)}
         />
       ) : null}

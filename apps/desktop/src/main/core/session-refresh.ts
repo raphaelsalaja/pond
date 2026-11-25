@@ -1,12 +1,12 @@
 import type { ConnectedAccount, Source } from "@pond/schema/db";
-import {
-  type ExtensionCookie,
-  ROTATING_SESSIONS,
-  type SessionRefreshResponse,
+import { ROTATING_SESSIONS } from "@pond/schema/session";
+import type {
+  ExtensionCookie,
+  SessionRefreshResponse,
 } from "@pond/schema/session";
 
 export interface SessionRefreshDeps {
-  listAccounts: (source: Source) => Promise<ConnectedAccount[]>;
+  listAccounts: (source: Source) => Promise<Array<ConnectedAccount>>;
   heldCookie: (
     account: ConnectedAccount,
     name: string,
@@ -15,11 +15,11 @@ export interface SessionRefreshDeps {
   isAuthCookie: (source: Source, name: string, value: string) => boolean;
   probeHandle: (
     source: Source,
-    cookies: ExtensionCookie[],
+    cookies: Array<ExtensionCookie>,
   ) => Promise<string | null>;
   writeCookies: (
     account: ConnectedAccount,
-    cookies: ExtensionCookie[],
+    cookies: Array<ExtensionCookie>,
   ) => Promise<void>;
   /** Persists a probed handle onto a revived Account so the next rotation matches directly. */
   patchHandle?: (account: ConnectedAccount, handle: string) => Promise<void>;
@@ -34,10 +34,10 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
   /** Only an Account that lost its session and shows the same handle takes it back; a different sign-in never moves in. */
   async function signedOutAccountFor(
     source: Source,
-    accounts: ConnectedAccount[],
-    cookies: ExtensionCookie[],
+    accounts: Array<ConnectedAccount>,
+    cookies: Array<ExtensionCookie>,
   ): Promise<{ account: ConnectedAccount; handle: string } | null> {
-    const signedOut: ConnectedAccount[] = [];
+    const signedOut: Array<ConnectedAccount> = [];
     for (const account of accounts) {
       if (!(await deps.isConnected(account))) {
         signedOut.push(account);
@@ -63,7 +63,7 @@ export function createSessionRefresh(deps: SessionRefreshDeps) {
 
   return async function refresh(
     source: Source,
-    cookies: ExtensionCookie[],
+    cookies: Array<ExtensionCookie>,
   ): Promise<SessionRefreshResponse> {
     const rotating = ROTATING_SESSIONS.get(source);
     const accounts = rotating ? await deps.listAccounts(source) : [];

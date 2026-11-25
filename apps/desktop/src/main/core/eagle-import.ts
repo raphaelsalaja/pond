@@ -21,7 +21,8 @@ import {
 } from "./eagle-metadata";
 import { importFolderTree, setSaveFolders } from "./folders";
 import { runLibraryTransfer } from "./library-transfers";
-import { createManualSave, type ManualSaveInput } from "./manual-import";
+import { createManualSave } from "./manual-import";
+import type { ManualSaveInput } from "./manual-import";
 import { createView, listViews } from "./saved-views";
 import { addTagsToGroup, createGroup } from "./tag-groups";
 import { createTag, listTags } from "./tags";
@@ -32,7 +33,7 @@ interface EagleFolder {
   password?: string;
   color?: string;
   iconColor?: string;
-  children?: EagleFolder[];
+  children?: Array<EagleFolder>;
 }
 
 const EagleFolderSchema: z.ZodType<EagleFolder> = z.lazy(() =>
@@ -95,9 +96,9 @@ interface EagleImportCounts {
   skipped: number;
   failed: number;
   deletedSkipped: number;
-  lockedFolders: EagleLockedFolder[];
-  droppedFields: string[];
-  approximatedRules: string[];
+  lockedFolders: Array<EagleLockedFolder>;
+  droppedFields: Array<string>;
+  approximatedRules: Array<string>;
 }
 
 export type EagleImportResult = EagleImportCounts & OkResult;
@@ -129,7 +130,7 @@ export function isThumbnailSidecar(name: string): boolean {
 
 /** Eagle also exports each preview as its own item whose only file is `<name>_thumbnail.webp`, so that item ends up with no media and is skipped. */
 export function partitionEagleItemFiles(
-  files: readonly string[],
+  files: ReadonlyArray<string>,
   bookmark = false,
 ) {
   const visible = files.filter(
@@ -150,10 +151,10 @@ export function partitionEagleItemFiles(
 }
 
 export function collectLockedEagleFolders(
-  folders: EagleFolder[],
+  folders: Array<EagleFolder>,
   parentLocked = false,
-): EagleLockedFolder[] {
-  const out: EagleLockedFolder[] = [];
+): Array<EagleLockedFolder> {
+  const out: Array<EagleLockedFolder> = [];
   for (const folder of folders) {
     const lockedHere = Boolean(folder.password);
     const skipped = lockedHere || parentLocked;
@@ -172,10 +173,10 @@ export function collectLockedEagleFolders(
 }
 
 export function flattenEagleFolders(
-  folders: EagleFolder[],
+  folders: Array<EagleFolder>,
   parentId: string | null = null,
-): FlattenedEagleFolder[] {
-  const out: FlattenedEagleFolder[] = [];
+): Array<FlattenedEagleFolder> {
+  const out: Array<FlattenedEagleFolder> = [];
   for (const [sortOrder, folder] of folders.entries()) {
     if (!folder.id || folder.password) continue;
     out.push({
@@ -199,9 +200,9 @@ async function readJson<T>(
   let text: string;
   try {
     text = await readFile(path, "utf8");
-  } catch (cause) {
-    if (errnoCode(cause) !== "ENOENT") {
-      log.warn("[pond eagle] failed to read json", path, cause);
+  } catch (error) {
+    if (errnoCode(error) !== "ENOENT") {
+      log.warn("[pond eagle] failed to read json", path, error);
     }
     return null;
   }
@@ -220,8 +221,12 @@ function errnoCode(cause: unknown): string | null {
 async function resolveImagesDir(libraryPath: string): Promise<string | null> {
   const direct = join(libraryPath, "images");
   try {
-    if ((await stat(direct)).isDirectory()) return direct;
-  } catch {}
+    if ((await stat(direct)).isDirectory()) {
+      return direct;
+    }
+  } catch {
+    /** A missing images folder means the library nests it one level down. */
+  }
 
   try {
     const entries = await readdir(libraryPath, { withFileTypes: true });
@@ -229,8 +234,12 @@ async function resolveImagesDir(libraryPath: string): Promise<string | null> {
       if (!entry.isDirectory() || !entry.name.endsWith(".library")) continue;
       const nested = join(libraryPath, entry.name, "images");
       try {
-        if ((await stat(nested)).isDirectory()) return nested;
-      } catch {}
+        if ((await stat(nested)).isDirectory()) {
+          return nested;
+        }
+      } catch {
+        /** A nested library without an images folder is skipped. */
+      }
     }
   } catch {
     return null;
@@ -317,22 +326,26 @@ async function importEagle(
           EAGLE_SMART_FOLDER_KEYS.has(field) ||
           value === "" ||
           value === null
-        )
+        ) {
           continue;
+        }
         dropped.add(`${parsed.data.name}: ${field}`);
       }
       const query = eagleSmartFolderQuery(parsed.data, ruleFolders);
       if (!query) {
-        for (const reason of unsupportedEagleRules(parsed.data, ruleFolders))
+        for (const reason of unsupportedEagleRules(parsed.data, ruleFolders)) {
           dropped.add(reason);
-        if (parsed.data.children.length)
+        }
+        if (parsed.data.children.length) {
           dropped.add(
             `Children of unsupported Smart Folder: ${parsed.data.name}`,
           );
+        }
         continue;
       }
-      for (const rule of approximateEagleRules(parsed.data, ruleFolders))
+      for (const rule of approximateEagleRules(parsed.data, ruleFolders)) {
         approximated.add(rule);
+      }
       const question = `eagle:${parsed.data.id}`;
       const kind =
         parsed.data.children.length || parsed.data.conditions.length === 0
@@ -380,11 +393,11 @@ async function importEagle(
     flattenEagleFolders(libraryMeta.folders).map((folder) => folder.id),
   );
 
-  let entries: Dirent[];
+  let entries: Array<Dirent>;
   try {
     entries = await readdir(imagesDir, { withFileTypes: true });
-  } catch (err) {
-    log.warn("[pond eagle] readdir failed", imagesDir, err);
+  } catch (error) {
+    log.warn("[pond eagle] readdir failed", imagesDir, error);
     return emptyResult("read_failed");
   }
 
@@ -420,7 +433,7 @@ async function importEagle(
         continue;
       }
 
-      let files: string[];
+      let files: Array<string>;
       try {
         files = await readdir(itemDir);
       } catch {
@@ -443,8 +456,9 @@ async function importEagle(
       const palettes = (meta.palettes ?? [])
         .map(eaglePaletteColor)
         .filter(Boolean);
-      if ((meta.folders ?? []).some((id) => !availableFolderIds.has(id)))
+      if ((meta.folders ?? []).some((id) => !availableFolderIds.has(id))) {
         dropped.add("Unavailable folder membership");
+      }
 
       if (opts.dryRun) {
         imported += 1;
@@ -471,10 +485,18 @@ async function importEagle(
             : undefined,
           createdAt: meta.btime ? new Date(meta.btime) : undefined,
         };
-        if (meta.width !== undefined) input.width = meta.width;
-        if (meta.height !== undefined) input.height = meta.height;
-        if (meta.star != null && meta.star > 0) input.rating = meta.star;
-        if (palettes.length > 0) input.dominantColors = palettes;
+        if (meta.width !== undefined) {
+          input.width = meta.width;
+        }
+        if (meta.height !== undefined) {
+          input.height = meta.height;
+        }
+        if (meta.star !== undefined && meta.star > 0) {
+          input.rating = meta.star;
+        }
+        if (palettes.length > 0) {
+          input.dominantColors = palettes;
+        }
         const res = await createManualSave(input);
         if (!res.ok) {
           failed += 1;
@@ -489,10 +511,13 @@ async function importEagle(
         if (res.id && pondFolderIds.length > 0) {
           await setSaveFolders(res.id, pondFolderIds);
         }
-        if (res.skipped) skipped += 1;
-        else imported += 1;
-      } catch (err) {
-        log.warn("[pond eagle] item import failed", meta.id, err);
+        if (res.skipped) {
+          skipped += 1;
+        } else {
+          imported += 1;
+        }
+      } catch (error) {
+        log.warn("[pond eagle] item import failed", meta.id, error);
         failed += 1;
       }
     } finally {

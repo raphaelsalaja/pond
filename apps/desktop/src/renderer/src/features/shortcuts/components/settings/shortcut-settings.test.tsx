@@ -1,28 +1,38 @@
 import { DEFAULT_PREFS } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ShortcutSettings } from "./";
 
+async function settle() {
+  for (let tick = 0; tick < 5; tick++) {
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        }),
+    );
+  }
+}
+
 it("shows editable shortcuts without profile controls or explanatory copy", async () => {
-  const writes: string[] = [];
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("pond", {
-    async query(name: string) {
-      if (name === "settings.getPrefs") return DEFAULT_PREFS;
-      if (name === "settings.globalShortcutStatus")
-        return { enabled: true, errors: ["Show Pond is unavailable."] };
-      writes.push(name);
-      throw new Error(
-        "Show Pond is unavailable. Your shortcuts were not changed.",
-      );
+  const writes: Array<string> = [];
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => DEFAULT_PREFS,
+      "settings.globalShortcutStatus": () => ({
+        enabled: true,
+        errors: ["Show Pond is unavailable."],
+      }),
+      "settings.setPrefs": async () => {
+        writes.push("settings.setPrefs");
+        throw new Error(
+          "Show Pond is unavailable. Your shortcuts were not changed.",
+        );
+      },
     },
   });
   const host = document.createElement("div");
@@ -64,32 +74,22 @@ it("shows editable shortcuts without profile controls or explanatory copy", asyn
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
 it("records keys for the unbound ring shortcut and clears it back to unbound", async () => {
-  let prefs = DEFAULT_PREFS;
-  const saved: Record<string, string>[] = [];
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal("pond", {
-    async query(
-      name: string,
-      input: { shortcuts?: { overrides: Record<string, string> } },
-    ) {
-      if (name === "settings.getPrefs") return prefs;
-      if (name === "settings.globalShortcutStatus")
-        return { enabled: true, errors: [] };
-      const overrides = input.shortcuts?.overrides ?? {};
-      saved.push(overrides);
-      prefs = { ...prefs, shortcuts: { ...prefs.shortcuts, overrides } };
-      return { prefs };
+  let prefs: Prefs = DEFAULT_PREFS;
+  const saved: Array<Prefs["shortcuts"]["overrides"]> = [];
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => prefs,
+      "settings.globalShortcutStatus": () => ({ enabled: true, errors: [] }),
+      "settings.setPrefs": (input) => {
+        const overrides = input?.shortcuts?.overrides ?? {};
+        saved.push(overrides);
+        prefs = { ...prefs, shortcuts: { ...prefs.shortcuts, overrides } };
+        return { ok: true, prefs };
+      },
     },
   });
   const host = document.createElement("div");
@@ -103,10 +103,6 @@ it("records keys for the unbound ring shortcut and clears it back to unbound", a
     host.querySelector<HTMLButtonElement>(
       'button[aria-label="Clear Open File To Ring shortcut"]',
     );
-  const settle = async () => {
-    for (let tick = 0; tick < 5; tick++)
-      await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
-  };
   try {
     await act(async () => root.render(<ShortcutSettings />));
     expect(
@@ -142,6 +138,5 @@ it("records keys for the unbound ring shortcut and clears it back to unbound", a
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

@@ -1,18 +1,18 @@
 import type { ModelMessage } from "ai";
 import { expect, it } from "vitest";
-import {
-  budgetMessages,
-  type ChatMessage,
-  completeWithTools,
-} from "./complete";
+import { budgetMessages, completeWithTools } from "./complete";
+import type { ChatMessage } from "./complete";
 import { promptDump, textModel } from "./mock-model";
 
 it("compacts the model request while retaining the complete input history", async () => {
   const model = textModel("Hello");
-  const messages: ChatMessage[] = Array.from({ length: 60 }, (_, index) => ({
-    role: index % 2 === 0 ? "user" : "assistant",
-    content: `${index}: ${"Earlier discussion. ".repeat(300)}`,
-  }));
+  const messages: Array<ChatMessage> = Array.from(
+    { length: 60 },
+    (_, index) => ({
+      role: index % 2 === 0 ? "user" : "assistant",
+      content: `${index}: ${"Earlier discussion. ".repeat(300)}`,
+    }),
+  );
   messages.push({ role: "user", content: "Hello" });
   const original = structuredClone(messages);
   await completeWithTools({
@@ -41,7 +41,7 @@ it("compacts the model request while retaining the complete input history", asyn
 });
 
 it("removes oldest whole turns and always keeps the current turn", () => {
-  const messages: ModelMessage[] = [
+  const messages: Array<ModelMessage> = [
     { role: "user", content: `Old question ${"x".repeat(100)}` },
     { role: "assistant", content: `Old answer ${"y".repeat(100)}` },
     { role: "user", content: "Current question" },
@@ -52,8 +52,8 @@ it("removes oldest whole turns and always keeps the current turn", () => {
   expect(kept).toEqual([{ role: "user", content: "Current question" }]);
 });
 
-it("keeps every tool round of the current turn and prunes tools from earlier turns", () => {
-  const round = (id: string): ModelMessage[] => [
+function round(id: string): Array<ModelMessage> {
+  return [
     {
       role: "assistant",
       content: [
@@ -77,6 +77,9 @@ it("keeps every tool round of the current turn and prunes tools from earlier tur
       ],
     },
   ];
+}
+
+it("keeps every tool round of the current turn and prunes tools from earlier turns", () => {
   const kept = budgetMessages(
     [
       { role: "user", content: "Old question" },
@@ -108,7 +111,7 @@ it("rejects a request when instructions and the current turn exceed Context", as
       context: "Library evidence ".repeat(10_000),
       controls: {
         fast: false,
-        contextTokens: 4_096,
+        contextTokens: 4096,
         reasoning: "provider-default",
       },
       tools: [],

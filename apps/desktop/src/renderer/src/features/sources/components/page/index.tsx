@@ -38,9 +38,9 @@ import { SourcesContextMenu } from "./context-menu";
 import {
   matchesSourceFilters,
   SOURCE_STATUS_OPTIONS,
-  type SourceFilters,
   sourceFiltersActive,
 } from "./lib/filters";
+import type { SourceFilters } from "./lib/filters";
 import type { SourceEntry, SourceTableRow } from "./lib/helpers";
 import { SourcesLoading } from "./loading";
 import { SourceOptionsMenu } from "./options";
@@ -65,7 +65,7 @@ function SourcesMatchesEmpty({
       query={filters.q}
       filtered={sourceFiltersActive(filters)}
       hidden={formatPlural(total, { one: "source", other: "sources" })}
-      onReset={sourcesFilters.reset}
+      onReset={() => sourcesFilters.reset()}
     />
   );
 }
@@ -222,21 +222,21 @@ export function SourcesPage() {
             icon={<IconCircleCheck />}
             options={SOURCE_STATUS_OPTIONS}
             selected={filters.statuses}
-            onChange={sourcesFilters.setStatuses}
+            onChange={(next) => sourcesFilters.setStatuses(next)}
           />
           <TableFilterChip
             name="Source"
             icon={<IconLink2 />}
             options={sourceOptions}
             selected={filters.sources}
-            onChange={sourcesFilters.setSources}
+            onChange={(next) => sourcesFilters.setSources(next)}
           />
           <TableFilterChip
             name="Type"
             icon={<IconFile />}
             options={typeOptions}
             selected={filters.types}
-            onChange={sourcesFilters.setTypes}
+            onChange={(next) => sourcesFilters.setTypes(next)}
           />
         </TableFilterBar>
       }
@@ -275,7 +275,7 @@ export function SourcesPage() {
         sourcesSelection.set(
           ids
             .map((id) => rowsById.get(id))
-            .filter((row): row is SourceTableRow => row != null),
+            .filter((row): row is SourceTableRow => row !== undefined),
         );
       }}
       height={

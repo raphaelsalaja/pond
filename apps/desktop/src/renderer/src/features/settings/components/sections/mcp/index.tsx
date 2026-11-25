@@ -1,5 +1,6 @@
 import { Settings, Switch } from "@pond/ui";
-import { MCP_HOST_CATALOG, type McpHostDefinition } from "@shared/mcp-hosts";
+import { MCP_HOST_CATALOG } from "@shared/mcp-hosts";
+import type { McpHostDefinition } from "@shared/mcp-hosts";
 import { usePrefs } from "@/shared/state/prefs";
 import { FishServersSection } from "./fish-servers";
 import { HostPopover } from "./host-popover";

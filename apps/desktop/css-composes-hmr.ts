@@ -4,7 +4,7 @@ import type { Plugin } from "vite";
 const COMPOSE_FROM = /composes:[^;]*?from\s+["']([^"']+)["']/g;
 
 /** Vite inlines CSS Modules `composes` and drops the graph edge, so HMR would miss composer stylesheets. */
-export function cssComposesHmr(watchDirs: string[] = []): Plugin {
+export function cssComposesHmr(watchDirs: Array<string> = []): Plugin {
   const composers = new Map<string, Set<string>>();
 
   return {

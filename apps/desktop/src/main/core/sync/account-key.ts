@@ -1,4 +1,5 @@
-import { type ConnectedAccount, type Source, saves } from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
@@ -18,7 +19,7 @@ async function inferAccountKey(source: Source): Promise<string | null> {
     .from(saves)
     .where(eq(saves.source, source))
     .limit(50);
-  const hasPathParser = Boolean(extractorFor(source)?.handleFromPath);
+  const hasPathParser = extractorFor(source)?.handleFromPath !== undefined;
   let result: string | null = null;
   for (const row of rows) {
     const handle =
@@ -33,9 +34,12 @@ async function inferAccountKey(source: Source): Promise<string | null> {
 }
 
 function isCachedHandleValid(source: Source, handle: string): boolean {
-  const fn = extractorFor(source)?.handleFromPath;
-  if (!fn) return true;
-  return fn([handle]) != null;
+  const extractor = extractorFor(source);
+  if (extractor?.handleFromPath === undefined) {
+    return true;
+  }
+  const parsed = extractor.handleFromPath([handle]);
+  return parsed !== null && parsed !== undefined;
 }
 
 export async function resolveAccountHandle(
@@ -82,8 +86,8 @@ export async function ensureAccountHandle(
     if (!probed) return;
     log.info(`[pond sync:${account.source}] probed handle`, probed);
     await persistAccountHandle(account, probed);
-  } catch (err) {
-    log.warn(`[pond sync:${account.source}] handle probe failed`, err);
+  } catch (error) {
+    log.warn(`[pond sync:${account.source}] handle probe failed`, error);
   }
 }
 
@@ -97,8 +101,8 @@ async function persistAccountHandle(
       avatarUrl: null,
       avatarCheckedAt: null,
     });
-  } catch (err) {
-    log.warn(`[pond sync:${account.source}] failed to cache handle`, err);
+  } catch (error) {
+    log.warn(`[pond sync:${account.source}] failed to cache handle`, error);
   }
 }
 

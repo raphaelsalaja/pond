@@ -17,11 +17,10 @@ export function nextRating(key: string): number | null {
   return Number.isInteger(digit) && digit >= 1 && digit <= MAX ? digit : null;
 }
 
-interface RatingProps
-  extends Omit<
-    React.ComponentPropsWithoutRef<"div">,
-    "onChange" | "defaultValue"
-  > {
+interface RatingProps extends Omit<
+  React.ComponentPropsWithoutRef<"div">,
+  "onChange" | "defaultValue"
+> {
   /** `null` is a mixed value, such as several saves with different ratings. */
   value: number | null;
   onValueChange: (value: number) => void;

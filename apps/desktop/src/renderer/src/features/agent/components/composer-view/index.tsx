@@ -1,20 +1,13 @@
 import { IconArrowUp } from "@pond/icons";
 import { Button, Tooltip } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import {
-  AnimatePresence,
-  motion,
-  type Transition,
-  useReducedMotionConfig,
-} from "motion/react";
-import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
-  forwardRef,
-  type ReactNode,
-  useEffect,
-  useRef,
-  useState,
+import { AnimatePresence, motion, useReducedMotionConfig } from "motion/react";
+import type { Transition } from "motion/react";
+import { forwardRef, useEffect, useRef, useState } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
 } from "react";
 import styles from "./styles.module.css";
 

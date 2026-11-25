@@ -7,11 +7,8 @@ import {
 } from "@/features/library/state/folder-appearance";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
-import {
-  FolderIcon,
-  type FolderIconId,
-  folderColorCss,
-} from "@/shared/lib/folder-icons";
+import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { gentleSpring } from "@/shared/lib/motion";
 import { AppearancePicker } from "./appearance-picker";
 import styles from "./styles.module.css";

@@ -1,15 +1,7 @@
 import { IconCaretRight, IconCheck } from "@pond/icons";
 import { Keyboard, Loader, PickerPanel } from "@pond/ui";
-import {
-  type CSSProperties,
-  type MouseEvent,
-  memo,
-  type ReactNode,
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { memo, useEffect, useRef, useState } from "react";
+import type { CSSProperties, MouseEvent, ReactNode, RefObject } from "react";
 import { ShortcutKeys } from "@/shared/components/shortcut-keys";
 import type { MatchRange } from "../score";
 import type { MenuModel, RankedEntry } from "../types";
@@ -35,10 +27,12 @@ function Highlight({
   ranges,
 }: {
   text: string;
-  ranges: readonly MatchRange[];
+  ranges: ReadonlyArray<MatchRange>;
 }) {
-  if (ranges.length === 0) return text;
-  const parts: ReactNode[] = [];
+  if (ranges.length === 0) {
+    return text;
+  }
+  const parts: Array<ReactNode> = [];
   let cursor = 0;
   for (const [start, end] of ranges) {
     if (start > cursor) parts.push(text.slice(cursor, start));

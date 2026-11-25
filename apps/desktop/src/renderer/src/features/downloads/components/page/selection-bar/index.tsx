@@ -4,7 +4,8 @@ import {
   IconMediaPause,
   IconTrashXmark,
 } from "@pond/icons";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import {
   canCancelDownload,
   cancelDownloadRows,
@@ -26,10 +27,10 @@ interface BulkAction {
   label: string;
   icon: ReactNode;
   applies: (row: DownloadRow) => boolean;
-  run: (rows: readonly DownloadRow[]) => Promise<boolean>;
+  run: (rows: ReadonlyArray<DownloadRow>) => Promise<boolean>;
 }
 
-const BULK_ACTIONS: readonly BulkAction[] = [
+const BULK_ACTIONS: ReadonlyArray<BulkAction> = [
   {
     id: "retry",
     label: "Retry",
@@ -71,7 +72,7 @@ export function DownloadSelectionBar() {
     <SelectionBar.Root
       label="Selected Downloads"
       count={rows.length}
-      onClear={downloadsSelection.clear}
+      onClear={() => downloadsSelection.clear()}
     >
       {BULK_ACTIONS.map((action) => (
         <SelectionBar.Action

@@ -10,9 +10,9 @@ import {
   Lockup,
   libraryPlaces,
   progress,
-  type Tile,
   WHOLE,
 } from "@pond/video";
+import type { Tile } from "@pond/video";
 import {
   FOLDERS,
   GRID,
@@ -39,7 +39,7 @@ const CAMERA = [
   { at: CUES.folderFocus, ...FOLDER_CROP, move: 850 },
 ];
 
-const TILES: Tile[] = GRID.map((shot) => ({
+const TILES: Array<Tile> = GRID.map((shot) => ({
   key: shot.id,
   src: media(shot.id),
   title: shot.title,
@@ -142,7 +142,7 @@ function Composition({ t }: { t: number }) {
 export const video = defineVideo({
   title: "Pond: Command menu",
   duration: DURATION,
-  poster: 11600,
+  poster: 11_600,
   media: MEDIA,
   Composition,
 });

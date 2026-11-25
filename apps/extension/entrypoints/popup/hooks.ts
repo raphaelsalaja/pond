@@ -12,16 +12,21 @@ export function useActiveTab(): chrome.tabs.Tab | null | undefined {
 }
 
 /** Chrome on macOS reports glyphs like `⌥⇧S`; elsewhere it joins key names with `+`. */
-export function shortcutKeys(shortcut: string): string[] {
-  if (shortcut.includes("+")) return shortcut.split("+").filter(Boolean);
-  return [...shortcut];
+export function shortcutKeys(shortcut: string): Array<string> {
+  if (shortcut.includes("+")) {
+    return shortcut.split("+").filter(Boolean);
+  }
+  return Array.from(shortcut);
 }
 
+/** A failed lookup only means the popup shows no shortcut hints. */
+function keepNoShortcuts() {}
+
 /** Maps each command name to its keys, leaving out commands with no shortcut set. */
-export function useShortcuts(): ReadonlyMap<string, string[]> {
-  const [shortcuts, setShortcuts] = useState<ReadonlyMap<string, string[]>>(
-    new Map(),
-  );
+export function useShortcuts(): ReadonlyMap<string, Array<string>> {
+  const [shortcuts, setShortcuts] = useState<
+    ReadonlyMap<string, Array<string>>
+  >(new Map());
   useEffect(() => {
     void browser.commands
       ?.getAll()
@@ -36,7 +41,7 @@ export function useShortcuts(): ReadonlyMap<string, string[]> {
           ),
         ),
       )
-      .catch(() => {});
+      .catch(keepNoShortcuts);
   }, []);
   return shortcuts;
 }

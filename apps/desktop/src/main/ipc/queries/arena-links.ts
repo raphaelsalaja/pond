@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { IPC } from "../../../shared/constants";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const PROGRESS_INTERVAL_MS = 250;
 

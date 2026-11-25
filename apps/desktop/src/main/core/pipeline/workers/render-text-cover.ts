@@ -17,11 +17,8 @@ import {
 } from "@shared/text-card";
 import log from "electron-log/main.js";
 import { persistSave } from "../../persist-save";
-import {
-  type RenderedCard,
-  renderSearchCardPng,
-  renderTextCardPng,
-} from "../../render-card";
+import { renderSearchCardPng, renderTextCardPng } from "../../render-card";
+import type { RenderedCard } from "../../render-card";
 import { readSave } from "./apply";
 
 /** The fields a text cover needs; the full save row satisfies it. */
@@ -33,7 +30,7 @@ export interface TextCoverSave {
   title: string | null;
   description: string | null;
   mediaType: string | null;
-  files: readonly SaveFile[] | null;
+  files: ReadonlyArray<SaveFile> | null;
   rawJson: RawJson | null;
 }
 

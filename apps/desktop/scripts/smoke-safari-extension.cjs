@@ -12,9 +12,9 @@ const { app } = require("electron");
 const assert = require("node:assert/strict");
 const { mkdtempSync, rmSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
+const path = require("node:path");
 
-const sandbox = mkdtempSync(join(tmpdir(), "pond-safari-smoke-"));
+const sandbox = mkdtempSync(path.join(tmpdir(), "pond-safari-smoke-"));
 process.env.POND_SANDBOX = sandbox;
 process.once("exit", () => {
   try {
@@ -29,7 +29,7 @@ let finished = false;
 const timer = setTimeout(() => {
   console.error("SMOKE_FAILED: renderer did not finish");
   app.exit(1);
-}, 120000);
+}, 120_000);
 
 /** Waits for React to paint, then runs one renderer phase. */
 const READY = `(() => new Promise((resolve, reject) => {
@@ -52,23 +52,26 @@ app.on("web-contents-created", (_, contents) => {
   contents.on("did-fail-load", (_, code, description) =>
     console.error("LOAD_FAILED", code, description),
   );
-  contents.on("did-finish-load", async () => {
-    if (!contents.getURL().includes("index.html") || finished) return;
-    const current = phase;
-    phase += 1;
-    try {
-      if (current === 0) {
-        // A brand new library opens on the setup screen, which has no workspace menu.
-        await contents.executeJavaScript(`(async () => {
+  contents.on("did-finish-load", () => {
+    void (async () => {
+      if (!contents.getURL().includes("index.html") || finished) {
+        return;
+      }
+      const current = phase;
+      phase += 1;
+      try {
+        if (current === 0) {
+          // A brand new library opens on the setup screen, which has no workspace menu.
+          await contents.executeJavaScript(`(async () => {
           await ${READY};
           await window.pond.query("settings.setOnboarded", {});
           return true;
         })()`);
-        contents.reload();
-        return;
-      }
+          contents.reload();
+          return;
+        }
 
-      const result = await contents.executeJavaScript(`(async () => {
+        const result = await contents.executeJavaScript(`(async () => {
         await ${READY};
         ${PRESS}
         const waitFor = (select, timeout = 15000) => new Promise((resolve, reject) => {
@@ -106,86 +109,94 @@ app.on("web-contents-created", (_, contents) => {
         };
       })()`);
 
-      finished = true;
-      /** Normalized in Node: a `\s` escape inside the template literal above would collapse to `s`. */
-      result.text = String(result.text).replace(/\s+/g, " ").trim();
-      console.log(
-        "DIALOG_DEBUG",
-        JSON.stringify({
-          platform: result.platform,
-          status: result.status,
-          buttons: result.buttons,
-          text: result.text,
-        }),
-      );
-
-      assert.ok(
-        ["enabled", "disabled", "not_registered", "not_bundled"].includes(
-          result.status.state,
-        ),
-        `unexpected state: ${result.status.state}`,
-      );
-      assert.ok(
-        ["developer-id", "ad-hoc", "unknown"].includes(result.status.signature),
-        `unexpected signature: ${result.status.signature}`,
-      );
-      if (process.platform === "darwin") {
-        assert.ok(
-          result.platform.toLowerCase().includes("mac"),
-          `expected macOS, got ${result.platform}`,
+        finished = true;
+        /** Normalized in Node: a `\s` escape inside the template literal above would collapse to `s`. */
+        result.text = String(result.text).replaceAll(/\s+/g, " ").trim();
+        console.log(
+          "DIALOG_DEBUG",
+          JSON.stringify({
+            platform: result.platform,
+            status: result.status,
+            buttons: result.buttons,
+            text: result.text,
+          }),
         );
-        assert.ok(result.text.includes("Safari"), "dialog should name Safari");
-        if (result.status.state === "enabled") {
-          assert.ok(
-            result.text.includes("Enabled"),
-            "enabled should show a badge",
-          );
-          assert.ok(
-            !result.buttons.includes("Open Safari Settings"),
-            "enabled should not offer to open Safari settings",
-          );
-        } else if (
-          result.status.state === "disabled" ||
-          result.status.state === "not_registered"
-        ) {
-          assert.ok(
-            result.buttons.includes("Open Safari Settings"),
-            "off state should offer to open Safari settings",
-          );
-          assert.ok(
-            result.text.includes("Turn on Pond."),
-            "off state should explain how",
-          );
-        } else {
-          assert.ok(
-            result.text.includes("Not included in this build"),
-            "missing appex should say so",
-          );
-          assert.ok(!result.buttons.includes("Open Safari Settings"));
-        }
-      }
 
-      clearTimeout(timer);
-      console.log(
-        "SMOKE_PASSED",
-        JSON.stringify({
-          state: result.status.state,
-          bundleId: result.status.bundleId,
-          buttons: result.buttons,
-        }),
-      );
-      setTimeout(() => app.exit(0), 500);
-    } catch (error) {
-      finished = true;
-      clearTimeout(timer);
-      console.error("SMOKE_FAILED", error);
-      app.exit(1);
-    }
+        assert.ok(
+          ["enabled", "disabled", "not_registered", "not_bundled"].includes(
+            result.status.state,
+          ),
+          `unexpected state: ${result.status.state}`,
+        );
+        assert.ok(
+          ["developer-id", "ad-hoc", "unknown"].includes(
+            result.status.signature,
+          ),
+          `unexpected signature: ${result.status.signature}`,
+        );
+        if (process.platform === "darwin") {
+          assert.ok(
+            result.platform.toLowerCase().includes("mac"),
+            `expected macOS, got ${result.platform}`,
+          );
+          assert.ok(
+            result.text.includes("Safari"),
+            "dialog should name Safari",
+          );
+          if (result.status.state === "enabled") {
+            assert.ok(
+              result.text.includes("Enabled"),
+              "enabled should show a badge",
+            );
+            assert.ok(
+              !result.buttons.includes("Open Safari Settings"),
+              "enabled should not offer to open Safari settings",
+            );
+          } else if (
+            result.status.state === "disabled" ||
+            result.status.state === "not_registered"
+          ) {
+            assert.ok(
+              result.buttons.includes("Open Safari Settings"),
+              "off state should offer to open Safari settings",
+            );
+            assert.ok(
+              result.text.includes("Turn on Pond."),
+              "off state should explain how",
+            );
+          } else {
+            assert.ok(
+              result.text.includes("Not included in this build"),
+              "missing appex should say so",
+            );
+            assert.ok(!result.buttons.includes("Open Safari Settings"));
+          }
+        }
+
+        clearTimeout(timer);
+        console.log(
+          "SMOKE_PASSED",
+          JSON.stringify({
+            state: result.status.state,
+            bundleId: result.status.bundleId,
+            buttons: result.buttons,
+          }),
+        );
+        setTimeout(() => app.exit(0), 500);
+      } catch (error) {
+        finished = true;
+        clearTimeout(timer);
+        console.error("SMOKE_FAILED", error);
+        app.exit(1);
+      }
+    })();
   });
 });
 
-import("../out/main/index.js").catch((error) => {
+function fail(error) {
   clearTimeout(timer);
   console.error("SMOKE_FAILED", error);
   app.exit(1);
-});
+}
+
+import("../out/main/index.js").catch(fail);

@@ -1,9 +1,7 @@
-import {
-  type NewSavedView,
-  type SavedView,
-  savedViews as savedViewsTable,
-} from "@pond/schema/db";
-import { EMPTY_QUERY, type Query } from "@pond/schema/filters/types";
+import { savedViews as savedViewsTable } from "@pond/schema/db";
+import type { NewSavedView, SavedView } from "@pond/schema/db";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
 import type {
   BatchRenameInput,
@@ -21,8 +19,8 @@ import { recordBatchForUndo } from "./undo";
 
 interface SavedViewRuntime {
   getDb: () => Promise<Db>;
-  commit: (transactions: Transaction[]) => Promise<void>;
-  recordUndo?: (transactions: Transaction[]) => void;
+  commit: (transactions: Array<Transaction>) => Promise<void>;
+  recordUndo?: (transactions: Array<Transaction>) => void;
 }
 
 const defaultRuntime: SavedViewRuntime = {
@@ -33,8 +31,14 @@ const defaultRuntime: SavedViewRuntime = {
   recordUndo: recordBatchForUndo,
 };
 
+function isObject(value: unknown): value is object {
+  return (
+    (typeof value === "object" && value !== null) || typeof value === "function"
+  );
+}
+
 const StoredQuerySchema = z.custom<Query>(
-  (value) => value instanceof Object && !Array.isArray(value),
+  (value) => isObject(value) && !Array.isArray(value),
 );
 
 function coerceQuery(raw: Query | null): Query {
@@ -43,7 +47,7 @@ function coerceQuery(raw: Query | null): Query {
 
 export async function listViews(
   runtime: SavedViewRuntime = defaultRuntime,
-): Promise<SavedView[]> {
+): Promise<Array<SavedView>> {
   const db = await runtime.getDb();
   const rows = await db
     .select()
@@ -152,15 +156,16 @@ export async function renameViewsBatch(
 ): Promise<OkResult<{ renamed: number }>> {
   const ids = [...new Set(input.ids.filter(Boolean))];
   const pattern = input.pattern.trim();
-  if (!pattern || ids.length === 0)
+  if (!pattern || ids.length === 0) {
     return { ok: false, error: "Enter a name pattern and choose views." };
+  }
   return mutateViews(runtime, async (db) => {
     const rows = await db
       .select()
       .from(savedViewsTable)
       .where(inArray(savedViewsTable.id, ids));
     const byId = new Map(rows.map((row) => [row.id, row]));
-    const transactions: Transaction[] = [];
+    const transactions: Array<Transaction> = [];
     for (const [index, id] of ids.entries()) {
       const row = byId.get(id);
       if (!row) continue;
@@ -201,7 +206,7 @@ export async function deleteView(
       .select()
       .from(savedViewsTable)
       .where(eq(savedViewsTable.parentId, id));
-    const transactions: Transaction[] = children.map((child) => ({
+    const transactions: Array<Transaction> = children.map((child) => ({
       kind: "update",
       model: "saved_view",
       id: child.id,
@@ -222,11 +227,11 @@ export async function deleteView(
 }
 
 export async function reorderViews(
-  orderedIds: string[],
+  orderedIds: Array<string>,
   runtime: SavedViewRuntime = defaultRuntime,
 ): Promise<OkResult> {
   return mutateViews(runtime, async (db) => {
-    const txs: Transaction[] = [];
+    const txs: Array<Transaction> = [];
     for (let i = 0; i < orderedIds.length; i++) {
       const id = orderedIds[i];
       if (!id) continue;

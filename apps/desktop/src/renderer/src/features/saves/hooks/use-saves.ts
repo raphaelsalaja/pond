@@ -10,7 +10,7 @@ export function useSave(id: string | null | undefined): Save | undefined {
 }
 
 /** Keeps these rows in the pool while mounted, for readers that select them without `useSave`. */
-export function useRetainedSaves(ids: readonly string[]): void {
+export function useRetainedSaves(ids: ReadonlyArray<string>): void {
   const key = ids.join("\n");
   useEffect(() => {
     if (!key) return;

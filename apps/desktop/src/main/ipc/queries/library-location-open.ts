@@ -1,22 +1,16 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import {
-  app,
-  BrowserWindow,
-  dialog,
-  type NativeImage,
-  nativeImage,
-  shell,
-} from "electron";
+import { app, BrowserWindow, dialog, nativeImage, shell } from "electron";
+import type { NativeImage } from "electron";
 import { z } from "zod";
 import { PondTintSchema } from "../../../shared/library-mark";
 import {
   centeredFrame,
   cropRect,
   LOGO_SIZE,
-  type LogoCrop,
   pixelCrop,
 } from "../../../shared/logo-crop";
+import type { LogoCrop } from "../../../shared/logo-crop";
 import type { QueryResult } from "../../../shared/query-contracts";
 import { createPondBundle } from "../../core/ensure-default-library";
 import { isLibraryBackup } from "../../core/library-backup";
@@ -41,7 +35,8 @@ import {
   resumeLibraryWork,
   suspendLibraryWork,
 } from "./library-location-runtime";
-import { type QueryHandlerMap, query, StringParam } from "./params";
+import { query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const PathParams = z.object({ path: StringParam });
 /** Caps the image sent to the renderer for cropping; the logo itself is only 256px. */

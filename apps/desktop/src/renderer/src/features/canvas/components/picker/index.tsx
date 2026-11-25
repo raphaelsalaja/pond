@@ -1,11 +1,9 @@
 import { IconFigures } from "@pond/icons";
 import { Button, cssVars, Popover, Tooltip } from "@pond/ui";
-import {
-  CANVAS_COLORS,
-  type CanvasColor,
-  type CanvasOutline,
-} from "@shared/canvas-contracts";
-import { type ReactElement, useState } from "react";
+import { CANVAS_COLORS } from "@shared/canvas-contracts";
+import type { CanvasColor, CanvasOutline } from "@shared/canvas-contracts";
+import { useState } from "react";
+import type { ReactElement } from "react";
 import { CANVAS_COLOR_LABELS, SWATCH } from "../../lib/colors";
 import { OUTLINES } from "../../lib/outlines";
 import styles from "./styles.module.css";
@@ -19,11 +17,11 @@ export interface PickerOption<Value extends string> {
 interface RootProps<Value extends string> {
   label: string;
   value: Value | null;
-  options: readonly PickerOption<Value>[];
+  options: ReadonlyArray<PickerOption<Value>>;
   columns: number;
   size: "xs" | "sm";
   trigger: ReactElement;
-  onChange(value: Value): void;
+  onChange: (value: Value) => void;
 }
 
 /** One button that opens the full set as a grid, so the bar stays short. */
@@ -108,18 +106,17 @@ function Swatch({ color }: SwatchProps) {
   );
 }
 
-const COLOR_OPTIONS: readonly PickerOption<CanvasColor>[] = CANVAS_COLORS.map(
-  (color) => ({
+const COLOR_OPTIONS: ReadonlyArray<PickerOption<CanvasColor>> =
+  CANVAS_COLORS.map((color) => ({
     value: color,
     label: CANVAS_COLOR_LABELS[color],
     icon: <Swatch color={color} />,
-  }),
-);
+  }));
 
 interface ColorsProps {
   value: CanvasColor | null;
   size: "xs" | "sm";
-  onChange(color: CanvasColor): void;
+  onChange: (color: CanvasColor) => void;
 }
 
 function Colors({ value, size, onChange }: ColorsProps) {
@@ -136,14 +133,17 @@ function Colors({ value, size, onChange }: ColorsProps) {
   );
 }
 
-const OUTLINE_OPTIONS: readonly PickerOption<CanvasOutline>[] = OUTLINES.map(
-  ({ outline, label, Icon }) => ({ value: outline, label, icon: <Icon /> }),
-);
+const OUTLINE_OPTIONS: ReadonlyArray<PickerOption<CanvasOutline>> =
+  OUTLINES.map(({ outline, label, Icon }) => ({
+    value: outline,
+    label,
+    icon: <Icon />,
+  }));
 
 interface OutlinesProps {
   value: CanvasOutline | null;
   size: "xs" | "sm";
-  onChange(outline: CanvasOutline): void;
+  onChange: (outline: CanvasOutline) => void;
 }
 
 function Outlines({ value, size, onChange }: OutlinesProps) {

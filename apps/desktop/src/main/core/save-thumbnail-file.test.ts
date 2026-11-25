@@ -11,6 +11,26 @@ import {
 const poster = { kind: "poster", path: "clip.mp4_poster.jpg" };
 const generated = { kind: "thumbnail", path: "clip.mp4_thumbnail.webp" };
 
+async function gradient(reverse: boolean) {
+  const size = 64;
+  const pixels = Buffer.alloc(size * size * 3);
+  for (let y = 0; y < size; y += 1) {
+    for (let x = 0; x < size; x += 1) {
+      const value = Math.round((x / (size - 1)) * 255);
+      const pixel = reverse ? 255 - value : value;
+      const offset = (y * size + x) * 3;
+      pixels[offset] = pixel;
+      pixels[offset + 1] = reverse ? pixel : 0;
+      pixels[offset + 2] = reverse ? 0 : pixel;
+    }
+  }
+  return sharp(pixels, {
+    raw: { width: size, height: size, channels: 3 },
+  })
+    .png()
+    .toBuffer();
+}
+
 describe("thumbnailToRender", () => {
   it("keeps an existing thumbnail unless forced", () => {
     expect(thumbnailToRender([poster, generated], false)).toBeUndefined();
@@ -50,26 +70,6 @@ describe("thumbnail repair", () => {
   });
 
   it("tells a resized copy of a photo from a different save's photo", async () => {
-    async function gradient(reverse: boolean) {
-      const size = 64;
-      const pixels = Buffer.alloc(size * size * 3);
-      for (let y = 0; y < size; y += 1) {
-        for (let x = 0; x < size; x += 1) {
-          const value = Math.round((x / (size - 1)) * 255);
-          const pixel = reverse ? 255 - value : value;
-          const offset = (y * size + x) * 3;
-          pixels[offset] = pixel;
-          pixels[offset + 1] = reverse ? pixel : 0;
-          pixels[offset + 2] = reverse ? 0 : pixel;
-        }
-      }
-      return sharp(pixels, {
-        raw: { width: size, height: size, channels: 3 },
-      })
-        .png()
-        .toBuffer();
-    }
-
     const own = await gradient(false);
     const other = await gradient(true);
     const resized = await sharp(own).resize(24, 24).webp().toBuffer();

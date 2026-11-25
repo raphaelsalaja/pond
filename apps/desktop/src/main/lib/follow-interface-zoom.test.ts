@@ -4,7 +4,7 @@ import { followInterfaceZoom } from "./follow-interface-zoom";
 type ZoomPrefs = { window: { interfaceZoom: number } };
 
 function setup(stored: number) {
-  const factors: number[] = [];
+  const factors: Array<number> = [];
   const listeners = new Set<(prefs: ZoomPrefs) => void>();
   const handlers: Record<string, () => void> = {};
   let destroyed = false;

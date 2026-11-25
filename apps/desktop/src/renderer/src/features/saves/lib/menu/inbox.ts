@@ -19,15 +19,13 @@ import { snoozeOptions } from "@/shared/lib/snooze";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
-function buildSnoozeItems(ids: readonly string[]): MenuItemSpec[] {
+function buildSnoozeItems(ids: ReadonlyArray<string>): Array<MenuItemSpec> {
   return [
-    ...snoozeOptions().map(
-      (option): MenuItemSpec => ({
-        label: option.label,
-        icon: glyph(IconCircleDashedClock),
-        onClick: () => void snoozeSaves(ids, option.until),
-      }),
-    ),
+    ...snoozeOptions().map((option): MenuItemSpec => ({
+      label: option.label,
+      icon: glyph(IconCircleDashedClock),
+      onClick: () => void snoozeSaves(ids, option.until),
+    })),
     { type: "separator" },
     {
       label: "Choose Date and Time",
@@ -39,7 +37,9 @@ function buildSnoozeItems(ids: readonly string[]): MenuItemSpec[] {
 }
 
 /** Only Saves already in the Inbox offer processing and snoozing; everything else offers a way in. */
-export function buildInboxItems({ saves }: SaveMenuContext): MenuItemSpec[] {
+export function buildInboxItems({
+  saves,
+}: SaveMenuContext): Array<MenuItemSpec> {
   const live = saves.filter((save) => !save.deletedAt);
   const waiting = live.filter(isWaitingInInbox).map((save) => save.id);
   const outside = live.filter((save) => save.inboxState !== "review");

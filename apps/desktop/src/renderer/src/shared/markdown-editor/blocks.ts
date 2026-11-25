@@ -52,10 +52,15 @@ export function $applyMarkdownBlock(block: MarkdownBlock): void {
   const selection = $getSelection();
   if (!$isRangeSelection(selection)) return;
   $setBlocksType(selection, () => {
-    if (block === "h1" || block === "h2" || block === "h3" || block === "h4")
+    if (block === "h1" || block === "h2" || block === "h3" || block === "h4") {
       return $createHeadingNode(block);
-    if (block === "quote") return $createQuoteNode();
-    if (block === "code") return $createCodeNode();
+    }
+    if (block === "quote") {
+      return $createQuoteNode();
+    }
+    if (block === "code") {
+      return $createCodeNode();
+    }
     return $createParagraphNode();
   });
 }

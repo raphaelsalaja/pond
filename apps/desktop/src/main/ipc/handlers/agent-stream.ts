@@ -1,8 +1,6 @@
 import { ipcMain } from "electron";
-import {
-  type AgentStreamRequest,
-  agentStreamRequest,
-} from "../../../shared/assistant";
+import { agentStreamRequest } from "../../../shared/assistant";
+import type { AgentStreamRequest } from "../../../shared/assistant";
 import { IPC } from "../../../shared/constants";
 import { isTrustedSender } from "../helpers";
 
@@ -54,11 +52,12 @@ async function reply(
       if (value) port.postMessage(value);
     }
   } catch (error) {
-    if (!signal.aborted)
+    if (!signal.aborted) {
       await writeError(
         port,
         error instanceof Error ? error.message : "Could not reply. Try again.",
       );
+    }
     return;
   }
   port.close();

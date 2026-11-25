@@ -65,8 +65,9 @@ export function liveConnectDeps(): ConnectDeps {
         sync: { ...DEFAULT_SOURCE_SYNC_PREFS, importPending: true },
       }),
     started: (accountId) => {
-      void syncAccount(accountId, { trigger: "manual" }).catch((err) =>
-        log.warn("[pond bluesky] follow-up sync threw", err),
+      void syncAccount(accountId, { trigger: "manual" }).catch(
+        (cause: unknown) =>
+          log.warn("[pond bluesky] follow-up sync threw", cause),
       );
       fillMissingAvatars();
       clearPendingSessionSource("bluesky");

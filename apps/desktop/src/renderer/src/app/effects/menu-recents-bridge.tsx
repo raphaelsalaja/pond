@@ -21,9 +21,9 @@ export function MenuRecentsBridge(): null {
   const recents = useRecents();
   const revision = useSelector(savesStore, (s) => s.revision);
 
-  const entries = useMemo<RecentMenuEntry[]>(() => {
+  const entries = useMemo<Array<RecentMenuEntry>>(() => {
     void revision;
-    const out: RecentMenuEntry[] = [];
+    const out: Array<RecentMenuEntry> = [];
     for (const entry of recents) {
       const title = titleFor(entry.saveId);
       if (title) out.push({ id: entry.saveId, title });

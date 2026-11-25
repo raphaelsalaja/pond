@@ -26,13 +26,13 @@ function Row({ className, span, ...props }: RowProps) {
   );
 }
 
-interface LabelProps extends ComponentPropsWithoutRef<"span"> {}
+type LabelProps = ComponentPropsWithoutRef<"span">;
 
 function Label({ className, ...props }: LabelProps) {
   return <span className={cn(styles.label, className)} {...props} />;
 }
 
-interface ValueProps extends ComponentPropsWithoutRef<"span"> {}
+type ValueProps = ComponentPropsWithoutRef<"span">;
 
 function Value({ className, ...props }: ValueProps) {
   return <span className={cn(styles.value, className)} {...props} />;

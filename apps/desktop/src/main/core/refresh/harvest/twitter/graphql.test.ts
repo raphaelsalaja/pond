@@ -41,6 +41,24 @@ function tweetEntry(
   };
 }
 
+function fullTextOf(entry: ReturnType<typeof tweetEntry>) {
+  const rich = parseBookmarksResponses([
+    {
+      url: "https://x.com/i/api/graphql/abc/Bookmarks",
+      body: JSON.stringify({
+        data: {
+          bookmark_timeline_v2: {
+            timeline: {
+              instructions: [{ type: "TimelineAddEntries", entries: [entry] }],
+            },
+          },
+        },
+      }),
+    },
+  ]);
+  return rich.get("333")?.fullText;
+}
+
 describe("parseBookmarksResponses", () => {
   it("reads tweets from a Bookmarks envelope", () => {
     const rich = parseBookmarksResponses([
@@ -95,26 +113,6 @@ describe("parseBookmarksResponses", () => {
   });
 
   describe("tweet text links", () => {
-    function fullTextOf(entry: ReturnType<typeof tweetEntry>) {
-      const rich = parseBookmarksResponses([
-        {
-          url: "https://x.com/i/api/graphql/abc/Bookmarks",
-          body: JSON.stringify({
-            data: {
-              bookmark_timeline_v2: {
-                timeline: {
-                  instructions: [
-                    { type: "TimelineAddEntries", entries: [entry] },
-                  ],
-                },
-              },
-            },
-          }),
-        },
-      ]);
-      return rich.get("333")?.fullText;
-    }
-
     it("replaces t.co wrappers with the expanded link", () => {
       const entry = tweetEntry("333", "carol", "read https://t.co/AbCdEf1234", {
         legacy: {
@@ -247,7 +245,7 @@ describe("parseBookmarksResponses", () => {
       },
     };
 
-    function timeline(entries: JsonObject[]) {
+    function timeline(entries: Array<JsonObject>) {
       return {
         timeline: {
           id: "t",
@@ -291,12 +289,12 @@ describe("parseBookmarksResponses", () => {
                   url: "https://video.twimg.com/v/pl.m3u8",
                 },
                 {
-                  bitrate: 832000,
+                  bitrate: 832_000,
                   content_type: "video/mp4",
                   url: "https://video.twimg.com/v/low.mp4",
                 },
                 {
-                  bitrate: 2176000,
+                  bitrate: 2_176_000,
                   content_type: "video/mp4",
                   url: "https://video.twimg.com/v/high.mp4",
                 },

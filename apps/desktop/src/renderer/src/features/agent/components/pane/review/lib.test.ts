@@ -4,7 +4,6 @@ import {
   changeSummary,
   chipDiff,
   groupChanges,
-  type ProposalClause,
   proposalClauses,
   proposalList,
   reviewOutcome,
@@ -14,6 +13,7 @@ import {
   shortTitle,
   summaryParts,
 } from "./lib";
+import type { ProposalClause } from "./lib";
 
 function change(
   status: AssistantChange["status"],
@@ -29,6 +29,41 @@ function change(
     after: ["Clock"],
   };
 }
+
+const tag = (id: string, after: Array<string>, before: Array<string> = []) => ({
+  ...change("pending"),
+  id,
+  saveId: id,
+  before,
+  after,
+});
+
+const rename = (id: string, after: string): AssistantChange => ({
+  id,
+  saveId: id,
+  title: id,
+  reason: "",
+  status: "pending",
+  field: "title",
+  before: id,
+  after,
+});
+
+const words = (clause: ProposalClause) =>
+  clause
+    .map((segment) =>
+      segment.kind === "saves"
+        ? `[${segment.changes.map((item) => item.saveId).join(",")}]`
+        : segment.kind === "places"
+          ? segment.items.map((item) => item.name).join(" and ")
+          : segment.text,
+    )
+    .join("");
+
+const tagClause = (id: string): ProposalClause => [
+  { kind: "text", text: "tag " },
+  { kind: "saves", changes: [{ ...change("pending"), id }] },
+];
 
 describe("chipDiff", () => {
   it("keeps, adds, and removes values in reading order", () => {
@@ -108,7 +143,7 @@ describe("reviewSummary", () => {
         change("pending"),
         change("pending"),
         { ...change("pending"), field: "title", before: "A", after: "B" },
-      ] satisfies AssistantChange[]),
+      ] satisfies Array<AssistantChange>),
     ).toBe("Retags 2 Saves, renames 1 Save");
   });
 
@@ -151,14 +186,6 @@ describe("reviewOutcome", () => {
 });
 
 describe("groupChanges", () => {
-  const tag = (id: string, after: string[], before: string[] = []) => ({
-    ...change("pending"),
-    id,
-    saveId: id,
-    before,
-    after,
-  });
-
   it("puts changes with the same effect in one group, in proposal order", () => {
     const groups = groupChanges([
       tag("a", ["Clock"]),
@@ -184,16 +211,6 @@ describe("groupChanges", () => {
   });
 
   it("groups renames together although each name differs", () => {
-    const rename = (id: string, after: string): AssistantChange => ({
-      id,
-      saveId: id,
-      title: id,
-      reason: "",
-      status: "pending",
-      field: "title",
-      before: id,
-      after,
-    });
     const [group] = groupChanges([rename("a", "One"), rename("b", "Two")]);
     expect(group?.parts).toEqual([{ text: "Rename", tone: "neutral" }]);
     expect(group?.changes).toHaveLength(2);
@@ -201,30 +218,12 @@ describe("groupChanges", () => {
 });
 
 describe("proposalClauses", () => {
-  const words = (clause: ProposalClause) =>
-    clause
-      .map((segment) =>
-        segment.kind === "saves"
-          ? `[${segment.changes.map((item) => item.saveId).join(",")}]`
-          : segment.kind === "places"
-            ? segment.items.map((item) => item.name).join(" and ")
-            : segment.text,
-      )
-      .join("");
-  const tags = (id: string, after: string[], before: string[] = []) => ({
-    ...change("pending"),
-    id,
-    saveId: id,
-    before,
-    after,
-  });
-
   it("says each distinct change once, with every Save it touches", () => {
     expect(
       proposalClauses([
-        tags("a", ["Clock"]),
-        tags("b", ["Clock"]),
-        tags("c", [], ["Old"]),
+        tag("a", ["Clock"]),
+        tag("b", ["Clock"]),
+        tag("c", [], ["Old"]),
       ]).map(words),
     ).toEqual(["tag [a,b] with Clock", "remove Old from [c]"]);
   });
@@ -238,18 +237,9 @@ describe("proposalClauses", () => {
       before: ["1"],
       after: ["2"],
     };
-    const rename = (id: string, after: string): AssistantChange => ({
-      ...change("pending"),
-      id,
-      saveId: id,
-      field: "title",
-      before: id,
-      after,
-    });
     expect(
-      proposalClauses(
-        [folders, rename("r", "One"), rename("s", "Two")],
-        (id) => (id === "1" ? "Inbox" : "Cabin"),
+      proposalClauses([folders, rename("r", "One"), rename("s", "Two")], (id) =>
+        id === "1" ? "Inbox" : "Cabin",
       ).map(words),
     ).toEqual([
       "move [f] from Inbox to Cabin",
@@ -273,11 +263,6 @@ describe("shortTitle", () => {
 });
 
 describe("proposalList", () => {
-  const tagClause = (id: string): ProposalClause => [
-    { kind: "text", text: "tag " },
-    { kind: "saves", changes: [{ ...change("pending"), id }] },
-  ];
-
   it("says a shared verb once in the lead", () => {
     const { lead, items } = proposalList([tagClause("a"), tagClause("b")]);
     expect(lead).toBe("Here's how I'll tag them:");

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { openAppInstance, type SpawnOpenProcess } from "./open-app-instance";
+import { openAppInstance } from "./open-app-instance";
+import type { SpawnOpenProcess } from "./open-app-instance";
+
+const failingSpawn: SpawnOpenProcess = () => ({
+  unref: () => {},
+  once: (_event, listener) => {
+    listener(new Error("spawn failed"));
+  },
+});
 
 describe("openAppInstance", () => {
   it("opens a new instance of the bundle that contains the executable", () => {
@@ -31,16 +39,10 @@ describe("openAppInstance", () => {
 
   it("reports a spawn failure to the caller", () => {
     let reported: Error | null = null;
-    const spawnProcess: SpawnOpenProcess = () => ({
-      unref: () => {},
-      once: (_event, listener) => {
-        listener(new Error("spawn failed"));
-      },
-    });
 
     openAppInstance({
       execPath: "/Applications/Pond.app/Contents/MacOS/Pond",
-      spawnProcess,
+      spawnProcess: failingSpawn,
       onError: (error) => {
         reported = error;
       },

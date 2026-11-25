@@ -17,10 +17,10 @@ const FIXTURE = {
           cursor: "MjAxOS0xMC0wMSAyMDozMjowNQ==",
           node: {
             __typename: "Project",
-            id: 86248267,
+            id: 86_248_267,
             name: "Semplice Supply \u2014 High Quality device renders",
             url: "https://www.behance.net/gallery/86248267/Semplice-Supply-High-Quality-device-renders",
-            publishedOn: 1569958904,
+            publishedOn: 1_569_958_904,
             covers: {
               size_808: {
                 url: "https://mir-s3-cdn-cf.behance.net/projects/808/404a7386248267.Y3JvcCwxNTk0LDEyNDcsMCww.jpg",

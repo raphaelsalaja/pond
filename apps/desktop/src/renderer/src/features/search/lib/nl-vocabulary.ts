@@ -209,7 +209,7 @@ export const NUMBER_WORDS = new Map<string, number>([
   ["twelve", 12],
 ]);
 
-export const COUNT_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
+export const COUNT_PHRASES: ReadonlyArray<[Array<string>, ComparatorId]> = [
   [["more", "than"], "gt"],
   [["greater", "than"], "gt"],
   [["at", "least"], "gte"],
@@ -246,7 +246,7 @@ export const DURATION_UNITS = new Map<string, number>([
 export const COMBINED_DURATION_RE =
   /^(\d+(?:\.\d+)?)(s|secs?|seconds?|m|mins?|minutes?|h|hrs?|hours?)$/;
 
-export const DURATION_PHRASES: ReadonlyArray<[string[], ComparatorId]> = [
+export const DURATION_PHRASES: ReadonlyArray<[Array<string>, ComparatorId]> = [
   [["longer", "than"], "gt"],
   [["shorter", "than"], "lt"],
   ...COUNT_PHRASES,

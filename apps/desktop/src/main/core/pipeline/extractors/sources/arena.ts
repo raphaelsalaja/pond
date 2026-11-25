@@ -66,7 +66,7 @@ export class ArenaBlockExtractor implements Extractor {
     );
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
     if (!first) return null;
     if (ARENA_RESERVED_ROOTS.has(first.toLowerCase())) return null;

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { cssVars } from "../css-vars";
+import { userEvent } from "vitest/browser";
 import { Window } from ".";
+import { cssVars } from "../css-vars";
 
 function Panes() {
   const [width, setWidth] = useState(240);

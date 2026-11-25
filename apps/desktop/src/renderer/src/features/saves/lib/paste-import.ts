@@ -13,8 +13,8 @@ import {
 import { notify } from "@/shared/lib/toast";
 
 export type PasteImport =
-  | { kind: "files"; paths: string[] }
-  | { kind: "urls"; urls: string[] }
+  | { kind: "files"; paths: Array<string> }
+  | { kind: "urls"; urls: Array<string> }
   | { kind: "clipboard" };
 
 const ImportReplySchema = z
@@ -37,7 +37,7 @@ interface FolderInput {
 }
 
 interface PlanResult {
-  ids: string[];
+  ids: Array<string>;
   failed: number;
 }
 
@@ -51,7 +51,7 @@ function replyResult(
   return { ids: reply.ids ?? [], failed: reply.failedPaths?.length ?? 0 };
 }
 
-function filePaths(data: DataTransfer): string[] {
+function filePaths(data: DataTransfer): Array<string> {
   return Array.from(data.files ?? [])
     .map((file) => {
       try {
@@ -81,17 +81,18 @@ export function pasteImportOf(data: DataTransfer): PasteImport | null {
       file.type.startsWith("image/"),
     ) ||
     types.some((type) => type.startsWith("image/"))
-  )
+  ) {
     return { kind: "clipboard" };
+  }
   return null;
 }
 
 interface FilesInput {
-  paths: string[];
-  folderIds?: string[];
+  paths: Array<string>;
+  folderIds?: Array<string>;
 }
 
-function filesInput(paths: string[], folderId: string | undefined) {
+function filesInput(paths: Array<string>, folderId: string | undefined) {
   const input: FilesInput = { paths };
   if (folderId) input.folderIds = [folderId];
   return input;
@@ -136,7 +137,7 @@ async function importPlan(
 export async function runPasteImport(
   plan: PasteImport,
   target?: PasteImportTarget,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const { ids, failed } = await importPlan(plan, target?.id);
   const toast = importToast({
     kind: plan.kind,
@@ -144,7 +145,7 @@ export async function runPasteImport(
     failed,
     folderName: target?.name,
   });
-  if (toast)
+  if (toast) {
     notify({
       id: "paste-import",
       ...toast,
@@ -152,6 +153,7 @@ export async function runPasteImport(
         saveLibraryBridge.showSaves(shown, target?.id),
       ),
     });
+  }
   return ids;
 }
 

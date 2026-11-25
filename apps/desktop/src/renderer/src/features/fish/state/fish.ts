@@ -1,15 +1,16 @@
-import {
-  DEFAULT_FISH_ID,
-  type Fish,
-  type FishPatch,
-  type FishPlacement,
-  type FishSection,
-  type FishSummary,
+import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
+import type {
+  Fish,
+  FishPatch,
+  FishPlacement,
+  FishSection,
+  FishSummary,
 } from "@shared/fish-contracts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 
 interface OpenRoutine {
   fishId: string;
@@ -17,8 +18,8 @@ interface OpenRoutine {
 }
 
 interface FishState {
-  school: FishSummary[];
-  sections: FishSection[];
+  school: Array<FishSummary>;
+  sections: Array<FishSection>;
   editingId: string | null;
   routine: OpenRoutine | null;
 }
@@ -70,13 +71,13 @@ async function rollbackOnFailure(write: Promise<unknown>): Promise<void> {
 }
 
 export const fish = {
-  snapshot(): FishSummary[] {
+  snapshot(): Array<FishSummary> {
     return store.state.school;
   },
   find(id: string): FishSummary | undefined {
     return store.state.school.find((entry) => entry.id === id);
   },
-  sections(): FishSection[] {
+  sections(): Array<FishSection> {
     return store.state.sections;
   },
   async refresh(): Promise<void> {
@@ -87,7 +88,7 @@ export const fish = {
     store.setState((state) => ({ ...state, school, sections }));
   },
   /** Applies the new order before main confirms it, so a dropped fish never snaps back. */
-  async arrange(placements: FishPlacement[]): Promise<void> {
+  async arrange(placements: Array<FishPlacement>): Promise<void> {
     store.setState((state) => {
       const byId = new Map(state.school.map((entry) => [entry.id, entry]));
       const placed = placements.flatMap((placement) => {
@@ -106,14 +107,14 @@ export const fish = {
     });
     await rollbackOnFailure(window.pond.query("fish.arrange", { placements }));
   },
-  async setSections(sections: FishSection[]): Promise<void> {
+  async setSections(sections: Array<FishSection>): Promise<void> {
     store.setState((state) => ({ ...state, sections }));
     await rollbackOnFailure(
       window.pond.query("fish.setSections", { sections }),
     );
   },
   open(id: string): void {
-    getAppRouter()?.history.push(fishPath(id));
+    getAppHistory()?.push(fishPath(id));
   },
   async create(patch: FishPatch = {}): Promise<Fish> {
     const created = await window.pond.query("fish.create", patch);
@@ -129,8 +130,9 @@ export const fish = {
     const result = await window.pond.query("fish.delete", { id });
     if (!result.ok) throw new Error(result.error);
     const router = getAppRouter();
-    if (router && fishIdFromPath(router.state.location.pathname) === id)
+    if (router && fishIdFromPath(router.state.location.pathname) === id) {
       fish.open(DEFAULT_FISH_ID);
+    }
     await fish.refresh();
   },
   async run(id: string, routineId: string): Promise<void> {
@@ -153,8 +155,9 @@ export const fish = {
   /** Opens the fish's page with its details pane, where the routine is listed. */
   openRoutine(fishId: string, routineId: string): void {
     const router = getAppRouter();
-    if (router && fishIdFromPath(router.state.location.pathname) !== fishId)
+    if (router && fishIdFromPath(router.state.location.pathname) !== fishId) {
       fish.open(fishId);
+    }
     store.setState((state) => ({ ...state, routine: { fishId, routineId } }));
   },
   closeRoutine(): void {
@@ -166,8 +169,9 @@ export const fish = {
       !current ||
       (current.lastRun?.seen !== false &&
         !current.runs?.some((run) => !run.seen))
-    )
+    ) {
       return;
+    }
     replace({
       ...current,
       lastRun: current.lastRun && { ...current.lastRun, seen: true },
@@ -178,8 +182,9 @@ export const fish = {
   /** Opens the fish's page with its details pane focused on the name. */
   startEditing(id: string): void {
     const router = getAppRouter();
-    if (router && fishIdFromPath(router.state.location.pathname) !== id)
+    if (router && fishIdFromPath(router.state.location.pathname) !== id) {
       fish.open(id);
+    }
     store.setState((state) => ({ ...state, editingId: id }));
   },
   finishEditing(): void {
@@ -187,11 +192,11 @@ export const fish = {
   },
 };
 
-export function useFishList(): FishSummary[] {
+export function useFishList(): Array<FishSummary> {
   return useSelector(store, (state) => state.school);
 }
 
-export function useFishSections(): FishSection[] {
+export function useFishSections(): Array<FishSection> {
   return useSelector(store, (state) => state.sections);
 }
 
@@ -213,15 +218,21 @@ export function useOpenRoutineId(fishId: string | null): string | null {
   );
 }
 
+function warnRefreshFailed(cause: unknown): void {
+  log.warn("[pond fish] refresh failed", cause);
+}
+
 /** One subscription to main's fish events serves every mounted consumer. */
 export function useHydrateFish(): void {
   useEffect(() => {
     if (subscribers++ === 0) {
-      void fish.refresh().catch(() => undefined);
+      void fish.refresh().catch(warnRefreshFailed);
       unsubscribe = window.pond.onFish((event) => {
         if (event.kind === "changed" || event.activity === null) {
-          void fish.refresh().catch(() => undefined);
-          if (event.kind === "changed") return;
+          void fish.refresh().catch(warnRefreshFailed);
+          if (event.kind === "changed") {
+            return;
+          }
         }
         store.setState((state) => ({
           ...state,

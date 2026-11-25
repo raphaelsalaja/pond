@@ -3,10 +3,8 @@ import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { dialog } from "electron";
 import mime from "mime-types";
-import {
-  ASSISTANT_FILE_ATTACH_CAP,
-  type AssistantFileAttachment,
-} from "../../../shared/assistant";
+import { ASSISTANT_FILE_ATTACH_CAP } from "../../../shared/assistant";
+import type { AssistantFileAttachment } from "../../../shared/assistant";
 
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 50 * 1024 * 1024;
@@ -20,17 +18,17 @@ export interface LocalAttachmentData extends AssistantFileAttachment {
 }
 
 export interface LocalAttachmentPicker {
-  pickFiles: () => Promise<{ canceled: boolean; filePaths: string[] }>;
+  pickFiles: () => Promise<{ canceled: boolean; filePaths: Array<string> }>;
 }
 
 export interface LocalAttachmentService {
   pickLocalAttachments: () => Promise<
-    | { ok: true; files: AssistantFileAttachment[] }
+    | { ok: true; files: Array<AssistantFileAttachment> }
     | { ok: false; files: []; error: string }
   >;
   loadLocalAttachments: (
-    ids: readonly string[],
-  ) => Promise<LocalAttachmentData[]>;
+    ids: ReadonlyArray<string>,
+  ) => Promise<Array<LocalAttachmentData>>;
 }
 
 export function createLocalAttachmentService(
@@ -39,12 +37,13 @@ export function createLocalAttachmentService(
   const registered = new Map<string, RegisteredAttachment>();
 
   async function pickLocalAttachments(): Promise<
-    | { ok: true; files: AssistantFileAttachment[] }
+    | { ok: true; files: Array<AssistantFileAttachment> }
     | { ok: false; files: []; error: string }
   > {
     const picked = await picker.pickFiles();
-    if (picked.canceled || picked.filePaths.length === 0)
+    if (picked.canceled || picked.filePaths.length === 0) {
       return { ok: true, files: [] };
+    }
     if (picked.filePaths.length > ASSISTANT_FILE_ATTACH_CAP) {
       return {
         ok: false,
@@ -53,29 +52,32 @@ export function createLocalAttachmentService(
       };
     }
 
-    const files: AssistantFileAttachment[] = [];
+    const files: Array<AssistantFileAttachment> = [];
     let totalSize = 0;
     for (const path of picked.filePaths) {
       const details = await stat(path);
-      if (!details.isFile() || details.size === 0)
+      if (!details.isFile() || details.size === 0) {
         return {
           ok: false,
           files: [],
           error: "Choose non-empty files, then try again.",
         };
-      if (details.size > MAX_FILE_BYTES)
+      }
+      if (details.size > MAX_FILE_BYTES) {
         return {
           ok: false,
           files: [],
           error: "Each attachment must be 25 MB or smaller.",
         };
+      }
       totalSize += details.size;
-      if (totalSize > MAX_TOTAL_BYTES)
+      if (totalSize > MAX_TOTAL_BYTES) {
         return {
           ok: false,
           files: [],
           error: "Attachments can total up to 50 MB per message.",
         };
+      }
       const file: RegisteredAttachment = {
         id: randomUUID(),
         name: basename(path),
@@ -95,27 +97,30 @@ export function createLocalAttachmentService(
   }
 
   async function loadLocalAttachments(
-    ids: readonly string[],
-  ): Promise<LocalAttachmentData[]> {
+    ids: ReadonlyArray<string>,
+  ): Promise<Array<LocalAttachmentData>> {
     const unique = [...new Set(ids)].slice(0, ASSISTANT_FILE_ATTACH_CAP);
-    const available: RegisteredAttachment[] = [];
+    const available: Array<RegisteredAttachment> = [];
     for (const id of unique) {
       const file = registered.get(id);
-      if (!file)
+      if (!file) {
         throw new Error(
           "An attached file is no longer available. Attach it again.",
         );
+      }
       available.push(file);
     }
-    const loaded: LocalAttachmentData[] = [];
+    const loaded: Array<LocalAttachmentData> = [];
     let totalSize = 0;
     for (const file of available) {
       const data = await readFile(file.path);
-      if (data.byteLength > MAX_FILE_BYTES)
+      if (data.byteLength > MAX_FILE_BYTES) {
         throw new Error("Each attachment must be 25 MB or smaller.");
+      }
       totalSize += data.byteLength;
-      if (totalSize > MAX_TOTAL_BYTES)
+      if (totalSize > MAX_TOTAL_BYTES) {
         throw new Error("Attachments can total up to 50 MB per message.");
+      }
       loaded.push({
         id: file.id,
         name: file.name,

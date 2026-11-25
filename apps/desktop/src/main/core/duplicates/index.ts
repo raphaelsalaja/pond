@@ -14,8 +14,8 @@ export { rebuildAssetIndex } from "./asset-index";
 export { fingerprintIndexStatus } from "./fingerprints";
 
 export interface ScanOptions {
-  ids?: readonly string[];
-  dismissed?: readonly DuplicateDismissal[];
+  ids?: ReadonlyArray<string>;
+  dismissed?: ReadonlyArray<DuplicateDismissal>;
   classifyUrl: ClassifyUrl;
   semantic?: boolean;
 }
@@ -62,7 +62,7 @@ async function defaultClassifyUrl(): Promise<ClassifyUrl> {
 }
 
 export async function scanDuplicates(input: {
-  ids?: readonly string[];
+  ids?: ReadonlyArray<string>;
 }): Promise<DuplicateScan> {
   const [{ getDb }, { readDismissals }] = await Promise.all([
     import("../../db"),

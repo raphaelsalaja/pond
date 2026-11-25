@@ -1,5 +1,5 @@
 import type { Source } from "@pond/schema/db";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import type { BookmarkFile } from "../bookmarks";
 import { entriesToBookmarkFile, importDataExport } from "./index";
 import type { ExportReader } from "./reader";
@@ -20,12 +20,19 @@ function memoryReader(files: Record<string, string>) {
   return { reader, state };
 }
 
-function importFileStub() {
-  return vi.fn(async (file: BookmarkFile) => ({
-    ok: true as const,
-    imported: file.bookmarks.length,
-    skipped: 0,
-  }));
+function importFileRecorder() {
+  const imported: Array<BookmarkFile> = [];
+  return {
+    imported,
+    importFile: async (file: BookmarkFile) => {
+      imported.push(file);
+      return {
+        ok: true as const,
+        imported: file.bookmarks.length,
+        skipped: 0,
+      };
+    },
+  };
 }
 
 describe("entriesToBookmarkFile", () => {
@@ -65,7 +72,7 @@ describe("importDataExport", () => {
       "saved_posts.csv":
         "id,permalink\nab1,https://www.reddit.com/r/x/comments/ab1/t/\n",
     });
-    const importFile = importFileStub();
+    const { imported, importFile } = importFileRecorder();
     const result = await importDataExport("/x.zip", {
       open: async () => reader,
       importFile,
@@ -78,7 +85,7 @@ describe("importDataExport", () => {
       platforms: ["X", "Reddit"],
       connect: ["twitter"],
     });
-    expect(importFile).toHaveBeenCalledOnce();
+    expect(imported).toHaveLength(1);
     expect(state.closed).toBe(true);
   });
 
@@ -89,7 +96,7 @@ describe("importDataExport", () => {
     });
     const result = await importDataExport("/x.zip", {
       open: async () => reader,
-      importFile: importFileStub(),
+      importFile: importFileRecorder().importFile,
       connectedSources: async () => new Set<Source>(),
     });
     expect(result).toMatchObject({ ok: true, connect: [] });
@@ -97,14 +104,14 @@ describe("importDataExport", () => {
 
   it("fails clearly when nothing in the archive is readable", async () => {
     const { reader, state } = memoryReader({ "readme.txt": "hi" });
-    const importFile = importFileStub();
+    const { imported, importFile } = importFileRecorder();
     const result = await importDataExport("/x.zip", {
       open: async () => reader,
       importFile,
       connectedSources: async () => new Set<Source>(),
     });
     expect(result.ok).toBe(false);
-    expect(importFile).not.toHaveBeenCalled();
+    expect(imported).toEqual([]);
     expect(state.closed).toBe(true);
   });
 
@@ -113,7 +120,7 @@ describe("importDataExport", () => {
       open: async () => {
         throw new Error("invalid zip");
       },
-      importFile: importFileStub(),
+      importFile: importFileRecorder().importFile,
       connectedSources: async () => new Set<Source>(),
     });
     expect(result.ok).toBe(false);

@@ -1,4 +1,5 @@
-import { OPS, type Op, saves, type Task, tasks } from "@pond/schema/db";
+import { OPS, saves, tasks } from "@pond/schema/db";
+import type { Op, Task } from "@pond/schema/db";
 import { buildWhere, isEmptyQuery } from "@pond/schema/filters";
 import type { RawJson } from "@pond/schema/raw";
 import {
@@ -11,9 +12,9 @@ import {
   inArray,
   isNotNull,
   isNull,
-  type SQL,
   sql,
 } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { z } from "zod";
 import { LibraryQueryRequestSchema as LibraryQueryParams } from "../../../shared/library-query";
@@ -30,17 +31,18 @@ import { querySplitPosts } from "../../core/split-posts";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
 import { resolveSaveFilePath } from "../helpers";
-import { type SaveListRow, toWireSaves } from "../wire";
+import { toWireSaves } from "../wire";
+import type { SaveListRow } from "../wire";
 import {
   FileIndexParam,
   FlagParam,
   OptionalNumberParam,
-  type QueryHandlerMap,
   QueryParam,
   query,
   StringListParam,
   StringParam,
 } from "./params";
+import type { QueryHandlerMap } from "./params";
 import { cursorFor } from "./saves-page";
 
 function isHttpUrl(u: string | undefined | null): u is string {
@@ -72,8 +74,8 @@ const PIPELINE_OP_ORDER = new Map(OPS.map((op, index) => [op, index]));
 
 /** Consumers treat the first unfinished task as the blocking step, but row order is unspecified, so wire order follows the pipeline. */
 export function orderTasksInPipelineOrder<T extends { op: Op }>(
-  list: readonly T[],
-): T[] {
+  list: ReadonlyArray<T>,
+): Array<T> {
   return [...list].sort(
     (a, b) =>
       (PIPELINE_OP_ORDER.get(a.op) ?? OPS.length) -
@@ -86,10 +88,12 @@ const TASK_ID_CHUNK = 10_000;
 
 async function loadTasksFor(
   db: Db,
-  ids: string[],
-): Promise<Map<string, Task[]>> {
-  if (ids.length === 0) return new Map();
-  const grouped = new Map<string, Task[]>();
+  ids: Array<string>,
+): Promise<Map<string, Array<Task>>> {
+  if (ids.length === 0) {
+    return new Map();
+  }
+  const grouped = new Map<string, Array<Task>>();
   for (let i = 0; i < ids.length; i += TASK_ID_CHUNK) {
     const slice = ids.slice(i, i + TASK_ID_CHUNK);
     const rows = await db
@@ -175,7 +179,7 @@ export const savesReadQueries = {
         .from(saves)
         .orderBy(desc(saves.savedAt));
       const rows =
-        params.limit != null
+        params.limit !== null && params.limit !== undefined
           ? await baseQuery.limit(Math.min(params.limit, 100_000))
           : await baseQuery;
       const grouped = await loadTasksFor(
@@ -295,19 +299,18 @@ export const savesReadQueries = {
       limit: z.number().int().min(1).max(100).optional(),
     }),
     async (params) => {
-      const { relatedSaves } = await import(
-        "../../core/semantic-recommendations"
-      );
+      const { relatedSaves } =
+        await import("../../core/semantic-recommendations");
       return await relatedSaves(await getDb(), params);
     },
   ),
 
   "saves.semanticClusters": query(
     z.object({
-      saveIds: z.array(z.string().trim().min(1)).max(2_000).optional(),
+      saveIds: z.array(z.string().trim().min(1)).max(2000).optional(),
       folderId: z.string().trim().min(1).optional(),
       distance: z.number().finite().min(0).max(2),
-      limit: z.number().int().min(3).max(2_000),
+      limit: z.number().int().min(3).max(2000),
     }),
     async (params) => {
       const { semanticClusters } = await import("../../core/semantic-clusters");
@@ -317,13 +320,12 @@ export const savesReadQueries = {
 
   "saves.classifyLabels": query(
     z.object({
-      saveIds: z.array(z.string().trim().min(1)).min(1).max(2_000),
+      saveIds: z.array(z.string().trim().min(1)).min(1).max(2000),
       labels: z.array(z.string().trim().min(1).max(80)).min(1).max(50),
     }),
     async (params) => {
-      const { classifyLabels } = await import(
-        "../../core/semantic-classification"
-      );
+      const { classifyLabels } =
+        await import("../../core/semantic-classification");
       return await classifyLabels(await getDb(), params);
     },
   ),
@@ -346,7 +348,7 @@ export const savesReadQueries = {
       const orderCol = librarySortColumn(params.sortKey);
       const order = params.sortDir === "asc" ? asc(orderCol) : desc(orderCol);
       const limit =
-        params.limit != null
+        params.limit !== null && params.limit !== undefined
           ? Math.min(Math.max(1, params.limit || 1), 100_000)
           : null;
       const db = await getDb();
@@ -355,7 +357,7 @@ export const savesReadQueries = {
         .from(saves)
         .where(where)
         .orderBy(asc(sql`${orderCol} is null`), order, desc(saves.id));
-      const rows = limit != null ? await base.limit(limit) : await base;
+      const rows = limit !== null ? await base.limit(limit) : await base;
       return { ids: rows.map((r) => r.id) };
     },
   ),
@@ -364,8 +366,8 @@ export const savesReadQueries = {
     const ids = params.ids.filter(Boolean);
     if (ids.length === 0) return [];
     const db = await getDb();
-    const out: SaveListRow[] = [];
-    const groupedAll = new Map<string, Task[]>();
+    const out: Array<SaveListRow> = [];
+    const groupedAll = new Map<string, Array<Task>>();
     for (let i = 0; i < ids.length; i += TASK_ID_CHUNK) {
       const slice = ids.slice(i, i + TASK_ID_CHUNK);
       const rows = await db

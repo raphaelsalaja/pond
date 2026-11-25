@@ -1,6 +1,7 @@
 import { IconSortArrows } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
-import { Menu, type MenuItemSpec } from "@pond/ui";
+import { Menu } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 
 type TagSort = Prefs["allTags"]["sort"];
@@ -26,7 +27,7 @@ export function buildTagSortItems({
   sort: TagSort;
   direction: TagSortDirection;
   onChange: (sort: TagSort, direction: TagSortDirection) => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   return OPTIONS.map((option) => ({
     type: "checkbox",
     label: option.label,

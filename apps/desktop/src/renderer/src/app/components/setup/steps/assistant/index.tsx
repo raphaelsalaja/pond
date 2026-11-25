@@ -1,17 +1,7 @@
-import {
-  Input,
-  Select,
-  type SelectItemSpec,
-  Settings,
-  Toggle,
-  ToggleGroup,
-} from "@pond/ui";
-import {
-  type AssistantProvider,
-  assistantCatalog,
-  offeredProviders,
-  type ProviderGroup,
-} from "@shared/assistant";
+import { Input, Select, Settings, Toggle, ToggleGroup } from "@pond/ui";
+import type { SelectItemSpec } from "@pond/ui";
+import { assistantCatalog, offeredProviders } from "@shared/assistant";
+import type { AssistantProvider, ProviderGroup } from "@shared/assistant";
 import type { ReactNode } from "react";
 import { ProviderLogo } from "@/features/settings";
 import { IS_MAC, THIS_DEVICE } from "@/shared/lib/platform";
@@ -20,7 +10,7 @@ import styles from "./styles.module.css";
 
 export { AssistantPreview } from "./preview";
 
-const CHOICES: readonly { value: AssistantChoice; label: string }[] = [
+const CHOICES: ReadonlyArray<{ value: AssistantChoice; label: string }> = [
   { value: "later", label: "Not Now" },
   { value: "cloud", label: "API Key" },
   { value: "subscription", label: "Subscription" },
@@ -53,17 +43,15 @@ function ProviderSelect({
   onChange: (provider: AssistantProvider) => void;
 }) {
   const providers = providersFor(group);
-  const items = providers.map(
-    (entry): SelectItemSpec<string> => ({
-      value: entry.id,
-      label: (
-        <span className={styles.option}>
-          <ProviderLogo provider={entry.id} size={14} />
-          {entry.provider}
-        </span>
-      ),
-    }),
-  );
+  const items = providers.map((entry): SelectItemSpec<string> => ({
+    value: entry.id,
+    label: (
+      <span className={styles.option}>
+        <ProviderLogo provider={entry.id} size={14} />
+        {entry.provider}
+      </span>
+    ),
+  }));
   return (
     <Select.Root
       value={value}

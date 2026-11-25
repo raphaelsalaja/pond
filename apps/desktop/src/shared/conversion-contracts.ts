@@ -46,7 +46,7 @@ export const ConversionPresetSchema = z.object({
   height: HeightSchema,
   quality: QualitySchema,
   lossless: LosslessSchema,
-  start: z.number().min(0).max(86400).default(0),
+  start: z.number().min(0).max(86_400).default(0),
   duration: z.number().min(0.1).max(3600).default(5),
   fps: z.number().int().min(1).max(120).default(12),
 });
@@ -127,8 +127,8 @@ export interface ConversionQueryInputs {
   "conversion.cancel": { id: string };
 }
 export interface ConversionQueryResults {
-  "conversion.capabilities": ConversionCapability[];
-  "conversion.presets": ConversionPreset[];
+  "conversion.capabilities": Array<ConversionCapability>;
+  "conversion.presets": Array<ConversionPreset>;
   "conversion.savePreset": ConversionPreset;
   "conversion.deletePreset": { ok: true };
   "conversion.start": ConversionJob | null;

@@ -14,8 +14,9 @@ export default (d, cx, cy, deg) => {
   let [i, x, y] = [0, 0, 0];
   while (i < t.length) {
     const cmd = t[i++];
-    if (cmd === "Z") out.push("Z");
-    else if (cmd === "M" || cmd === "L") {
+    if (cmd === "Z") {
+      out.push("Z");
+    } else if (cmd === "M" || cmd === "L") {
       [x, y] = [num(), num()];
       out.push(cmd, ...p(x, y));
     } else if (cmd === "H") {

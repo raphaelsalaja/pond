@@ -27,17 +27,18 @@ const BACKOFF_SCHEDULE_MS = [
 
 const JITTER_FRACTION = 0.2;
 
-function backoffFor(attempts: number): number {
+function backoffFor(attempts: number, random: () => number): number {
   const idx = Math.min(attempts, BACKOFF_SCHEDULE_MS.length - 1);
   const base = BACKOFF_SCHEDULE_MS[idx] ?? BACKOFF_SCHEDULE_MS.at(-1) ?? 60_000;
   const spread = base * JITTER_FRACTION;
-  const jitter = (Math.random() * 2 - 1) * spread;
-  return Math.max(1_000, Math.round(base + jitter));
+  const jitter = (random() * 2 - 1) * spread;
+  return Math.max(1000, Math.round(base + jitter));
 }
 
 export function classifyError(
   cause: unknown,
   ctx: { attempts: number; maxAttempts: number },
+  random: () => number = Math.random,
 ): RetryDecision {
   const now = Date.now();
   const lastError =
@@ -95,7 +96,7 @@ export function classifyError(
     }
     return {
       status: "deferred",
-      nextRunAt: new Date(now + backoffFor(nextAttempts)),
+      nextRunAt: new Date(now + backoffFor(nextAttempts, random)),
       recordAttempt: true,
       lastError,
       deferredReason: "retry_backoff",

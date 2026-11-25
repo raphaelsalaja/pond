@@ -20,12 +20,18 @@ function capWasmThreads(): void {
   wasmThreads = isolated && hasSAB ? Math.max(1, Math.floor(cores / 2)) : 1;
   try {
     const wasm = env.backends.onnx.wasm;
-    if (wasm) wasm.numThreads = wasmThreads;
-  } catch {}
+    if (wasm) {
+      wasm.numThreads = wasmThreads;
+    }
+  } catch {
+    /** The thread cap is best effort; without it onnxruntime keeps its own default. */
+  }
+  // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
   console.info(
     `[inference] wasm threads=${wasmThreads} (cores=${cores}, crossOriginIsolated=${isolated}, SharedArrayBuffer=${hasSAB})`,
   );
   if (!isolated) {
+    // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
     console.warn(
       "[inference] page is NOT cross-origin isolated — WASM inference is " +
         "single-threaded. Check COOP/COEP headers on the renderer.",
@@ -53,13 +59,16 @@ export function pickDevice(): Promise<InferenceDevice> {
         if (gpu) {
           const adapter = await gpu.requestAdapter();
           if (adapter) {
+            // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
             console.info("[inference] using WebGPU");
             return "webgpu";
           }
         }
-      } catch (err) {
-        console.warn("[inference] WebGPU probe failed", err);
+      } catch (error) {
+        // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
+        console.warn("[inference] WebGPU probe failed", error);
       }
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
       console.warn(
         "[inference] no WebGPU adapter — running on CPU (WASM); on-device " +
           "inference will be slower and run the machine warmer",

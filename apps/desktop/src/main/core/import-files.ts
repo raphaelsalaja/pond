@@ -20,15 +20,15 @@ interface FileImportRuntime {
     parentId: string | null;
   }): Promise<{ id: string }>;
   importFile(input: {
-    filePaths: string[];
-    tags: string[];
+    filePaths: Array<string>;
+    tags: Array<string>;
     importedFrom: ImportOrigin;
   }): Promise<ManualSaveResult>;
-  folderIdsForSave(id: string): Promise<string[]>;
-  assignFolders(id: string, folderIds: string[]): Promise<{ ok: boolean }>;
+  folderIdsForSave(id: string): Promise<Array<string>>;
+  assignFolders(id: string, folderIds: Array<string>): Promise<{ ok: boolean }>;
   restoreIntoFolders(
     id: string,
-    folderIds: string[] | null,
+    folderIds: Array<string> | null,
   ): Promise<{ ok: boolean }>;
 }
 
@@ -43,9 +43,9 @@ const runtime: FileImportRuntime = {
 
 async function importPaths(
   input: {
-    paths: readonly string[];
-    tags?: string[];
-    folderIds?: string[];
+    paths: ReadonlyArray<string>;
+    tags?: Array<string>;
+    folderIds?: Array<string>;
     useExisting?: Readonly<Record<string, string>>;
     /** Paths whose existing Save is in Trash, so using it restores it. */
     restore?: ReadonlySet<string>;
@@ -53,8 +53,8 @@ async function importPaths(
   },
   dependencies: FileImportRuntime = runtime,
 ): Promise<SavesImportFilesResult> {
-  const ids: string[] = [];
-  const failedPaths: string[] = [];
+  const ids: Array<string> = [];
+  const failedPaths: Array<string> = [];
   const visited = new Set<string>();
   const tags = input.tags ?? [];
   const folderIds = input.folderIds ?? [];
@@ -72,8 +72,9 @@ async function importPaths(
         });
         const entries = await readdir(path, { withFileTypes: true });
         for (const entry of entries) {
-          if (entry.isDirectory() || entry.isFile())
+          if (entry.isDirectory() || entry.isFile()) {
             await visit(join(path, entry.name), folder.id);
+          }
         }
       } else if (details.isFile() && details.size > 0) {
         const assigned = [
@@ -94,8 +95,9 @@ async function importPaths(
             existingId,
             folders,
           );
-          if (!result.ok)
+          if (!result.ok) {
             throw new Error("Existing file could not be restored.");
+          }
           ids.push(existingId);
           return;
         }
@@ -105,8 +107,9 @@ async function importPaths(
             const result = await dependencies.assignFolders(existingId, [
               ...new Set([...current, ...assigned]),
             ]);
-            if (!result.ok)
+            if (!result.ok) {
               throw new Error("Existing file folders could not be assigned.");
+            }
           }
           ids.push(existingId);
           return;
@@ -122,8 +125,9 @@ async function importPaths(
             imported.id,
             assigned,
           );
-          if (!result.ok)
+          if (!result.ok) {
             throw new Error("Imported file folders could not be assigned.");
+          }
         }
         ids.push(imported.id);
       }
@@ -139,9 +143,9 @@ async function importPaths(
 
 export function importFiles(
   input: {
-    paths: readonly string[];
-    tags?: string[];
-    folderIds?: string[];
+    paths: ReadonlyArray<string>;
+    tags?: Array<string>;
+    folderIds?: Array<string>;
     useExisting?: Readonly<Record<string, string>>;
     /** Paths whose existing Save is in Trash, so using it restores it. */
     restore?: ReadonlySet<string>;

@@ -31,7 +31,7 @@ export async function setMediaEmbedding(
   });
 }
 
-export function clearMediaEmbeddings(ids?: readonly string[]): number {
+export function clearMediaEmbeddings(ids?: ReadonlyArray<string>): number {
   if (ids && ids.length > 0) {
     let count = 0;
     store.setState((state) => {

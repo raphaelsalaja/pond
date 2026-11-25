@@ -45,7 +45,7 @@ export class VimeoVideoExtractor implements Extractor {
     return name === "vimeo" && (value === undefined || value.length > 0);
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
     if (segments.length !== 1 || !first) return null;
     if (VIMEO_RESERVED.has(first.toLowerCase()) || /^\d+$/.test(first)) {

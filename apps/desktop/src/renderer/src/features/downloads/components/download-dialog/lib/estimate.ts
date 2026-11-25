@@ -37,8 +37,9 @@ function rangeFraction(
 
 function typicalMbps(maxHeight: number | null): number {
   const height = maxHeight ?? 1080;
-  return (TYPICAL_MBPS.find(([known]) => known <= height) ??
-    TYPICAL_MBPS[8])[1];
+  return (
+    TYPICAL_MBPS.find(([known]) => known <= height) ?? TYPICAL_MBPS[8]
+  )[1];
 }
 
 function bytesFor(seconds: number, mbps: number): number {
@@ -50,7 +51,9 @@ export function videoOptionFor(
   probe: Pick<DownloadSingleProbe, "videoOptions">,
   maxHeight: number | null,
 ): DownloadSingleProbe["videoOptions"][number] | null {
-  if (maxHeight == null) return probe.videoOptions[0] ?? null;
+  if (maxHeight === null) {
+    return probe.videoOptions[0] ?? null;
+  }
   return (
     probe.videoOptions.find((option) => option.height <= maxHeight) ??
     probe.videoOptions.at(-1) ??

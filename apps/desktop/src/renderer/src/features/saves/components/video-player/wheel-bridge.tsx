@@ -6,7 +6,9 @@ export function WheelBridge() {
   const [prefs] = usePrefs("viewer");
   const { actions, meta, state } = useVideo();
   const volume = useRef(state.volume);
-  volume.current = state.volume;
+  useEffect(() => {
+    volume.current = state.volume;
+  }, [state.volume]);
 
   useEffect(() => {
     const video = meta.videoRef.current;

@@ -1,13 +1,18 @@
 import { Color, Icon, List } from "@raycast/api";
 import type { ApiSource, ApiView } from "pond-api";
 import { kindName, sourceName } from "../lib/display";
-import { ALL_SAVES, decodeFilter, encodeFilter, type Filter } from "../lib/filters";
+import { ALL_SAVES, decodeFilter, encodeFilter } from "../lib/filters";
+import type { Filter } from "../lib/filters";
 import type { Lookups } from "../lib/library";
 
 /** The dropdown lists the most used tags; the rest stay one Filter action away. */
 const TAG_LIMIT = 40;
 
-export function filterTitle(filter: Filter, lookups: Pick<Lookups, "folderById">, views?: readonly ApiView[]): string {
+export function filterTitle(
+  filter: Filter,
+  lookups: Pick<Lookups, "folderById">,
+  views?: ReadonlyArray<ApiView>,
+): string {
   switch (filter.kind) {
     case "all":
       return "All Saves";
@@ -34,8 +39,8 @@ export interface FilterDropdownProps {
   value: string;
   onChange: (value: string) => void;
   lookups: Lookups;
-  views: readonly ApiView[];
-  sources: readonly ApiSource[];
+  views: ReadonlyArray<ApiView>;
+  sources: ReadonlyArray<ApiSource>;
 }
 
 export function FilterDropdown({ value, onChange, lookups, views, sources }: FilterDropdownProps) {

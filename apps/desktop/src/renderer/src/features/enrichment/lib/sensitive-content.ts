@@ -7,6 +7,8 @@ export {
   sensitiveProbabilitiesFromLogits,
 } from "./sensitive-content-contract";
 
-export function classifySensitiveImages(images: RawImage[]): Promise<number[]> {
+export function classifySensitiveImages(
+  images: Array<RawImage>,
+): Promise<Array<number>> {
   return inferSensitiveContent(images);
 }

@@ -1,13 +1,14 @@
 import { createHmac } from "node:crypto";
-import { createServer, type Server } from "node:http";
+import { createServer } from "node:http";
+import type { Server } from "node:http";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import {
   createMymindClient,
   MymindApiError,
   MymindCredentialSchema,
-  type MymindObject,
 } from "./client";
+import type { MymindObject } from "./client";
 
 const CREDENTIAL = {
   kid: "test-key",
@@ -26,24 +27,46 @@ const ITEM = {
   blob: { name: "reference.pdf" },
 };
 
+function fakeFetch() {
+  const calls: Array<[string, RequestInit]> = [];
+  const responses: Array<Response> = [];
+  const requested = Promise.withResolvers<void>();
+  return {
+    calls,
+    responses,
+    requested: requested.promise,
+    fetch: async (url: string, init: RequestInit) => {
+      calls.push([url, init]);
+      requested.resolve();
+      const response = responses.shift();
+      if (!response) {
+        throw new Error("Unexpected mymind request.");
+      }
+      return response;
+    },
+  };
+}
+
 function fixture() {
-  const request =
-    vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
-  const now = vi.fn(() => NOW);
+  const request = fakeFetch();
   return {
     request,
-    now,
-    client: createMymindClient(CREDENTIAL, { fetch: request, now }),
+    client: createMymindClient(CREDENTIAL, {
+      fetch: request.fetch,
+      now: () => NOW,
+    }),
   };
 }
 
 async function collect(items: AsyncIterable<MymindObject>) {
-  const result: MymindObject[] = [];
-  for await (const item of items) result.push(item);
+  const result: Array<MymindObject> = [];
+  for await (const item of items) {
+    result.push(item);
+  }
   return result;
 }
 
-function streamResponse(chunks: Uint8Array[]) {
+function streamResponse(chunks: Array<Uint8Array>) {
   return new Response(
     new ReadableStream<Uint8Array>({
       start(controller) {
@@ -73,23 +96,23 @@ function close(server: Server): Promise<void> {
 describe("mymind API client", () => {
   it("signs the request after a long admission wait", async () => {
     let now = NOW;
-    const request =
-      vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
-    request.mockResolvedValue(new Response("original file"));
+    const request = fakeFetch();
+    request.responses.push(new Response("original file"));
     const controller = new AbortController();
-    const beforeRequest = vi.fn(async () => {
-      now += 6 * 60_000;
-    });
+    const admitted: Array<AbortSignal | undefined> = [];
     const client = createMymindClient(CREDENTIAL, {
-      beforeRequest,
-      fetch: request,
+      beforeRequest: async (signal) => {
+        admitted.push(signal);
+        now += 6 * 60_000;
+      },
+      fetch: request.fetch,
       now: () => now,
     });
 
     await client.getBlob("image", controller.signal);
 
-    expect(beforeRequest).toHaveBeenCalledWith(controller.signal);
-    const token = new Headers(request.mock.calls[0]?.[1].headers)
+    expect(admitted).toEqual([controller.signal]);
+    const token = new Headers(request.calls[0]?.[1].headers)
       .get("authorization")
       ?.replace(/^Bearer /, "");
     const [, payload] = z
@@ -123,12 +146,14 @@ describe("mymind API client", () => {
 
   it("checks the key with a signed, bounded read", async () => {
     const { client, request } = fixture();
-    request.mockResolvedValue(new Response(JSON.stringify([ITEM])));
+    request.responses.push(new Response(JSON.stringify([ITEM])));
 
     await client.validateCredential();
 
-    const call = request.mock.calls[0];
-    if (!call) throw new Error("The credential check did not make a request.");
+    const call = request.calls[0];
+    if (!call) {
+      throw new Error("The credential check did not make a request.");
+    }
     const [url, init] = call;
     expect(url).toBe("https://api.mymind.com/objects?limit=1");
     expect(init.method).toBe("GET");
@@ -187,7 +212,7 @@ describe("mymind API client", () => {
       `${JSON.stringify(ITEM)}\r\n\n${JSON.stringify({ ...ITEM, id: "second" })}`,
     );
     const split = bytes.indexOf(0xc3) + 1;
-    request.mockResolvedValue(
+    request.responses.push(
       streamResponse([
         bytes.slice(0, split),
         bytes.slice(split, split + 5),
@@ -200,13 +225,13 @@ describe("mymind API client", () => {
     );
 
     expect(result).toEqual([ITEM, { ...ITEM, id: "second" }]);
-    const url = new URL(request.mock.calls[0]?.[0] ?? "");
+    const url = new URL(request.calls[0]?.[0] ?? "");
     expect(url.searchParams.get("q")).toBe(
       "created:2026-11-06T11:59:00.000Z/PT60S",
     );
     expect(url.searchParams.get("contentAs")).toBe("text/markdown");
     expect(url.searchParams.has("limit")).toBe(false);
-    expect(new Headers(request.mock.calls[0]?.[1].headers).get("accept")).toBe(
+    expect(new Headers(request.calls[0]?.[1].headers).get("accept")).toBe(
       "application/jsonl",
     );
   });
@@ -216,7 +241,7 @@ describe("mymind API client", () => {
     const body = Array.from({ length: 1001 }, (_, index) =>
       JSON.stringify({ ...ITEM, id: String(index) }),
     ).join("\n");
-    request.mockResolvedValue(streamResponse([new TextEncoder().encode(body)]));
+    request.responses.push(streamResponse([new TextEncoder().encode(body)]));
 
     await expect(
       collect(client.listCreatedObjects({ start: NOW - 60_000, end: NOW })),
@@ -225,7 +250,7 @@ describe("mymind API client", () => {
 
   it("rejects a capped JSON response or an incomplete item stream", async () => {
     const { client, request } = fixture();
-    request.mockResolvedValueOnce(
+    request.responses.push(
       new Response(JSON.stringify([ITEM]), {
         headers: { "content-type": "application/json" },
       }),
@@ -234,7 +259,7 @@ describe("mymind API client", () => {
       collect(client.listCreatedObjects({ start: NOW - 60_000, end: NOW })),
     ).rejects.toThrow("mymind did not return a complete item stream.");
 
-    request.mockResolvedValueOnce(
+    request.responses.push(
       streamResponse([new TextEncoder().encode(`${JSON.stringify(ITEM)}\n{`)]),
     );
     await expect(
@@ -245,7 +270,7 @@ describe("mymind API client", () => {
   it("stops a pending stream read when the request is cancelled", async () => {
     const { client, request } = fixture();
     const cancelled = vi.fn();
-    request.mockResolvedValue(
+    request.responses.push(
       new Response(new ReadableStream({ cancel: cancelled }), {
         headers: { "content-type": "application/jsonl" },
       }),
@@ -258,17 +283,17 @@ describe("mymind API client", () => {
         signal: controller.signal,
       }),
     );
-    await vi.waitFor(() => expect(request).toHaveBeenCalledOnce());
+    await request.requested;
     controller.abort();
 
     await expect(reading).rejects.toMatchObject({ name: "AbortError" });
     expect(cancelled).toHaveBeenCalledOnce();
-    expect(request.mock.calls[0]?.[1].signal).toBe(controller.signal);
+    expect(request.calls[0]?.[1].signal).toBe(controller.signal);
   });
 
   it("stops between items from the same stream chunk", async () => {
     const { client, request } = fixture();
-    request.mockResolvedValue(
+    request.responses.push(
       streamResponse([
         new TextEncoder().encode(
           `${JSON.stringify(ITEM)}\n${JSON.stringify({ ...ITEM, id: "second" })}\n`,
@@ -288,7 +313,7 @@ describe("mymind API client", () => {
 
   it("uses the longest exhausted quota window and hides the error body", async () => {
     const { client, request } = fixture();
-    request.mockResolvedValue(
+    request.responses.push(
       new Response(`private server data ${CREDENTIAL.secret}`, {
         status: 429,
         headers: {
@@ -309,13 +334,11 @@ describe("mymind API client", () => {
 
   it("reports a revoked key and uses Retry-After when no quota header is present", async () => {
     const { client, request } = fixture();
-    request.mockResolvedValueOnce(
-      new Response("private data", { status: 401 }),
-    );
+    request.responses.push(new Response("private data", { status: 401 }));
     await expect(client.validateCredential()).rejects.toBeInstanceOf(
       MymindApiError,
     );
-    request.mockResolvedValueOnce(
+    request.responses.push(
       new Response("private data", {
         status: 429,
         headers: { "Retry-After": "60" },
@@ -332,13 +355,13 @@ describe("mymind API client", () => {
     const response = new Response(new Uint8Array([1, 2, 3]), {
       headers: { "content-type": "image/png" },
     });
-    request.mockResolvedValue(response);
+    request.responses.push(response);
 
     expect(await client.getBlob("id/with spaces")).toBe(response);
-    expect(request.mock.calls[0]?.[0]).toBe(
+    expect(request.calls[0]?.[0]).toBe(
       "https://api.mymind.com/objects/id%2Fwith%20spaces/blob",
     );
-    expect(new Headers(request.mock.calls[0]?.[1].headers).get("accept")).toBe(
+    expect(new Headers(request.calls[0]?.[1].headers).get("accept")).toBe(
       "application/octet-stream",
     );
   });

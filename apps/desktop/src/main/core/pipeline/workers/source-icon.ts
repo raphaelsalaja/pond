@@ -43,7 +43,7 @@ export async function fetchSourceIcon(
   const fetched = await fetchFirstIcon(faviconUrls(save));
   if (!fetched && !replace) return false;
 
-  const newFiles: WriteFileArgs[] = [];
+  const newFiles: Array<WriteFileArgs> = [];
   if (fetched) {
     const { iconUrl, file: tx } = fetched;
     const iconFile: WriteFileArgs = {
@@ -73,7 +73,7 @@ export async function fetchSourceIcon(
 }
 
 async function fetchFirstIcon(
-  urls: string[],
+  urls: Array<string>,
 ): Promise<{ iconUrl: string; file: TxSaveFile } | null> {
   for (const iconUrl of urls) {
     const outcome = await fetchSourceIconToTxFile(iconUrl);
@@ -82,7 +82,7 @@ async function fetchFirstIcon(
   return null;
 }
 
-function faviconUrls(save: Save): string[] {
+function faviconUrls(save: Save): Array<string> {
   const urls = [
     scrapedFaviconUrl(save.rawJson),
     fallbackFaviconUrl(save.url),

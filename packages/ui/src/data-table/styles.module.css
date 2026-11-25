@@ -32,8 +32,7 @@
 
   &[data-sized][data-header] {
     height: calc(
-      var(--data-table-body-height) +
-      var(--data-table-header-height, 36px)
+      var(--data-table-body-height) + var(--data-table-header-height, 36px)
     );
   }
 }

@@ -1,11 +1,5 @@
-import {
-  assetFound,
-  assetRef,
-  type Found,
-  fanoutPairs,
-  type LibraryAsset,
-  type LibrarySave,
-} from "../types";
+import { assetFound, assetRef, fanoutPairs } from "../types";
+import type { Found, LibraryAsset, LibrarySave } from "../types";
 
 const SHA256 = /^[a-f0-9]{64}$/;
 
@@ -14,10 +8,10 @@ export function isSha256(value: string): boolean {
 }
 
 /** Byte-identical files across Saves, plus whole-Save manifest equality. */
-export function sha256Matches(saves: readonly LibrarySave[]): Found[] {
-  const found: Found[] = [];
-  const bySha = new Map<string, Map<string, LibraryAsset[]>>();
-  const byManifest = new Map<string, string[]>();
+export function sha256Matches(saves: ReadonlyArray<LibrarySave>): Array<Found> {
+  const found: Array<Found> = [];
+  const bySha = new Map<string, Map<string, Array<LibraryAsset>>>();
+  const byManifest = new Map<string, Array<string>>();
 
   for (const save of saves) {
     let complete = save.assets.length > 0;
@@ -66,8 +60,9 @@ export function sha256Matches(saves: readonly LibrarySave[]): Found[] {
   for (const [manifest, members] of byManifest) {
     if (members.length < 2) continue;
     const files = manifest.split(",").length;
-    for (const ids of fanoutPairs(members.sort()))
+    for (const ids of fanoutPairs(members.sort())) {
       found.push({ ids, save: { matcher: "manifest", files } });
+    }
   }
 
   return found;

@@ -11,13 +11,16 @@ export function saveViewLabel(activeViewId: string | null): string {
   return activeViewId ? "Update View" : "Save View";
 }
 
-export function saveFilterView(activeViewId: string | null): void {
-  const fail = (title: string) => (cause: unknown) =>
+function fail(title: string) {
+  return (cause: unknown) =>
     notify({
       id: "save-filter-view",
       title,
       description: errorCopy(cause, "Try again."),
     });
+}
+
+export function saveFilterView(activeViewId: string | null): void {
   if (activeViewId) {
     void savedViews
       .updateCurrent(activeViewId)

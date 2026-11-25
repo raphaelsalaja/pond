@@ -6,7 +6,8 @@ import {
   useSearchText,
 } from "@/features/library/state/view-store";
 import type { ViewMode } from "@/features/library/types";
-import { modeForNav, type SaveListMode } from "@/features/saves";
+import { modeForNav } from "@/features/saves";
+import type { SaveListMode } from "@/features/saves";
 import { useBootReady } from "@/features/saves/pool";
 import type { Save } from "@/features/saves/types";
 import { useStableStrings } from "../../../shared/hooks/use-stable-array";

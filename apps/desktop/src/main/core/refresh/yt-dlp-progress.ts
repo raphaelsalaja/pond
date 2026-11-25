@@ -52,7 +52,8 @@ export function createYtdlpProgressReporter(report: ReportDownloadActivity) {
         updatedAt: at,
         receivedBytes: progress.received,
         totalBytes:
-          progress.total != null && progress.total >= (progress.received ?? 0)
+          progress.total !== undefined &&
+          progress.total >= (progress.received ?? 0)
             ? progress.total
             : undefined,
         bytesPerSecond: complete ? undefined : progress.speed,

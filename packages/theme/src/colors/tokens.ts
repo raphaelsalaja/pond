@@ -63,7 +63,7 @@ const HUE_RAMPS = {
 const GRAY_TARGETS = {
   light: [1.07, 1.15, 1.26, 1.42, 1.7, 2.1, 2.79, 4.02, 6.36, 10.77],
   dark: [1.03, 1.08, 1.16, 1.3, 1.57, 2.03, 2.86, 4.31, 6.76, 10.75],
-} as const satisfies Record<ThemeMode, readonly number[]>;
+} as const satisfies Record<ThemeMode, ReadonlyArray<number>>;
 
 const TINT_CHROMA = [0.16, 0.32, 0.51, 0.69, 0.85, 0.95, 1, 1] as const;
 
@@ -306,12 +306,12 @@ function readableSolid(solid: Lch, gamut: Gamut): Lch {
 }
 
 interface Scale {
-  steps: Lch[];
+  steps: Array<Lch>;
   contrast: Lch;
 }
 
 interface ScaleTargets {
-  tints: readonly number[];
+  tints: ReadonlyArray<number>;
   text: number;
   textStrong: number;
   textAgainst: Rgb;
@@ -498,7 +498,7 @@ export function solveScales(input: ThemeInput, gamut: Gamut): ThemeTokens {
   const solveGray = (target: number, against: Rgb) =>
     along(bisect((t) => wcag(along(t), against) >= target));
 
-  const gray: Rgb[] = [bgLinear];
+  const gray: Array<Rgb> = [bgLinear];
   let previous = 1;
   for (let i = 0; i < 9; i++) {
     const target = Math.min(
@@ -546,7 +546,7 @@ export function solveScales(input: ThemeInput, gamut: Gamut): ThemeTokens {
   );
 
   const tokens: Record<ThemeTokenName, string> = {};
-  const writeSteps = (name: string, steps: Rgb[], alpha: boolean) => {
+  const writeSteps = (name: string, steps: Array<Rgb>, alpha: boolean) => {
     steps.forEach((color, i) => {
       tokens[`--ds-${name}-${i + 1}`] = emitColor(color, gamut);
     });

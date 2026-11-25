@@ -4,10 +4,12 @@ import { useState } from "react";
 import { formatBytes } from "@/shared/lib/format";
 import { Columns } from "../columns";
 import { DownloadOptions } from "../export-options";
-import { type ExportDestination, saveToHint } from "../export-options/settings";
+import { saveToHint } from "../export-options/settings";
+import type { ExportDestination } from "../export-options/settings";
 import { Frame } from "../frame";
 import { useExportFolder } from "../lib/export-folder";
-import { type LinkError, LinkField, LinkStatus } from "../link-page";
+import { LinkField, LinkStatus } from "../link-page";
+import type { LinkError } from "../link-page";
 import { Summary } from "../summary";
 import styles from "./styles.module.css";
 

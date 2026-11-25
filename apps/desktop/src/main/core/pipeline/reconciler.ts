@@ -18,7 +18,6 @@ import {
 } from "./queue-generations";
 import { noteSuccess } from "./rate-governor";
 import {
-  type DueTask,
   LibrarySwitchInterrupt,
   MAX_BACKGROUND_INFLIGHT,
   MAX_GLOBAL_INFLIGHT,
@@ -31,6 +30,7 @@ import {
   WORKERS,
   WorkerWatchdogError,
 } from "./reconciler-config";
+import type { DueTask } from "./reconciler-config";
 import {
   abortAllRunningIngest,
   abortRunningIngest,
@@ -53,6 +53,7 @@ import {
   enrichTaskEventWithSave,
   gateForSource,
   handleFailure,
+  isLibrarySwitchInterrupt,
   markDone,
   maybeFinalizeSave,
 } from "./task-settlement";
@@ -242,7 +243,7 @@ export async function cancelSaveIngest(saveId: string): Promise<boolean> {
 }
 
 export async function cancelSavesIngest(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<number> {
   let cancelled = 0;
   for (const id of new Set(saveIds)) {
@@ -276,7 +277,7 @@ export async function cancelGeneration(generationId: string): Promise<number> {
   return runningIds.length;
 }
 
-export async function skipSaves(ids: readonly string[]): Promise<number> {
+export async function skipSaves(ids: ReadonlyArray<string>): Promise<number> {
   const db = await getDb();
   let skipped = 0;
   for (const saveId of ids) {
@@ -329,8 +330,8 @@ export function startReconciler(): void {
   if (started) return;
   started = true;
   log.info("[pond pipeline:reconciler] starting");
-  void track(initializeReconciler()).catch((err) =>
-    log.error("[pond pipeline:reconciler] initialization failed", err),
+  void track(initializeReconciler()).catch((cause: unknown) =>
+    log.error("[pond pipeline:reconciler] initialization failed", cause),
   );
 }
 
@@ -382,23 +383,26 @@ async function claimAndDispatch(): Promise<void> {
   if (!started || paused) return;
   if (Date.now() >= nextOrphanSweepAt) {
     nextOrphanSweepAt = Date.now() + ORPHAN_SWEEP_INTERVAL_MS;
-    void track(sweepOrphanTasks()).catch((err) =>
-      log.warn("[pond pipeline:reconciler] periodic orphan sweep failed", err),
+    void track(sweepOrphanTasks()).catch((cause: unknown) =>
+      log.warn(
+        "[pond pipeline:reconciler] periodic orphan sweep failed",
+        cause,
+      ),
     );
-    void track(recoverExpiredLeases()).catch((err) =>
+    void track(recoverExpiredLeases()).catch((cause: unknown) =>
       log.warn(
         "[pond pipeline:reconciler] periodic lease recovery failed",
-        err,
+        cause,
       ),
     );
-    void track(sweepTasklessIngestingSaves()).catch((err) =>
+    void track(sweepTasklessIngestingSaves()).catch((cause: unknown) =>
       log.warn(
         "[pond pipeline:reconciler] periodic taskless sweep failed",
-        err,
+        cause,
       ),
     );
-    void track(releaseIngestForTrashedSaves(null)).catch((err) =>
-      log.warn("[pond pipeline:reconciler] periodic trash sweep failed", err),
+    void track(releaseIngestForTrashedSaves(null)).catch((cause: unknown) =>
+      log.warn("[pond pipeline:reconciler] periodic trash sweep failed", cause),
     );
   }
   const globalRoom = MAX_GLOBAL_INFLIGHT - inflightGlobal;
@@ -500,7 +504,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
         if (!renewed) controller.abort();
       });
     },
-    Math.max(1_000, Math.floor(TASK_LEASE_MS / 3)),
+    Math.max(1000, Math.floor(TASK_LEASE_MS / 3)),
   );
   try {
     if (!(await ingestLeaseStillRunnable(task))) {
@@ -516,7 +520,9 @@ async function dispatchTask(task: DueTask): Promise<void> {
         metrics.watchdogTrips++;
         try {
           controller.abort();
-        } catch {}
+        } catch {
+          /** An abort listener's throw must not stop the watchdog from rejecting. */
+        }
         reject(new WorkerWatchdogError(task.op, budget));
       }, budget);
     });
@@ -552,12 +558,11 @@ async function dispatchTask(task: DueTask): Promise<void> {
     activity.finish("completed");
     ev.outcome = "ok";
     ev.attempts = task.attempts + 1;
-  } catch (err) {
+  } catch (error) {
     activity.finish("failed");
-    const cause =
-      controller.signal.reason instanceof LibrarySwitchInterrupt
-        ? controller.signal.reason
-        : err;
+    const cause = isLibrarySwitchInterrupt(controller.signal.reason)
+      ? controller.signal.reason
+      : error;
     const result = await handleFailure(task, cause);
     if (result.settled) {
       await completeQueueGenerationIfSettled(task.generationId);
@@ -607,7 +612,7 @@ async function dispatchTask(task: DueTask): Promise<void> {
 }
 
 async function releaseIngestForTrashedSaves(
-  saveIds: readonly string[] | null,
+  saveIds: ReadonlyArray<string> | null,
 ): Promise<void> {
   const db = await getDb();
   const released = releaseTrashedIngestSync(db.$raw, saveIds, Date.now());
@@ -622,7 +627,7 @@ async function releaseIngestForTrashedSaves(
 }
 
 async function resumeIngestForRestoredSaves(
-  saveIds: readonly string[],
+  saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   if (saveIds.length === 0) return;
   const db = await getDb();

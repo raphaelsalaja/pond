@@ -100,13 +100,13 @@ export async function navigateWithTimeout(
   const navPromise = (async () => {
     try {
       await wc.loadURL(url);
-    } catch (err) {
-      if (err instanceof Error && err.message.includes("ERR_ABORTED")) {
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("ERR_ABORTED")) {
         return finished;
       }
       log.info("[pond scrape] loadURL rejected", {
         url,
-        err: err instanceof Error ? err.message : String(err),
+        err: error instanceof Error ? error.message : String(error),
       });
       return false as const;
     }
@@ -120,7 +120,9 @@ export async function navigateWithTimeout(
   if (result === TIMEOUT) {
     try {
       wc.stop();
-    } catch {}
+    } catch {
+      /** The window may already be destroyed, and the navigation counts as failed either way. */
+    }
     return false;
   }
   return result === true;

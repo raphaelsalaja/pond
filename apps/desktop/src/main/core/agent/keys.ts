@@ -1,15 +1,10 @@
 import type { JsonValue } from "@pond/schema/json";
 import { z } from "zod";
-import {
-  ASSISTANT_MODELS,
-  type AssistantProvider,
-  assistantCatalog,
-} from "../../../shared/assistant";
+import { ASSISTANT_MODELS, assistantCatalog } from "../../../shared/assistant";
+import type { AssistantProvider } from "../../../shared/assistant";
 import { KEYCHAIN_AGENT_PREFIX } from "../../../shared/constants";
-import {
-  modelsForChooser,
-  type ProviderModelsResult,
-} from "../../../shared/provider-models";
+import { modelsForChooser } from "../../../shared/provider-models";
+import type { ProviderModelsResult } from "../../../shared/provider-models";
 import type {
   OkResult,
   OkSuccess,
@@ -65,11 +60,11 @@ function mask(key: string): string {
   return `${key.slice(0, 4)}…${key.slice(-4)}`;
 }
 
-function listedProviders(added: string[], provider: AgentProviderId) {
+function listedProviders(added: Array<string>, provider: AgentProviderId) {
   return [...new Set([...added, provider])];
 }
 
-function withoutProvider(added: string[], provider: AgentProviderId) {
+function withoutProvider(added: Array<string>, provider: AgentProviderId) {
   return added.filter((id) => id !== provider);
 }
 
@@ -104,7 +99,7 @@ export async function saveKey(
 ): Promise<OkResult> {
   const catalog = assistantCatalog(provider);
   const trimmed = key.trim();
-  if ((isCliProvider(provider) || provider === "apple") && trimmed)
+  if ((isCliProvider(provider) || provider === "apple") && trimmed) {
     return {
       ok: false,
       error:
@@ -112,6 +107,7 @@ export async function saveKey(
           ? "Apple Intelligence doesn't use a key."
           : "Sign in through the CLI instead of entering an API key.",
     };
+  }
   if (!trimmed && catalog?.needsKey) {
     return { ok: false, error: "Paste a key first." };
   }
@@ -258,12 +254,13 @@ export async function listProviderModels(
     lmstudioBaseUrl: prefs.agent.lmstudioBaseUrl,
     azureResourceName: prefs.agent.azureResourceName,
   });
-  if (!fetched.ok)
+  if (!fetched.ok) {
     return {
       ok: false,
       models: catalogModelsForProvider(provider, publicCatalog.models),
       error: fetched.error,
     };
+  }
   return {
     ok: true,
     models: catalogModelsForProvider(
@@ -332,12 +329,12 @@ function ollamaShowUrl(modelsUrl: string): string {
 }
 
 async function withOllamaModelDetails(
-  rows: JsonValue[],
+  rows: Array<JsonValue>,
   modelsUrl: string,
   headers: Record<string, string>,
   signal: AbortSignal,
   fetcher: typeof fetch,
-): Promise<JsonValue[]> {
+): Promise<Array<JsonValue>> {
   const url = ollamaShowUrl(modelsUrl);
   return Promise.all(
     rows.map(async (row) => {
@@ -367,9 +364,12 @@ export async function checkProviderKey(
   input: ProviderConnection,
   fetcher: typeof fetch = fetch,
 ): Promise<OkResult> {
-  if (input.provider === "apple")
+  if (input.provider === "apple") {
     return appleStatus().then((status) => (status.ok ? { ok: true } : status));
-  if (isCliProvider(input.provider)) return checkCliConnection(input.provider);
+  }
+  if (isCliProvider(input.provider)) {
+    return checkCliConnection(input.provider);
+  }
   if (input.provider === "openrouter") {
     try {
       const response = await fetcher(OPENROUTER_KEY_URL, {
@@ -444,7 +444,7 @@ export async function fetchProviderModels(
     url = `${base.replace(/\/$/, "")}/models`;
     if (key) headers.Authorization = `Bearer ${key}`;
   }
-  const rows: JsonValue[] = [];
+  const rows: Array<JsonValue> = [];
   const cursors = new Set<string>();
   const endpoint = url;
   const signal = AbortSignal.timeout(10_000);
@@ -501,8 +501,9 @@ export async function fetchProviderModels(
           "has_more" in page &&
           page.has_more &&
           !cursor
-        )
+        ) {
           throw new Error("Missing pagination cursor");
+        }
         if (!cursor) {
           const discoveredRows =
             provider === "ollama"

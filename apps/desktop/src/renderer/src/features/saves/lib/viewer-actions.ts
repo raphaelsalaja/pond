@@ -33,11 +33,11 @@ export function openReferenceWindow(
 ): void {
   void window.pond
     .openPreviewWindow({ saveId, fileIndex, kind })
-    .catch((error) =>
+    .catch((cause: unknown) =>
       notify({
         id: "preview-window",
         title: "Couldn't open this preview",
-        description: errorCopy(error, "Try again."),
+        description: errorCopy(cause, "Try again."),
       }),
     );
 }

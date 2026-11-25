@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
+// oxlint-disable-next-line import/no-namespace -- utility processes load an `electron` module without `app`, so a named import would fail to link there
 import * as electron from "electron";
 import log from "electron-log/main.js";
 import which from "which";
@@ -50,22 +51,20 @@ function resolveYtDlp(): string | null {
 
 function resolveFfmpeg(): string | null {
   const handed = process.env[FFMPEG_PATH_ENV];
-  if (handed && existsSync(handed)) return handed;
-  const candidates: string[] = [];
+  if (handed && existsSync(handed)) {
+    return handed;
+  }
+  const candidates: Array<string> = [];
   if (app?.isPackaged) {
     candidates.push(join(process.resourcesPath, "bin", FFMPEG_FILENAME));
   }
   candidates.push(
     resolve(__dirname, "../../../node_modules/ffmpeg-static", FFMPEG_FILENAME),
-  );
-  candidates.push(
     resolve(
       process.cwd(),
       "apps/desktop/node_modules/ffmpeg-static",
       FFMPEG_FILENAME,
     ),
-  );
-  candidates.push(
     resolve(process.cwd(), "node_modules/ffmpeg-static", FFMPEG_FILENAME),
   );
 

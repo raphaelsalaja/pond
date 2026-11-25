@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { Shell } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "shell",

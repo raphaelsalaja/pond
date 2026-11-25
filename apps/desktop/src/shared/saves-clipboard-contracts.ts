@@ -6,7 +6,7 @@ export interface SavesClipboardQueryInputs {
   "saves.copyThumbnail": { id: string };
   "saves.copyBase64": SavesFileInput;
   "saves.copyFile": SavesFileInput;
-  "saves.copyFiles": { files: SavesFileInput[] };
+  "saves.copyFiles": { files: Array<SavesFileInput> };
   "clipboard.writeText": { text: string };
 }
 

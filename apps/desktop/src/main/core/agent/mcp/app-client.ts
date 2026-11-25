@@ -16,7 +16,21 @@ const ErrorBodySchema = z.object({ error: z.object({ message: z.string() }) });
 
 type NavigateResult = { ok: true } | { error: string };
 
-class PondClosed extends Error {}
+class PondClosed extends Error {
+  constructor() {
+    super();
+    this.name = "PondClosed";
+  }
+}
+
+function isPondClosed(value: unknown): value is PondClosed {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "name" in value &&
+    value.name === "PondClosed"
+  );
+}
 
 async function post(target: AppNavigation): Promise<NavigateResult> {
   const token = await getIngestToken();
@@ -78,7 +92,9 @@ export async function navigatePond(
   try {
     return await post(target);
   } catch (error) {
-    if (!(error instanceof PondClosed)) throw error;
+    if (!isPondClosed(error)) {
+      throw error;
+    }
   }
   if (!launchPond()) {
     return { error: "Pond isn't open. Open Pond, then try again." };
@@ -89,7 +105,9 @@ export async function navigatePond(
     try {
       return await post(target);
     } catch (error) {
-      if (!(error instanceof PondClosed)) throw error;
+      if (!isPondClosed(error)) {
+        throw error;
+      }
     }
   }
   return { error: "Pond didn't open in time. Open Pond, then try again." };

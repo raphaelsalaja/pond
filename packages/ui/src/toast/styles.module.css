@@ -12,10 +12,10 @@
   z-index: 50;
   width: var(--toast-width);
   max-width: calc(100vw - var(--toast-inset) * 2);
-  margin: 0;
   padding: 0;
-  list-style: none;
+  margin: 0;
   outline: none;
+  list-style: none;
   -webkit-app-region: no-drag;
 }
 
@@ -40,9 +40,9 @@
   box-shadow: var(--toast-shadow);
   opacity: clamp(0, 3 - var(--toast-index), 1);
   transform-origin: center;
+  scale: var(--scale);
   translate: var(--toast-swipe-movement-x, 0px)
     calc(var(--y) + var(--toast-swipe-movement-y, 0px));
-  scale: var(--scale);
   transition-timing-function: var(--toast-ease);
   transition-duration: var(--ds-duration-slow);
   transition-property: translate, scale, opacity, height;
@@ -60,10 +60,7 @@
 
   &[data-expanded] {
     --y: calc(
-      var(--toast-offset-y) *
-      -1 -
-      var(--toast-index) *
-      var(--toast-gap)
+      var(--toast-offset-y) * -1 - var(--toast-index) * var(--toast-gap)
     );
     --scale: 1;
 

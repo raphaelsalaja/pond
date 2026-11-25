@@ -1,4 +1,5 @@
-import { type FSWatcher, watch } from "node:fs";
+import { watch } from "node:fs";
+import type { FSWatcher } from "node:fs";
 import log from "electron-log/main.js";
 import {
   onLibraryDisplaced,
@@ -7,7 +8,7 @@ import {
 import { libraryRoot } from "../paths";
 import { reconcileLibrary } from "./scan";
 
-const WATCH_INTERVAL_MS = 5_000;
+const WATCH_INTERVAL_MS = 5000;
 
 /** Notice when the open library folder disappears or is replaced while Pond is running. */
 export function startLibraryDisplacementWatch(): () => void {
@@ -16,8 +17,8 @@ export function startLibraryDisplacementWatch(): () => void {
   let warned = false;
   const stopNotices = onLibraryDisplaced(() => {
     awaitingReturn = true;
-    void reconcileLibrary().catch((error) =>
-      log.warn("[pond library] couldn't mark saves with missing files", error),
+    void reconcileLibrary().catch((cause: unknown) =>
+      log.warn("[pond library] couldn't mark saves with missing files", cause),
     );
   });
 
@@ -26,10 +27,10 @@ export function startLibraryDisplacementWatch(): () => void {
     const placement = refreshLibraryPlacement(root);
     if (placement === "present" && awaitingReturn) {
       awaitingReturn = false;
-      void reconcileLibrary().catch((error) =>
+      void reconcileLibrary().catch((cause: unknown) =>
         log.warn(
           "[pond library] couldn't restore saves after the folder returned",
-          error,
+          cause,
         ),
       );
     }

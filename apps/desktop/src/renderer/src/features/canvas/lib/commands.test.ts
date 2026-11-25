@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { commandForKey, glyphsFor, type KeyChord } from "./commands";
+import { commandForKey, glyphsFor } from "./commands";
+import type { KeyChord } from "./commands";
 import { GRID } from "./document";
 
 function press(code: string, modifiers: Partial<KeyChord> = {}): KeyChord {

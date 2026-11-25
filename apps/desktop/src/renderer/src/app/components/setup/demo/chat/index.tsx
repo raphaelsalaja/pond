@@ -17,7 +17,9 @@ export function Chat({ connected = true }: { connected?: boolean }) {
               <span />
               <span />
             </span>
-            <span className={styles.reply}>Here's one from your library.</span>
+            <span className={styles.reply}>
+              Here&apos;s one from your library.
+            </span>
           </span>
           <span className={styles.attachment}>
             <span className={styles.thumb}>

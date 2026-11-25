@@ -5,11 +5,10 @@
  */
 
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import sharp from "sharp";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const tintsRoot = resolve(__dirname, "../../../packages/icons/brand/tints");
 const outDir = resolve(
   __dirname,

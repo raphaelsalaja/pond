@@ -1,10 +1,9 @@
 import {
-  type Folder,
   folders as foldersTable,
-  type NewFolder,
   saveFolders as saveFoldersTable,
   saves,
 } from "@pond/schema/db";
+import type { Folder, NewFolder } from "@pond/schema/db";
 import { FolderColorSchema } from "@pond/schema/folder-presentation";
 import type { Transaction } from "@pond/schema/tx";
 import type {
@@ -34,14 +33,14 @@ export { folderIdsForSave } from "./folder-memberships";
 
 export interface CreateFolderWithSavesRuntime {
   run<T>(operation: () => Promise<T>): Promise<T>;
-  listFolders(): Promise<Folder[]>;
-  folderIdsForSave(saveId: string): Promise<string[]>;
+  listFolders(): Promise<Array<Folder>>;
+  folderIdsForSave(saveId: string): Promise<Array<string>>;
   planAssignments(
-    assignments: Array<{ saveId: string; folderIds: string[] }>,
-    rows: Folder[],
-  ): Promise<Transaction[]>;
+    assignments: Array<{ saveId: string; folderIds: Array<string> }>,
+    rows: Array<Folder>,
+  ): Promise<Array<Transaction>>;
   execute: typeof executeBatch;
-  recordUndo(transactions: Transaction[]): string | null;
+  recordUndo(transactions: Array<Transaction>): string | null;
   createId(): string;
   now(): Date;
 }
@@ -57,7 +56,7 @@ const defaultCreateFolderWithSavesRuntime: CreateFolderWithSavesRuntime = {
   now: () => new Date(),
 };
 
-export async function listFolders(): Promise<Folder[]> {
+export async function listFolders(): Promise<Array<Folder>> {
   const db = await getDb();
   return db
     .select()
@@ -83,7 +82,7 @@ export async function createFolderWithSaves(
   input: {
     name: string;
     parentId?: string | null;
-    saveIds: string[];
+    saveIds: Array<string>;
   },
   runtime: CreateFolderWithSavesRuntime = defaultCreateFolderWithSavesRuntime,
 ): Promise<Folder & UndoableChange> {
@@ -94,8 +93,9 @@ export async function createFolderWithSaves(
     if (saveIds.length === 0) throw new Error("Select at least one Save.");
     const rows = await runtime.listFolders();
     const parentId = input.parentId ?? null;
-    if (parentId && !rows.some((row) => row.id === parentId))
+    if (parentId && !rows.some((row) => row.id === parentId)) {
       throw new Error("Destination folder no longer exists.");
+    }
     const sortOrder =
       Math.max(
         -1,
@@ -119,7 +119,7 @@ export async function createFolderWithSaves(
         ],
       })),
     );
-    const transactions: Transaction[] = [
+    const transactions: Array<Transaction> = [
       {
         kind: "create",
         model: "folder",
@@ -138,19 +138,21 @@ export async function createFolderWithSaves(
 }
 
 export async function createFoldersBatch(input: {
-  names: string[];
+  names: Array<string>;
   parentId?: string | null;
   color?: string | null;
-}): Promise<Folder[]> {
+}): Promise<Array<Folder>> {
   return withMutationScope(async () => {
     const db = await getDb();
     const all = await listFolders();
     const parentId = input.parentId ?? null;
-    if (parentId && !all.some((row) => row.id === parentId))
+    if (parentId && !all.some((row) => row.id === parentId)) {
       throw new Error("Destination folder no longer exists.");
+    }
     const names = input.names.map((name) => name.trim()).filter(Boolean);
-    if (!names.length || names.length > 500)
+    if (!names.length || names.length > 500) {
       throw new Error("Enter between 1 and 500 folder names.");
+    }
     const firstOrder =
       Math.max(
         -1,
@@ -158,16 +160,14 @@ export async function createFoldersBatch(input: {
           .filter((row) => row.parentId === parentId)
           .map((row) => row.sortOrder),
       ) + 1;
-    const rows = names.map(
-      (name, index): NewFolder => ({
-        id: ulid(),
-        parentId,
-        name,
-        color: input.color ?? null,
-        sortOrder: firstOrder + index,
-      }),
-    );
-    const txs: Transaction[] = rows.map((data) => ({
+    const rows = names.map((name, index): NewFolder => ({
+      id: ulid(),
+      parentId,
+      name,
+      color: input.color ?? null,
+      sortOrder: firstOrder + index,
+    }));
+    const txs: Array<Transaction> = rows.map((data) => ({
       kind: "create",
       model: "folder",
       id: data.id,
@@ -216,15 +216,16 @@ export async function renameFoldersBatch(
 ): Promise<OkResult<{ renamed: number }>> {
   const ids = [...new Set(input.ids.filter(Boolean))];
   const pattern = input.pattern.trim();
-  if (!pattern || ids.length === 0)
+  if (!pattern || ids.length === 0) {
     return { ok: false, error: "Enter a name pattern and choose folders." };
+  }
   const db = await getDb();
   const rows = await db
     .select()
     .from(foldersTable)
     .where(inArray(foldersTable.id, ids));
   const byId = new Map(rows.map((row) => [row.id, row]));
-  const transactions: Transaction[] = [];
+  const transactions: Array<Transaction> = [];
   for (const [index, id] of ids.entries()) {
     const row = byId.get(id);
     if (!row) continue;
@@ -259,8 +260,9 @@ export async function setFolderColor(
 ): Promise<OkResult> {
   const requested = color?.trim() || null;
   const parsed = requested ? FolderColorSchema.safeParse(requested) : null;
-  if (parsed && !parsed.success)
+  if (parsed && !parsed.success) {
     return { ok: false, error: "Choose a palette color or a hex color." };
+  }
   const next = parsed?.data ?? null;
   const db = await getDb();
   const row = (
@@ -296,7 +298,7 @@ export async function deleteFolder(
     .innerJoin(saves, eq(saveFoldersTable.saveId, saves.id))
     .where(inArray(saveFoldersTable.folderId, ids))
     .all();
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   const affectedSaveIds = new Set(affected.map((row) => row.saveId));
   for (const saveId of affectedSaveIds) {
     const before = await folderIdsForSave(saveId);
@@ -313,13 +315,14 @@ export async function deleteFolder(
     const liveSaveIds = new Set(
       affected.filter((row) => !row.deletedAt).map((row) => row.saveId),
     );
-    for (const saveId of liveSaveIds)
+    for (const saveId of liveSaveIds) {
       txs.push({
         kind: "trash",
         model: "save",
         id: saveId,
         meta: { actor: "user", actorReason: "folder-delete" },
       });
+    }
   }
   for (const folderId of ids.reverse()) {
     const row = all.find((folder) => folder.id === folderId);
@@ -339,7 +342,7 @@ export async function deleteFolder(
   return { ok: true };
 }
 
-function collectDescendants(id: string, all: Folder[]): string[] {
+function collectDescendants(id: string, all: Array<Folder>): Array<string> {
   const ids = new Set<string>();
   function visit(current: string) {
     if (ids.has(current)) return;
@@ -365,11 +368,11 @@ export async function memberships(): Promise<
 export interface RestoreSaveIntoFoldersRuntime {
   run<T>(operation: () => Promise<T>): Promise<T>;
   planAssignments(
-    assignments: Array<{ saveId: string; folderIds: string[] }>,
+    assignments: Array<{ saveId: string; folderIds: Array<string> }>,
     restoring: ReadonlySet<string>,
-  ): Promise<Transaction[]>;
+  ): Promise<Array<Transaction>>;
   execute: typeof executeBatch;
-  recordUndo(transactions: Transaction[]): string | null;
+  recordUndo(transactions: Array<Transaction>): string | null;
 }
 
 const defaultRestoreSaveIntoFoldersRuntime: RestoreSaveIntoFoldersRuntime = {
@@ -383,7 +386,7 @@ const defaultRestoreSaveIntoFoldersRuntime: RestoreSaveIntoFoldersRuntime = {
 /** Takes a Save out of Trash and files it into folders as one Undo step. */
 export async function restoreSaveIntoFolders(
   saveId: string,
-  folderIds: string[] | null,
+  folderIds: Array<string> | null,
   actorReason: string,
   runtime: RestoreSaveIntoFoldersRuntime = defaultRestoreSaveIntoFoldersRuntime,
 ): Promise<{ ok: boolean }> {
@@ -403,7 +406,7 @@ export async function restoreSaveIntoFolders(
 }
 
 export async function assignSaveFolders(
-  assignments: Array<{ saveId: string; folderIds: string[] }>,
+  assignments: Array<{ saveId: string; folderIds: Array<string> }>,
   undo = true,
 ): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
@@ -418,16 +421,16 @@ export async function assignSaveFolders(
 }
 
 async function folderAssignmentTransactions(
-  assignments: Array<{ saveId: string; folderIds: string[] }>,
-  rows?: Folder[],
+  assignments: Array<{ saveId: string; folderIds: Array<string> }>,
+  rows?: Array<Folder>,
   restoring: ReadonlySet<string> = new Set(),
-): Promise<Transaction[]> {
+): Promise<Array<Transaction>> {
   const db = await getDb();
   const all = rows ?? (await listFolders());
   const rules = (await getPrefs()).folderRules;
-  const txs: Transaction[] = [];
-  const appliedTags: string[] = [];
-  const inherited = new Map<string, string[]>();
+  const txs: Array<Transaction> = [];
+  const appliedTags: Array<string> = [];
+  const inherited = new Map<string, Array<string>>();
   for (let offset = 0; offset < assignments.length; offset += 500) {
     const batch = assignments.slice(offset, offset + 500);
     const ids = batch.map((assignment) => assignment.saveId);
@@ -442,20 +445,22 @@ async function folderAssignmentTransactions(
         .where(inArray(saveFoldersTable.saveId, ids)),
     ]);
     const savedById = new Map(savedRows.map((save) => [save.id, save]));
-    const membershipsBySave = new Map<string, string[]>();
-    for (const member of memberRows)
+    const membershipsBySave = new Map<string, Array<string>>();
+    for (const member of memberRows) {
       membershipsBySave.set(member.saveId, [
         ...(membershipsBySave.get(member.saveId) ?? []),
         member.folderId,
       ]);
+    }
     for (const { saveId, folderIds } of batch) {
       const key = [...folderIds].sort().join("\0");
       const automaticTags =
         inherited.get(key) ?? inheritedFolderTags(folderIds, all, rules);
       inherited.set(key, automaticTags);
       const save = savedById.get(saveId);
-      if (!save || (save.deletedAt && !restoring.has(saveId)))
+      if (!save || (save.deletedAt && !restoring.has(saveId))) {
         throw new Error("A Save no longer exists.");
+      }
       txs.push(
         ...planFolderAssignment(
           save,
@@ -487,13 +492,14 @@ export async function getFolderRules(id: string) {
 
 export async function setFolderRules(input: {
   id: string;
-  tags: string[];
+  tags: Array<string>;
   applyExisting?: boolean;
 }): Promise<OkSuccess<{ affected: number }>> {
   return withMutationScope(async () => {
     const all = await listFolders();
-    if (!all.some((row) => row.id === input.id))
+    if (!all.some((row) => row.id === input.id)) {
       throw new Error("Folder no longer exists.");
+    }
     await setPrefs({
       folderRules: {
         [input.id]: { automaticTags: normalizeTagList(input.tags) },
@@ -515,12 +521,16 @@ export async function setFolderRules(input: {
       ).map((save) => save.id),
     );
     const assignments = await Promise.all(
-      [...new Set(members.map((member) => member.saveId))]
-        .filter((id) => liveIds.has(id))
-        .map(async (saveId) => ({
-          saveId,
-          folderIds: await folderIdsForSave(saveId),
-        })),
+      [...new Set(members.map((member) => member.saveId))].flatMap((saveId) =>
+        liveIds.has(saveId)
+          ? [
+              folderIdsForSave(saveId).then((folderIds) => ({
+                saveId,
+                folderIds,
+              })),
+            ]
+          : [],
+      ),
     );
     await assignSaveFolders(assignments);
     return { ok: true, affected: assignments.length };
@@ -529,14 +539,14 @@ export async function setFolderRules(input: {
 
 export async function setSaveFolders(
   saveId: string,
-  folderIds: string[],
+  folderIds: Array<string>,
 ): Promise<OkSuccess<UndoableChange>> {
   return assignSaveFolders([{ saveId, folderIds }]);
 }
 
 export async function addSavesToFolder(
   folderId: string,
-  saveIds: string[],
+  saveIds: Array<string>,
 ): Promise<OkSuccess<UndoableChange>> {
   return withMutationScope(async () => {
     const assignments = await Promise.all(
@@ -566,14 +576,16 @@ export async function importFolderTree(
   const ordered: typeof nodes = [];
   const pending = [...nodes];
   const ids = new Set(nodes.map((node) => node.id));
-  if (ids.size !== nodes.length)
+  if (ids.size !== nodes.length) {
     throw new Error("The folder import contains duplicate identities.");
+  }
   while (pending.length) {
     const index = pending.findIndex(
       (node) => !node.parentId || mapped.has(node.parentId),
     );
-    if (index < 0)
+    if (index < 0) {
       throw new Error("The folder import contains a cycle or missing parent.");
+    }
     const node = pending.splice(index, 1)[0];
     if (!node) throw new Error("A folder is missing.");
     const parentId = node.parentId ? (mapped.get(node.parentId) ?? null) : null;
@@ -589,7 +601,7 @@ export async function importFolderTree(
     if (!match) existing.push({ id, parentId, name: node.name });
     ordered.push(node);
   }
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   for (const node of ordered) {
     const id = mapped.get(node.id);
     if (!id) throw new Error("A folder is missing.");
@@ -629,7 +641,7 @@ export function moveFolder(input: {
 }
 
 export async function moveFoldersBatch(input: {
-  ids: string[];
+  ids: Array<string>;
   parentId: string | null;
   beforeId?: string;
 }): Promise<OkSuccess<UndoableChange>> {
@@ -646,11 +658,11 @@ export async function moveFoldersBatch(input: {
 }
 
 async function commitFolderMoves(
-  rows: Folder[],
+  rows: Array<Folder>,
   changes: Array<{ id: string; parentId: string | null; sortOrder: number }>,
 ): Promise<OkSuccess<UndoableChange>> {
   const byId = new Map(changes.map((row) => [row.id, row]));
-  const txs: Transaction[] = changes.flatMap((patch) => {
+  const txs: Array<Transaction> = changes.flatMap((patch) => {
     const before = rows.find((row) => row.id === patch.id);
     return before
       ? [

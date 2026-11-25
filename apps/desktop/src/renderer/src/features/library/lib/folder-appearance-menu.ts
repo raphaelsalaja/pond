@@ -11,9 +11,8 @@ import {
   FOLDER_ICONS,
   FOLDER_MENU_ICONS,
   FOLDER_SWATCHES,
-  type FolderIconId,
-  type FolderIconOption,
 } from "@/shared/lib/folder-icons";
+import type { FolderIconId, FolderIconOption } from "@/shared/lib/folder-icons";
 import { notify } from "@/shared/lib/toast";
 
 const ICONS_BY_ID = new Map(FOLDER_ICONS.map((option) => [option.id, option]));
@@ -45,15 +44,15 @@ function swatchGlyph(css: string) {
 
 /** Recent picks plus the current value, minus whatever the fixed list already shows. */
 function extras<T>(
-  recent: readonly T[],
+  recent: ReadonlyArray<T>,
   current: T | null,
-  shown: readonly T[],
-): T[] {
+  shown: ReadonlyArray<T>,
+): Array<T> {
   const candidates = current === null ? recent : [...recent, current];
   return [...new Set(candidates)].filter((value) => !shown.includes(value));
 }
 
-function recentGroup(items: MenuItemSpec[]): MenuItemSpec[] {
+function recentGroup(items: Array<MenuItemSpec>): Array<MenuItemSpec> {
   return items.length
     ? [{ type: "separator" }, { type: "group", label: "Recently Used", items }]
     : [];
@@ -63,7 +62,7 @@ export function folderIconMenuItems({
   folderId,
   icon,
   glyphs,
-}: FolderIconMenuInput): MenuItemSpec[] {
+}: FolderIconMenuInput): Array<MenuItemSpec> {
   const current = icon ?? "folder";
   const item = (option: FolderIconOption): MenuItemSpec => ({
     type: "checkbox",
@@ -97,7 +96,7 @@ function setColor(folderId: string, color: string | null): void {
 export function folderColorMenuItems({
   folder,
   glyphs,
-}: FolderColorMenuInput): MenuItemSpec[] {
+}: FolderColorMenuInput): Array<MenuItemSpec> {
   const item = (
     color: string | null,
     label: string,

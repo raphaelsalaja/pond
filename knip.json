@@ -55,11 +55,10 @@
       "ignoreDependencies": ["tsx"]
     },
     "packages/api": {
-      "project": ["src/**/*.ts"],
-      "ignoreDependencies": ["zod"]
+      "project": ["src/**/*.ts"]
     },
     ".": {
-      "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.{ts,mjs}"]
+      "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.ts"]
     }
   },
   "ignoreExportsUsedInFile": {

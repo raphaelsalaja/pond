@@ -15,7 +15,7 @@ export type ResultDirection =
   | "page-down";
 
 export function spatialNeighbor(
-  items: readonly ResultRectangle[],
+  items: ReadonlyArray<ResultRectangle>,
   id: string,
   direction: ResultDirection,
   pageHeight: number,
@@ -55,16 +55,15 @@ export function spatialNeighbor(
 }
 
 export function intersectingResults(
-  items: readonly ResultRectangle[],
+  items: ReadonlyArray<ResultRectangle>,
   rectangle: Omit<ResultRectangle, "id">,
-): string[] {
-  return items
-    .filter(
-      (item) =>
-        item.left < rectangle.left + rectangle.width &&
-        item.left + item.width > rectangle.left &&
-        item.top < rectangle.top + rectangle.height &&
-        item.top + item.height > rectangle.top,
-    )
-    .map((item) => item.id);
+): Array<string> {
+  return items.flatMap((item) =>
+    item.left < rectangle.left + rectangle.width &&
+    item.left + item.width > rectangle.left &&
+    item.top < rectangle.top + rectangle.height &&
+    item.top + item.height > rectangle.top
+      ? [item.id]
+      : [],
+  );
 }

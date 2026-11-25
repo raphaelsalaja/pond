@@ -1,8 +1,5 @@
-import {
-  EXTERNAL_SOURCE_IDS,
-  type ExternalSource,
-  sourceLabel,
-} from "@pond/schema/sources";
+import { EXTERNAL_SOURCE_IDS, sourceLabel } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import { Button, Settings } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";

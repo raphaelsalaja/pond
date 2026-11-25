@@ -2,10 +2,8 @@ import { IconPlus, IconTag } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { FishRoutine, FishSummary } from "@shared/fish-contracts";
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  type InspectorDrafts,
-  InspectorTextField,
-} from "@/shared/components/inspector-text-field";
+import { InspectorTextField } from "@/shared/components/inspector-text-field";
+import type { InspectorDrafts } from "@/shared/components/inspector-text-field";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import { updateFish } from "../../lib/menu";
 import { fish as fishStore, useFish, useFishEditingId } from "../../state/fish";

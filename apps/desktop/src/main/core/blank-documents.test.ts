@@ -7,7 +7,7 @@ import {
   writeBlankDocumentFile,
 } from "./blank-documents";
 
-const scratch: string[] = [];
+const scratch: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(

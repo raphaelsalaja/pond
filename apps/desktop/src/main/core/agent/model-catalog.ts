@@ -1,10 +1,9 @@
-import { type AgentReasoning, AgentReasoningSchema } from "@pond/schema";
+import { AgentReasoningSchema } from "@pond/schema";
+import type { AgentReasoning } from "@pond/schema";
 import { z } from "zod";
 import { gatewayCreator } from "../../../shared/assistant";
-import {
-  modelCapabilities,
-  type ProviderModel,
-} from "../../../shared/provider-models";
+import { modelCapabilities } from "../../../shared/provider-models";
+import type { ProviderModel } from "../../../shared/provider-models";
 import type { AgentProviderId } from "./keys";
 
 const CATALOG_URL = "https://ai-gateway.vercel.sh/v1/models";
@@ -42,13 +41,13 @@ const catalogSchema = z.object({
   ),
 });
 type CatalogEntry = z.infer<typeof catalogSchema>["data"][number];
-type CatalogResult = { models: CatalogEntry[]; error?: string };
+type CatalogResult = { models: Array<CatalogEntry>; error?: string };
 
 export function createModelCatalog(
   fetcher: typeof fetch = fetch,
   now: () => number = Date.now,
 ) {
-  let cached: CatalogEntry[] = [];
+  let cached: Array<CatalogEntry> = [];
   let expires = 0;
   let pending: Promise<CatalogResult> | undefined;
   return async (): Promise<CatalogResult> => {
@@ -116,7 +115,7 @@ function withMetadata(
     });
   const reasoningOptions = (entry.reasoning_options ?? []).flatMap((option) =>
     option.type === "effort"
-      ? (option.values ?? []).flatMap((value): AgentReasoning[] => {
+      ? (option.values ?? []).flatMap((value): Array<AgentReasoning> => {
           const parsed = AgentReasoningSchema.safeParse(
             value.trim().toLowerCase(),
           );
@@ -126,8 +125,9 @@ function withMetadata(
         })
       : [],
   );
-  if (reasoningOptions.length)
+  if (reasoningOptions.length) {
     model.reasoningOptions = [...new Set(reasoningOptions)];
+  }
   if (entry.pricing) {
     model.pricing = {
       input: entry.pricing.input,
@@ -141,9 +141,9 @@ function withMetadata(
 
 export function catalogModelsForProvider(
   provider: AgentProviderId,
-  catalog: CatalogEntry[],
-  nativeModels?: ProviderModel[],
-): ProviderModel[] {
+  catalog: Array<CatalogEntry>,
+  nativeModels?: Array<ProviderModel>,
+): Array<ProviderModel> {
   const prefix = creator(provider);
   if (!prefix) return nativeModels ?? [];
   const entries = catalog.filter((entry) => entry.id.startsWith(`${prefix}/`));

@@ -14,7 +14,7 @@ interface Entry {
   group?: string;
 }
 
-function entries(): Entry[] {
+function entries(): Array<Entry> {
   return [
     INTRODUCTION,
     TOKENS,
@@ -30,7 +30,7 @@ export function Search() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-  const all = useMemo(entries, []);
+  const all = useMemo(() => entries(), []);
 
   const results = useMemo(() => {
     const needle = query.trim().toLowerCase();

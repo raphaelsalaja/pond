@@ -92,7 +92,7 @@ it("reads the holder pid from Chromium's lock link", async (ctx) => {
       }
       throw error;
     }
-    expect(singletonLockHolder(dir)).toBe(44592);
+    expect(singletonLockHolder(dir)).toBe(44_592);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }

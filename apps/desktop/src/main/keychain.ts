@@ -53,11 +53,11 @@ async function readAll(port: KeychainPort): Promise<SecretMap | null> {
     const buf = await readFile(secretsPath(port), "utf8");
     const parsed = SecretMapSchema.safeParse(JSON.parse(buf));
     return parsed.success ? parsed.data : null;
-  } catch (cause) {
-    if (cause instanceof Error && "code" in cause && cause.code === "ENOENT") {
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return {};
     }
-    log.warn("[pond] failed to read secrets file", cause);
+    log.warn("[pond] failed to read secrets file", error);
     return null;
   }
 }
@@ -106,8 +106,8 @@ function decrypt(port: KeychainPort, value: string): string | null {
       return Buffer.from(value.slice(4), "base64").toString("utf8");
     }
     return null;
-  } catch (err) {
-    log.warn("[pond] failed to decrypt secret", err);
+  } catch (error) {
+    log.warn("[pond] failed to decrypt secret", error);
     return null;
   }
 }
@@ -119,7 +119,7 @@ export function createKeychain(port: KeychainPort) {
   }
 
   async function getSecrets(
-    accounts: string[],
+    accounts: Array<string>,
   ): Promise<Record<string, string | null>> {
     const all = (await readAll(port)) ?? {};
     const out: Record<string, string | null> = {};

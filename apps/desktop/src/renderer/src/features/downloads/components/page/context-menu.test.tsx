@@ -1,5 +1,6 @@
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
+import { bridge } from "@/shared/test/pond-bridge";
 import { buildDownloadMenuItems } from "./context-menu";
 
 function row(
@@ -24,7 +25,7 @@ function row(
   };
 }
 
-function visible(rows: DownloadRow[]) {
+function visible(rows: Array<DownloadRow>) {
   return buildDownloadMenuItems(rows).flatMap((item) =>
     "label" in item && !item.hidden ? [item] : [],
   );
@@ -80,49 +81,42 @@ it("keeps download actions in the row context menu", () => {
   ]);
 });
 
-function click(rows: DownloadRow[], label: string) {
+function click(rows: Array<DownloadRow>, label: string) {
   const item = visible(rows).find((entry) => entry.label === label);
   if (item && "onClick" in item) item.onClick?.();
 }
 
 it("offers Copy Error whenever the download recorded an error", () => {
-  const query = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { query });
-  try {
-    click(
-      [{ ...row("retrying"), lastError: "TransientError: scrape timeout" }],
-      "Copy Error",
-    );
-    expect(query).toHaveBeenCalledWith("clipboard.writeText", {
-      text: "Scrape timeout",
-    });
-  } finally {
-    vi.unstubAllGlobals();
-  }
+  bridge.use({ query: { "clipboard.writeText": () => ({ ok: true }) } });
+  click(
+    [{ ...row("retrying"), lastError: "TransientError: scrape timeout" }],
+    "Copy Error",
+  );
+  expect(window.pond.query).toHaveBeenCalledWith("clipboard.writeText", {
+    text: "Scrape timeout",
+  });
 });
 
 it("opens the source link in the browser", () => {
-  const openExternal = vi.fn(async () => ({ ok: true }));
-  vi.stubGlobal("pond", { openExternal });
-  try {
-    click([row("dead")], "Open Link");
-    expect(openExternal).toHaveBeenCalledWith("https://example.com/dead");
-  } finally {
-    vi.unstubAllGlobals();
-  }
+  bridge.use({ openExternal: async () => ({ ok: true }) });
+  click([row("dead")], "Open Link");
+  expect(window.pond.openExternal).toHaveBeenCalledWith(
+    "https://example.com/dead",
+  );
   const local = { ...row("failed"), url: "pond:local/file" };
   expect(visible([local]).map((item) => item.label)).not.toContain("Open Link");
 });
 
-it("retries downloads that ran out of attempts but not canceled ones", () => {
-  const actionStates = (status: DownloadRow["status"]) =>
-    Object.fromEntries(
-      visible([row(status)]).map((item) => [
-        item.label,
-        "disabled" in item ? (item.disabled ?? false) : false,
-      ]),
-    );
+function actionStates(status: DownloadRow["status"]) {
+  return Object.fromEntries(
+    visible([row(status)]).map((item): [string, boolean] => [
+      String(item.label),
+      "disabled" in item ? (item.disabled ?? false) : false,
+    ]),
+  );
+}
 
+it("retries downloads that ran out of attempts but not canceled ones", () => {
   expect(actionStates("dead")).toMatchObject({
     "Retry Download": false,
     "Cancel Download": true,

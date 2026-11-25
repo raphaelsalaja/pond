@@ -12,10 +12,8 @@ import {
   getPreset,
   isCustomTheme,
   lightPresets,
-  type Prefs,
-  type ThemeAppearance,
-  type ThemeDef,
 } from "@pond/schema/db";
+import type { Prefs, ThemeAppearance, ThemeDef } from "@pond/schema/db";
 import { ColorField, Input, Select, Settings, Slider } from "@pond/ui";
 import { z } from "zod";
 import type { Binding } from "@/features/settings/components/engine";
@@ -56,7 +54,7 @@ function readTheme(binding: Binding) {
   };
 }
 
-const APPEARANCE_OPTIONS: { value: ThemeAppearance; label: string }[] = [
+const APPEARANCE_OPTIONS: Array<{ value: ThemeAppearance; label: string }> = [
   { value: "system", label: "System" },
   { value: "light", label: "Light" },
   { value: "dark", label: "Dark" },
@@ -119,6 +117,12 @@ export function AppearanceRow({ binding }: { binding: Binding }) {
       </Settings.ItemControl>
     </>
   );
+}
+
+function isNumberList(
+  value: number | ReadonlyArray<number>,
+): value is ReadonlyArray<number> {
+  return typeof value !== "number";
 }
 
 function sideState(
@@ -288,8 +292,8 @@ export function ThemeContrastRow({
           max={CONTRAST_MAX}
           step={5}
           value={contrast}
-          onValueChange={(next) => {
-            setContrast(Array.isArray(next) ? (next[0] ?? contrast) : next);
+          onValueChange={(next: number | ReadonlyArray<number>) => {
+            setContrast(isNumberList(next) ? (next[0] ?? contrast) : next);
           }}
         >
           <Slider.Control>

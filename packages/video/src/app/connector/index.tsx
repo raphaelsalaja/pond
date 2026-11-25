@@ -1,4 +1,5 @@
-import { type CanvasColor, INK } from "../board/colors";
+import { INK } from "../board/colors";
+import type { CanvasColor } from "../board/colors";
 import type { Box } from "../card";
 import type { Side } from "../handles";
 import styles from "./styles.module.css";
@@ -12,11 +13,15 @@ export interface End {
 /** Where a connector meets `box` on `side`: the outer edge of that side's handle. */
 export function anchor(box: Box, side: Side): End {
   const out = 16;
-  if (side === "top") return { x: box.x + box.width / 2, y: box.y - out, side };
-  if (side === "bottom")
+  if (side === "top") {
+    return { x: box.x + box.width / 2, y: box.y - out, side };
+  }
+  if (side === "bottom") {
     return { x: box.x + box.width / 2, y: box.y + box.height + out, side };
-  if (side === "left")
+  }
+  if (side === "left") {
     return { x: box.x - out, y: box.y + box.height / 2, side };
+  }
   return { x: box.x + box.width + out, y: box.y + box.height / 2, side };
 }
 

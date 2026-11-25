@@ -1,26 +1,32 @@
 import { execFileSync } from "node:child_process";
 import { arch, cpus, platform, release } from "node:os";
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
-import { expect, it } from "vitest";
+import { beforeAll, expect, it } from "vitest";
 import { z } from "zod";
 import { embeddingDimensions } from "../../shared/embeddings";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { retrieveLibraryWithDb } from "./library-retrieval";
 import { toVecBlob } from "./vec-index";
 
 interface RetrievalTimings {
-  adapter: number[];
-  exactSql: number[];
-  guardedBlobSql: number[];
+  adapter: Array<number>;
+  exactSql: Array<number>;
+  guardedBlobSql: Array<number>;
+}
+
+interface PhaseRun {
+  elapsed: number;
+  ids: Array<string>;
+  fallback: boolean;
+  distances: Array<number>;
 }
 
 const warmups = 5;
 const samples = 30;
 const Neighbors = z.array(z.object({ id: z.string(), distance: z.number() }));
-function summary(values: number[]) {
+function summary(values: Array<number>) {
   const sorted = [...values].sort((a, b) => a - b);
   return {
     p50: sorted[Math.ceil(sorted.length * 0.5) - 1],
@@ -34,14 +40,23 @@ function vector(angle: number) {
   );
 }
 
-for (const size of [1_000, 10_000, 50_000]) {
+let commit = "";
+
+beforeAll(() => {
+  commit = execFileSync("git", ["rev-parse", "HEAD"], {
+    encoding: "utf8",
+  }).trim();
+});
+
+for (const size of [1000, 10_000, 50_000]) {
   it.skipIf(process.env.POND_BENCH_LIBRARY !== "1")(
     `scoped native vector spike N=${size}`,
     async () => {
-      if (!process.versions.electron)
+      if (!process.versions.electron) {
         throw new Error(
           "Electron Node mode is required; do not rebuild native modules",
         );
+      }
       const sqlite = new Database(":memory:");
       try {
         const setupStarted = performance.now();
@@ -50,21 +65,22 @@ for (const size of [1_000, 10_000, 50_000]) {
         const version = sqlite.prepare("select vec_version() version").get();
         const captured: Array<{
           sql: string;
-          params: (string | number | null)[];
+          params: Array<string | number | null>;
         }> = [];
         let capture = false;
         const db = Object.assign(
           drizzle(sqlite, {
-            schema: { ...schema, ...events },
+            schema: { ...libraryTables, ...eventTables },
             logger: {
               logQuery(sql, params) {
-                if (capture && sql.includes("vec_distance_cosine"))
+                if (capture && sql.includes("vec_distance_cosine")) {
                   captured.push({
                     sql,
                     params: z
                       .array(z.union([z.string(), z.number(), z.null()]))
                       .parse(params),
                   });
+                }
               },
             },
           }),
@@ -101,9 +117,7 @@ for (const size of [1_000, 10_000, 50_000]) {
         })();
         const setupMs = performance.now() - setupStarted;
         const metadata = {
-          commit: execFileSync("git", ["rev-parse", "HEAD"], {
-            encoding: "utf8",
-          }).trim(),
+          commit,
           date: new Date().toISOString(),
           node: process.versions.node,
           electron: process.versions.electron,
@@ -150,8 +164,9 @@ for (const size of [1_000, 10_000, 50_000]) {
             capture = false;
             expect(captured).toHaveLength(1);
             const statement = captured[0];
-            if (!statement)
+            if (!statement) {
               throw new Error("Expected real adapter distance SQL");
+            }
             const exact = sqlite.prepare(statement.sql);
             const eligibleSql = `s.deleted_at is null and s.${modelColumn} = 'fixture-model' and s.${column} is not null and json_array_length(s.${column}) = ${embeddingDimensions()} and exists (select 1 from save_folders f where f.save_id=s.id and f.folder_id=?)`;
             const eligibleCount = size / stride;
@@ -178,8 +193,9 @@ for (const size of [1_000, 10_000, 50_000]) {
             );
             const candidate = () =>
               sqlite.transaction(() => {
-                if (invalid.get(folder))
+                if (invalid.get(folder)) {
                   return { rows: exactRows(), fallback: true };
+                }
                 return {
                   rows: Neighbors.parse(scan.all(blob, folder)),
                   fallback: false,
@@ -209,6 +225,57 @@ for (const size of [1_000, 10_000, 50_000]) {
             const memoryBefore = process.memoryUsage();
             const reference = exactRows();
             expect(reference.map((row) => row.id)).toEqual(expected);
+            const measure: Record<
+              keyof RetrievalTimings,
+              () => Promise<PhaseRun>
+            > = {
+              async adapter() {
+                const started = performance.now();
+                const result = await executeAdapter();
+                const elapsed = performance.now() - started;
+                return {
+                  elapsed,
+                  ids: result.hits.map((hit) => hit.id),
+                  fallback: false,
+                  distances: [],
+                };
+              },
+              async exactSql() {
+                const started = performance.now();
+                const result = exactRows();
+                const elapsed = performance.now() - started;
+                return {
+                  elapsed,
+                  ids: result.map((row) => row.id),
+                  fallback: false,
+                  distances: [],
+                };
+              },
+              async guardedBlobSql() {
+                const started = performance.now();
+                const proposed = candidate();
+                const elapsed = performance.now() - started;
+                return {
+                  elapsed,
+                  ids: proposed.rows.map((row) => row.id),
+                  fallback: proposed.fallback,
+                  distances: proposed.rows.map((row) => row.distance),
+                };
+              },
+            };
+            const expectedIds: Record<keyof RetrievalTimings, Array<string>> = {
+              adapter: expected.slice(0, 12),
+              exactSql: expected,
+              guardedBlobSql: expected,
+            };
+            const expectedDistances: Record<
+              keyof RetrievalTimings,
+              Array<number>
+            > = {
+              adapter: [],
+              exactSql: [],
+              guardedBlobSql: reference.map((row) => row.distance),
+            };
             for (const name of [
               "adapter",
               "exactSql",
@@ -226,31 +293,22 @@ for (const size of [1_000, 10_000, 50_000]) {
                 repetition < warmups + samples;
                 repetition++
               ) {
-                if (performance.now() >= deadline) break;
-                const started = performance.now();
-                if (name === "adapter") {
-                  const result = await executeAdapter();
-                  const elapsed = performance.now() - started;
-                  expect(result.hits.map((hit) => hit.id)).toEqual(
-                    expected.slice(0, 12),
-                  );
-                  if (repetition >= warmups) timings[name].push(elapsed);
-                } else if (name === "exactSql") {
-                  const result = exactRows();
-                  const elapsed = performance.now() - started;
-                  expect(result.map((row) => row.id)).toEqual(expected);
-                  if (repetition >= warmups) timings[name].push(elapsed);
-                } else {
-                  const proposed = candidate();
-                  const elapsed = performance.now() - started;
-                  expect(proposed.rows.map((row) => row.id)).toEqual(expected);
-                  expect(proposed.fallback).toBe(false);
-                  for (const [index, row] of proposed.rows.entries())
-                    expect(row.distance).toBeCloseTo(
-                      reference[index]?.distance ?? -1,
-                      6,
-                    );
-                  if (repetition >= warmups) timings[name].push(elapsed);
+                if (performance.now() >= deadline) {
+                  break;
+                }
+                const observed = await measure[name]();
+                expect(observed.ids).toEqual(expectedIds[name]);
+                expect(observed.fallback).toBe(false);
+                expect(observed.distances).toHaveLength(
+                  expectedDistances[name].length,
+                );
+                for (const [index, distance] of expectedDistances[
+                  name
+                ].entries()) {
+                  expect(observed.distances[index]).toBeCloseTo(distance, 6);
+                }
+                if (repetition >= warmups) {
+                  timings[name].push(observed.elapsed);
                 }
                 completed++;
               }

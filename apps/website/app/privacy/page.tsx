@@ -26,27 +26,27 @@ export default function Privacy() {
         <Policy.Heading>Browser extension</Policy.Heading>
         <p>
           The extension only talks to the Pond app on your computer, through
-          your browser's native messaging. It never sends data to Pond or anyone
-          else over the internet.
+          your browser&apos;s native messaging. It never sends data to Pond or
+          anyone else over the internet.
         </p>
         <p>When you save something, it hands Pond:</p>
         <Policy.List>
-          <li>The page's address and title</li>
+          <li>The page&apos;s address and title</li>
           <li>
             The images or screenshots you picked, with the name, rating, notes,
             tags, and folders you set
           </li>
           <li>
-            The site's cookies for that page, so Pond can open it signed in as
-            you. Pond uses them in a temporary browser session and drops them
+            The site&apos;s cookies for that page, so Pond can open it signed in
+            as you. Pond uses them in a temporary browser session and drops them
             after the save.
           </li>
         </Policy.List>
         <p>
           On supported sites like X, Instagram, and Pinterest, the extension
-          watches the site's own save and like requests. When you bookmark a
-          post there, it sends that post's address to Pond. Turn this off for
-          any site in Pond under Settings, Browser Extension, Sources.
+          watches the site&apos;s own save and like requests. When you bookmark
+          a post there, it sends that post&apos;s address to Pond. Turn this off
+          for any site in Pond under Settings, Browser Extension, Sources.
         </p>
         <p>
           When you connect a source in Pond, the extension sends Pond the
@@ -55,16 +55,16 @@ export default function Privacy() {
         </p>
         <p>
           The extension stores its settings and your recent folders and tags in
-          your browser's extension storage.
+          your browser&apos;s extension storage.
         </p>
       </Policy.Section>
 
       <Policy.Section>
         <Policy.Heading>Pond app</Policy.Heading>
         <p>
-          Your library is a folder on your computer, and it's the source of
+          Your library is a folder on your computer, and it&apos;s the source of
           truth for your saves. Preferences, logs, and the search index stay on
-          your computer too. Pond keeps API keys in your operating system's
+          your computer too. Pond keeps API keys in your operating system&apos;s
           secure storage. Pond connects to:
         </p>
         <Policy.List>
@@ -84,7 +84,7 @@ export default function Privacy() {
           When you sync a source like X, Instagram, or Pinterest, Pond uses your
           own signed-in browser session on your computer. Pond never asks for
           your platform passwords or stores them anywhere. Requests come from
-          your account, so each platform's terms apply.
+          your account, so each platform&apos;s terms apply.
         </p>
       </Policy.Section>
 

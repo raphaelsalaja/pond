@@ -159,8 +159,9 @@ const TASK_GLANCES = {
 } satisfies Partial<Record<Mood, Glances>>;
 
 function glancesFor(mood: Mood): Glances | undefined {
-  if (mood === "thinking" || mood === "reading" || mood === "writing")
+  if (mood === "thinking" || mood === "reading" || mood === "writing") {
     return TASK_GLANCES[mood];
+  }
   return undefined;
 }
 
@@ -269,10 +270,15 @@ export function faceFor(task: Task | null): Mood {
 
 /** Milliseconds between frames; drift and sleep read the same at lower rates, and every display refresh wakes the GPU process. */
 export function frameGap(mood: Mood, pointerResting = false): number {
-  if (mood === "idle" || (mood === "attentive" && pointerResting))
+  if (mood === "idle" || (mood === "attentive" && pointerResting)) {
     return 1000 / 30;
-  if (mood === "sleepy") return 1000 / 20;
-  if (mood === "asleep") return 1000 / 8;
+  }
+  if (mood === "sleepy") {
+    return 1000 / 20;
+  }
+  if (mood === "asleep") {
+    return 1000 / 8;
+  }
   return 0;
 }
 
@@ -458,15 +464,17 @@ export function createAvatar({
       face.split = lerp(face.split, target.split, morph);
       face.fin.period = lerp(face.fin.period, target.fin.period, morph);
       face.fin.swing = lerp(face.fin.swing, target.fin.swing, morph);
-      for (const key of AXES)
+      for (const key of AXES) {
         face.gaze[key] = lerp(face.gaze[key], target.gaze[key], morph);
+      }
       face.eyes.forEach((eye, index) => {
-        for (const key of EYE)
+        for (const key of EYE) {
           eye[key] = lerp(
             eye[key],
             target.eyes[index]?.[key] ?? eye[key],
             morph,
           );
+        }
       });
 
       const aim =
@@ -478,8 +486,9 @@ export function createAvatar({
               roll: REST.roll,
             };
       const snap = ease(dt, TIMING.eyes);
-      for (const key of AXES)
+      for (const key of AXES) {
         gaze[key] = lerp(gaze[key], aim[key] + face.gaze[key], snap);
+      }
 
       const at = t + phase;
       const drift = pointer ? 0.35 : current === "asleep" ? 0 : 1;

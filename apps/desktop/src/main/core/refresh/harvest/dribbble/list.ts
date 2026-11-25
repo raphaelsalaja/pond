@@ -53,7 +53,7 @@ async function inPageDribbbleLikes(
   }
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   const resumed = Number(args.resumeCursor);
   const firstPage = Number.isInteger(resumed) && resumed > 1 ? resumed : 1;
@@ -110,7 +110,9 @@ async function inPageDribbbleLikes(
         },
       );
       if (res.status === 202) {
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((resolve) => {
+          setTimeout(resolve, delay);
+        });
         delay += 400;
         continue;
       }
@@ -222,9 +224,9 @@ async function inPageDribbbleLikes(
     if (items.length < args.perPage) {
       return { ok: true, entries, reachedEnd: true, seen: entries.length };
     }
-    await new Promise((resolve) =>
-      setTimeout(resolve, 900 + Math.random() * 400),
-    );
+    await new Promise((resolve) => {
+      setTimeout(resolve, 900 + Math.random() * 400);
+    });
   }
   return unfinished(firstPage + args.maxPages);
 }

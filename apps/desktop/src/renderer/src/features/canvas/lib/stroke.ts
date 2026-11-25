@@ -2,7 +2,7 @@ import { getStroke } from "perfect-freehand";
 import type { StrokePoint } from "./document";
 
 /** Mouse and trackpad report a constant 0.5 pressure, so their strokes taper from speed instead. */
-function hasRealPressure(points: readonly StrokePoint[]): boolean {
+function hasRealPressure(points: ReadonlyArray<StrokePoint>): boolean {
   return points.some(([, , pressure]) => pressure !== 0.5);
 }
 
@@ -11,7 +11,7 @@ function format(value: number): string {
 }
 
 export function strokePath(
-  points: readonly StrokePoint[],
+  points: ReadonlyArray<StrokePoint>,
   size: number,
 ): string {
   const outline = getStroke(

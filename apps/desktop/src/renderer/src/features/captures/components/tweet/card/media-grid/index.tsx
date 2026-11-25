@@ -31,7 +31,7 @@ export function MediaGrid({
   media,
   compact,
 }: {
-  media: TweetCardMedia[];
+  media: Array<TweetCardMedia>;
   compact?: boolean;
 }) {
   const tiles = media.slice(0, MAX_TILES);

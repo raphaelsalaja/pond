@@ -5,11 +5,10 @@ import { forwardRef } from "react";
 import { formatCount } from "../counts";
 import styles from "./styles.module.css";
 
-interface RowProps
-  extends Omit<
-    React.ComponentPropsWithoutRef<typeof Sidebar.Item>,
-    "children"
-  > {
+interface RowProps extends Omit<
+  React.ComponentPropsWithoutRef<typeof Sidebar.Item>,
+  "children"
+> {
   label: string;
   active?: boolean;
   icon?: React.ReactNode;
@@ -46,9 +45,9 @@ export const Row = forwardRef<HTMLButtonElement, RowProps>(function Row(
     >
       {icon ? <Sidebar.Icon>{icon}</Sidebar.Icon> : null}
       <Sidebar.ItemLabel>{label}</Sidebar.ItemLabel>
-      {status != null ? (
+      {status !== null && status !== undefined ? (
         <Sidebar.Count>{status}</Sidebar.Count>
-      ) : badgeStyle !== "none" && (count != null || downloadingLabel) ? (
+      ) : badgeStyle !== "none" && (count !== undefined || downloadingLabel) ? (
         <Sidebar.Count className={styles.count} title={downloadingLabel}>
           {downloadingLabel ? (
             <>
@@ -56,7 +55,7 @@ export const Row = forwardRef<HTMLButtonElement, RowProps>(function Row(
               <VisuallyHidden>{downloadingLabel}</VisuallyHidden>
             </>
           ) : null}
-          {count != null ? formatCount(count) : null}
+          {count !== undefined ? formatCount(count) : null}
         </Sidebar.Count>
       ) : null}
     </Sidebar.Item>

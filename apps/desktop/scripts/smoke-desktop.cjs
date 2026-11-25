@@ -2,9 +2,9 @@ const { app } = require("electron");
 const assert = require("node:assert/strict");
 const { mkdtempSync, rmSync, writeFileSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join } = require("node:path");
-const sandbox = mkdtempSync(join(tmpdir(), "pond-cleanup-smoke-"));
-const imagePath = join(sandbox, "preview.png");
+const path = require("node:path");
+const sandbox = mkdtempSync(path.join(tmpdir(), "pond-cleanup-smoke-"));
+const imagePath = path.join(sandbox, "preview.png");
 writeFileSync(
   imagePath,
   Buffer.from(
@@ -30,15 +30,16 @@ const previewReady = new Promise((resolve) => {
 const timer = setTimeout(() => {
   console.error("SMOKE_FAILED: renderer did not become ready");
   app.exit(1);
-}, 30000);
+}, 30_000);
 app.on("web-contents-created", (_, contents) => {
   contents.on("did-fail-load", (_, code, description) =>
     console.error("LOAD_FAILED", code, description),
   );
-  contents.on("did-finish-load", async () => {
-    if (contents.getURL().includes("preview.html")) {
-      try {
-        await contents.executeJavaScript(`new Promise((resolve, reject) => {
+  contents.on("did-finish-load", () => {
+    void (async () => {
+      if (contents.getURL().includes("preview.html")) {
+        try {
+          await contents.executeJavaScript(`new Promise((resolve, reject) => {
           const started = Date.now();
           const poll = () => {
             const image = document.querySelector("#image");
@@ -48,17 +49,19 @@ app.on("web-contents-created", (_, contents) => {
           };
           poll();
         })`);
-        resolvePreview();
-      } catch (error) {
-        clearTimeout(timer);
-        console.error("SMOKE_FAILED", error);
-        app.exit(1);
+          resolvePreview();
+        } catch (error) {
+          clearTimeout(timer);
+          console.error("SMOKE_FAILED", error);
+          app.exit(1);
+        }
+        return;
       }
-      return;
-    }
-    if (!contents.getURL().includes("index.html") || complete) return;
-    try {
-      const state = await contents.executeJavaScript(`(async () => {
+      if (!contents.getURL().includes("index.html") || complete) {
+        return;
+      }
+      try {
+        const state = await contents.executeJavaScript(`(async () => {
         await new Promise((resolve, reject) => {
           const started = Date.now();
           const poll = () => {
@@ -83,45 +86,49 @@ app.on("web-contents-created", (_, contents) => {
         });
         return { info, page, tags, preview, root: Boolean(document.getElementById("root")), text: document.body.innerText.slice(0, 160) };
       })()`);
-      assert.equal(state.root, true);
-      assert.ok(state.text.trim());
-      assert.ok(state.info.path.startsWith(sandbox));
-      assert.ok(Array.isArray(state.page.rows));
-      assert.ok(Array.isArray(state.tags));
-      assert.ok(state.preview.windowId > 0);
-      await Promise.race([
-        previewReady,
-        new Promise((_, reject) =>
-          setTimeout(
-            () => reject(new Error("Preview window did not become ready")),
-            10000,
-          ),
-        ),
-      ]);
-      await contents.executeJavaScript(
-        `window.pond.closePreviewWindow(${state.preview.windowId})`,
-      );
-      complete = true;
-      clearTimeout(timer);
-      console.log(
-        "SMOKE_PASSED",
-        JSON.stringify({
-          render: state.text,
-          saves: state.page.rows.length,
-          tags: state.tags.length,
-        }),
-      );
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      app.exit(0);
-    } catch (error) {
-      clearTimeout(timer);
-      console.error("SMOKE_FAILED", error);
-      app.exit(1);
-    }
+        assert.equal(state.root, true);
+        assert.ok(state.text.trim());
+        assert.ok(state.info.path.startsWith(sandbox));
+        assert.ok(Array.isArray(state.page.rows));
+        assert.ok(Array.isArray(state.tags));
+        assert.ok(state.preview.windowId > 0);
+        await Promise.race([
+          previewReady,
+          new Promise((_, reject) => {
+            setTimeout(
+              () => reject(new Error("Preview window did not become ready")),
+              10_000,
+            );
+          }),
+        ]);
+        await contents.executeJavaScript(
+          `window.pond.closePreviewWindow(${state.preview.windowId})`,
+        );
+        complete = true;
+        clearTimeout(timer);
+        console.log(
+          "SMOKE_PASSED",
+          JSON.stringify({
+            render: state.text,
+            saves: state.page.rows.length,
+            tags: state.tags.length,
+          }),
+        );
+        await new Promise((resolve) => {
+          setTimeout(resolve, 1000);
+        });
+        app.exit(0);
+      } catch (error) {
+        clearTimeout(timer);
+        console.error("SMOKE_FAILED", error);
+        app.exit(1);
+      }
+    })();
   });
 });
-import("../out/main/index.js").catch((error) => {
+function fail(error) {
   clearTimeout(timer);
   console.error("SMOKE_FAILED", error);
   app.exit(1);
-});
+}
+import("../out/main/index.js").catch(fail);

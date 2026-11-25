@@ -1,8 +1,8 @@
 import { MANUAL_LIKELY_SENSITIVE_MODEL } from "@pond/schema/content-safety";
 import type { NewSave, Save, SaveFile } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
-import { runSplitSave, type SplitSaveRuntime } from "./split-save";
-import { capture, carousel, file } from "./split-save.fixtures";
+import { runSplitSave } from "./split-save";
+import type { SplitSaveRuntime } from "./split-save";
 import {
   buildOriginalPatch,
   buildSlideRows,
@@ -13,6 +13,7 @@ import {
   slideSourceIds,
   splitsOnImport,
 } from "./split-save-plan";
+import { capture, carousel, file } from "./split-save.fixtures";
 
 function imageCarousel(): Save {
   const save = carousel();
@@ -31,7 +32,7 @@ function sequentialIds() {
   return () => `slide-${++next}`;
 }
 
-function paths(files: readonly SaveFile[] | undefined): string[] {
+function paths(files: ReadonlyArray<SaveFile> | undefined): Array<string> {
   return (files ?? []).map((entry) => entry.path);
 }
 
@@ -339,10 +340,10 @@ describe("splitsOnImport", () => {
 function fakeLibrary(initial: Save) {
   const library = { original: initial };
   const slides = new Map<string, NewSave>();
-  const copies = new Map<string, string[]>();
-  const memberships: string[] = [];
-  const discarded: string[] = [];
-  const updates: string[] = [];
+  const copies = new Map<string, Array<string>>();
+  const memberships: Array<string> = [];
+  const discarded: Array<string> = [];
+  const updates: Array<string> = [];
   let failCopyOn: string | null = null;
   const runtime: SplitSaveRuntime = {
     async read(id) {

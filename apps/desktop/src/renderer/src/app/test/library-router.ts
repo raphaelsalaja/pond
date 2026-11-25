@@ -1,16 +1,18 @@
 import {
-  type AnyRoute,
   createMemoryHistory,
   createRootRoute,
   createRoute,
   createRouter,
-  type RouteComponent,
 } from "@tanstack/react-router";
+import type { AnyRoute, RouteComponent } from "@tanstack/react-router";
 import { librarySearchSchema } from "@/features/search/lib/schemas";
 import { Route as FolderRoute } from "@/routes/_library/_grid/folders.$folderId";
 import { Route as InboxRoute } from "@/routes/_library/_grid/inbox";
 import { Route as SnoozedRoute } from "@/routes/_library/_grid/inbox.snoozed";
-import { Route as IndexRoute } from "@/routes/_library/_grid/index";
+import {
+  Route as IndexRoute,
+  redirectLegacyIndexSearch,
+} from "@/routes/_library/_grid/index";
 import { Route as RandomRoute } from "@/routes/_library/_grid/random";
 import { Route as RecentlyAddedRoute } from "@/routes/_library/_grid/recently-added";
 import { Route as RecentsRoute } from "@/routes/_library/_grid/recents";
@@ -26,7 +28,6 @@ import { Route as TagsRoute } from "@/routes/_library/tags";
 import { setAppRouter } from "@/shared/lib/app-router";
 
 const GRID_ROUTES = [
-  ["/", IndexRoute],
   ["folders/$folderId", FolderRoute],
   ["inbox", InboxRoute],
   ["inbox/snoozed", SnoozedRoute],
@@ -49,7 +50,7 @@ const RAIL_ROUTES = [
 
 export interface LibraryTestRouterOptions {
   /** Extra page routes a test needs under `_library`, such as `settings/$section`. */
-  routes?: (library: AnyRoute) => AnyRoute[];
+  routes?: (library: AnyRoute) => Array<AnyRoute>;
   /** Rendered as the root, standing in for the shell; no page component mounts. */
   component?: RouteComponent;
 }
@@ -73,16 +74,24 @@ export function createLibraryTestRouter(
     id: "_grid",
     staticData: { surface: "grid" },
   });
-  /** SAFETY: each child takes the options of its own route file, whose union `createRoute` can't infer. */
-  const gridChildren = GRID_ROUTES.map(([childPath, file]) =>
-    createRoute({
-      getParentRoute: () => grid,
-      path: childPath,
-      staticData: file.options.staticData,
-      validateSearch: file.options.validateSearch,
-      beforeLoad: file.options.beforeLoad,
-    } as never),
-  );
+  /** Only the index route validates search and redirects, so it is built on its own. */
+  const indexChild = createRoute({
+    getParentRoute: () => grid,
+    path: "/",
+    staticData: IndexRoute.options.staticData,
+    validateSearch: IndexRoute.options.validateSearch,
+    beforeLoad: ({ search }) => redirectLegacyIndexSearch(search),
+  });
+  const gridChildren = [
+    indexChild,
+    ...GRID_ROUTES.map(([childPath, file]) =>
+      createRoute({
+        getParentRoute: () => grid,
+        path: childPath,
+        staticData: file.options.staticData,
+      }),
+    ),
+  ];
   const railChildren = RAIL_ROUTES.map(([childPath, file]) =>
     createRoute({
       getParentRoute: () => library,

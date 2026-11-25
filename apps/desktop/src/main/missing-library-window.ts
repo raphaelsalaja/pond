@@ -1,9 +1,11 @@
 import { BrowserWindow, ipcMain, nativeTheme, screen } from "electron";
 import {
   MISSING_LIBRARY_WINDOW_IPC,
-  type MissingLibraryChoice,
   MissingLibraryChoiceSchema,
-  type MissingLibraryView,
+} from "../shared/missing-library-contracts";
+import type {
+  MissingLibraryChoice,
+  MissingLibraryView,
 } from "../shared/missing-library-contracts";
 import { safeHandle } from "./ipc/helpers";
 import { lockRendererZoom } from "./lib/lock-renderer-zoom";
@@ -112,8 +114,9 @@ export function openMissingLibraryWindow(
         if (view.attempt > 1) return Promise.resolve("quit");
         win = create();
       } else {
-        if (delivered)
+        if (delivered) {
           win.webContents.send(MISSING_LIBRARY_WINDOW_IPC.view, view);
+        }
         win.show();
         win.focus();
       }

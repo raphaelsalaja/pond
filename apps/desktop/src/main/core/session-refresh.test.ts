@@ -1,6 +1,6 @@
-import type { ConnectedAccount } from "@pond/schema/db";
+import type { ConnectedAccount, Source } from "@pond/schema/db";
 import type { ExtensionCookie } from "@pond/schema/session";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createSessionRefresh } from "./session-refresh";
 
 function youtubeAccount(id: string, handle: string | null): ConnectedAccount {
@@ -46,7 +46,7 @@ const rotated = [
 ];
 
 interface Pond {
-  accounts: ConnectedAccount[];
+  accounts: Array<ConnectedAccount>;
   /** The `SID` each Account's partition holds. */
   held: Map<string, string>;
   connected: Set<string>;
@@ -61,10 +61,10 @@ function setup(pond: Partial<Pond> = {}) {
     probedHandle: null,
     ...pond,
   };
-  const probeHandle = vi.fn(async () => state.probedHandle);
-  const writeCookies = vi.fn(async () => {});
-  const patchHandle = vi.fn(async () => {});
-  const signedBackIn = vi.fn();
+  const probes: Array<Source> = [];
+  const writes: Array<[ConnectedAccount, Array<ExtensionCookie>]> = [];
+  const patches: Array<[ConnectedAccount, string]> = [];
+  const signedIn: Array<ConnectedAccount> = [];
   const refresh = createSessionRefresh({
     listAccounts: async () => state.accounts,
     heldCookie: async (account) => state.held.get(account.id) ?? null,
@@ -72,22 +72,31 @@ function setup(pond: Partial<Pond> = {}) {
     isAuthCookie: (_source, name, value) =>
       value.length > 0 &&
       ["LOGIN_INFO", "auth_token", "user_session"].includes(name),
-    probeHandle,
-    writeCookies,
-    patchHandle,
-    signedBackIn,
+    probeHandle: async (source) => {
+      probes.push(source);
+      return state.probedHandle;
+    },
+    writeCookies: async (account, cookies) => {
+      writes.push([account, cookies]);
+    },
+    patchHandle: async (account, handle) => {
+      patches.push([account, handle]);
+    },
+    signedBackIn: (account) => {
+      signedIn.push(account);
+    },
   });
-  return { refresh, probeHandle, writeCookies, patchHandle, signedBackIn };
+  return { refresh, probes, writes, patches, signedIn };
 }
 
 describe("createSessionRefresh", () => {
   it("reports untracked when no Account uses the Source", async () => {
-    const { refresh, writeCookies } = setup();
+    const { refresh, writes } = setup();
     await expect(refresh("youtube", rotated)).resolves.toEqual({
       tracked: false,
       refreshed: false,
     });
-    expect(writeCookies).not.toHaveBeenCalled();
+    expect(writes).toEqual([]);
   });
 
   it("ignores a Source whose session never rotates", async () => {
@@ -100,7 +109,7 @@ describe("createSessionRefresh", () => {
 
   it("writes a rotation into the Account holding the same session", async () => {
     const account = youtubeAccount("a", "raphael");
-    const { refresh, writeCookies, signedBackIn, probeHandle } = setup({
+    const { refresh, writes, signedIn, probes } = setup({
       accounts: [account],
       held: new Map([["a", "session-a"]]),
       connected: new Set(["a"]),
@@ -110,14 +119,14 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: true,
     });
-    expect(writeCookies).toHaveBeenCalledWith(account, rotated.slice(0, 3));
-    expect(signedBackIn).not.toHaveBeenCalled();
-    expect(probeHandle).not.toHaveBeenCalled();
+    expect(writes).toContainEqual([account, rotated.slice(0, 3)]);
+    expect(signedIn).toEqual([]);
+    expect(probes).toEqual([]);
   });
 
   it("signs a signed-out Account back in when the handle matches", async () => {
     const account = youtubeAccount("a", "raphael");
-    const { refresh, writeCookies, signedBackIn } = setup({
+    const { refresh, writes, signedIn } = setup({
       accounts: [account],
       probedHandle: "raphael",
     });
@@ -126,12 +135,12 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: true,
     });
-    expect(writeCookies).toHaveBeenCalledWith(account, rotated.slice(0, 3));
-    expect(signedBackIn).toHaveBeenCalledWith(account);
+    expect(writes).toContainEqual([account, rotated.slice(0, 3)]);
+    expect(signedIn).toContainEqual(account);
   });
 
   it("never hands a different sign-in to an Account, and stops probing it", async () => {
-    const { refresh, writeCookies, probeHandle } = setup({
+    const { refresh, writes, probes } = setup({
       accounts: [youtubeAccount("a", "raphael")],
       probedHandle: "someone-else",
     });
@@ -141,13 +150,13 @@ describe("createSessionRefresh", () => {
       refreshed: false,
     });
     await refresh("youtube", rotated);
-    expect(writeCookies).not.toHaveBeenCalled();
-    expect(probeHandle).toHaveBeenCalledTimes(1);
+    expect(writes).toEqual([]);
+    expect(probes).toHaveLength(1);
   });
 
   it("adopts the sole signed-out Account that predates handle probing", async () => {
     const account = youtubeAccount("a", null);
-    const { refresh, writeCookies, patchHandle, signedBackIn } = setup({
+    const { refresh, writes, patches, signedIn } = setup({
       accounts: [account],
       probedHandle: "raphael",
     });
@@ -156,19 +165,19 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: true,
     });
-    expect(patchHandle).toHaveBeenCalledWith(account, "raphael");
-    expect(writeCookies).toHaveBeenCalledWith(
+    expect(patches).toContainEqual([account, "raphael"]);
+    expect(writes).toContainEqual([
       { ...account, handle: "raphael" },
       rotated.slice(0, 3),
-    );
-    expect(signedBackIn).toHaveBeenCalledWith({
+    ]);
+    expect(signedIn).toContainEqual({
       ...account,
       handle: "raphael",
     });
   });
 
   it("does not adopt a sign-in when a second Account is also signed out", async () => {
-    const { refresh, writeCookies } = setup({
+    const { refresh, writes } = setup({
       accounts: [youtubeAccount("a", null), youtubeAccount("b", "raphael")],
       probedHandle: "someone-else",
     });
@@ -177,12 +186,12 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: false,
     });
-    expect(writeCookies).not.toHaveBeenCalled();
+    expect(writes).toEqual([]);
   });
 
   it("does not adopt into a handle-less Account that has an identity key", async () => {
     const account = { ...youtubeAccount("a", null), identityKey: "123" };
-    const { refresh, writeCookies } = setup({
+    const { refresh, writes } = setup({
       accounts: [account],
       probedHandle: "raphael",
     });
@@ -191,11 +200,11 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: false,
     });
-    expect(writeCookies).not.toHaveBeenCalled();
+    expect(writes).toEqual([]);
   });
 
   it("does not adopt a sign-in that a connected Account already claims", async () => {
-    const { refresh, writeCookies } = setup({
+    const { refresh, writes } = setup({
       accounts: [youtubeAccount("a", null), youtubeAccount("b", "raphael")],
       connected: new Set(["b"]),
       probedHandle: "raphael",
@@ -205,11 +214,11 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: false,
     });
-    expect(writeCookies).not.toHaveBeenCalled();
+    expect(writes).toEqual([]);
   });
 
   it("leaves a connected Account alone when another session rotates", async () => {
-    const { refresh, writeCookies, probeHandle } = setup({
+    const { refresh, writes, probes } = setup({
       accounts: [youtubeAccount("a", "raphael")],
       held: new Map([["a", "session-b"]]),
       connected: new Set(["a"]),
@@ -219,8 +228,8 @@ describe("createSessionRefresh", () => {
       tracked: true,
       refreshed: false,
     });
-    expect(writeCookies).not.toHaveBeenCalled();
-    expect(probeHandle).not.toHaveBeenCalled();
+    expect(writes).toEqual([]);
+    expect(probes).toEqual([]);
   });
 
   describe.each([
@@ -249,7 +258,7 @@ describe("createSessionRefresh", () => {
     };
 
     it("refreshes only the Account with the same identity cookie", async () => {
-      const { refresh, writeCookies, probeHandle } = setup({
+      const { refresh, writes, probes } = setup({
         accounts: [account],
         held: new Map([[account.id, source.identity]]),
         connected: new Set([account.id]),
@@ -259,12 +268,12 @@ describe("createSessionRefresh", () => {
         tracked: true,
         refreshed: true,
       });
-      expect(writeCookies).toHaveBeenCalledWith(account, cookies);
-      expect(probeHandle).not.toHaveBeenCalled();
+      expect(writes).toContainEqual([account, cookies]);
+      expect(probes).toEqual([]);
     });
 
     it("does not replace an Account with a different browser sign-in", async () => {
-      const { refresh, writeCookies, probeHandle } = setup({
+      const { refresh, writes, probes } = setup({
         accounts: [account],
         held: new Map([[account.id, "another-account"]]),
         connected: new Set([account.id]),
@@ -274,22 +283,22 @@ describe("createSessionRefresh", () => {
         tracked: true,
         refreshed: false,
       });
-      expect(writeCookies).not.toHaveBeenCalled();
-      expect(probeHandle).not.toHaveBeenCalled();
+      expect(writes).toEqual([]);
+      expect(probes).toEqual([]);
     });
 
     it("does not add an Account that the user has not connected", async () => {
-      const { refresh, writeCookies } = setup();
+      const { refresh, writes } = setup();
 
       await expect(refresh(source.source, cookies)).resolves.toEqual({
         tracked: false,
         refreshed: false,
       });
-      expect(writeCookies).not.toHaveBeenCalled();
+      expect(writes).toEqual([]);
     });
 
     it("does not write an incomplete browser session", async () => {
-      const { refresh, writeCookies } = setup({
+      const { refresh, writes } = setup({
         accounts: [account],
         held: new Map([[account.id, source.identity]]),
       });
@@ -302,7 +311,7 @@ describe("createSessionRefresh", () => {
           },
         );
       }
-      expect(writeCookies).not.toHaveBeenCalled();
+      expect(writes).toEqual([]);
     });
   });
 });

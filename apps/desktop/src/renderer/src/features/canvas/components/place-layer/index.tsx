@@ -10,7 +10,7 @@ interface FlowRect {
 }
 
 interface PlaceLayerProps {
-  onPlace(rect: FlowRect | null, point: { x: number; y: number }): void;
+  onPlace: (rect: FlowRect | null, point: { x: number; y: number }) => void;
 }
 
 const CLICK = 6;
@@ -62,8 +62,9 @@ export function PlaceLayer({ onPlace }: PlaceLayerProps) {
       }}
       onPointerMove={(event) => {
         const start = origin.current;
-        if (!start || !event.currentTarget.hasPointerCapture(event.pointerId))
+        if (!start || !event.currentTarget.hasPointerCapture(event.pointerId)) {
           return;
+        }
         const bounds = event.currentTarget.getBoundingClientRect();
         const x = event.clientX - bounds.left;
         const y = event.clientY - bounds.top;

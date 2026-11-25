@@ -1,9 +1,6 @@
 import type { CaptureStatus } from "@/utils/outcome";
-import {
-  type OverlayRequest,
-  type OverlayToast,
-  sendOverlayMessage,
-} from "@/utils/overlay-messaging";
+import { sendOverlayMessage } from "@/utils/overlay-messaging";
+import type { OverlayRequest, OverlayToast } from "@/utils/overlay-messaging";
 import { getSettings } from "@/utils/settings";
 import { overlayAppearance } from "./library";
 
@@ -42,7 +39,11 @@ export async function hideOverlay(tabId: number): Promise<void> {
     { request: { view: "clear" }, appearance: { theme: null, mode: null } },
     tabId,
   ).catch(() => false);
-  if (hidden) await new Promise((resolve) => setTimeout(resolve, 80));
+  if (hidden) {
+    await new Promise((resolve) => {
+      setTimeout(resolve, 80);
+    });
+  }
 }
 
 /** The badge is drawn by the browser outside Pond's theme, so it carries its own colors. */
@@ -57,12 +58,15 @@ const BADGES = {
 >;
 const BADGE_TEXT = "#ffffff";
 
+/** The badge is cosmetic, and setting one fails once its tab has closed. */
+function ignoreBadgeFailure() {}
+
 export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
   if (!browser.action || status === "sending") return;
   const { text, color } = BADGES[status];
   void browser.action
     .setBadgeBackgroundColor(tabId === undefined ? { color } : { color, tabId })
-    .catch(() => {});
+    .catch(ignoreBadgeFailure);
   /** Without a text color the browser picks one by contrast and draws the check black on green. */
   void browser.action
     .setBadgeTextColor?.(
@@ -70,20 +74,22 @@ export function flashBadge(tabId: number | undefined, status: CaptureStatus) {
         ? { color: BADGE_TEXT }
         : { color: BADGE_TEXT, tabId },
     )
-    ?.catch(() => {});
+    ?.catch(ignoreBadgeFailure);
   void browser.action
     .setBadgeText(tabId === undefined ? { text } : { text, tabId })
-    .catch(() => {});
+    .catch(ignoreBadgeFailure);
   setTimeout(() => {
     void browser.action
       .setBadgeText(tabId === undefined ? { text: "" } : { text: "", tabId })
-      .catch(() => {});
+      .catch(ignoreBadgeFailure);
   }, 2000);
 }
 
 export function clearBadge(): void {
-  if (!browser.action) return;
-  browser.action.setBadgeText({ text: "" }).catch(() => {});
+  if (!browser.action) {
+    return;
+  }
+  browser.action.setBadgeText({ text: "" }).catch(ignoreBadgeFailure);
 }
 
 /** Shows the save on the page when confirmations are on, otherwise on the toolbar icon. */

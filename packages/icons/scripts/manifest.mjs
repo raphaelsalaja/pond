@@ -193,7 +193,7 @@ export function report(misses) {
   ].join("\n");
 }
 
-const cell = (value) => value.replaceAll("|", "\\|");
+const cell = (value) => value.replaceAll("|", String.raw`\|`);
 
 export function conceptsTable(manifest) {
   const entries = Object.entries(manifest);

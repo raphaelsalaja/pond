@@ -5,6 +5,9 @@ const ARITY = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7, Z: 0 };
 
 const num = (value) => Number.parseFloat(value ?? "0");
 
+const vectorAngle = (ux, uy, vx, vy) =>
+  Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
+
 function arcCenter([x1, y1], [x2, y2], rx, ry, phi, large, sweep) {
   const cos = Math.cos(phi);
   const sin = Math.sin(phi);
@@ -27,10 +30,8 @@ function arcCenter([x1, y1], [x2, y2], rx, ry, phi, large, sweep) {
     Math.sqrt(Math.max(0, numerator / denominator));
   const cxp = (factor * rxa * py) / rya;
   const cyp = (-factor * rya * px) / rxa;
-  const angle = (ux, uy, vx, vy) =>
-    Math.atan2(ux * vy - uy * vx, ux * vx + uy * vy);
-  const start = angle(1, 0, (px - cxp) / rxa, (py - cyp) / rya);
-  let delta = angle(
+  const start = vectorAngle(1, 0, (px - cxp) / rxa, (py - cyp) / rya);
+  let delta = vectorAngle(
     (px - cxp) / rxa,
     (py - cyp) / rya,
     (-px - cxp) / rxa,

@@ -8,7 +8,7 @@ import { saveDir } from "../paths";
 
 export async function writeFolderMemberships(
   saveId: string,
-  folderIds: readonly string[],
+  folderIds: ReadonlyArray<string>,
   directory = saveDir(saveId),
 ): Promise<void> {
   const path = join(directory, "info.json");
@@ -17,8 +17,9 @@ export async function writeFolderMemberships(
     raw = await readFile(path, "utf8");
   } catch (error) {
     /** Filing can race enqueue, and a missing sidecar is not a gone pin. */
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return;
+    }
     throw error;
   }
   const info = StoredInfoDocSchema.parse(JSON.parse(raw));
@@ -29,13 +30,14 @@ export async function writeFolderMemberships(
 export function replaceFolderMemberships(
   db: Db,
   saveId: string,
-  folderIds: readonly string[],
+  folderIds: ReadonlyArray<string>,
 ): void {
   const unique = [...new Set(folderIds)];
   if (
     !db.select({ id: saves.id }).from(saves).where(eq(saves.id, saveId)).get()
-  )
+  ) {
     throw new Error("The Save no longer exists.");
+  }
   const valid = unique.length
     ? db
         .select({ id: folders.id })
@@ -43,11 +45,13 @@ export function replaceFolderMemberships(
         .where(inArray(folders.id, unique))
         .all()
     : [];
-  if (valid.length !== unique.length)
+  if (valid.length !== unique.length) {
     throw new Error("A destination folder no longer exists.");
+  }
   db.delete(saveFolders).where(eq(saveFolders.saveId, saveId)).run();
-  if (unique.length)
+  if (unique.length) {
     db.insert(saveFolders)
       .values(unique.map((folderId) => ({ saveId, folderId })))
       .run();
+  }
 }

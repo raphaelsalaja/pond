@@ -6,7 +6,8 @@ import {
   saveVideoFrame,
   setVideoThumbnail,
 } from "@/features/saves/lib/media/capture-frame";
-import { buildSaveMenu, type OpenWithApp } from "@/features/saves/lib/menu";
+import { buildSaveMenu } from "@/features/saves/lib/menu";
+import type { OpenWithApp } from "@/features/saves/lib/menu";
 import type { Save } from "@/features/saves/types";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 
@@ -14,7 +15,7 @@ interface BuildViewerMenuOptions {
   clipboardEmpty: boolean;
   video: HTMLVideoElement | null;
   fileIndex: number | null;
-  openWithApps?: OpenWithApp[];
+  openWithApps?: Array<OpenWithApp>;
 }
 
 export function fileIndexFromSlide(
@@ -22,16 +23,18 @@ export function fileIndexFromSlide(
 ): number | null {
   if (!slide) return null;
   const raw = slide.getAttribute("data-file-index");
-  if (raw == null || raw === "") return null;
+  if (raw === null || raw === "") {
+    return null;
+  }
   const idx = Number(raw);
   return Number.isFinite(idx) ? idx : null;
 }
 
 function adaptVideoItems(
-  items: MenuItemSpec[],
+  items: Array<MenuItemSpec>,
   save: Save,
   video: HTMLVideoElement,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return items.map((item): MenuItemSpec => {
     if ("id" in item && item.id === "copy-primary") {
       return {
@@ -71,7 +74,7 @@ function adaptVideoItems(
 export function buildViewerMenu(
   save: Save,
   { clipboardEmpty, video, fileIndex, openWithApps }: BuildViewerMenuOptions,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const base = buildSaveMenu(save, {
     clipboardEmpty,
     fileIndex,

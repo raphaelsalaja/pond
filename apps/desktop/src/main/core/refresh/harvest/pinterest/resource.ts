@@ -6,17 +6,16 @@ import { acquire, report } from "../../../pipeline/rate-governor";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
 import {
   BoardFeedResponseSchema,
-  type BoardListResult,
   BoardsResponseSchema,
   boardFeedUrl,
   boardPinsPage,
   boardsPage,
   boardsUrl,
   collectBoards,
-  type ResourceFailure,
   resourceFailure,
   walkBoards,
 } from "./boards";
+import type { BoardListResult, ResourceFailure } from "./boards";
 
 const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
@@ -47,7 +46,7 @@ export function listPinterestBoards(
 
 export function harvestPinterestBoards(
   args: ListHarvestArgs,
-  boards: readonly ImportCollection[],
+  boards: ReadonlyArray<ImportCollection>,
   partition: string,
 ): Promise<ListHarvestResult> {
   return walkBoards(boards, args, async (boardId, bookmark) => {
@@ -89,8 +88,8 @@ async function fetchResource<
   let res: Response;
   try {
     res = await ses.fetch(url, { headers });
-  } catch (err) {
-    log.warn("[pond pinterest-resource] fetch threw", err);
+  } catch (error) {
+    log.warn("[pond pinterest-resource] fetch threw", error);
     return { ok: false, reason: "unknown" };
   }
   report("pinterest", {
@@ -122,8 +121,8 @@ async function csrfToken(partition: string): Promise<string | null> {
       .fromPartition(partition)
       .cookies.get({ name: "csrftoken" });
     return cookies.find((cookie) => cookie.value.length > 0)?.value ?? null;
-  } catch (err) {
-    log.warn("[pond pinterest-resource] cookies.get failed", err);
+  } catch (error) {
+    log.warn("[pond pinterest-resource] cookies.get failed", error);
     return null;
   }
 }

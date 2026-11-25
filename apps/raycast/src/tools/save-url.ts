@@ -9,7 +9,7 @@ type Input = {
   /** The full http or https URL to save to the active Pond library. */
   url: string;
   /** Tags to add. Only pass tags the user asked for. For a URL that's already saved, these join its current tags. */
-  tags?: string[];
+  tags?: Array<string>;
   /** Folder ID from List Folders. Only pass a folder the user asked for. */
   folderId?: string;
 };

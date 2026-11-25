@@ -8,7 +8,7 @@ import { Doc } from "../doc";
 import { Preview } from "../preview";
 import styles from "./styles.module.css";
 
-function splitKeys(keys: string): string[] {
+function splitKeys(keys: string): Array<string> {
   const parts = keys.split(/\s*\+\s*/).filter(Boolean);
   return parts.length > 0 ? parts : [keys];
 }
@@ -64,7 +64,7 @@ export function Reference({ slug }: ReferenceProps) {
                   <Table.Cell>
                     <span className={styles.keys}>
                       {splitKeys(binding.keys).map((key, index) => (
-                        // biome-ignore lint/suspicious/noArrayIndexKey: combos can repeat a key
+                        // oxlint-disable-next-line react/no-array-index-key -- combos can repeat a key
                         <Keyboard.Key key={`${index}-${key}`}>
                           {key}
                         </Keyboard.Key>

@@ -10,7 +10,7 @@ const preset = ConversionPresetSchema.parse({
 it("cancels a running conversion and never starts the remaining selection", async () => {
   const began = Promise.withResolvers<void>();
   const finished = Promise.withResolvers<void>();
-  const resolved: string[] = [];
+  const resolved: Array<string> = [];
   const jobs = createConversionJobs({
     scope: () => "fixture",
     async resolve(id) {
@@ -19,7 +19,7 @@ it("cancels a running conversion and never starts the remaining selection", asyn
     },
     async convert({ signal }) {
       began.resolve();
-      await new Promise<void>((_, reject) =>
+      await new Promise<void>((_, reject) => {
         signal.addEventListener(
           "abort",
           () => {
@@ -27,8 +27,8 @@ it("cancels a running conversion and never starts the remaining selection", asyn
             reject(new Error("Cancelled"));
           },
           { once: true },
-        ),
-      );
+        );
+      });
       return "unused";
     },
     async compress() {
@@ -119,7 +119,7 @@ it("reports transactional compression progress and byte savings", async () => {
       return {
         changed: 2,
         skipped: 0,
-        bytesBefore: 1_000,
+        bytesBefore: 1000,
         bytesAfter: 600,
       };
     },
@@ -147,14 +147,14 @@ it("reports transactional compression progress and byte savings", async () => {
     completed: 2,
     total: 2,
     progress: 1,
-    bytesBefore: 1_000,
+    bytesBefore: 1000,
     bytesAfter: 600,
   });
 });
 
 it("runs video compression as a compression job with its own savings", async () => {
   const finished = Promise.withResolvers<void>();
-  const requested: string[][] = [];
+  const requested: Array<Array<string>> = [];
   const jobs = createConversionJobs({
     scope: () => "fixture",
     async resolve(id) {
@@ -175,7 +175,7 @@ it("runs video compression as a compression job with its own savings", async () 
         skipped: 0,
         failed: 1,
         bytesBefore: 10_000,
-        bytesAfter: 4_000,
+        bytesAfter: 4000,
       };
     },
   });
@@ -193,6 +193,6 @@ it("runs video compression as a compression job with its own savings", async () 
     changed: 1,
     failed: 1,
     bytesBefore: 10_000,
-    bytesAfter: 4_000,
+    bytesAfter: 4000,
   });
 });

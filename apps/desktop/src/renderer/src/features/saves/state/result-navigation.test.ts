@@ -6,10 +6,14 @@ afterEach(() => {
 });
 
 it("uses loaded neighbors and resolves the full query only at a page boundary", async () => {
-  const allIds = vi.fn(async () => ["a", "b", "c"]);
+  let resolves = 0;
+  const allIds = async () => {
+    resolves += 1;
+    return ["a", "b", "c"];
+  };
   resultNavigation.setSource({ ids: ["a", "b"], allIds });
   expect(await resultNavigation.next("a", 1)).toBe("b");
-  expect(allIds).not.toHaveBeenCalled();
+  expect(resolves).toBe(0);
   expect(await resultNavigation.next("b", 1)).toBe("c");
   expect(await resultNavigation.next("a", -1)).toBeNull();
 });
@@ -22,13 +26,19 @@ it("reports the current result position against the full result count", () => {
 });
 
 it("loads an unloaded result and retries reveal when virtual geometry arrives", async () => {
-  const loadMore = vi.fn(async () => {});
+  let loads = 0;
+  const loadMore = async () => {
+    loads += 1;
+  };
   resultNavigation.setSource({ ids: ["a"], loadMore });
   await resultNavigation.reveal("b");
-  expect(loadMore).toHaveBeenCalledTimes(1);
-  const reveal = vi.fn((id: string) => resultNavigation.didReveal(id));
-  const unregister = resultNavigation.registerReveal(reveal);
-  expect(reveal).toHaveBeenCalledWith("b");
+  expect(loads).toBe(1);
+  const revealed: Array<string> = [];
+  const unregister = resultNavigation.registerReveal((id) => {
+    revealed.push(id);
+    resultNavigation.didReveal(id);
+  });
+  expect(revealed).toContain("b");
   unregister();
   const second = vi.fn();
   resultNavigation.registerReveal(second)();
@@ -38,9 +48,11 @@ it("loads an unloaded result and retries reveal when virtual geometry arrives", 
 it("reveals a logical item beyond multiple unloaded pages", async () => {
   let ids = ["a"];
   const pages = [["b"], ["c"], ["d"]];
-  const loadMore = vi.fn(async () => {
+  let loads = 0;
+  const loadMore = async () => {
+    loads += 1;
     ids = [...ids, ...(pages.shift() ?? [])];
-  });
+  };
   resultNavigation.setSource({
     key: "one",
     ids,
@@ -50,7 +62,7 @@ it("reveals a logical item beyond multiple unloaded pages", async () => {
   const shown = vi.fn();
   const off = resultNavigation.registerReveal(shown);
   await resultNavigation.reveal("d");
-  expect(loadMore).toHaveBeenCalledTimes(3);
+  expect(loads).toBe(3);
   expect(shown).toHaveBeenLastCalledWith("d");
   off();
 });

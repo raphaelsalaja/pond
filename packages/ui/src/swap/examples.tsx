@@ -1,7 +1,7 @@
 import { IconFolderDots } from "@pond/icons";
+import { Swap } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Swap } from ".";
 
 export const docs: ComponentDocs = {
   slug: "swap",

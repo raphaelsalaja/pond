@@ -25,7 +25,7 @@ export const SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS: ScreenReaderInstructio
 
 export function sortablePositionAnnouncement(
   id: UniqueIdentifier,
-  items: readonly UniqueIdentifier[],
+  items: ReadonlyArray<UniqueIdentifier>,
   labelFor: (id: UniqueIdentifier) => string,
 ): string {
   const position = items.indexOf(id) + 1;
@@ -36,7 +36,7 @@ export function sortablePositionAnnouncement(
 }
 
 export function createSortableAnnouncements(
-  items: readonly UniqueIdentifier[],
+  items: ReadonlyArray<UniqueIdentifier>,
   labelFor: (id: UniqueIdentifier) => string,
 ): Announcements {
   return {
@@ -44,8 +44,9 @@ export function createSortableAnnouncements(
       return `Picked up ${sortablePositionAnnouncement(active.id, items, labelFor)}`;
     },
     onDragOver({ active, over }) {
-      if (!over)
+      if (!over) {
         return `${labelFor(active.id)} is no longer over a drop target.`;
+      }
       return `${labelFor(active.id)} is over ${sortablePositionAnnouncement(over.id, items, labelFor)}`;
     },
     onDragEnd({ active, over }) {

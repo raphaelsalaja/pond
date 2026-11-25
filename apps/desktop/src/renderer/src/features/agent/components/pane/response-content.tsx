@@ -13,7 +13,7 @@ import { SaveCards } from "./save-cards";
 
 export function inferredLookupResult(
   content: string,
-  sources: AssistantSource[],
+  sources: Array<AssistantSource>,
 ) {
   if (sources.length < 2) return null;
   const lines = content
@@ -21,8 +21,10 @@ export function inferredLookupResult(
     .split(/\n+/)
     .map((line) => line.trim())
     .filter(Boolean);
-  if (lines.length < 2) return null;
-  const references: number[] = [];
+  if (lines.length < 2) {
+    return null;
+  }
+  const references: Array<number> = [];
   for (const line of lines) {
     if (!/^(?:(?:\d+[.)]|[-*+])\s+)?\[\d+\]/.test(line)) return null;
     const matches = [...line.matchAll(/\[(\d+)\](?:\(#save-(\d+)\))?/g)];
@@ -54,9 +56,9 @@ export function ResponseExtras({
   questionAnswer?: string;
   questionDisabled: boolean;
   provider: AssistantProvider;
-  attachedIds: string[];
+  attachedIds: Array<string>;
   busy: boolean;
-  attach: (sources: AssistantSource[]) => void;
+  attach: (sources: Array<AssistantSource>) => void;
   onAnswer?: (answer: string) => Promise<void>;
 }) {
   const sources = message.metadata?.sources ?? [];
@@ -69,7 +71,8 @@ export function ResponseExtras({
   const changed = new Set(
     (message.metadata?.changes ?? []).map((change) => change.saveId),
   );
-  const unchanged = (ids: string[]) => ids.filter((id) => !changed.has(id));
+  const unchanged = (ids: Array<string>) =>
+    ids.filter((id) => !changed.has(id));
   return (
     <>
       {results.map((result) => (

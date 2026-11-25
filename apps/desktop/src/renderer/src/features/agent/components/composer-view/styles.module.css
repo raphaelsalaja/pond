@@ -32,10 +32,7 @@
   background: var(--ds-background-elevated);
   /* Half of one row's height, so a one-line composer is a pill. */
   border-radius: calc(
-    var(--ds-size-md) /
-    2 +
-    var(--ds-space-md) +
-    var(--ds-space-2xs)
+    var(--ds-size-md) / 2 + var(--ds-space-md) + var(--ds-space-2xs)
   );
   box-shadow:
     0 2px 4px 0 var(--composer-shadow-low),

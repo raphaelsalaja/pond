@@ -2,21 +2,26 @@ import { selectLibraryNav } from "@/features/library/components/folder-sidebar/n
 import { selectSaves } from "@/features/saves";
 import { resultNavigation } from "@/features/saves/navigation";
 import { getAppRouter } from "@/shared/lib/app-router";
-import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
-import type { RouteSearch } from "@/shared/lib/route-search";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import type { LibraryNav } from "@/shared/lib/library-nav";
+import { latestSearch } from "@/shared/lib/route-search";
 
 /** Whether the grid already shows `nav` as `selectLibraryNav` would leave it, so no new results will be published. */
 function alreadyShowing(nav: LibraryNav): boolean {
   const location = getAppRouter()?.latestLocation;
-  if (!location || location.pathname !== pathForLibraryNav(nav)) return false;
-  const { save: _save, ...search }: RouteSearch = location.search;
-  if (nav.kind === "all") return search.scope === undefined;
+  if (!location || location.pathname !== pathForLibraryNav(nav)) {
+    return false;
+  }
+  const { save: _save, ...search } = latestSearch();
+  if (nav.kind === "all") {
+    return search.scope === undefined;
+  }
   return Object.keys(search).length === 0;
 }
 
 /** Opens the folder an import went into, or All, and selects exactly the Saves it returned. */
 export function showSavesInLibrary(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   folderId?: string,
 ): void {
   if (ids.length === 0) return;

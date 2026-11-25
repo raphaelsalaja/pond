@@ -2,7 +2,7 @@ import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 
 export interface SaveDragSession {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   hasFiles: boolean;
 }
 

@@ -4,7 +4,7 @@ export interface OrderedFolder {
   sortOrder: number;
 }
 export function planFolderMove(
-  rows: readonly OrderedFolder[],
+  rows: ReadonlyArray<OrderedFolder>,
   id: string,
   parentId: string | null,
   beforeId?: string,
@@ -37,8 +37,8 @@ export function planFolderMove(
 }
 
 export function planFolderBatchMove(
-  rows: readonly OrderedFolder[],
-  ids: readonly string[],
+  rows: ReadonlyArray<OrderedFolder>,
+  ids: ReadonlyArray<string>,
   parentId: string | null,
   beforeId?: string,
 ) {
@@ -48,9 +48,12 @@ export function planFolderBatchMove(
     if (!current) throw new Error("Folder no longer exists.");
     const visited = new Set([id]);
     while (current.parentId) {
-      if (selected.has(current.parentId)) return false;
-      if (visited.has(current.parentId))
+      if (selected.has(current.parentId)) {
+        return false;
+      }
+      if (visited.has(current.parentId)) {
         throw new Error("The folder hierarchy contains a cycle.");
+      }
       visited.add(current.parentId);
       current = rows.find((row) => row.id === current?.parentId);
       if (!current) throw new Error("Destination folder no longer exists.");

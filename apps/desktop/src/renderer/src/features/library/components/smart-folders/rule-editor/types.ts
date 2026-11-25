@@ -6,6 +6,6 @@ export interface RuleChoice {
 }
 
 export interface RuleChoices {
-  folders: readonly RuleChoice[];
-  tags: readonly RuleChoice[];
+  folders: ReadonlyArray<RuleChoice>;
+  tags: ReadonlyArray<RuleChoice>;
 }

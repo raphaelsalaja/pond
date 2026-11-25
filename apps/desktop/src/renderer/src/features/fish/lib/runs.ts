@@ -17,11 +17,18 @@ function relativeMoment(at: number, now = new Date()): string {
   const days = Math.round(
     (startOfDay(at) - startOfDay(now.getTime())) / 86_400_000,
   );
-  if (days === 0) return `today at ${time}`;
-  if (days === 1) return `tomorrow at ${time}`;
-  if (days === -1) return `yesterday at ${time}`;
-  if (Math.abs(days) < 7)
+  if (days === 0) {
+    return `today at ${time}`;
+  }
+  if (days === 1) {
+    return `tomorrow at ${time}`;
+  }
+  if (days === -1) {
+    return `yesterday at ${time}`;
+  }
+  if (Math.abs(days) < 7) {
     return `on ${date.toLocaleDateString(undefined, { weekday: "long" })}`;
+  }
   return `on ${date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",

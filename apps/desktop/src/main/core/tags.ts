@@ -1,9 +1,5 @@
-import {
-  type NewTag,
-  saves as savesTable,
-  type Tag,
-  tags as tagsTable,
-} from "@pond/schema/db";
+import { saves as savesTable, tags as tagsTable } from "@pond/schema/db";
+import type { NewTag, Tag } from "@pond/schema/db";
 import { labelKey, normalizeLabelName } from "@pond/schema/label-name";
 import type { Transaction } from "@pond/schema/tx";
 import type { OkResult } from "@shared/query-contracts-shared";
@@ -27,7 +23,7 @@ async function tagByLowerName(db: Db, lowered: string) {
 async function savesWithTag(
   db: Db,
   key: string,
-): Promise<Array<{ id: string; tags: string[] | null }>> {
+): Promise<Array<{ id: string; tags: Array<string> | null }>> {
   const rows = await db
     .select({ id: savesTable.id, tags: savesTable.tags })
     .from(savesTable)
@@ -79,7 +75,7 @@ export async function renameTag(
   }
 
   const all = await savesWithTag(db, fromKey);
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
     const idx = current.findIndex((t) => labelKey(t) === fromKey);
@@ -134,7 +130,7 @@ export async function mergeTags(
   const toRow = await tagByLowerName(db, toKey);
 
   const all = await savesWithTag(db, fromKey);
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   for (const row of all) {
     const current = (row.tags ?? []).slice();
     const idx = current.findIndex((t) => labelKey(t) === fromKey);
@@ -217,7 +213,7 @@ export async function deleteTag(
   const key = labelKey(name) || name.trim().toLowerCase();
   const db = await getDb();
   const all = await savesWithTag(db, key);
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   for (const row of all) {
     const current = (row.tags ?? []).filter((t) => labelKey(t) !== key);
     if (current.length === (row.tags?.length ?? 0)) continue;
@@ -245,9 +241,9 @@ export async function deleteTag(
   return { ok: true, affected: txs.length };
 }
 
-export function normalizeTagList(names: string[]): string[] {
+export function normalizeTagList(names: Array<string>): Array<string> {
   const seen = new Set<string>();
-  const out: string[] = [];
+  const out: Array<string> = [];
   for (const raw of names) {
     const n = normalizeLabelName(raw);
     if (!n) continue;
@@ -261,7 +257,7 @@ export function normalizeTagList(names: string[]): string[] {
 
 export async function setSaveTags(
   saveId: string,
-  next: string[],
+  next: Array<string>,
 ): Promise<OkResult> {
   const db = await getDb();
   const rows = await db
@@ -288,14 +284,14 @@ export async function setSaveTags(
 
 /** Adds tags to each save, keeping the tags it already has. */
 export async function addTagsToSaves(
-  saveIds: readonly string[],
-  names: string[],
+  saveIds: ReadonlyArray<string>,
+  names: Array<string>,
   actorReason: string,
 ): Promise<number> {
   const add = normalizeTagList(names);
   if (add.length === 0 || saveIds.length === 0) return 0;
   const db = await getDb();
-  const txs: Transaction[] = [];
+  const txs: Array<Transaction> = [];
   for (let offset = 0; offset < saveIds.length; offset += 500) {
     const rows = await db
       .select({ id: savesTable.id, tags: savesTable.tags })
@@ -320,14 +316,14 @@ export async function addTagsToSaves(
 }
 
 export function planTagRegistryUpdates(
-  names: string[],
-  existing: readonly Pick<Tag, "id" | "name" | "lastUsedAt">[],
+  names: Array<string>,
+  existing: ReadonlyArray<Pick<Tag, "id" | "name" | "lastUsedAt">>,
   now = new Date(),
-): Transaction[] {
+): Array<Transaction> {
   const byName = new Map(existing.map((tag) => [labelKey(tag.name), tag]));
   return normalizeTagList(names).map((name): Transaction => {
     const row = byName.get(labelKey(name));
-    if (row)
+    if (row) {
       return {
         kind: "update",
         model: "tag",
@@ -336,6 +332,7 @@ export function planTagRegistryUpdates(
         before: { lastUsedAt: row.lastUsedAt },
         meta: { actor: "system", actorReason: "tag-bump-last-used" },
       };
+    }
     const id = ulid();
     return {
       kind: "create",
@@ -348,8 +345,10 @@ export function planTagRegistryUpdates(
 }
 
 export async function prepareTagRegistryUpdates(
-  names: string[],
-): Promise<Transaction[]> {
-  if (names.length === 0) return [];
+  names: Array<string>,
+): Promise<Array<Transaction>> {
+  if (names.length === 0) {
+    return [];
+  }
   return planTagRegistryUpdates(names, await listTags());
 }

@@ -11,17 +11,17 @@ function activity(overrides: Partial<DownloadActivity> = {}): DownloadActivity {
     saveId: "save",
     op: "fetch_blobs",
     state: "running",
-    startedAt: 1_000,
-    updatedAt: 2_000,
+    startedAt: 1000,
+    updatedAt: 2000,
     phase: "receiving",
-    phaseStartedAt: 1_500,
+    phaseStartedAt: 1500,
     transfers: [
       {
         fileIndex: 1,
         fileCount: 3,
         state: "receiving",
-        startedAt: 1_000,
-        updatedAt: 2_000,
+        startedAt: 1000,
+        updatedAt: 2000,
         receivedBytes: 38_400_000,
         totalBytes: 120_000_000,
         bytesPerSecond: 4_200_000,
@@ -34,7 +34,7 @@ function activity(overrides: Partial<DownloadActivity> = {}): DownloadActivity {
 describe("download activity presentation", () => {
   it("uses measured bytes, labels per-file progress, and hides stale rates", () => {
     const current = activity();
-    expect(describeDownloadActivity(current, 2_000)).toMatchObject({
+    expect(describeDownloadActivity(current, 2000)).toMatchObject({
       progress: 0.32,
       speed: "4.01 MiB/s",
       detail: "File 1 of 3",
@@ -49,7 +49,7 @@ describe("download activity presentation", () => {
   });
   it("does not reuse a completed transfer as processing progress", () => {
     expect(
-      describeDownloadActivity(activity({ phase: "processing" }), 3_000),
+      describeDownloadActivity(activity({ phase: "processing" }), 3000),
     ).toMatchObject({
       label: "Processing media",
       progress: null,
@@ -59,7 +59,7 @@ describe("download activity presentation", () => {
   });
   it("names a source cooldown wait without calling it paused", () => {
     expect(
-      describeDownloadActivity(activity({ phase: "waiting" }), 3_000),
+      describeDownloadActivity(activity({ phase: "waiting" }), 3000),
     ).toMatchObject({
       label: "Waiting on source",
       progress: null,
@@ -73,8 +73,8 @@ describe("download activity presentation", () => {
         {
           fileIndex: 1,
           state: "requesting",
-          startedAt: 1_000,
-          updatedAt: 1_000,
+          startedAt: 1000,
+          updatedAt: 1000,
         },
       ],
     });
@@ -87,21 +87,21 @@ describe("download activity presentation", () => {
     current.transfers[0] = {
       fileIndex: 1,
       state: "receiving",
-      startedAt: 1_000,
-      updatedAt: 2_000,
-      receivedBytes: 3_000,
+      startedAt: 1000,
+      updatedAt: 2000,
+      receivedBytes: 3000,
     };
-    expect(describeDownloadActivity(current, 2_000).progress).toBeNull();
+    expect(describeDownloadActivity(current, 2000).progress).toBeNull();
   });
   it("identifies concurrent active files without pretending to measure the whole save", () => {
     const current = activity();
     current.transfers.push({
       fileIndex: 2,
       state: "requesting",
-      startedAt: 1_800,
-      updatedAt: 1_800,
+      startedAt: 1800,
+      updatedAt: 1800,
     });
-    expect(describeDownloadActivity(current, 2_000).detail).toBe(
+    expect(describeDownloadActivity(current, 2000).detail).toBe(
       "2 files active",
     );
   });
@@ -110,7 +110,7 @@ describe("download activity presentation", () => {
     const completed = activity({
       taskId: "other",
       state: "completed",
-      updatedAt: 3_000,
+      updatedAt: 3000,
     });
     expect(downloadActivityForSave([completed, running], "save")).toBe(running);
     expect(downloadActivityForSave([running, completed], "save")).toBe(running);

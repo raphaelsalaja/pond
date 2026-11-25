@@ -1,8 +1,5 @@
-import {
-  BrowserWindow,
-  type BrowserWindowConstructorOptions,
-  screen,
-} from "electron";
+import { BrowserWindow, screen } from "electron";
+import type { BrowserWindowConstructorOptions } from "electron";
 import type {
   QuickCaptureSnapshot,
   QuickCaptureSubmit,
@@ -41,8 +38,9 @@ function scheduleBlurClose(win: BrowserWindow, ignoreFocus = false): void {
       !picking &&
       !draggingIn &&
       (ignoreFocus || !win.isFocused())
-    )
+    ) {
       closeQuickCapture();
+    }
   }, BLUR_GRACE_MS);
 }
 
@@ -93,7 +91,9 @@ export function setQuickCaptureDrag(phase: "enter" | "leave" | "drop"): void {
   if (phase === "drop") {
     cancelBlurClose();
     win.focus();
-  } else if (abandoned || !win.isFocused()) scheduleBlurClose(win, abandoned);
+  } else if (abandoned || !win.isFocused()) {
+    scheduleBlurClose(win, abandoned);
+  }
 }
 
 export function closeQuickCapture(): void {
@@ -163,11 +163,12 @@ export async function openQuickCapture(
   win.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   win.webContents.on("will-navigate", (event) => event.preventDefault());
   win.setAlwaysOnTop(true, "pop-up-menu");
-  if (behavior.allWorkspaces)
+  if (behavior.allWorkspaces) {
     win.setVisibleOnAllWorkspaces(true, {
       visibleOnFullScreen: true,
       skipTransformProcessType: true,
     });
+  }
   win.on("blur", () => {
     if (overlay === win && !picking) scheduleBlurClose(win);
   });
@@ -179,9 +180,11 @@ export async function openQuickCapture(
   });
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   try {
-    if (devUrl)
+    if (devUrl) {
       await win.loadURL(new URL("quick-capture.html", `${devUrl}/`).toString());
-    else await win.loadFile(resolveMainOut("../renderer/quick-capture.html"));
+    } else {
+      await win.loadFile(resolveMainOut("../renderer/quick-capture.html"));
+    }
   } catch (error) {
     if (!win.isDestroyed()) win.destroy();
     throw error;

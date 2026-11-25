@@ -8,7 +8,7 @@ export type VisibilityMode = "monotonic" | "scan";
 const OVERSCAN_PX = 1600;
 
 function lowerBoundMonotonic<T extends PositionedItem>(
-  items: T[],
+  items: Array<T>,
   viewMin: number,
 ): number {
   let lo = 0;
@@ -23,7 +23,7 @@ function lowerBoundMonotonic<T extends PositionedItem>(
 }
 
 function upperBoundMonotonic<T extends PositionedItem>(
-  items: T[],
+  items: Array<T>,
   viewMax: number,
 ): number {
   let lo = 0;
@@ -38,23 +38,25 @@ function upperBoundMonotonic<T extends PositionedItem>(
 }
 
 function computeVisibleMonotonic<T extends PositionedItem>(
-  items: T[],
+  items: Array<T>,
   viewMin: number,
   viewMax: number,
-): number[] {
+): Array<number> {
   const start = lowerBoundMonotonic(items, viewMin);
   const end = upperBoundMonotonic(items, viewMax);
-  const out: number[] = [];
-  for (let i = start; i < end; i++) out.push(i);
+  const out: Array<number> = [];
+  for (let i = start; i < end; i++) {
+    out.push(i);
+  }
   return out;
 }
 
 function computeVisibleScan<T extends PositionedItem>(
-  items: T[],
+  items: Array<T>,
   viewMin: number,
   viewMax: number,
-): number[] {
-  const out: number[] = [];
+): Array<number> {
+  const out: Array<number> = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (!item) continue;
@@ -66,11 +68,11 @@ function computeVisibleScan<T extends PositionedItem>(
 }
 
 export function computeVisible<T extends PositionedItem>(
-  items: T[],
+  items: Array<T>,
   offsetWithinGrid: number,
   viewportH: number,
   mode: VisibilityMode = "scan",
-): number[] {
+): Array<number> {
   const viewMin = offsetWithinGrid - OVERSCAN_PX;
   const viewMax = offsetWithinGrid + viewportH + OVERSCAN_PX;
   return mode === "monotonic"

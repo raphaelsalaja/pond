@@ -1,9 +1,5 @@
-import {
-  CONTRAST_DEFAULT,
-  CONTRAST_MAX,
-  CONTRAST_MIN,
-  type ThemeDef,
-} from "./prefs.types";
+import { CONTRAST_DEFAULT, CONTRAST_MAX, CONTRAST_MIN } from "./prefs.types";
+import type { ThemeDef } from "./prefs.types";
 
 export interface Oklch {
   l: number;

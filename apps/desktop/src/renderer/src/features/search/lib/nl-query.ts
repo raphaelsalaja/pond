@@ -14,10 +14,10 @@ import {
 import { FILLER, NEGATORS } from "@/features/search/lib/nl-vocabulary";
 
 export type NlFacets = {
-  sources: string[];
-  tags: string[];
-  types: string[];
-  creators: string[];
+  sources: Array<string>;
+  tags: Array<string>;
+  types: Array<string>;
+  creators: Array<string>;
 };
 
 export interface AskSort {
@@ -27,7 +27,7 @@ export interface AskSort {
 
 export interface FlatQuery extends Group {
   combinator: "and";
-  rules: Predicate[];
+  rules: Array<Predicate>;
 }
 
 interface NlResult {
@@ -44,9 +44,11 @@ export const EMPTY_FACETS: NlFacets = {
   creators: [],
 };
 
-export function dedupePredicates(predicates: Predicate[]): Predicate[] {
+export function dedupePredicates(
+  predicates: Array<Predicate>,
+): Array<Predicate> {
   const seen = new Set<string>();
-  const out: Predicate[] = [];
+  const out: Array<Predicate> = [];
   for (const p of predicates) {
     const key = JSON.stringify([
       p.field,
@@ -66,14 +68,14 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
 
   const words = rest
     .toLowerCase()
-    .replace(/[?!.,]/g, " ")
+    .replaceAll(/[?!.,]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
 
   const candidates = buildCandidates(facets);
   const acc = newAccumulator();
-  const intentPreds: Predicate[] = [];
-  const residual: string[] = [];
+  const intentPreds: Array<Predicate> = [];
+  const residual: Array<string> = [];
 
   let i = 0;
   let negateNext = false;
@@ -84,8 +86,12 @@ export function compileStageA(input: string, facets: NlFacets): NlResult {
 
     const order = matchSortLimit(words, i);
     if (order) {
-      if (order.sort) sort = order.sort;
-      if (order.limit != null) limit = order.limit;
+      if (order.sort) {
+        sort = order.sort;
+      }
+      if (order.limit !== undefined) {
+        limit = order.limit;
+      }
       i += order.len;
       negateNext = false;
       continue;

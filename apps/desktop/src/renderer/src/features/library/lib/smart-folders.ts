@@ -1,11 +1,8 @@
 import type { SavedView } from "@pond/schema/db";
-import {
-  type Clause,
-  EMPTY_QUERY,
-  type Query,
-} from "@pond/schema/filters/types";
+import { EMPTY_QUERY } from "@pond/schema/filters/types";
+import type { Clause, Query } from "@pond/schema/filters/types";
 
-function flattenConjunction(clause: Clause): Clause[] {
+function flattenConjunction(clause: Clause): Array<Clause> {
   if ("rules" in clause && clause.combinator === "and" && !clause.not) {
     return clause.rules.flatMap(flattenConjunction);
   }
@@ -22,10 +19,10 @@ export function combineQueries(queries: ReadonlyArray<Query>): Query {
 function ancestors(
   view: SavedView,
   views: ReadonlyArray<SavedView>,
-): SavedView[] {
+): Array<SavedView> {
   const byId = new Map(views.map((entry) => [entry.id, entry]));
   const seen = new Set([view.id]);
-  const result: SavedView[] = [];
+  const result: Array<SavedView> = [];
   let parentId = view.parentId;
   while (parentId && !seen.has(parentId)) {
     seen.add(parentId);
@@ -47,7 +44,7 @@ export function inheritedQueryFor(
 export function groupMoveChoices(
   viewId: string,
   views: ReadonlyArray<SavedView>,
-): SavedView[] {
+): Array<SavedView> {
   return views.filter(
     (view) =>
       view.kind === "group" &&
@@ -57,9 +54,9 @@ export function groupMoveChoices(
 }
 
 export function selectedViewRoots(
-  ids: readonly string[],
-  views: readonly SavedView[],
-): SavedView[] {
+  ids: ReadonlyArray<string>,
+  views: ReadonlyArray<SavedView>,
+): Array<SavedView> {
   const selected = new Set(ids);
   return views.filter(
     (view) =>

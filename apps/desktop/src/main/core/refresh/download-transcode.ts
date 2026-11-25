@@ -1,10 +1,10 @@
 import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
-import {
-  type DownloadCompression,
-  type DownloadRequest,
-  GIF_FPS,
+import { GIF_FPS } from "@shared/downloader-contracts";
+import type {
+  DownloadCompression,
+  DownloadRequest,
 } from "@shared/downloader-contracts";
 import { requireConversionCapability } from "../conversion-capabilities";
 import { runFfmpeg } from "../convert-media";
@@ -64,7 +64,7 @@ export function transcodeArgs(
   target: TranscodeTarget,
   input: string,
   output: string,
-): string[] {
+): Array<string> {
   const args = [
     "-nostdin",
     "-hide_banner",
@@ -148,10 +148,13 @@ export interface TranscodedFile {
 
 /** Converts each item that needs it; untouched items pass through, and `cleanup` drops the converted files. */
 export async function transcodeItems(input: {
-  items: readonly DownloadedVideoItem[];
+  items: ReadonlyArray<DownloadedVideoItem>;
   request: DownloadRequest;
   signal?: AbortSignal | undefined;
-}): Promise<{ items: DownloadedVideoItem[]; cleanup: () => Promise<void> }> {
+}): Promise<{
+  items: Array<DownloadedVideoItem>;
+  cleanup: () => Promise<void>;
+}> {
   const { items, request } = input;
   const targets = items.map((item) =>
     transcodeTarget(request, extname(item.path).toLowerCase()),
@@ -164,7 +167,7 @@ export async function transcodeItems(input: {
   const root = await mkdtemp(join(tmpdir(), "pond-transcode-"));
   const cleanup = () => rm(root, { recursive: true, force: true });
   try {
-    const converted: DownloadedVideoItem[] = [];
+    const converted: Array<DownloadedVideoItem> = [];
     for (const [index, item] of items.entries()) {
       const target = targets[index];
       if (!target) {

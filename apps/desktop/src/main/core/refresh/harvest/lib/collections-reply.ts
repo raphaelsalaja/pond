@@ -26,7 +26,7 @@ export type CollectionsReply =
     };
 
 export type CollectionsResult =
-  | { ok: true; collections: ImportCollectionOption[] }
+  | { ok: true; collections: Array<ImportCollectionOption> }
   | {
       ok: false;
       reason: CollectionFailureReason;

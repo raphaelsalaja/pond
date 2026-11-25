@@ -23,27 +23,24 @@ import { persistSave } from "../../core/persist-save";
 import { hasUserTitle } from "../../core/user-metadata";
 import { getDb } from "../../db";
 import { saveFile } from "../../paths";
-import {
-  type QueryHandlerMap,
-  query,
-  StringListParam,
-  StringParam,
-} from "./params";
+import { query, StringListParam, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 export const savesFontQueries = {
   "saves.batchRename": query(
     RenameOptionsSchema.extend({ ids: StringListParam, pattern: StringParam }),
     async (params): Promise<QueryResult<"saves.batchRename">> => {
       const pattern = params.pattern.trim();
-      if (!pattern || params.ids.length === 0)
+      if (!pattern || params.ids.length === 0) {
         return { ok: false, error: "Enter a name pattern and choose Saves." };
+      }
       const db = await getDb();
       const rows = await db
         .select()
         .from(saves)
         .where(inArray(saves.id, params.ids));
       const byId = new Map(rows.map((row) => [row.id, row]));
-      const txs: Transaction[] = [];
+      const txs: Array<Transaction> = [];
       for (const [index, id] of [...new Set(params.ids)].entries()) {
         const row = byId.get(id);
         if (!row) continue;

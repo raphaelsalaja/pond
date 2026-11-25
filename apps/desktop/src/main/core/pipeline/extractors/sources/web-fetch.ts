@@ -1,6 +1,7 @@
 import { browserUserAgent } from "../../../refresh/web-page-renderer";
 import { RateLimitedError, TerminalError, TransientError } from "../errors";
-import { convertTextDocument, type TextDocument } from "./text-document";
+import { convertTextDocument } from "./text-document";
+import type { TextDocument } from "./text-document";
 
 const FETCH_TIMEOUT_MS = 15_000;
 
@@ -24,12 +25,15 @@ export interface FetchHtmlSuccess {
  * Fetches a page as HTML without a browser. Resolves null on 403: bot walls
  * fingerprint the TLS handshake, so only a real browser gets through.
  */
-export async function fetchHtml(url: string): Promise<FetchHtmlSuccess | null> {
+export async function fetchHtml(
+  url: string,
+  request: (url: string, init: RequestInit) => Promise<Response> = fetch,
+): Promise<FetchHtmlSuccess | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   let res: Response;
   try {
-    res = await fetch(url, {
+    res = await request(url, {
       redirect: "follow",
       signal: controller.signal,
       headers: {
@@ -38,12 +42,15 @@ export async function fetchHtml(url: string): Promise<FetchHtmlSuccess | null> {
           "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
       },
     });
-  } catch (err) {
-    const cause = err instanceof Error && "cause" in err ? err.cause : null;
+  } catch (error) {
+    const cause =
+      error instanceof Error && "cause" in error ? error.cause : null;
     const code =
       cause instanceof Error && "code" in cause ? String(cause.code) : null;
-    if (code === HEADERS_OVERFLOW) return null;
-    const message = err instanceof Error ? err.message : String(err);
+    if (code === HEADERS_OVERFLOW) {
+      return null;
+    }
+    const message = error instanceof Error ? error.message : String(error);
     throw new TransientError(
       `web fetch failed: ${message}${code ? ` (${code})` : ""}`,
     );
@@ -67,8 +74,9 @@ export async function fetchHtml(url: string): Promise<FetchHtmlSuccess | null> {
   }
 
   const length = Number(res.headers.get("content-length") ?? 0);
-  if (length > MAX_BODY_BYTES)
+  if (length > MAX_BODY_BYTES) {
     throw new TerminalError(`web fetch body too large: ${length} bytes`);
+  }
   const text = await readBodyCapped(res);
   if (!text.trim()) throw new TerminalError("web fetch returned empty body");
   if (format) {
@@ -99,7 +107,7 @@ function wrapDocument(document: TextDocument): string {
   return [
     "<!doctype html>",
     '<html><head><meta charset="utf-8">',
-    `<title>${title.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</title>`,
+    `<title>${title.replaceAll("&", "&amp;").replaceAll("<", "&lt;")}</title>`,
     "</head><body>",
     document.bodyHtml,
     "</body></html>",
@@ -110,14 +118,14 @@ function wrapDocument(document: TextDocument): string {
 async function readBodyCapped(res: Response): Promise<string> {
   if (!res.body) return res.text();
   const reader = res.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks: Array<Uint8Array> = [];
   let total = 0;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
     total += value?.byteLength ?? 0;
     if (total > MAX_BODY_BYTES) {
-      void reader.cancel().catch(() => {});
+      await reader.cancel();
       throw new TerminalError(
         `web fetch body exceeded ${MAX_BODY_BYTES} bytes`,
       );

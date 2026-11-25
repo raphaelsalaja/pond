@@ -4,7 +4,8 @@ import {
   allowsSiteCapture,
   createRateLimit,
 } from "./hook-capture";
-import { DEFAULT_SETTINGS, type PondSettings } from "./types";
+import { DEFAULT_SETTINGS } from "./types";
+import type { PondSettings } from "./types";
 
 const POST = "https://x.com/pond/status/1";
 

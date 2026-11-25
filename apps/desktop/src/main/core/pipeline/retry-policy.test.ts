@@ -9,7 +9,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
-  vi.restoreAllMocks();
 });
 
 it("parks a 429 until its Retry-After deadline without spending an attempt", () => {
@@ -27,12 +26,15 @@ it("parks a 429 until its Retry-After deadline without spending an attempt", () 
 });
 
 it("bounds retry backoff and moves exhausted work to dead", () => {
-  vi.spyOn(Math, "random").mockReturnValue(0.5);
   expect(
-    classifyError(new TransientError("offline"), {
-      attempts: 0,
-      maxAttempts: 5,
-    }),
+    classifyError(
+      new TransientError("offline"),
+      {
+        attempts: 0,
+        maxAttempts: 5,
+      },
+      () => 0.5,
+    ),
   ).toMatchObject({
     status: "deferred",
     recordAttempt: true,

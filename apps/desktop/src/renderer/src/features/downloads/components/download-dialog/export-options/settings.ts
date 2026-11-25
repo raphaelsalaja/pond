@@ -1,10 +1,9 @@
-import {
-  type DownloadCompression,
-  type DownloadContainer,
-  type DownloadRequest,
-  GIF_FPS,
-  GIF_MAX_SECONDS,
-  type TranscriptFormat,
+import { GIF_FPS, GIF_MAX_SECONDS } from "@shared/downloader-contracts";
+import type {
+  DownloadCompression,
+  DownloadContainer,
+  DownloadRequest,
+  TranscriptFormat,
 } from "@shared/downloader-contracts";
 import { useState } from "react";
 import type { Clip } from "../lib/clip";
@@ -26,11 +25,14 @@ export function saveToHint({
   existingSaveId: string | null;
   copies: string;
 }): string | null {
-  if (destination === "library")
+  if (destination === "library") {
     return existingSaveId
       ? "Already in your library. This adds to the same save."
       : "Adds a save to your library.";
-  if (destination === "clipboard") return `Copies ${copies}, ready to paste.`;
+  }
+  if (destination === "clipboard") {
+    return `Copies ${copies}, ready to paste.`;
+  }
   return folder ? `Saves to ${folder}.` : null;
 }
 

@@ -31,9 +31,9 @@
     transform var(--ds-duration-spring) var(--ds-easing-spring),
     border-radius var(--ds-duration-spring) var(--ds-easing-spring),
     background-color var(--ds-duration-emphasized) var(--ds-duration-medium)
-    var(--ds-easing-standard),
+      var(--ds-easing-standard),
     box-shadow var(--ds-duration-emphasized) var(--ds-duration-medium)
-    var(--ds-easing-standard);
+      var(--ds-easing-standard);
 }
 
 .icon {
@@ -45,9 +45,9 @@
   border-radius: var(--ds-radius-lg);
   transition:
     opacity var(--ds-duration-emphasized) var(--ds-duration-snap)
-    var(--ds-easing-standard),
+      var(--ds-easing-standard),
     filter var(--ds-duration-emphasized) var(--ds-duration-snap)
-    var(--ds-easing-standard);
+      var(--ds-easing-standard);
 
   & img {
     display: block;

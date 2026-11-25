@@ -48,7 +48,7 @@ function formatSelector(
   const vf = videoCodecFilter(prefs.videoCodec);
   const af = audioCodecFilter(prefs.audioCodec);
 
-  const chain: string[] = [];
+  const chain: Array<string> = [];
   if (source === "tiktok") {
     chain.push(`bv*${vf}[format_note*=play]${limits}+ba${af}`);
   }
@@ -69,8 +69,10 @@ function formatSelector(
 export function cookieAttempts(
   source: Source | null,
   cookieCount: number,
-): readonly boolean[] {
-  if (cookieCount === 0) return [false];
+): ReadonlyArray<boolean> {
+  if (cookieCount === 0) {
+    return [false];
+  }
   return source === "youtube" ? [false, true] : [true];
 }
 
@@ -101,7 +103,7 @@ interface DownloadArgvInput {
 }
 
 /** Everything but cookies, the manifest and the output template, which change per attempt. */
-export function downloadArgv(input: DownloadArgvInput): string[] {
+export function downloadArgv(input: DownloadArgvInput): Array<string> {
   const { source, request, ffmpeg } = input;
   const audio = request?.mode === "audio";
   const prefs: VideoDownloadSettings = request

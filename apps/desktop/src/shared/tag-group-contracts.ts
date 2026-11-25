@@ -17,12 +17,14 @@ export interface TagGroupQueryInputs {
   };
   "tagGroups.delete": { name: string };
   "tagGroups.merge": { from: string; to: string };
-  "tagGroups.addTags": { tags: string[]; group: string };
+  "tagGroups.addTags": { tags: Array<string>; group: string };
   "tagGroups.removeTag": { tag: string; group: string };
 }
 
 export interface TagGroupQueryResults {
-  "tagGroups.list": (TagGroup & { tagIds: string[]; tagNames: string[] })[];
+  "tagGroups.list": Array<
+    TagGroup & { tagIds: Array<string>; tagNames: Array<string> }
+  >;
   "tagGroups.create": OkResult;
   "tagGroups.rename": OkResult;
   "tagGroups.update": OkResult;

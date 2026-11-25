@@ -28,13 +28,13 @@ export interface RedditPostPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: RedditPostPageMedia[];
+  mediaUrls?: Array<RedditPostPageMedia>;
   mediaType?: MediaType;
   meta?: RedditPostPageMeta;
 }
 
 export function inPageRedditNormalize() {
-  const getMeta = (selectors: readonly string[]): string | undefined => {
+  const getMeta = (selectors: ReadonlyArray<string>): string | undefined => {
     for (const sel of selectors) {
       const el = document.querySelector<HTMLMetaElement>(sel);
       const value = el?.content?.trim();
@@ -209,7 +209,7 @@ export function inPageRedditNormalize() {
       playerSrc && playerId && playerId === postId ? playerSrc : undefined;
     const htmlVideo = post?.querySelector("video") ?? null;
     const htmlSrc =
-      htmlVideo instanceof HTMLVideoElement
+      htmlVideo !== null
         ? httpUrl(htmlVideo.getAttribute("src")) ||
           httpUrl(htmlVideo.querySelector("source")?.getAttribute("src"))
         : undefined;
@@ -223,7 +223,7 @@ export function inPageRedditNormalize() {
     if (videoSrc) {
       const poster =
         httpUrl(player?.getAttribute("poster")) ||
-        (htmlVideo instanceof HTMLVideoElement
+        (htmlVideo !== null
           ? httpUrl(htmlVideo.getAttribute("poster"))
           : undefined) ||
         ogImage ||

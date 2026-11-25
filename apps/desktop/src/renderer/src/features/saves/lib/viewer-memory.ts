@@ -27,10 +27,14 @@ function load() {
     const parsed = z
       .array(z.tuple([z.string(), entrySchema]))
       .safeParse(JSON.parse(window.localStorage.getItem(storageKey) ?? "[]"));
-    if (parsed.success)
-      for (const [key, value] of parsed.data.slice(-200))
+    if (parsed.success) {
+      for (const [key, value] of parsed.data.slice(-200)) {
         entries.set(key, value);
-  } catch {}
+      }
+    }
+  } catch {
+    /** Unreadable stored memory starts empty; the next write replaces it. */
+  }
 }
 
 function set(key: string, patch: ViewerMemory) {
@@ -44,7 +48,9 @@ function set(key: string, patch: ViewerMemory) {
   }
   try {
     window.localStorage.setItem(storageKey, JSON.stringify([...entries]));
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the memory still applies for this session. */
+  }
 }
 
 export const viewerMemory = {
@@ -71,8 +77,9 @@ export const viewerMemory = {
     set(key, { loop: range });
   },
   setPlayback(key: string, seconds: number): void {
-    if (Number.isFinite(seconds) && seconds >= 0)
+    if (Number.isFinite(seconds) && seconds >= 0) {
       set(key, { playback: seconds });
+    }
   },
 };
 

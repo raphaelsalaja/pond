@@ -63,8 +63,8 @@ async function readToken(get: TumblrGet): Promise<string | null> {
       )?.[1];
     if (!raw) return null;
     return StateSchema.parse(JSON.parse(raw)).apiFetchStore.API_TOKEN;
-  } catch (err) {
-    log.warn("[pond tumblr-api] token read failed", err);
+  } catch (error) {
+    log.warn("[pond tumblr-api] token read failed", error);
     return null;
   }
 }
@@ -82,8 +82,8 @@ async function tumblrJson<T>(
       authorization: `Bearer ${token}`,
       "x-version": "redpop/3/0//redpop/",
     });
-  } catch (err) {
-    log.warn("[pond tumblr-api] fetch threw", path, err);
+  } catch (error) {
+    log.warn("[pond tumblr-api] fetch threw", path, error);
     return { ok: false, status: 0 };
   }
   if (!res.ok) return { ok: false, status: res.status };
@@ -124,7 +124,7 @@ export async function readTumblrLikes(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let before = args.resumeCursor;
   let knownPageStreak = 0;
 
@@ -179,7 +179,7 @@ export async function readTumblrLikes(
 }
 
 function partial(
-  entries: ListEntry[],
+  entries: Array<ListEntry>,
   before: string | undefined,
 ): ListHarvestResult {
   const result: ListHarvestResult = {

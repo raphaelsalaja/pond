@@ -1,10 +1,6 @@
 import type { Prefs } from "@pond/schema";
-import {
-  contextBridge,
-  type IpcRendererEvent,
-  ipcRenderer,
-  webUtils,
-} from "electron";
+import { contextBridge, ipcRenderer, webUtils } from "electron";
+import type { IpcRendererEvent } from "electron";
 import type {
   CombineImagesWindowLoad,
   CombineImagesZoomAction,
@@ -32,7 +28,8 @@ const query: QueryClient = (name, ...args) =>
 const api = {
   query,
   libraryId(): string {
-    return ipcRenderer.sendSync(IPC.libraryId);
+    const value: unknown = ipcRenderer.sendSync(IPC.libraryId);
+    return String(value);
   },
   onPrefsChanged(callback: (prefs: Prefs) => void): () => void {
     const listener = (_event: IpcRendererEvent, prefs: Prefs) =>
@@ -66,7 +63,7 @@ const combineApi = {
     return () => ipcRenderer.off(COMBINE_IMAGES_WINDOW_IPC.zoom, listener);
   },
   /** Resolves files dropped from the Library window back to Save IDs. */
-  resolveDrop(files: readonly File[]): Promise<string[]> {
+  resolveDrop(files: ReadonlyArray<File>): Promise<Array<string>> {
     const paths = files.map((file) => webUtils.getPathForFile(file));
     return ipcRenderer.invoke(
       COMBINE_IMAGES_WINDOW_IPC.resolveDrop,

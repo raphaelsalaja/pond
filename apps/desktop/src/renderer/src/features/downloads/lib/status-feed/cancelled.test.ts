@@ -7,7 +7,7 @@ import {
 } from "@/features/downloads/lib/status-feed";
 import type { Save } from "@/features/saves/types";
 
-function save(tasks: WireTask[]): Save {
+function save(tasks: Array<WireTask>): Save {
   return {
     id: "s1",
     source: "twitter",

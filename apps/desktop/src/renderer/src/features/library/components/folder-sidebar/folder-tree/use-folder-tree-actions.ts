@@ -1,5 +1,6 @@
 import type { Folder } from "@pond/schema/db";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
 import { buildMoveFolderItems } from "@/features/library/lib/move-folders-menu";
 import { errorCopy } from "@/shared/lib/error-copy";
@@ -15,7 +16,7 @@ import {
 import type { FolderTool } from "../../folder-tools";
 
 interface FolderTreeActionsOptions {
-  folderRows: Folder[];
+  folderRows: Array<Folder>;
   includeSubfolders: boolean;
   onCreateStart: () => void;
 }
@@ -53,7 +54,7 @@ export function useFolderTreeActions({
     }
   }
 
-  function exportIdsFor(selected: string[]): string[] {
+  function exportIdsFor(selected: Array<string>): Array<string> {
     return [
       ...new Set(
         selected.flatMap((id) =>
@@ -63,7 +64,7 @@ export function useFolderTreeActions({
     ];
   }
 
-  function selectionItems(selected: string[]): MenuItemSpec[] {
+  function selectionItems(selected: Array<string>): Array<MenuItemSpec> {
     return [
       {
         type: "submenu",
@@ -104,11 +105,12 @@ export function useFolderTreeActions({
                       folderIdsForExport(other, folderRows, true).includes(id),
                   ),
               );
-              for (const id of roots)
+              for (const id of roots) {
                 await window.pond.query("folders.delete", {
                   id,
                   trashContainedSaves: false,
                 });
+              }
               await folders.refresh();
             },
           }),

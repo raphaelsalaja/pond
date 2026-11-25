@@ -28,7 +28,7 @@ function decodeXml(value: string): string {
     .replaceAll("&gt;", ">");
 }
 
-function tags(source: string, name: string): string[] {
+function tags(source: string, name: string): Array<string> {
   return Array.from(
     source.matchAll(new RegExp(`<${name}\\b([^>]*)>`, "gi")),
     (match) => match[1] ?? "",
@@ -40,7 +40,7 @@ function resolveArchivePath(basePath: string, relativePath: string): string {
     `${basePath.slice(0, basePath.lastIndexOf("/") + 1)}${relativePath}`
       .replaceAll("\\", "/")
       .split("/");
-  const resolved: string[] = [];
+  const resolved: Array<string> = [];
   for (const part of parts) {
     if (!part || part === ".") continue;
     if (part === "..") resolved.pop();
@@ -72,7 +72,7 @@ export async function extractEpubCover(
   if (!packageFile) return null;
 
   const packageXml = await packageFile.async("text");
-  const items: ManifestItem[] = tags(packageXml, "item").map((item) => ({
+  const items: Array<ManifestItem> = tags(packageXml, "item").map((item) => ({
     id: attribute(item, "id"),
     href: attribute(item, "href"),
     mediaType: attribute(item, "media-type"),

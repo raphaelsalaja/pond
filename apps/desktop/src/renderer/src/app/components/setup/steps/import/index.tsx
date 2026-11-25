@@ -5,7 +5,8 @@ import {
   IconGlobe,
 } from "@pond/icons";
 import { Button, ContentRow, Loader } from "@pond/ui";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import {
   importBookmarks,
   importDataExport,
@@ -30,7 +31,7 @@ interface FeaturedSource extends ImportSource {
   icon: ReactNode;
 }
 
-const FEATURED: readonly FeaturedSource[] = [
+const FEATURED: ReadonlyArray<FeaturedSource> = [
   {
     id: "eagle",
     title: "Eagle Library",
@@ -61,7 +62,7 @@ const FEATURED: readonly FeaturedSource[] = [
   },
 ];
 
-const MORE: readonly ImportSource[] = [
+const MORE: ReadonlyArray<ImportSource> = [
   { id: "data-export", title: "Data Export", run: importDataExport },
   { id: "folders", title: "Folders", run: () => importPaths("folders") },
   { id: "eagle-package", title: "Eagle Package", run: importEaglePackage },

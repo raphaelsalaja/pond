@@ -49,7 +49,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+function fail(error) {
   console.error(error);
   process.exit(1);
-});
+}
+
+main().catch(fail);

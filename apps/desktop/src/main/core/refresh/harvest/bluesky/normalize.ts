@@ -1,12 +1,12 @@
 import type { Capture, CaptureFacet, CaptureMedia } from "@pond/schema/raw";
 import type { ListEntry } from "../list-types";
-import {
-  type BlueskyAuthor,
-  type BlueskyEmbed,
-  type BlueskyPost,
-  type BlueskyRecord,
-  type BlueskyViewRecord,
-  rkeyOf,
+import { rkeyOf } from "./atproto";
+import type {
+  BlueskyAuthor,
+  BlueskyEmbed,
+  BlueskyPost,
+  BlueskyRecord,
+  BlueskyViewRecord,
 } from "./atproto";
 
 const WEB = "https://bsky.app";
@@ -33,8 +33,10 @@ function sized(
 /** A quote with media nests the media one level down; the quoted post's own media stays with the quote. */
 export function postMedia(
   embed: (BlueskyEmbed & { media?: BlueskyEmbed }) | undefined,
-): PostMedia[] {
-  if (!embed) return [];
+): Array<PostMedia> {
+  if (!embed) {
+    return [];
+  }
   switch (embed.$type) {
     case "app.bsky.embed.images#view":
       return (embed.images ?? []).map((i) =>
@@ -91,8 +93,8 @@ export function postEntry(
   return entry;
 }
 
-function facetsOf(record: BlueskyRecord): CaptureFacet[] {
-  const out: CaptureFacet[] = [];
+function facetsOf(record: BlueskyRecord): Array<CaptureFacet> {
+  const out: Array<CaptureFacet> = [];
   for (const facet of record.facets ?? []) {
     const feature = facet.features[0]?.$type ?? "";
     const type = feature.endsWith("#link")
@@ -117,7 +119,7 @@ function captureOf(
   author: BlueskyAuthor,
   uri: string,
   record: BlueskyRecord,
-  media: PostMedia[],
+  media: Array<PostMedia>,
 ): Capture {
   const capture: Capture = {
     id: rkeyOf(uri) ?? uri,
@@ -196,9 +198,17 @@ function cardOf(embed: BlueskyEmbed | undefined): Capture["card"] {
   const card: NonNullable<Capture["card"]> = { url: external.uri };
   try {
     card.domain = new URL(external.uri).hostname.replace(/^www\./, "");
-  } catch {}
-  if (external.title) card.title = external.title;
-  if (external.description) card.description = external.description;
-  if (external.thumb) card.imageUrl = external.thumb;
+  } catch {
+    /** A card with an unparseable link keeps its URL and goes without a domain. */
+  }
+  if (external.title) {
+    card.title = external.title;
+  }
+  if (external.description) {
+    card.description = external.description;
+  }
+  if (external.thumb) {
+    card.imageUrl = external.thumb;
+  }
   return card;
 }

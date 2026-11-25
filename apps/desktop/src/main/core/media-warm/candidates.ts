@@ -11,8 +11,12 @@ type CandidateSave = Pick<
   "id" | "title" | "status" | "files" | "source" | "blurhash" | "coverIndex"
 >;
 
-export function mediaWarmCandidates(save: CandidateSave): MediaWarmCandidate[] {
-  if (save.status === "ingesting") return [];
+export function mediaWarmCandidates(
+  save: CandidateSave,
+): Array<MediaWarmCandidate> {
+  if (save.status === "ingesting") {
+    return [];
+  }
   const title = save.title?.trim() || "Untitled save";
   const files = save.files ?? [];
 

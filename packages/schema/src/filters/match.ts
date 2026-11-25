@@ -128,11 +128,11 @@ function runComparator(
         true,
       );
     case "exists":
-      return value ? projected != null : projected == null;
+      return value ? !isMissing(projected) : isMissing(projected);
     case "empty":
       return Array.isArray(projected)
         ? projected.length === 0
-        : projected == null;
+        : isMissing(projected);
     case "near": {
       const color = readColorMatch(value);
       return Array.isArray(projected) && color !== null
@@ -177,7 +177,7 @@ function withText(
 function withLists(
   projected: FieldValue,
   value: PredicateValue,
-  run: (have: string[], want: ReadonlyArray<string | number>) => boolean,
+  run: (have: Array<string>, want: ReadonlyArray<string | number>) => boolean,
   fallback = false,
 ): boolean {
   const want = TextList.safeParse(value);
@@ -185,8 +185,14 @@ function withLists(
   return run(projected, want.data);
 }
 
+function isMissing(projected: FieldValue): projected is null | undefined {
+  return projected === null || projected === undefined;
+}
+
 function scalarEqual(a: FieldValue, b: PredicateValue): boolean {
-  if (a == null || b == null) return false;
+  if (isMissing(a) || b === null) {
+    return false;
+  }
   const left = Text.safeParse(a);
   const right = Text.safeParse(b);
   if (left.success && right.success) {

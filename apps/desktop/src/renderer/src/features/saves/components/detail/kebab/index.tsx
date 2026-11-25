@@ -4,10 +4,10 @@ import { useState } from "react";
 import {
   buildSaveDetailMenu,
   loadOpenWithApps,
-  type OpenWithApp,
   openWithKind,
   peekOpenWithApps,
 } from "@/features/saves/lib/menu";
+import type { OpenWithApp } from "@/features/saves/lib/menu";
 import type { Save } from "@/features/saves/types";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 
@@ -18,7 +18,7 @@ export function KebabMenu({
   save: Save;
   fileIndex?: number | null;
 }) {
-  const [openWithApps, setOpenWithApps] = useState<OpenWithApp[]>([]);
+  const [openWithApps, setOpenWithApps] = useState<Array<OpenWithApp>>([]);
 
   return (
     <SpecMenu

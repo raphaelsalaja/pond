@@ -72,8 +72,8 @@ export async function backfillSourceIcons(): Promise<{
         if (await fetchSourceIcon(row.id, save, { replace: stored })) {
           written += 1;
         }
-      } catch (err) {
-        log.warn("[pond source-icon-backfill] failed", row.id, err);
+      } catch (error) {
+        log.warn("[pond source-icon-backfill] failed", row.id, error);
       }
     }
   };
@@ -86,8 +86,8 @@ export async function backfillSourceIcons(): Promise<{
       readableCheckMarker(),
       String(READABLE_CHECK_VERSION),
       "utf8",
-    ).catch((err) =>
-      log.warn("[pond source-icon-backfill] marker write failed", err),
+    ).catch((cause: unknown) =>
+      log.warn("[pond source-icon-backfill] marker write failed", cause),
     );
   }
 

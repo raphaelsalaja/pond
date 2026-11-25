@@ -2,7 +2,7 @@ import { IconTrashXmark, IconUndo } from "@pond/icons";
 import type { MenuItemSpec } from "@pond/ui";
 import { confirmEmptyTrash } from "@/features/saves";
 
-export function buildTrashMenuItems(hasItems: boolean): MenuItemSpec[] {
+export function buildTrashMenuItems(hasItems: boolean): Array<MenuItemSpec> {
   return [
     {
       label: "Empty Trash",

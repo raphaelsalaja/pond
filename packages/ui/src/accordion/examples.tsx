@@ -1,6 +1,6 @@
 import { IconChevronDown } from "@pond/icons";
-import type { ComponentDocs } from "../shared/docs";
 import { Accordion } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "accordion",

@@ -9,7 +9,7 @@ import { notify, toastManager } from "@/shared/lib/toast";
 
 const REFRESH_BLOCKED_TIMEOUT_MS = 10_000;
 /** Long enough to see the connected state before the dialog closes. */
-const CLOSE_AFTER_CONNECT_MS = 1_200;
+const CLOSE_AFTER_CONNECT_MS = 1200;
 
 interface RefreshBlockedDeps {
   notify: typeof notify;

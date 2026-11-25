@@ -2,11 +2,8 @@ import { Button, Settings } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { formatBytes } from "@/shared/lib/format";
 import { sectionForCategory } from "../lib/sections";
-import {
-  type Breakdown,
-  type StorageSegment,
-  storageSegments,
-} from "./storage-segments";
+import { storageSegments } from "./storage-segments";
+import type { Breakdown, StorageSegment } from "./storage-segments";
 import styles from "./styles.module.css";
 
 function Entry({ segment }: { segment: StorageSegment }) {

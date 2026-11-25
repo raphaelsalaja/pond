@@ -1,7 +1,5 @@
-import pencil from "./pencil.mjs";
-
 /** Built along its 45° axis: tip bottom left, a round end top right, a ferrule line near the end. */
-export default ({ poly }, s) => {
+const pencil = ({ poly }, s) => {
   const tip = [3.125, 14.875];
   const w = 1.75;
   const at = (a, b) => [
@@ -19,6 +17,8 @@ export default ({ poly }, s) => {
     poly([at(ferrule, -w), at(ferrule, w)]),
   ];
 };
+
+export default pencil;
 
 /** A written line runs under the pencil, clear of its lower edge. */
 export const open = (h, s) => [

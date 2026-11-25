@@ -11,6 +11,6 @@ export {
 export type RuleChoice = InternalRuleChoice;
 
 export interface RuleChoices {
-  folders: readonly RuleChoice[];
-  tags: readonly RuleChoice[];
+  folders: ReadonlyArray<RuleChoice>;
+  tags: ReadonlyArray<RuleChoice>;
 }

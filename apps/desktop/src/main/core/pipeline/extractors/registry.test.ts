@@ -5,8 +5,8 @@ import {
   syncConfigFor,
 } from "@pond/schema/sources";
 import { describe, expect, it } from "vitest";
-import { sourceIdFromUrl } from "../url";
 import { EXTRACTOR_LIST, extractorFor, resolveExtractor } from ".";
+import { sourceIdFromUrl } from "../url";
 
 describe("extractor registry", () => {
   it("has exactly one extractor per capture source", () => {

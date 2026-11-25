@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs } from "@pond/schema";
+import { DEFAULT_PREFS } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import { describe, expect, it, vi } from "vitest";
 import type { Save } from "@/features/saves/types";
 import {
@@ -69,14 +70,14 @@ describe("enrichment sweep preferences", () => {
       mediaUnderstandingProvider: "lmstudio",
       mediaUnderstandingModelId: "gemma4:e4b",
     });
-    const eligible = vi.fn(() => true);
-    const run = vi.fn(async () => null);
     const enricher: Enricher = {
       id: "test",
       enabled: () => true,
-      eligible,
-      run,
+      eligible: () => true,
+      run: async () => null,
     };
+    const eligible = vi.spyOn(enricher, "eligible");
+    const run = vi.spyOn(enricher, "run");
     const access = createEnrichmentPreferenceAccess(() => current);
     const target = save();
 

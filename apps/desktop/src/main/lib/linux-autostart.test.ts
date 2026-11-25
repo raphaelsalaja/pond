@@ -26,8 +26,8 @@ describe("desktopExecArgument", () => {
     expect(desktopExecArgument("/home/a b/Pond.AppImage")).toBe(
       '"/home/a b/Pond.AppImage"',
     );
-    expect(desktopExecArgument("/home/a$b")).toBe('"/home/a\\$b"');
-    expect(desktopExecArgument('/home/a"b')).toBe('"/home/a\\"b"');
+    expect(desktopExecArgument("/home/a$b")).toBe(String.raw`"/home/a\$b"`);
+    expect(desktopExecArgument('/home/a"b')).toBe(String.raw`"/home/a\"b"`);
     expect(desktopExecArgument("/home/a%b")).toBe("/home/a%%b");
     expect(desktopExecArgument("/home/a b%c")).toBe('"/home/a b%%c"');
   });
@@ -58,7 +58,7 @@ describe("linuxAutostartEntry", () => {
 describe("setLinuxAutostart", () => {
   it("writes the entry when enabled", async () => {
     const writes: Array<[string, string]> = [];
-    const directories: string[] = [];
+    const directories: Array<string> = [];
     await setLinuxAutostart({
       enabled: true,
       execPath: "/opt/Pond/pond",
@@ -78,7 +78,7 @@ describe("setLinuxAutostart", () => {
   });
 
   it("removes the entry when disabled, and tolerates a missing file", async () => {
-    const removed: string[] = [];
+    const removed: Array<string> = [];
     await setLinuxAutostart({
       enabled: false,
       execPath: "/opt/Pond/pond",

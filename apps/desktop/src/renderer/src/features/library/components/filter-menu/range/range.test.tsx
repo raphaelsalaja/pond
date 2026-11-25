@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CustomFilter } from "./";
 
@@ -40,7 +41,12 @@ describe("custom filter controls", () => {
     await fill(0, "2026-08-01");
     await fill(1, "2026-08-30");
 
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        }),
+    );
     const last = new Date("2026-08-31T00:00:00");
     last.setMilliseconds(-1);
     expect(onApply).toHaveBeenCalledWith({
@@ -61,7 +67,12 @@ describe("custom filter controls", () => {
     await fill(0, "2026-08-30");
     await fill(1, "2026-08-01");
     expect(host.querySelector('button[type="submit"]')).toBeNull();
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        }),
+    );
     expect(onApply).not.toHaveBeenCalled();
   });
 
@@ -71,7 +82,12 @@ describe("custom filter controls", () => {
       root.render(<CustomFilter field="duration" onApply={onApply} />),
     );
     await fill(0, "90");
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        }),
+    );
     expect(onApply).toHaveBeenCalledWith({
       field: "duration",
       operator: "gte",
@@ -89,7 +105,12 @@ describe("custom filter controls", () => {
         ?.textContent,
     ).toBe("KB");
     await fill(0, "2");
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        }),
+    );
     expect(onApply).toHaveBeenCalledWith({
       field: "fileSize",
       operator: "gte",
@@ -110,7 +131,12 @@ describe("custom filter controls", () => {
       ),
     );
     expect(host.querySelector('input[aria-label="Less Than"]')).not.toBeNull();
-    await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
+    await act(
+      async () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 300);
+        }),
+    );
     await act(async () => {
       host
         .querySelector("form")

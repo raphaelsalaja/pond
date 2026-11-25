@@ -22,8 +22,9 @@ export function pondLaunchCommand(
   ) => string | null = findPondExecutable,
   exists: (path: string) => boolean = existsSync,
 ) {
-  if (platform === "darwin")
+  if (platform === "darwin") {
     return { file: "open", args: ["-gj", "-a", "Pond"] };
+  }
   if (platform === "win32") {
     // The installer registers the pond:// handler; its executable is the
     // install wherever it lives. Without one, ask Windows to open the link.

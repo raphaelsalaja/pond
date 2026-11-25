@@ -1,24 +1,23 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ResponseError, responseErrorCopy } from ".";
 
 let host: HTMLDivElement;
 let root: Root;
-const openExternal = vi.fn(async () => ({ ok: true }));
 
 beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  vi.stubGlobal("pond", { openExternal });
+  bridge.use({ openExternal: async () => ({ ok: true }) });
 });
 
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  openExternal.mockClear();
-  vi.unstubAllGlobals();
 });
 
 it("turns a raw OpenAI billing failure into actionable copy", () => {
@@ -51,7 +50,7 @@ it("renders actionable copy and opens billing", async () => {
       .find((button) => button.textContent === "Open Billing")
       ?.click(),
   );
-  expect(openExternal).toHaveBeenCalledExactlyOnceWith(
+  expect(window.pond.openExternal).toHaveBeenCalledExactlyOnceWith(
     "https://platform.openai.com/settings/organization/billing/",
   );
 });

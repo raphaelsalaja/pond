@@ -1,4 +1,5 @@
-import { type NewSave, type Source, tasks } from "@pond/schema/db";
+import { tasks } from "@pond/schema/db";
+import type { NewSave, Source } from "@pond/schema/db";
 import { domainFromUrl } from "@pond/schema/domain";
 import { majorityMediaType } from "@pond/schema/media-type";
 import { walkCaptureMedia } from "@pond/schema/raw";
@@ -8,9 +9,9 @@ import { ulid } from "ulid";
 import { getDb } from "../../../db";
 import type { TransferOptions } from "../../../lib/download-transfer";
 import { persistSave } from "../../persist-save";
+import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { withLinkedPageCapture } from "../../refresh/harvest/arena/api";
 import { captureFromSource } from "../../refresh/harvest/capture";
-import { isPartitionSignedIn } from "../../refresh/harvest-window/session";
 import { narrowToSplit, postSourceId } from "../../split-save-plan";
 import { extractorFor, resolveExtractor } from "../extractors";
 import type { Capture, RawJson } from "../extractors/types";

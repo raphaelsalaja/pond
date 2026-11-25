@@ -1,5 +1,7 @@
 import type { Folder } from "@pond/schema/db";
 import type { FileRingItem } from "@pond/schema/file-ring";
+import { isElement, isNode } from "@pond/ui/dom";
+import log from "electron-log/renderer";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { folderCoverUrl } from "@/features/library/lib/folder-cover";
 import { recentFolderIds } from "@/features/library/lib/recent-folders";
@@ -14,13 +16,12 @@ import {
   exportSelectionFiles,
   isLibrarySaveDrag,
   notifyUnsupportedDrop,
-  type PasteImport,
   pasteImportOf,
   runPasteImport,
-  type SaveDragSession,
   saveDropIds,
   useSaveDragSession,
 } from "@/features/saves";
+import type { PasteImport, SaveDragSession } from "@/features/saves";
 import { ensureSaves, useSave } from "@/features/saves/pool";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { FolderIcon } from "@/shared/lib/folder-icons";
@@ -28,7 +29,8 @@ import { formatPlural } from "@/shared/lib/format";
 import { usePrefs } from "@/shared/state/prefs";
 import { RING_ACTIONS } from "./actions";
 import { Disc } from "./disc";
-import { RING_SLOTS, type RingSlot, ringHitAt } from "./geometry";
+import { RING_SLOTS, ringHitAt } from "./geometry";
+import type { RingSlot } from "./geometry";
 import { hubCopy, ITEMS } from "./hub";
 import {
   acceptsDrop,
@@ -36,11 +38,13 @@ import {
   dragActions,
   dropOnRing,
   layoutRing,
-  type RingAction,
-  type RingDropHandlers,
-  type RingLayout,
-  type RingTarget,
   ringOpens,
+} from "./slots";
+import type {
+  RingAction,
+  RingDropHandlers,
+  RingLayout,
+  RingTarget,
 } from "./slots";
 import styles from "./styles.module.css";
 
@@ -49,7 +53,7 @@ const HOLD_MS = 320;
 const PREVIEW_COUNT = 2;
 const EMPTY_LAYOUT: RingLayout<Folder> = {};
 
-const SAVE_DROPS: RingDropHandlers<Folder, readonly string[]> = {
+const SAVE_DROPS: RingDropHandlers<Folder, ReadonlyArray<string>> = {
   addToFolder: (ids, folder) => void assignSavesToFolder(ids, folder),
   createFolder: (ids) => createFolderWithSaves(ids),
   exportFiles: (ids) => void exportSelectionFiles(ids),
@@ -71,12 +75,28 @@ type RingSource =
 
 interface RingSession {
   source: RingSource;
-  items: FileRingItem[];
-  folderIds: string[];
+  items: Array<FileRingItem>;
+  folderIds: Array<string>;
 }
 
 function sourceActions(source: RingSource) {
   return dragActions(source.kind === "saves" && source.session.hasFiles);
+}
+
+function dropSaves(event: React.DragEvent, target: RingTarget<Folder>) {
+  const ids = saveDropIds(event.dataTransfer);
+  const dropped = ids.length > 0 && dropOnRing(target, ids, SAVE_DROPS);
+  endSaveDrag();
+  return dropped;
+}
+
+function dropImport(event: React.DragEvent, target: RingTarget<Folder>) {
+  const plan = pasteImportOf(event.dataTransfer);
+  if (plan && plan.kind !== "clipboard") {
+    return dropOnRing(target, plan, IMPORT_DROPS);
+  }
+  notifyUnsupportedDrop();
+  return false;
 }
 
 function ActionSlot({
@@ -108,7 +128,7 @@ function FolderSlot({
   slot: RingSlot;
   folder: Folder;
   icon?: string;
-  previewIds: readonly string[];
+  previewIds: ReadonlyArray<string>;
   count: number | undefined;
 }) {
   const theme = useResolvedTheme();
@@ -152,12 +172,14 @@ export function FileRing() {
   const [hovered, setHovered] = useState<RingSlot | null>(null);
   const [held, setHeld] = useState<RingSlot | null>(null);
   const [counts, setCounts] = useState<Record<string, number> | null>(null);
-  const [previews, setPreviews] = useState<Record<string, string[]>>({});
+  const [previews, setPreviews] = useState<Record<string, Array<string>>>({});
   const discRef = useRef<HTMLFieldSetElement>(null);
   const announcedRef = useRef<RingSlot | null>(null);
   const importingRef = useRef(false);
   const latest = useRef({ folderRows, folderViews, fileRing });
-  latest.current = { folderRows, folderViews, fileRing };
+  useEffect(() => {
+    latest.current = { folderRows, folderViews, fileRing };
+  }, [folderRows, folderViews, fileRing]);
 
   const enabled = viewer.dragToFile;
   const source = ring?.source;
@@ -195,19 +217,23 @@ export function FileRing() {
       const session = currentSaveDragSession();
       if (
         session &&
-        event.target instanceof Element &&
+        isElement(event.target) &&
         event.target.closest("[data-library-grid]")
-      )
+      ) {
         start({ kind: "saves", session });
+      }
     };
     const onDragEnd = () => {
       internal = false;
     };
     /** A drag from another app fires no `dragstart` here, so it is the one that enters with no drag of ours in flight. */
     const onDragEnter = (event: DragEvent) => {
-      if (internal || importingRef.current || currentSaveDragSession()) return;
-      if (!event.dataTransfer || !canImportDrop(event.dataTransfer.types))
+      if (internal || importingRef.current || currentSaveDragSession()) {
         return;
+      }
+      if (!event.dataTransfer || !canImportDrop(event.dataTransfer.types)) {
+        return;
+      }
       start({ kind: "import" });
     };
     window.addEventListener("dragstart", onDragStart);
@@ -237,12 +263,9 @@ export function FileRing() {
       setInside(true);
       setShift(event.shiftKey);
       const disc = discRef.current;
-      if (
-        !disc ||
-        !(event.target instanceof Node) ||
-        !disc.contains(event.target)
-      )
+      if (!disc || !isNode(event.target) || !disc.contains(event.target)) {
         setHovered(null);
+      }
     };
     const enter = () => {
       depth += 1;
@@ -279,7 +302,9 @@ export function FileRing() {
       .then((next) => {
         if (active && next) setCounts(next.folders);
       })
-      .catch((error) => console.warn("[pond] file ring counts failed", error));
+      .catch((cause: unknown) =>
+        log.warn("[pond] file ring counts failed", cause),
+      );
     void window.pond
       .query("folders.previews", {
         folderIds: ring.folderIds,
@@ -289,8 +314,8 @@ export function FileRing() {
         await ensureSaves([...covers, ...Object.values(next).flat()]);
         if (active) setPreviews(next);
       })
-      .catch((error) =>
-        console.warn("[pond] file ring previews failed", error),
+      .catch((cause: unknown) =>
+        log.warn("[pond] file ring previews failed", cause),
       );
     return () => {
       active = false;
@@ -325,8 +350,9 @@ export function FileRing() {
   }
 
   function accepts(data: DataTransfer): boolean {
-    if (source?.kind === "import")
+    if (source?.kind === "import") {
       return !isLibrarySaveDrag(data) && canImportDrop(data.types);
+    }
     return isLibrarySaveDrag(data);
   }
 
@@ -336,30 +362,16 @@ export function FileRing() {
     setHovered(hit?.slot ?? null);
     if (announcedRef.current !== (hit?.slot ?? null)) {
       announcedRef.current = hit?.slot ?? null;
-      if (hit?.target.kind === "folder" && source?.kind === "saves")
+      if (hit?.target.kind === "folder" && source?.kind === "saves") {
         announceSaveDragTarget(
           hit.target.folder.name,
           source.session.ids.length,
         );
+      }
     }
     if (!hit) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
-  }
-
-  function dropSaves(event: React.DragEvent, target: RingTarget<Folder>) {
-    const ids = saveDropIds(event.dataTransfer);
-    const dropped = ids.length > 0 && dropOnRing(target, ids, SAVE_DROPS);
-    endSaveDrag();
-    return dropped;
-  }
-
-  function dropImport(event: React.DragEvent, target: RingTarget<Folder>) {
-    const plan = pasteImportOf(event.dataTransfer);
-    if (plan && plan.kind !== "clipboard")
-      return dropOnRing(target, plan, IMPORT_DROPS);
-    notifyUnsupportedDrop();
-    return false;
   }
 
   function onDrop(event: React.DragEvent) {
@@ -395,8 +407,10 @@ export function FileRing() {
         <Disc.Slots>
           {RING_SLOTS.map((slot) => {
             const target = layout[slot];
-            if (!target) return null;
-            if (target.kind === "action")
+            if (!target) {
+              return null;
+            }
+            if (target.kind === "action") {
               return (
                 <ActionSlot
                   key={slot}
@@ -405,6 +419,7 @@ export function FileRing() {
                   disabled={target.disabled}
                 />
               );
+            }
             const { folder } = target;
             const coverSaveId = folderViews[folder.id]?.coverSaveId;
             const previewIds = [

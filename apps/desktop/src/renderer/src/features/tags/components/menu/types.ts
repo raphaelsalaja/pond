@@ -3,7 +3,7 @@ import type { TagGroupRow } from "@/features/tags/state/tag-groups";
 import type { TagRow } from "@/features/tags/state/tags";
 
 export type CreateInfo =
-  | { kind: "batch"; labels: string[]; label: string }
+  | { kind: "batch"; labels: Array<string>; label: string }
   | { kind: "group"; group: string; label: string }
   | { kind: "plain"; label: string };
 
@@ -19,7 +19,7 @@ export interface TagRowStyle extends CSSProperties {
 export interface TagSection {
   id: string;
   label: string;
-  items: TagRow[];
+  items: Array<TagRow>;
   open: boolean;
   collapsible: boolean;
   toggle(): void;

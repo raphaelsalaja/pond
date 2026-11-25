@@ -1,14 +1,16 @@
 import { IconMinus, IconPlus } from "@pond/icons";
 import { Button, cssVars, Dialog } from "@pond/ui";
+import { isHTMLElement } from "@pond/ui/dom";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import log from "electron-log/renderer";
 import {
-  type CSSProperties,
   useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import type { CSSProperties } from "react";
 import {
   activeVideoShown,
   CardThumb,
@@ -19,7 +21,6 @@ import {
   MediaViewer,
   onQuickPreviewRequest,
   openSave,
-  type PreviewStepBinding,
   previewFileIndex,
   previewStepRuns,
   runViewerAction,
@@ -27,8 +28,11 @@ import {
   selectOnlySave,
   storedFileViewerKind,
   useInspect,
-  type ViewerNav,
-  type ViewerPosition,
+} from "@/features/saves";
+import type {
+  PreviewStepBinding,
+  ViewerNav,
+  ViewerPosition,
 } from "@/features/saves";
 import { pickPrimaryFile } from "@/features/saves/media";
 import {
@@ -44,8 +48,8 @@ import { isEditableTarget } from "@/shared/lib/editable-target";
 import { bindingKeys, useShortcutBindings } from "@/shared/lib/shortcuts";
 import { usePrefs } from "@/shared/state/prefs";
 import { Compare } from "./compare";
-import styles from "./styles.module.css";
 import { PreviewBar } from "./title-bar";
+import styles from "./styles.module.css";
 
 export function HoverPreview() {
   const [open, setOpen] = useState(false);
@@ -71,15 +75,16 @@ export function HoverPreview() {
   const peekSave = useSave(open || compare ? null : hoverId);
   const compareA = useSave(compareIds[0] ?? null);
   const compareB = useSave(compareIds[1] ?? null);
-  useEffect(() => {
-    if (!compare) setCompareZoom(1);
-  }, [compare]);
+  if (!compare && compareZoom !== 1) {
+    setCompareZoom(1);
+  }
 
   useHotkey(
     bindingKeys(shortcuts, "grid.preview"),
     (event) => {
-      if (event.isComposing || event.repeat || isEditableTarget(event.target))
+      if (event.isComposing || event.repeat || isEditableTarget(event.target)) {
         return;
+      }
       if (open) {
         event.preventDefault();
         heldKey.current = null;
@@ -91,11 +96,12 @@ export function HoverPreview() {
       const selected = selection.getCursor();
       if (!selected) return;
       if (
-        event.target instanceof HTMLElement &&
+        isHTMLElement(event.target) &&
         event.target.closest("button") &&
         !event.target.closest("[data-save-id]")
-      )
+      ) {
         return;
+      }
       event.preventDefault();
       heldKey.current = event.code;
       if (prefs.spaceAction !== "preview") {
@@ -143,7 +149,9 @@ export function HoverPreview() {
             }
             current = saveId;
           }
-        })().catch(() => {});
+        })().catch((cause: unknown) => {
+          log.warn("[pond preview] neighbor navigation failed", cause);
+        });
       }),
     [],
   );
@@ -157,7 +165,9 @@ export function HoverPreview() {
         const next = await resultNavigation.next(id, delta);
         if (next) await showSave(next);
       })
-      .catch(() => {});
+      .catch((cause: unknown) => {
+        log.warn("[pond preview] step failed", cause);
+      });
   };
   const stepHotkey =
     (binding: PreviewStepBinding, delta: number) => (event: KeyboardEvent) => {
@@ -168,8 +178,9 @@ export function HoverPreview() {
           bindings: shortcuts,
           videoShown: activeVideoShown(),
         })
-      )
+      ) {
         return;
+      }
       event.preventDefault();
       step(delta, true);
     };
@@ -215,10 +226,16 @@ export function HoverPreview() {
         event.metaKey ||
         event.ctrlKey ||
         event.altKey
-      )
+      ) {
         return;
-      if (event.key.toLowerCase() === "z" && !open && collectionOwnsKeyboard())
+      }
+      if (
+        event.key.toLowerCase() === "z" &&
+        !open &&
+        collectionOwnsKeyboard()
+      ) {
         setHoverId(selection.getCursor());
+      }
     };
     const up = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "z") setHoverId(null);
@@ -226,13 +243,15 @@ export function HoverPreview() {
         event.code === heldKey.current &&
         prefs.spaceAction === "preview" &&
         prefs.spaceBehavior === "hold"
-      )
+      ) {
         setOpen(false);
+      }
     };
     const blur = () => {
       setHoverId(null);
-      if (prefs.spaceAction === "preview" && prefs.spaceBehavior === "hold")
+      if (prefs.spaceAction === "preview" && prefs.spaceBehavior === "hold") {
         setOpen(false);
+      }
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -326,8 +345,9 @@ export function HoverPreview() {
           data-quick-preview
           onKeyDown={(event) => {
             /** Base UI stops arrow keys at the popup, so they'd never reach the step hotkeys. */
-            if (!controlKeepsKey(event.nativeEvent))
+            if (!controlKeepsKey(event.nativeEvent)) {
               event.preventBaseUIHandler();
+            }
           }}
         >
           <PreviewBar.Bar
@@ -342,7 +362,9 @@ export function HoverPreview() {
                     void viewerRef.current
                       ?.querySelector<HTMLElement>("[data-viewer-root]")
                       ?.requestFullscreen()
-                      .catch(() => {});
+                      .catch((cause: unknown) => {
+                        log.warn("[pond preview] full screen failed", cause);
+                      });
                   }
             }
             onExpand={
@@ -413,7 +435,9 @@ export function HoverPreview() {
                   key={save.id}
                   save={save}
                   onNavigate={(id) => {
-                    void showSave(id).catch(() => {});
+                    void showSave(id).catch((cause: unknown) => {
+                      log.warn("[pond preview] navigation failed", cause);
+                    });
                   }}
                   onPositionChange={onPositionChange}
                   navRef={viewerNav}

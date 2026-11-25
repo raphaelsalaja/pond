@@ -2,6 +2,7 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { createFishMcpStore } from "./store";
 
 function memoryKeychain() {
@@ -40,8 +41,14 @@ const stdio = {
   toolAccess: {},
 };
 
-function storedSecrets(keychain: ReturnType<typeof memoryKeychain>) {
-  return JSON.parse(keychain.values.get("fish-mcp:id1") ?? "{}");
+const secretsSchema = z.record(z.string(), z.string());
+
+function storedSecrets(
+  keychain: ReturnType<typeof memoryKeychain>,
+): Record<string, string> {
+  return secretsSchema.parse(
+    JSON.parse(keychain.values.get("fish-mcp:id1") ?? "{}"),
+  );
 }
 
 describe("fish MCP store", () => {

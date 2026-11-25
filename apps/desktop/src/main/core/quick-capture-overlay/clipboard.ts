@@ -18,7 +18,7 @@ function rawClipboardFormat(type: string): string {
   return `electron application/osclipboard;format="${type}"`;
 }
 
-function privateFormats(type: string): string[] {
+function privateFormats(type: string): Array<string> {
   return [type, rawClipboardFormat(type)];
 }
 

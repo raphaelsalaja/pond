@@ -1,9 +1,6 @@
 import { IconArrowUpRight, IconChevronDown } from "@pond/icons";
-import {
-  type ChangelogCategory,
-  type ChangelogEntry,
-  isVideoMedia,
-} from "@pond/schema/changelog";
+import { isVideoMedia } from "@pond/schema/changelog";
+import type { ChangelogCategory, ChangelogEntry } from "@pond/schema/changelog";
 import { Accordion, Button, Changelog, Dialog } from "@pond/ui";
 import { useReducedMotion } from "motion/react";
 import { useEffect } from "react";
@@ -24,7 +21,7 @@ const CHECK_DELAY_MS = 1500;
 function useAnnounceAfterUpdate(): void {
   useEffect(() => {
     let active = true;
-    const timer = setTimeout(async () => {
+    const check = async () => {
       try {
         const { version } = await loadAppInfo();
         const lastSeen = readWhatsNewSeen();
@@ -45,7 +42,12 @@ function useAnnounceAfterUpdate(): void {
           return;
         }
         whatsNewDialog.offer(version, versions);
-      } catch {}
+      } catch {
+        /** The offer is a courtesy; a failed lookup skips it until the next launch. */
+      }
+    };
+    const timer = setTimeout(() => {
+      void check();
     }, CHECK_DELAY_MS);
     return () => {
       active = false;
@@ -65,7 +67,7 @@ function Items({
   items,
   className,
 }: {
-  items: readonly string[];
+  items: ReadonlyArray<string>;
   className?: string;
 }) {
   return (
@@ -121,7 +123,7 @@ function Details({
   earlier,
 }: {
   latest: ChangelogEntry;
-  earlier: readonly ChangelogEntry[];
+  earlier: ReadonlyArray<ChangelogEntry>;
 }) {
   const important = latest.sections.some((s) => s.category === "important");
 
@@ -203,7 +205,7 @@ export function WhatsNewDialog() {
               className={styles.link}
               onClick={() => void window.pond.openExternal(RELEASES_URL)}
             >
-              What's New
+              What&apos;s New
               <IconArrowUpRight size={12} />
             </Button>
             <Dialog.Close />

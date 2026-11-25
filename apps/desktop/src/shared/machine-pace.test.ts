@@ -3,10 +3,10 @@ import {
   enrichmentCooldownFactor,
   enrichmentRestMs,
   enrichmentSuspended,
-  type MachinePace,
   motionPaused,
   THERMAL_RELIEF_MS,
 } from "./machine-pace";
+import type { MachinePace } from "./machine-pace";
 
 function pace(patch: Partial<MachinePace> = {}): MachinePace {
   return {
@@ -70,7 +70,7 @@ it("pauses inference under memory pressure and resumes when pressure clears", ()
 
 it("caps the rest between runs so a long inference still yields the CPU", () => {
   expect(enrichmentRestMs(100, 1)).toBe(400);
-  expect(enrichmentRestMs(2_000, 1)).toBe(1_000);
-  expect(enrichmentRestMs(20_000, 1)).toBe(3_000);
+  expect(enrichmentRestMs(2000, 1)).toBe(1000);
+  expect(enrichmentRestMs(20_000, 1)).toBe(3000);
   expect(enrichmentRestMs(20_000, 4)).toBe(12_000);
 });

@@ -8,7 +8,7 @@ interface OpenChild {
 
 export type SpawnOpenProcess = (
   command: string,
-  args: readonly string[],
+  args: ReadonlyArray<string>,
   options: { detached: true; stdio: "ignore" },
 ) => OpenChild;
 

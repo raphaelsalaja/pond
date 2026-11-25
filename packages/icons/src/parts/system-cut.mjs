@@ -152,10 +152,10 @@ const pieces = (seg, inside) => {
       prev = now;
     }
   }
-  if (!prev) out.push([start, 1]);
-  return out
-    .filter(([a, b]) => b - a > 1e-6)
-    .map(([u0, u1]) => ({ seg, u0, u1 }));
+  if (!prev) {
+    out.push([start, 1]);
+  }
+  return out.flatMap(([u0, u1]) => (u1 - u0 > 1e-6 ? [{ seg, u0, u1 }] : []));
 };
 
 const emit = (p) => {
@@ -182,11 +182,11 @@ export function cut(segs, holes = [hole()], { closed = true } = {}) {
     kept.length === segs.length && kept.every((p) => p.u0 === 0 && p.u1 === 1);
   if (closed && !whole && kept.length > 1) {
     const first = kept[0];
-    const last = kept[kept.length - 1];
+    const last = kept.at(-1);
     if (
       first.seg === segs[0] &&
       first.u0 === 0 &&
-      last.seg === segs[segs.length - 1] &&
+      last.seg === segs.at(-1) &&
       last.u1 === 1
     ) {
       let k = kept.length - 1;
@@ -195,8 +195,9 @@ export function cut(segs, holes = [hole()], { closed = true } = {}) {
         kept[k - 1].u1 === 1 &&
         kept[k].u0 === 0 &&
         segs.indexOf(kept[k - 1].seg) === segs.indexOf(kept[k].seg) - 1
-      )
+      ) {
         k--;
+      }
       kept = [...kept.slice(k), ...kept.slice(0, k)];
     }
   }

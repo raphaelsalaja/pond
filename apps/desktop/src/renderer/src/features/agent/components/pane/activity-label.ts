@@ -1,8 +1,5 @@
-import {
-  type AssistantActivity,
-  type AssistantToolStep,
-  ASSISTANT_ACTIVITY_LABELS as activities,
-} from "@shared/assistant";
+import { ASSISTANT_ACTIVITY_LABELS as activities } from "@shared/assistant";
+import type { AssistantActivity, AssistantToolStep } from "@shared/assistant";
 
 interface StepCopy {
   /** While the tool runs. */
@@ -149,7 +146,7 @@ const copy = new Map<string, StepCopy>([
 
 export function currentActivityLabel(
   activity: AssistantActivity,
-  steps: readonly AssistantToolStep[],
+  steps: ReadonlyArray<AssistantToolStep>,
 ) {
   const running = steps.findLast((step) => step.status === "running");
   if (running) {

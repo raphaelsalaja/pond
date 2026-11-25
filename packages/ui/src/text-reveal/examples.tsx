@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { useTextReveal } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 function Reply({ content }: { content: string }) {
   const { text, pending } = useTextReveal(content, false);

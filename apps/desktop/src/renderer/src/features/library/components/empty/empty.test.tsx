@@ -1,3 +1,4 @@
+import type { QueryInput } from "@shared/query-contracts";
 import {
   createMemoryHistory,
   createRootRoute,
@@ -5,9 +6,12 @@ import {
   createRouter,
   RouterProvider,
 } from "@tanstack/react-router";
-import { act, type ReactNode } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { act } from "react";
+import type { ReactNode } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { FolderEmpty } from "./";
 
 describe("FolderEmpty", () => {
@@ -23,7 +27,6 @@ describe("FolderEmpty", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   });
 
   async function mountInRouter(node: ReactNode) {
@@ -59,23 +62,26 @@ describe("FolderEmpty", () => {
   });
 
   it("picks files into the open folder", async () => {
-    const query = vi.fn(async (name: string) => {
-      if (name === "saves.pickImportPaths") return { paths: ["/tmp/a.png"] };
-      if (name === "saves.reviewImportDuplicates") return { candidates: [] };
-      return { ok: true, ids: ["a"] };
+    const imported = Promise.withResolvers<QueryInput<"saves.importFiles">>();
+    bridge.use({
+      query: {
+        "saves.pickImportPaths": () => ({ paths: ["/tmp/a.png"] }),
+        "saves.reviewImportDuplicates": () => ({ candidates: [] }),
+        "saves.importFiles": (input) => {
+          imported.resolve(input);
+          return { ok: true, ids: ["a"] };
+        },
+      },
     });
-    vi.stubGlobal("pond", { query });
     await act(async () => root.render(<FolderEmpty folderId="posters" />));
     const add = host.querySelector("button");
     await act(async () => add?.click());
 
-    await vi.waitFor(() =>
-      expect(query).toHaveBeenCalledWith("saves.importFiles", {
-        paths: ["/tmp/a.png"],
-        folderIds: ["posters"],
-      }),
-    );
-    expect(query).toHaveBeenCalledWith("saves.pickImportPaths", {
+    expect(await imported.promise).toEqual({
+      paths: ["/tmp/a.png"],
+      folderIds: ["posters"],
+    });
+    expect(window.pond.query).toHaveBeenCalledWith("saves.pickImportPaths", {
       kind: "files",
     });
   });

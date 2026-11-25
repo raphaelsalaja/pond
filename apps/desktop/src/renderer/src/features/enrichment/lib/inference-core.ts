@@ -5,16 +5,19 @@ import {
   AutoTokenizer,
   env,
   Florence2ForConditionalGeneration,
-  Florence2Processor,
-  type PreTrainedModel,
-  type PreTrainedTokenizer,
-  type Processor,
   pipeline,
-  type RawImage,
   RawVideo,
   RawVideoFrame,
+} from "@huggingface/transformers";
+import type {
+  Florence2Processor,
+  PreTrainedModel,
+  PreTrainedTokenizer,
+  Processor,
+  RawImage,
   Tensor,
 } from "@huggingface/transformers";
+import type { JsonValue } from "@pond/schema/json";
 import {
   embeddingClassificationLabel,
   embeddingDimensions,
@@ -29,13 +32,45 @@ import {
 import { z } from "zod";
 import { pickDevice } from "@/features/enrichment/lib/inference-device";
 import { unitCosine } from "@/shared/lib/vector";
-import {
-  createEmbeddingProfileCache,
-  type EmbeddingProfile,
-  type LoadedEmbeddingProfile,
+import { createEmbeddingProfileCache } from "./embedding-profile";
+import type {
+  EmbeddingProfile,
+  LoadedEmbeddingProfile,
 } from "./embedding-profile";
 
 export type FlorenceTask = "<CAPTION>" | "<DETAILED_CAPTION>" | "<OCR>";
+
+/** Processors and models return tensors plus plain size metadata. */
+type ModelInputs = Record<string, Tensor | JsonValue>;
+
+function isModelRecord(value: unknown): value is ModelInputs {
+  return typeof value === "object" && value !== null;
+}
+
+function isTensor(value: unknown): value is Tensor {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "dims" in value &&
+    "data" in value &&
+    "dispose" in value &&
+    typeof value.dispose === "function"
+  );
+}
+
+function isFlorenceProcessor(
+  processor: Processor,
+): processor is Florence2Processor {
+  return (
+    "construct_prompts" in processor && "post_process_generation" in processor
+  );
+}
+
+function assertModelInputs(value: unknown): asserts value is ModelInputs {
+  if (!isModelRecord(value)) {
+    throw new Error("[inference] processor returned no model inputs");
+  }
+}
 
 async function withDevice<T>(
   tag: string,
@@ -45,8 +80,9 @@ async function withDevice<T>(
   if ((await pickDevice()) === "webgpu") {
     try {
       return await build("webgpu");
-    } catch (err) {
-      console.warn(`[${tag}] WebGPU build failed; using WASM`, err);
+    } catch (error) {
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
+      console.warn(`[${tag}] WebGPU build failed; using WASM`, error);
     }
   }
   return build("wasm");
@@ -94,7 +130,7 @@ function getFlorence(): Promise<FlorenceBundle> {
       const processor = await AutoProcessor.from_pretrained(IMAGE_MODEL.id, {
         revision: IMAGE_MODEL.revision,
       });
-      if (!(processor instanceof Florence2Processor)) {
+      if (!isFlorenceProcessor(processor)) {
         throw new Error(
           `[florence] ${IMAGE_MODEL.id} has no Florence-2 processor`,
         );
@@ -102,6 +138,7 @@ function getFlorence(): Promise<FlorenceBundle> {
       const tokenizer = await AutoTokenizer.from_pretrained(IMAGE_MODEL.id, {
         revision: IMAGE_MODEL.revision,
       });
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
       console.info(`[florence] ready (${device})`);
       return { model, processor, tokenizer };
     }),
@@ -116,7 +153,8 @@ export async function coreFlorence(
 ): Promise<string> {
   const { model, processor, tokenizer } = await getFlorence();
   const prompts = processor.construct_prompts(task);
-  const inputs = await processor(image, prompts);
+  const inputs: unknown = await processor(image, prompts);
+  assertModelInputs(inputs);
   try {
     const generated = await model.generate({
       ...inputs,
@@ -124,7 +162,9 @@ export async function coreFlorence(
       num_beams: 1,
       do_sample: false,
     });
-    if (!(generated instanceof Tensor)) return "";
+    if (!isTensor(generated)) {
+      return "";
+    }
     try {
       const decoded = tokenizer.batch_decode(generated, {
         skip_special_tokens: false,
@@ -138,7 +178,7 @@ export async function coreFlorence(
       generated.dispose();
     }
   } finally {
-    disposeInputs(inputs);
+    disposeTensors(inputs);
   }
 }
 
@@ -168,6 +208,7 @@ async function loadEmbeddingBundle(
         AutoProcessor.from_pretrained(EMBEDDING_MODEL.id, options),
         AutoTokenizer.from_pretrained(EMBEDDING_MODEL.id, options),
       ]);
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
       console.info(`[embedding-gemma] multimodal ready (${device}/q4)`);
       return {
         model,
@@ -190,13 +231,11 @@ const embeddingProfiles = createEmbeddingProfileCache(loadEmbeddingBundle);
 const EmbeddingRowsSchema = z.array(z.array(z.number()));
 
 function sentenceEmbeddingRows(
-  output: {
-    sentence_embedding?: Tensor;
-  },
+  output: ModelInputs,
   expectedRows: number,
-): Float32Array[] {
+): Array<Float32Array> {
   const tensor = output.sentence_embedding;
-  if (!(tensor instanceof Tensor)) {
+  if (!isTensor(tensor)) {
     throw new Error("[embedding-gemma] model returned no sentence embedding");
   }
   try {
@@ -208,33 +247,38 @@ function sentenceEmbeddingRows(
     }
     return rows.map((row) => Float32Array.from(normalizedEmbeddingVector(row)));
   } finally {
-    for (const value of Object.values(output)) {
-      if (value instanceof Tensor) value.dispose();
-    }
+    disposeTensors(output);
   }
 }
 
 async function runEmbedding(
   model: PreTrainedModel,
-  inputs: Parameters<PreTrainedModel>[0],
+  inputs: ModelInputs,
   expectedRows: number,
-): Promise<Float32Array[]> {
+): Promise<Array<Float32Array>> {
   try {
-    return sentenceEmbeddingRows(await model(inputs), expectedRows);
+    const output: unknown = await model(inputs);
+    if (!isModelRecord(output)) {
+      throw new Error("[embedding-gemma] model returned no sentence embedding");
+    }
+    return sentenceEmbeddingRows(output, expectedRows);
   } finally {
-    disposeInputs(inputs);
+    disposeTensors(inputs);
   }
 }
 
-function disposeInputs(inputs: Parameters<PreTrainedModel>[0]): void {
-  for (const value of Object.values(inputs)) {
-    if (value instanceof Tensor) value.dispose();
+function disposeTensors(values: ModelInputs): void {
+  for (const value of Object.values(values)) {
+    if (isTensor(value)) {
+      value.dispose();
+    }
   }
 }
 
 export async function coreClipImage(image: RawImage): Promise<Float32Array> {
   return embeddingProfiles.use("text-image", async ({ model, processor }) => {
-    const inputs = await processor(null, image);
+    const inputs: unknown = await processor(null, image);
+    assertModelInputs(inputs);
     const [vector] = await runEmbedding(model, inputs, 1);
     if (!vector) {
       throw new Error("[embedding-gemma] model returned no image embedding");
@@ -245,28 +289,30 @@ export async function coreClipImage(image: RawImage): Promise<Float32Array> {
 
 export async function coreClipAesthetic(
   image: RawImage,
-  labels: string[],
+  labels: Array<string>,
   threshold = 0.2,
   topN = 3,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const [imageVector, labelVectors] = await Promise.all([
     coreClipImage(image),
     coreEmbedTexts(labels.map(embeddingClassificationLabel)),
   ]);
   return labels
-    .map((label, index) => ({
-      label,
-      score: unitCosine(imageVector, labelVectors[index] ?? new Float32Array()),
-    }))
-    .filter((result) => result.score >= threshold)
+    .flatMap((label, index) => {
+      const score = unitCosine(
+        imageVector,
+        labelVectors[index] ?? new Float32Array(),
+      );
+      return score >= threshold ? [{ label, score }] : [];
+    })
     .sort((left, right) => right.score - left.score)
     .slice(0, topN)
     .map((result) => result.label);
 }
 
 export async function coreSensitiveContent(
-  images: RawImage[],
-): Promise<number[]> {
+  images: Array<RawImage>,
+): Promise<Array<number>> {
   const { runSensitiveModel } = await import("./sensitive-model");
   return runSensitiveModel(images);
 }
@@ -279,13 +325,18 @@ export async function coreEmbedText(text: string): Promise<Float32Array> {
   return vector;
 }
 
-export async function coreEmbedTexts(texts: string[]): Promise<Float32Array[]> {
-  if (texts.length === 0) return [];
+export async function coreEmbedTexts(
+  texts: Array<string>,
+): Promise<Array<Float32Array>> {
+  if (texts.length === 0) {
+    return [];
+  }
   return embeddingProfiles.use("text-image", async ({ model, tokenizer }) => {
-    const inputs = tokenizeEmbeddingTexts(
+    const inputs: unknown = tokenizeEmbeddingTexts(
       (batch, options) => tokenizer(batch, options),
       texts,
     );
+    assertModelInputs(inputs);
     return runEmbedding(model, inputs, texts.length);
   });
 }
@@ -294,7 +345,8 @@ export async function coreEmbedAudio(
   audio: Float32Array,
 ): Promise<Float32Array> {
   return embeddingProfiles.use("text-audio", async ({ model, processor }) => {
-    const inputs = await processor(null, null, audio);
+    const inputs: unknown = await processor(null, null, audio);
+    assertModelInputs(inputs);
     const [vector] = await runEmbedding(model, inputs, 1);
     if (!vector) {
       throw new Error("[embedding-gemma] model returned no audio embedding");
@@ -327,10 +379,12 @@ export async function coreEmbedVideoFrames(
           last.timestamp - first.timestamp + 1,
         ),
       );
-      const inputs = await processor(null, null, null, video);
+      const inputs: unknown = await processor(null, null, null, video);
+      assertModelInputs(inputs);
       const [vector] = await runEmbedding(model, inputs, 1);
-      if (!vector)
+      if (!vector) {
         throw new Error("[embedding-gemma] model returned no video embedding");
+      }
       const weight = batch.length / frames.length;
       for (let index = 0; index < combined.length; index += 1) {
         combined[index] =
@@ -358,11 +412,16 @@ function getTranscriber(): Promise<Transcriber> {
           dtype: device === "webgpu" ? "fp16" : "q8",
         },
       );
+      // oxlint-disable-next-line no-console -- runs in the inference Web Worker, which has no electron-log bridge
       console.info(`[whisper] ready (${device})`);
       return pipe;
     }),
   );
 }
+
+const TranscriptChunkSchema = z
+  .object({ text: z.string().optional() })
+  .catch({});
 
 export async function coreTranscribe(audio: Float32Array): Promise<string> {
   const transcriber = await getTranscriber();
@@ -371,17 +430,22 @@ export async function coreTranscribe(audio: Float32Array): Promise<string> {
     stride_length_s: 5,
     task: "transcribe",
   });
-  const text = Array.isArray(out) ? out.map((o) => o.text).join(" ") : out.text;
-  return (text ?? "").trim();
+  const chunks: Array<unknown> = Array.isArray(out) ? out : [out];
+  return chunks
+    .map((chunk) => TranscriptChunkSchema.parse(chunk).text ?? "")
+    .join(" ")
+    .trim();
 }
 
 export async function disposeInferenceModels(): Promise<void> {
   await embeddingProfiles.dispose();
-  for (const bundle of florenceCache.values())
+  for (const bundle of florenceCache.values()) {
     await (await bundle).model.dispose();
+  }
   florenceCache.clear();
-  for (const transcriber of transcriberCache.values())
+  for (const transcriber of transcriberCache.values()) {
     await (await transcriber).dispose();
+  }
   transcriberCache.clear();
   const { disposeSensitiveModel } = await import("./sensitive-model");
   await disposeSensitiveModel();

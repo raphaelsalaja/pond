@@ -38,7 +38,8 @@ describe.skipIf(!nativeSqliteAvailable())("per-source download prefs", () => {
 
   beforeAll(() => {
     dir = mkdtempSync(join(tmpdir(), "pond-prefs-"));
-    vi.spyOn(app, "getPath").mockReturnValue(dir);
+    app.setPath("userData", dir);
+    app.setPath("downloads", dir);
     invalidatePaths();
   });
 

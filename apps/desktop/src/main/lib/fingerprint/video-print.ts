@@ -16,7 +16,7 @@ const OFFSET_STEPS = 3;
 export interface VideoPrint {
   durationSeconds: number;
   intervalSeconds: number;
-  frames: bigint[];
+  frames: Array<bigint>;
 }
 
 export function videoSampleTimes(durationSeconds: number) {
@@ -31,7 +31,7 @@ export function videoSampleTimes(durationSeconds: number) {
 export function videoPrintFromFrames(
   durationSeconds: number,
   intervalSeconds: number,
-  frames: readonly Uint8Array[],
+  frames: ReadonlyArray<Uint8Array>,
 ): VideoPrint {
   return {
     durationSeconds,
@@ -52,8 +52,9 @@ export function encodeVideoPrint(print: VideoPrint): Uint8Array {
   view.setFloat64(0, print.durationSeconds);
   view.setFloat64(8, print.intervalSeconds);
   view.setUint32(16, print.frames.length);
-  for (const [index, frame] of print.frames.entries())
+  for (const [index, frame] of print.frames.entries()) {
     view.setBigUint64(HEADER_BYTES + index * 8, frame);
+  }
   return bytes;
 }
 
@@ -61,10 +62,13 @@ export function decodeVideoPrint(bytes: Uint8Array): VideoPrint | null {
   if (bytes.byteLength < HEADER_BYTES) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const count = view.getUint32(16);
-  if (bytes.byteLength !== HEADER_BYTES + count * 8) return null;
-  const frames: bigint[] = [];
-  for (let index = 0; index < count; index++)
+  if (bytes.byteLength !== HEADER_BYTES + count * 8) {
+    return null;
+  }
+  const frames: Array<bigint> = [];
+  for (let index = 0; index < count; index++) {
     frames.push(view.getBigUint64(HEADER_BYTES + index * 8));
+  }
   const durationSeconds = view.getFloat64(0);
   const intervalSeconds = view.getFloat64(8);
   if (!(durationSeconds > 0) || !(intervalSeconds > 0)) return null;
@@ -107,10 +111,12 @@ export function compareVideoPrints(
     if (
       !best ||
       matchedFrames / comparedFrames > best.matchedFrames / best.comparedFrames
-    )
+    ) {
       best = { matchedFrames, comparedFrames, offsetSeconds };
+    }
   }
-  if (!best || best.matchedFrames / best.comparedFrames < NEAR_RATIO)
+  if (!best || best.matchedFrames / best.comparedFrames < NEAR_RATIO) {
     return null;
+  }
   return best;
 }

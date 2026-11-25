@@ -1,14 +1,14 @@
-import {
-  $applyNodeReplacement,
-  DecoratorNode,
-  type DOMConversionMap,
-  type DOMConversionOutput,
-  type DOMExportOutput,
-  type EditorConfig,
-  type LexicalNode,
-  type NodeKey,
-  type SerializedLexicalNode,
-  type Spread,
+import { isHTMLTag } from "@pond/ui/dom";
+import { $applyNodeReplacement, DecoratorNode } from "lexical";
+import type {
+  DOMConversionMap,
+  DOMConversionOutput,
+  DOMExportOutput,
+  EditorConfig,
+  LexicalNode,
+  NodeKey,
+  SerializedLexicalNode,
+  Spread,
 } from "lexical";
 import type { JSX } from "react";
 import styles from "./styles.module.css";
@@ -19,7 +19,9 @@ export type SerializedImageNode = Spread<
 >;
 
 function $convertImage(element: HTMLElement): DOMConversionOutput | null {
-  if (!(element instanceof HTMLImageElement) || !element.src) return null;
+  if (!isHTMLTag(element, "img") || !element.src) {
+    return null;
+  }
   return { node: $createImageNode({ src: element.src, alt: element.alt }) };
 }
 
@@ -106,5 +108,5 @@ export function $createImageNode(opts: {
 export function $isImageNode(
   node: LexicalNode | null | undefined,
 ): node is ImageNode {
-  return node instanceof ImageNode;
+  return node?.getType() === ImageNode.getType();
 }

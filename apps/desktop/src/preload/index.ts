@@ -1,35 +1,26 @@
 import type { Prefs } from "@pond/schema";
 import type { Query } from "@pond/schema/filters/types";
 import type { Transaction } from "@pond/schema/tx";
-import {
-  contextBridge,
-  type IpcRendererEvent,
-  ipcRenderer,
-  webFrame,
-  webUtils,
-} from "electron";
+import { contextBridge, ipcRenderer, webFrame, webUtils } from "electron";
+import type { IpcRendererEvent } from "electron";
 import type { AgentStreamEvent } from "../shared/agent-stream";
 import type { ArenaLinkProgressEvent } from "../shared/arena-link-contracts";
 import type { AssistantChunk } from "../shared/assistant";
-import {
-  COMBINE_IMAGES_WINDOW_IPC,
-  type CombineImagesWindowOpen,
-} from "../shared/combine-images-contracts";
-import {
-  IPC,
-  type MenuActionEvent,
-  type NavigationDirection,
-  type RecentMenuEntry,
+import { COMBINE_IMAGES_WINDOW_IPC } from "../shared/combine-images-contracts";
+import type { CombineImagesWindowOpen } from "../shared/combine-images-contracts";
+import { IPC } from "../shared/constants";
+import type {
+  MenuActionEvent,
+  NavigationDirection,
+  RecentMenuEntry,
 } from "../shared/constants";
 import { FILE_RING_OVERLAY_IPC } from "../shared/file-ring-overlay-contracts";
 import { FilterQuery } from "../shared/filter-query";
 import type { FishEvent, FishOpen } from "../shared/fish-contracts";
 import type { HapticPattern } from "../shared/haptics";
 import type { LibrarySwitchEvent } from "../shared/library-switch-contracts";
-import {
-  type MachinePaceWire,
-  MachinePaceWireSchema,
-} from "../shared/machine-pace";
+import { MachinePaceWireSchema } from "../shared/machine-pace";
+import type { MachinePaceWire } from "../shared/machine-pace";
 import type { NotificationEvent } from "../shared/notification-contracts";
 import type {
   PreviewNeighborRequest,
@@ -40,18 +31,12 @@ import type {
 } from "../shared/preview-window-contracts";
 import type { QueryClient } from "../shared/query-contracts";
 import type { EagleImportProgress } from "../shared/saves-import-contracts";
-import {
-  SHELL_HINT_ARG,
-  type ShellHint,
-  ShellHintSchema,
-} from "../shared/shell-hint";
+import { SHELL_HINT_ARG, ShellHintSchema } from "../shared/shell-hint";
+import type { ShellHint } from "../shared/shell-hint";
 import type { ShortcutId } from "../shared/shortcuts";
 import { canonicalLocale, SYSTEM_LOCALE_ARG } from "../shared/system-locale";
-import {
-  type UpdateNotice,
-  type UpdateNoticeInput,
-  UpdateNoticeSchema,
-} from "../shared/update-notice";
+import { UpdateNoticeSchema } from "../shared/update-notice";
+import type { UpdateNotice, UpdateNoticeInput } from "../shared/update-notice";
 
 import type {
   WireJson,
@@ -69,8 +54,8 @@ ipcRenderer.on(IPC.nav, (_: IpcRendererEvent, path: string) =>
   navigation.receive(path),
 );
 /** Files dropped on the Dock icon can arrive before the renderer subscribes. */
-const openFiles = createNavigationMailbox<string[]>();
-ipcRenderer.on(IPC.openFiles, (_: IpcRendererEvent, paths: string[]) =>
+const openFiles = createNavigationMailbox<Array<string>>();
+ipcRenderer.on(IPC.openFiles, (_: IpcRendererEvent, paths: Array<string>) =>
   openFiles.receive(paths),
 );
 /** A reload in full screen reports the state before React subscribes. */
@@ -129,6 +114,18 @@ export interface StorageGuardStatusWire {
 
 let cachedLibraryId: string | null = null;
 
+function isString(value: unknown): value is string {
+  return typeof value === "string";
+}
+
+function isUint8Array(value: unknown): value is Uint8Array {
+  return Object.prototype.toString.call(value) === "[object Uint8Array]";
+}
+
+function isArrayBuffer(value: unknown): value is ArrayBuffer {
+  return Object.prototype.toString.call(value) === "[object ArrayBuffer]";
+}
+
 function readSystemLocale(): string | undefined {
   const arg = process.argv.find((a) => a.startsWith(SYSTEM_LOCALE_ARG));
   return canonicalLocale(arg?.slice(SYSTEM_LOCALE_ARG.length));
@@ -158,15 +155,15 @@ const api = {
   libraryId(): string {
     if (cachedLibraryId) return cachedLibraryId;
     try {
-      const value: string = ipcRenderer.sendSync(IPC.libraryId);
-      cachedLibraryId = value.length > 0 ? value : "unbound";
+      const value: unknown = ipcRenderer.sendSync(IPC.libraryId);
+      cachedLibraryId = isString(value) && value.length > 0 ? value : "unbound";
     } catch {
       cachedLibraryId = "unbound";
     }
     return cachedLibraryId;
   },
 
-  batch(txs: Transaction[]): Promise<void> {
+  batch(txs: Array<Transaction>): Promise<void> {
     return ipcRenderer.invoke(IPC.txBatch, txs);
   },
 
@@ -241,7 +238,7 @@ const api = {
     return navigation.subscribe(cb);
   },
 
-  onOpenFiles(cb: (paths: string[]) => void): () => void {
+  onOpenFiles(cb: (paths: Array<string>) => void): () => void {
     return openFiles.subscribe(cb);
   },
 
@@ -274,7 +271,7 @@ const api = {
     return () => ipcRenderer.off(IPC.shortcutAction, listener);
   },
 
-  sendMenuRecents(entries: RecentMenuEntry[]): void {
+  sendMenuRecents(entries: Array<RecentMenuEntry>): void {
     ipcRenderer.send(IPC.menuRecents, entries);
   },
 
@@ -370,7 +367,7 @@ const api = {
   },
 
   pipelineCancelSaves(
-    ids: readonly string[],
+    ids: ReadonlyArray<string>,
   ): Promise<{ ok: true; cancelled: number }> {
     return ipcRenderer.invoke(IPC.pipelineCancelSaves, ids);
   },
@@ -554,11 +551,13 @@ const api = {
       port1.close();
     };
     port1.onmessage = (event) => {
-      if (closed) return;
-      const chunk = event.data;
-      if (chunk instanceof Uint8Array) {
+      if (closed) {
+        return;
+      }
+      const chunk: unknown = event.data;
+      if (isUint8Array(chunk)) {
         receive({ type: "data", data: Array.from(chunk) });
-      } else if (chunk instanceof ArrayBuffer) {
+      } else if (isArrayBuffer(chunk)) {
         receive({ type: "data", data: Array.from(new Uint8Array(chunk)) });
       }
     };
@@ -585,8 +584,8 @@ const api = {
     return agentFilter.subscribe(cb);
   },
 
-  onAgentCite(cb: (ids: string[]) => void): () => void {
-    const listener = (_: IpcRendererEvent, ids: string[]) => cb(ids);
+  onAgentCite(cb: (ids: Array<string>) => void): () => void {
+    const listener = (_: IpcRendererEvent, ids: Array<string>) => cb(ids);
     ipcRenderer.on(IPC.agentCite, listener);
     return () => ipcRenderer.off(IPC.agentCite, listener);
   },
@@ -625,8 +624,9 @@ function readShellHint(): ShellHint {
 try {
   contextBridge.exposeInMainWorld("pond", api);
   contextBridge.exposeInMainWorld("__pondShell", readShellHint());
-} catch (err) {
-  console.error("[pond preload] contextBridge failed", err);
+} catch (error) {
+  // oxlint-disable-next-line no-console -- The preload has no logger; this reaches the renderer DevTools console when the bridge can't be exposed.
+  console.error("[pond preload] contextBridge failed", error);
 }
 
 export type PondApi = typeof api;

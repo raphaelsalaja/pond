@@ -38,10 +38,10 @@ export function createLibraryWorkCoordinator(ops: LibraryWorkOperations) {
       if (wasPaused === false) await ops.setReconcilerPaused(false);
       await ops
         .startAutoImport()
-        .catch((error) =>
+        .catch((cause: unknown) =>
           ops.warn(
             "Could not start auto-import",
-            error instanceof Error ? error : new Error(String(error)),
+            cause instanceof Error ? cause : new Error(String(cause)),
           ),
         );
     },

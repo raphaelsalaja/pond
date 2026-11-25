@@ -10,7 +10,7 @@ describe("yt-dlp progress", () => {
   });
 
   it("decodes machine output and leaves missing metrics unknown", () => {
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     const report = createYtdlpProgressReporter((update) =>
       updates.push(update),
     );
@@ -39,14 +39,14 @@ describe("yt-dlp progress", () => {
   });
 
   it("reassembles process lines split across chunks on both streams", async () => {
-    const lines: string[] = [];
+    const lines: Array<string> = [];
     const result = await runWithTimeout(
       process.execPath,
       [
         "-e",
-        'process.stdout.write("one"); setTimeout(() => {process.stdout.write(" two\\nlast"); process.stderr.write("error\\n");}, 10)',
+        String.raw`process.stdout.write("one"); setTimeout(() => {process.stdout.write(" two\nlast"); process.stderr.write("error\n");}, 10)`,
       ],
-      5_000,
+      5000,
       undefined,
       (line) => lines.push(line),
     );
@@ -61,7 +61,7 @@ describe("yt-dlp progress", () => {
     const result = await runWithTimeout(
       process.execPath,
       ["-e", 'console.log("ready"); setInterval(() => {}, 1000)'],
-      5_000,
+      5000,
       controller.signal,
       () => controller.abort(),
     );
@@ -75,29 +75,28 @@ describe("yt-dlp progress", () => {
         "-e",
         "let n = 0; const id = setInterval(() => { console.log(n++); if (n > 5) clearInterval(id); }, 200)",
       ],
-      1_000,
+      1000,
       undefined,
       undefined,
-      5_000,
+      5000,
     );
     expect(result.code).toBe(0);
   });
 
   it("kills a silent process as stalled before the hard cap", async () => {
-    const started = Date.now();
     const result = await runWithTimeout(
       process.execPath,
-      ["-e", "setTimeout(() => {}, 5_000)"],
+      ["-e", "setTimeout(() => {}, 2_000)"],
       80,
       undefined,
       undefined,
-      5_000,
+      60_000,
     );
+    /** The child exits 0 on its own long before the 60 s cap, so 124 can only come from the stall timer. */
     expect(result.code).toBe(124);
-    expect(Date.now() - started).toBeLessThan(1_000);
   });
   it("distinguishes audio and video streams of the same playlist file", () => {
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     const report = createYtdlpProgressReporter((update) =>
       updates.push(update),
     );
@@ -116,7 +115,7 @@ describe("yt-dlp progress", () => {
   });
 
   it("drops impossible totals, file counts, and nonfinite metrics", () => {
-    const updates: DownloadActivityUpdate[] = [];
+    const updates: Array<DownloadActivityUpdate> = [];
     const report = createYtdlpProgressReporter((update) =>
       updates.push(update),
     );

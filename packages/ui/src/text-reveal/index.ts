@@ -1,27 +1,47 @@
 import { useReducedMotionConfig } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
+export interface TextRevealFrames {
+  now: () => number;
+  request: (callback: FrameRequestCallback) => number;
+  cancel: (id: number) => void;
+}
+
+const browserFrames: TextRevealFrames = {
+  now: () => performance.now(),
+  request: (callback) => requestAnimationFrame(callback),
+  cancel: (id) => cancelAnimationFrame(id),
+};
+
 export function useTextReveal(
   content: string,
   animate: boolean,
   finish = false,
+  frames: TextRevealFrames = browserFrames,
 ) {
   const reduced = useReducedMotionConfig();
   const [visible, setVisible] = useState(() => (animate ? "" : content));
+  const [started, setStarted] = useState(animate);
   const current = useRef(visible);
   const target = useRef(content);
-  target.current = content;
-  const started = useRef(animate);
+  const settled = Boolean(reduced) || finish;
+  if (animate && !started) {
+    setStarted(true);
+  }
+  if (settled && visible !== content) {
+    setVisible(content);
+  }
   useEffect(() => {
-    if (animate) started.current = true;
-    if (reduced || finish) {
+    target.current = content;
+    if (settled) {
       current.current = content;
-      setVisible(content);
       return;
     }
-    if (!started.current) return;
+    if (!started) {
+      return;
+    }
     let frame = 0;
-    let previous = performance.now();
+    let previous = frames.now();
     const tick = (now: number) => {
       const next = target.current;
       if (!next.startsWith(current.current)) {
@@ -43,14 +63,14 @@ export function useTextReveal(
       previous = now;
       current.current += remaining.slice(0, count).join("");
       setVisible(current.current);
-      if (current.current !== next) frame = requestAnimationFrame(tick);
+      if (current.current !== next) {
+        frame = frames.request(tick);
+      }
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [content, animate, reduced, finish]);
+    frame = frames.request(tick);
+    return () => frames.cancel(frame);
+  }, [content, settled, started, frames]);
   const text =
-    !reduced && !finish && started.current && content.startsWith(visible)
-      ? visible
-      : content;
+    !settled && started && content.startsWith(visible) ? visible : content;
   return { text, pending: text !== content };
 }

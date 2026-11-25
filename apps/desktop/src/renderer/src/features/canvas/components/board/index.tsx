@@ -17,20 +17,20 @@ import {
   IconTypography,
   IconUngroup,
 } from "@pond/icons";
-import {
-  CANVAS_ITEM_LIMIT,
-  type Canvas,
-  type CanvasAlign,
-  CanvasClipSchema,
-  type CanvasColor,
-  type CanvasConnector,
-  type CanvasContent,
-  type CanvasItem,
-  type CanvasOutline,
-  type CanvasSide,
-  type CanvasTheme,
-  type CanvasValign,
-  type CanvasWeight,
+import { isHTMLElement } from "@pond/ui/dom";
+import { CANVAS_ITEM_LIMIT, CanvasClipSchema } from "@shared/canvas-contracts";
+import type {
+  Canvas,
+  CanvasAlign,
+  CanvasColor,
+  CanvasConnector,
+  CanvasContent,
+  CanvasItem,
+  CanvasOutline,
+  CanvasSide,
+  CanvasTheme,
+  CanvasValign,
+  CanvasWeight,
 } from "@shared/canvas-contracts";
 import {
   addEdge,
@@ -38,31 +38,40 @@ import {
   applyNodeChanges,
   Background,
   BackgroundVariant,
-  type Connection,
   ConnectionMode,
-  type EdgeChange,
-  type EdgeTypes,
-  type NodeChange,
-  type NodeTypes,
-  type OnConnectEnd,
-  type OnSelectionChangeParams,
   ReactFlow,
-  type Rect,
   reconnectEdge,
   SelectionMode,
   useReactFlow,
-  type Viewport,
-  type XYPosition,
+} from "@xyflow/react";
+import type {
+  Connection,
+  EdgeChange,
+  EdgeTypes,
+  NodeChange,
+  NodeTypes,
+  OnConnectEnd,
+  OnSelectionChangeParams,
+  Rect,
+  Viewport,
+  XYPosition,
 } from "@xyflow/react";
 import "@xyflow/react/dist/base.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   isLibrarySaveDrag,
-  type PasteImport,
   pasteImportOf,
   runPasteImport,
   saveDropIds,
 } from "@/features/saves";
+import type { PasteImport } from "@/features/saves";
 import {
   openSave,
   primarySelection,
@@ -83,26 +92,18 @@ import {
   fillItems,
   fontItems,
   languageItems,
-  type MenuTarget,
   sizeItems,
-  type TableChange,
   tableItems,
   themeItems,
   weightItems,
 } from "../../lib/board-menu";
-import {
-  type CanvasCommand,
-  commandForKey,
-  glyphsFor,
-} from "../../lib/commands";
+import type { MenuTarget, TableChange } from "../../lib/board-menu";
+import { commandForKey, glyphsFor } from "../../lib/commands";
+import type { CanvasCommand } from "../../lib/commands";
 import {
   alignFrames,
   branchOf,
-  type CanvasNode,
-  type CanvasSnapshot,
   CONNECTOR_STYLE,
-  type ConnectorEdge,
-  type ConnectorStyle,
   clipOf,
   clipText,
   codeAt,
@@ -122,7 +123,6 @@ import {
   placeSavesBeside,
   reorder,
   resizeTable,
-  type StrokePoint,
   sectionAround,
   sectionAt,
   snapshotOf,
@@ -138,6 +138,13 @@ import {
   withGroup,
   withLock,
 } from "../../lib/document";
+import type {
+  CanvasNode,
+  CanvasSnapshot,
+  ConnectorEdge,
+  ConnectorStyle,
+  StrokePoint,
+} from "../../lib/document";
 import {
   eraseDrawings,
   flipped,
@@ -145,19 +152,13 @@ import {
   noteFromText,
   notesSorted,
   quickPair,
-  type StampKind,
   turned,
 } from "../../lib/edit";
+import type { StampKind } from "../../lib/edit";
 import { renderBoard } from "../../lib/export";
 import type { TextStyle } from "../../lib/text-style";
-import {
-  type Box,
-  type Corner,
-  groupScale,
-  MIN_SIZE,
-  type Size,
-  scaleBox,
-} from "../../lib/transform";
+import { groupScale, MIN_SIZE, scaleBox } from "../../lib/transform";
+import type { Box, Corner, Size } from "../../lib/transform";
 import { canvases } from "../../state/canvases";
 import { minimap, useMinimapShown } from "../../state/minimap";
 import { Affordance } from "../affordance";
@@ -167,29 +168,26 @@ import { DrawLayer } from "../draw-layer";
 import { DrawingItem } from "../drawing-item";
 import { FigureItem } from "../figure-item";
 import { Guides } from "../guides";
-import { Minimap, type MinimapItem } from "../minimap";
+import { Minimap } from "../minimap";
+import type { MinimapItem } from "../minimap";
 import { NoteItem } from "../note-item";
 import { Picker } from "../picker";
 import { PlaceLayer } from "../place-layer";
 import { SaveItem } from "../save-item";
 import { SectionItem } from "../section-item";
-import { SelectionBar, type SelectionControl } from "../selection-bar";
+import { SelectionBar } from "../selection-bar";
+import type { SelectionControl } from "../selection-bar";
 import { SelectionFrame } from "../selection-frame";
 import { TableItem } from "../table-item";
 import { TextItem } from "../text-item";
-import {
-  type CanvasTool,
-  COLORED_TOOLS,
-  type PenMode,
-  STAMP_TOOLS,
-  Tools,
-  toolForKey,
-} from "../tools";
+import { COLORED_TOOLS, STAMP_TOOLS, Tools, toolForKey } from "../tools";
+import type { CanvasTool, PenMode } from "../tools";
 import { TopicItem } from "../topic-item";
 import { Zoom } from "../zoom";
-import { type BoardActions, BoardContext } from "./context";
-import styles from "./styles.module.css";
+import { BoardContext } from "./context";
+import type { BoardActions } from "./context";
 import { useSettle } from "./use-settle";
+import styles from "./styles.module.css";
 
 const NODE_TYPES: NodeTypes = {
   save: SaveItem,
@@ -289,7 +287,11 @@ function defaultAlign(node: StyledNode): CanvasAlign {
   return node.type === "figure" || node.type === "topic" ? "center" : "left";
 }
 
-function sharedValue<Value>(values: readonly Value[]): Value | null {
+function isStamp(value: CanvasTool): value is StampKind {
+  return STAMP_TOOLS.has(value);
+}
+
+function sharedValue<Value>(values: ReadonlyArray<Value>): Value | null {
   const unique = new Set(values);
   const [only] = unique;
   return unique.size === 1 && only !== undefined ? only : null;
@@ -320,10 +322,10 @@ interface BoardProps {
 export function Board({ canvas }: BoardProps) {
   const flow = useReactFlow<CanvasNode, ConnectorEdge>();
   const wrapper = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = useState<CanvasNode[]>(() =>
+  const [nodes, setNodes] = useState<Array<CanvasNode>>(() =>
     canvas.items.map(toNode),
   );
-  const [edges, setEdges] = useState<ConnectorEdge[]>(() =>
+  const [edges, setEdges] = useState<Array<ConnectorEdge>>(() =>
     canvas.connectors.map(toEdge),
   );
   const [tool, setTool] = useState<CanvasTool>("select");
@@ -341,7 +343,7 @@ export function Board({ canvas }: BoardProps) {
   const minimapShown = useMinimapShown();
   const minimapItems = useMemo(
     () =>
-      nodes.flatMap((node): MinimapItem[] =>
+      nodes.flatMap((node): Array<MinimapItem> =>
         node.hidden
           ? []
           : [
@@ -360,7 +362,9 @@ export function Board({ canvas }: BoardProps) {
   );
 
   const latest = useRef({ nodes, edges });
-  latest.current = { nodes, edges };
+  useLayoutEffect(() => {
+    latest.current = { nodes, edges };
+  }, [nodes, edges]);
   const {
     guides,
     settle,
@@ -381,7 +385,7 @@ export function Board({ canvas }: BoardProps) {
   const groupResize = useRef<{
     corner: Corner;
     bounds: Box;
-    members: { id: string; box: Box; min: Size }[];
+    members: Array<{ id: string; box: Box; min: Size }>;
   } | null>(null);
 
   const current = useCallback(
@@ -409,8 +413,8 @@ export function Board({ canvas }: BoardProps) {
 
   const insert = useCallback(
     (
-      items: CanvasItem[],
-      options?: { edit?: boolean; connectors?: CanvasConnector[] },
+      items: Array<CanvasItem>,
+      options?: { edit?: boolean; connectors?: Array<CanvasConnector> },
     ) => {
       if (!items.length) return;
       record();
@@ -439,7 +443,7 @@ export function Board({ canvas }: BoardProps) {
   }, [flow]);
 
   const addSaves = useCallback(
-    (saveIds: readonly string[], at?: XYPosition | "beside") => {
+    (saveIds: ReadonlyArray<string>, at?: XYPosition | "beside") => {
       const onBoard = new Set(
         latest.current.nodes.flatMap((node) =>
           node.type === "save" ? [node.data.saveId] : [],
@@ -451,7 +455,7 @@ export function Board({ canvas }: BoardProps) {
       if (at === "beside") {
         const items = placeSavesBeside(fresh, current().items, viewCenter());
         insert(items);
-        if (items.length)
+        if (items.length) {
           requestAnimationFrame(
             () =>
               void flow.fitView({
@@ -460,6 +464,7 @@ export function Board({ canvas }: BoardProps) {
                 padding: 0.2,
               }),
           );
+        }
         return;
       }
       if (!fresh.length) {
@@ -568,14 +573,14 @@ export function Board({ canvas }: BoardProps) {
   useEffect(() => () => flush(), [flush]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange<CanvasNode>[]) => {
+    (changes: Array<NodeChange<CanvasNode>>) => {
       const settled = settle(changes);
       setNodes((existing) => applyNodeChanges(settled, existing));
     },
     [settle],
   );
   const onEdgesChange = useCallback(
-    (changes: EdgeChange<ConnectorEdge>[]) =>
+    (changes: Array<EdgeChange<ConnectorEdge>>) =>
       setEdges((existing) => applyEdgeChanges(changes, existing)),
     [],
   );
@@ -657,7 +662,7 @@ export function Board({ canvas }: BoardProps) {
   );
 
   const onStroke = useCallback(
-    (points: StrokePoint[], size: number) => {
+    (points: Array<StrokePoint>, size: number) => {
       const drawing = drawingFrom(
         points,
         color,
@@ -670,7 +675,7 @@ export function Board({ canvas }: BoardProps) {
   );
 
   const onErase = useCallback(
-    (points: StrokePoint[]) => {
+    (points: Array<StrokePoint>) => {
       const next = eraseDrawings(current().items, points, 18 / flow.getZoom());
       if (!next) return;
       record();
@@ -799,8 +804,9 @@ export function Board({ canvas }: BoardProps) {
       editStart.current = null;
       editing.current = null;
       setEditingId(null);
-      if (start && entryOf(start.snapshot, id) !== entryOf(current(), id))
+      if (start && entryOf(start.snapshot, id) !== entryOf(current(), id)) {
         history.record(start.snapshot);
+      }
     },
     [current, history],
   );
@@ -994,8 +1000,9 @@ export function Board({ canvas }: BoardProps) {
   const restack = (move: Parameters<typeof reorder>[2]) => {
     const ids = pickedIds();
     const next = reorder(latest.current.nodes, ids, move);
-    if (next.every((node, index) => node === latest.current.nodes[index]))
+    if (next.every((node, index) => node === latest.current.nodes[index])) {
       return;
+    }
     record();
     setNodes((existing) => reorder(existing, ids, move));
   };
@@ -1021,8 +1028,9 @@ export function Board({ canvas }: BoardProps) {
 
   const regroup = (group: string | null) => {
     const picked = latest.current.nodes.filter((node) => node.selected);
-    if (group ? picked.length < 2 : !picked.some((node) => node.data.group))
+    if (group ? picked.length < 2 : !picked.some((node) => node.data.group)) {
       return;
+    }
     record();
     setNodes((existing) =>
       existing.map((node) => (node.selected ? withGroup(node, group) : node)),
@@ -1058,9 +1066,12 @@ export function Board({ canvas }: BoardProps) {
     const picked = all.filter((node) => node.selected);
     const targets =
       scope === "board" || (!scope && !picked.length) ? all : picked;
-    if (!surface || !targets.length) return;
-    if (document.activeElement instanceof HTMLElement)
+    if (!surface || !targets.length) {
+      return;
+    }
+    if (isHTMLElement(document.activeElement)) {
       document.activeElement.blur();
+    }
     const shown = new Set(targets.map((node) => node.id));
     const wasSelected = new Set(picked.map((node) => node.id));
     const selectedEdges = new Set(
@@ -1124,11 +1135,12 @@ export function Board({ canvas }: BoardProps) {
         format,
         ...image,
       });
-      if (result.ok)
+      if (result.ok) {
         notify({
           id: "canvas-export",
           title: format === "png" ? "Exported PNG" : "Exported PDF",
         });
+      }
     } catch (error) {
       notify({
         id: "canvas-export",
@@ -1163,14 +1175,15 @@ export function Board({ canvas }: BoardProps) {
         ),
       );
       const copy = pasteOf(clip, at, onBoard);
-      if (copy.items.length)
+      if (copy.items.length) {
         insert(copy.items, { connectors: copy.connectors });
-      else
+      } else {
         addSaves(
           clip.items.flatMap((item) =>
             item.kind === "save" ? [item.saveId] : [],
           ),
         );
+      }
       return true;
     }
     const plan = pasteImportOf(data);
@@ -1239,11 +1252,13 @@ export function Board({ canvas }: BoardProps) {
         return;
       case "zoom": {
         const picked = latest.current.nodes.filter((node) => node.selected);
-        if (command.to === "actual") void flow.zoomTo(1, { duration: 200 });
-        else if (command.to === "selection" && picked.length)
+        if (command.to === "actual") {
+          void flow.zoomTo(1, { duration: 200 });
+        } else if (command.to === "selection" && picked.length) {
           void flow.fitView({ nodes: picked, duration: 200, padding: 0.2 });
-        else if (command.to === "fit")
+        } else if (command.to === "fit") {
           void flow.fitView({ duration: 200, padding: 0.2 });
+        }
         return;
       }
       case "minimap":
@@ -1354,8 +1369,9 @@ export function Board({ canvas }: BoardProps) {
       case "quick": {
         const picked = latest.current.nodes.filter((node) => node.selected);
         const [single] = picked;
-        if (picked.length === 1 && single)
+        if (picked.length === 1 && single) {
           actions.quickCreate(single.id, command.side);
+        }
         return;
       }
     }
@@ -1402,7 +1418,7 @@ export function Board({ canvas }: BoardProps) {
     );
   };
 
-  const startDrag = (dragged: readonly CanvasNode[]) => {
+  const startDrag = (dragged: ReadonlyArray<CanvasNode>) => {
     record();
     setDragging(true);
     beginSettle(dragged);
@@ -1414,9 +1430,12 @@ export function Board({ canvas }: BoardProps) {
   };
 
   const menuItems = () => {
-    if (menuKind.current === "pane")
+    if (menuKind.current === "pane") {
       return boardItems({ kind: "pane", minimap: minimap.shown() }, run);
-    if (menuKind.current === "edge") return boardItems({ kind: "edge" }, run);
+    }
+    if (menuKind.current === "edge") {
+      return boardItems({ kind: "edge" }, run);
+    }
     const picked = latest.current.nodes.filter((node) => node.selected);
     return boardItems(
       {
@@ -1460,23 +1479,27 @@ export function Board({ canvas }: BoardProps) {
 
   const arrangeable = selected.filter((node) => !isLocked(node)).length;
 
-  const lead: SelectionControl[] = [];
-  const style: SelectionControl[] = [];
-  const extras: SelectionControl[] = [];
+  let lead: Array<SelectionControl> = [];
+  let style: Array<SelectionControl> = [];
+  let extras: Array<SelectionControl> = [];
   const figures = selected.filter((node) => node.type === "figure");
   if (figures.length) {
-    lead.push({
-      kind: "custom",
-      label: "Shape",
-      element: (
-        <Picker.Outlines
-          value={sharedValue(figures.map((node) => node.data.outline))}
-          size="xs"
-          onChange={changeOutline}
-        />
-      ),
-    });
-    style.push(
+    lead = [
+      ...lead,
+      {
+        kind: "custom",
+        label: "Shape",
+        element: (
+          <Picker.Outlines
+            value={sharedValue(figures.map((node) => node.data.outline))}
+            size="xs"
+            onChange={changeOutline}
+          />
+        ),
+      },
+    ];
+    style = [
+      ...style,
       {
         kind: "menu",
         label: "Fill",
@@ -1501,12 +1524,13 @@ export function Board({ canvas }: BoardProps) {
               }),
           ),
       },
-    );
+    ];
   }
   const codes = selected.filter((node) => node.type === "code");
   if (codes.length) {
     const language = sharedValue(codes.map((node) => node.data.language));
-    lead.push(
+    lead = [
+      ...lead,
       {
         kind: "menu",
         label: "Language",
@@ -1523,33 +1547,41 @@ export function Board({ canvas }: BoardProps) {
             changeTheme,
           ),
       },
-    );
+    ];
   }
-  if (selected.length === 1 && only?.type === "table")
-    lead.push({
-      kind: "menu",
-      label: "Table",
-      icon: <IconTable />,
-      buildItems: () => tableItems((change) => changeTable(only.id, change)),
-    });
+  if (selected.length === 1 && only?.type === "table") {
+    lead = [
+      ...lead,
+      {
+        kind: "menu",
+        label: "Table",
+        icon: <IconTable />,
+        buildItems: () => tableItems((change) => changeTable(only.id, change)),
+      },
+    ];
+  }
   const inks = selected.filter((node) => node.type === "drawing");
-  if (inks.length)
-    style.push({
-      kind: "menu",
-      label: "Stroke",
-      icon: <IconLineWeight />,
-      buildItems: () =>
-        weightItems(
-          sharedValue(
-            inks.map((node) =>
-              node.data.size > inkSize(node.data.ink, "thin")
-                ? "thick"
-                : "thin",
+  if (inks.length) {
+    style = [
+      ...style,
+      {
+        kind: "menu",
+        label: "Stroke",
+        icon: <IconLineWeight />,
+        buildItems: () =>
+          weightItems(
+            sharedValue(
+              inks.map((node) =>
+                node.data.size > inkSize(node.data.ink, "thin")
+                  ? "thick"
+                  : "thin",
+              ),
             ),
+            changeInkWeight,
           ),
-          changeInkWeight,
-        ),
-    });
+      },
+    ];
+  }
   const styled = selected.filter(isStyled);
   if (styled.length) {
     const bold = styled.every((node) => node.data.bold);
@@ -1557,7 +1589,8 @@ export function Board({ canvas }: BoardProps) {
     const align = sharedValue(
       styled.map((node) => node.data.align ?? defaultAlign(node)),
     );
-    style.push(
+    style = [
+      ...style,
       {
         kind: "menu",
         label: "Font",
@@ -1610,17 +1643,22 @@ export function Board({ canvas }: BoardProps) {
             ),
           ),
       },
-    );
+    ];
   }
-  if (selected.length === 1 && only?.type === "section" && !isLocked(only))
-    extras.push({
-      kind: "action",
-      label: "Rename",
-      icon: <IconPencil />,
-      onClick: () => actions.startEditing(only.id),
-    });
-  if (arrangeable > 1)
-    extras.push(
+  if (selected.length === 1 && only?.type === "section" && !isLocked(only)) {
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: "Rename",
+        icon: <IconPencil />,
+        onClick: () => actions.startEditing(only.id),
+      },
+    ];
+  }
+  if (arrangeable > 1) {
+    extras = [
+      ...extras,
       {
         kind: "action",
         label: "Tidy Up",
@@ -1634,33 +1672,44 @@ export function Board({ canvas }: BoardProps) {
         icon: <IconSection />,
         onClick: () => run({ type: "wrap" }),
       },
-    );
-  if (selected.some((node) => node.data.group))
-    extras.push({
-      kind: "action",
-      label: "Ungroup",
-      icon: <IconUngroup />,
-      shortcut: glyphsFor({ type: "ungroup" }),
-      onClick: () => run({ type: "ungroup" }),
-    });
-  else if (selected.length > 1)
-    extras.push({
-      kind: "action",
-      label: "Group",
-      icon: <IconGroup />,
-      shortcut: glyphsFor({ type: "group" }),
-      onClick: () => run({ type: "group" }),
-    });
+    ];
+  }
+  if (selected.some((node) => node.data.group)) {
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: "Ungroup",
+        icon: <IconUngroup />,
+        shortcut: glyphsFor({ type: "ungroup" }),
+        onClick: () => run({ type: "ungroup" }),
+      },
+    ];
+  } else if (selected.length > 1) {
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: "Group",
+        icon: <IconGroup />,
+        shortcut: glyphsFor({ type: "group" }),
+        onClick: () => run({ type: "group" }),
+      },
+    ];
+  }
   if (selected.length) {
     const locked = selected.every(isLocked);
-    extras.push({
-      kind: "action",
-      label: locked ? "Unlock" : "Lock",
-      icon: locked ? <IconLock /> : <IconLockOpen />,
-      shortcut: glyphsFor({ type: "lock" }),
-      pressed: locked,
-      onClick: () => run({ type: "lock" }),
-    });
+    extras = [
+      ...extras,
+      {
+        kind: "action",
+        label: locked ? "Unlock" : "Lock",
+        icon: locked ? <IconLock /> : <IconLockOpen />,
+        shortcut: glyphsFor({ type: "lock" }),
+        pressed: locked,
+        onClick: () => run({ type: "lock" }),
+      },
+    ];
   }
 
   const placeAt = (point: XYPosition): CanvasItem | null => {
@@ -1707,11 +1756,6 @@ export function Board({ canvas }: BoardProps) {
     });
     if (!kept) setTool("select");
   };
-
-  function isStamp(value: CanvasTool): value is StampKind {
-    return STAMP_TOOLS.has(value);
-  }
-
   return (
     <BoardContext.Provider value={actions}>
       <SpecContextMenu buildItems={menuItems}>
@@ -1771,9 +1815,11 @@ export function Board({ canvas }: BoardProps) {
             if (event.metaKey || event.ctrlKey || event.altKey) return;
             if (event.key === "Enter" && selected.length === 1 && only) {
               event.preventDefault();
-              if (openable) openSave(openable);
-              else if (hasText(only) && !isLocked(only))
+              if (openable) {
+                openSave(openable);
+              } else if (hasText(only) && !isLocked(only)) {
                 actions.startEditing(only.id);
+              }
               return;
             }
             if (
@@ -1807,13 +1853,14 @@ export function Board({ canvas }: BoardProps) {
             }
           }}
           onDragOver={(event) => {
-            const types = Array.from(event.dataTransfer.types);
+            const types = new Set(Array.from(event.dataTransfer.types));
             if (
               !isLibrarySaveDrag(event.dataTransfer) &&
-              !types.includes("Files") &&
-              !types.includes("text/uri-list")
-            )
+              !types.has("Files") &&
+              !types.has("text/uri-list")
+            ) {
               return;
+            }
             event.preventDefault();
             event.stopPropagation();
             event.dataTransfer.dropEffect = "copy";
@@ -1883,9 +1930,12 @@ export function Board({ canvas }: BoardProps) {
             onNodeDoubleClick={(_, node) => {
               if (tool !== "select") return;
               if (node.type === "save") {
-                if (pool.get(node.data.saveId)) openSave(node.data.saveId);
-              } else if (hasText(node) && !isLocked(node))
+                if (pool.get(node.data.saveId)) {
+                  openSave(node.data.saveId);
+                }
+              } else if (hasText(node) && !isLocked(node)) {
                 actions.startEditing(node.id);
+              }
             }}
             onNodeContextMenu={(_, node) => {
               menuKind.current = "nodes";
@@ -2008,8 +2058,9 @@ export function Board({ canvas }: BoardProps) {
               }}
               onReplace={(ids) => {
                 const next = ids[0];
-                if (next && only?.type === "save")
+                if (next && only?.type === "save") {
                   actions.replaceSave(only.id, next);
+                }
               }}
               onDuplicate={duplicate}
               onDelete={() => void flow.deleteElements({ nodes: selected })}

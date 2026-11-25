@@ -1,8 +1,8 @@
 import { MotionConfig } from "motion/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
+import { userEvent } from "vitest/browser";
 import { Prompt } from ".";
 
 const OTHER = "other";
@@ -72,7 +72,7 @@ describe("Prompt keyboard", () => {
   });
 
   it("gives the freeform field a default name and passes Enter to the caller", async () => {
-    const answers: string[] = [];
+    const answers: Array<string> = [];
     const screen = await render(
       <Question onSubmit={(answer) => answers.push(answer)} />,
     );

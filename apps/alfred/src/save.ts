@@ -2,7 +2,7 @@ import { curlCommand, failureFor } from "./api";
 import { request } from "./jxa";
 
 /** Output becomes the notification text in the workflow's Post Notification object. */
-export function run(argv: string[]): string {
+export function run(argv: Array<string>): string {
   const url = (argv[0] ?? "").trim();
   if (!/^https?:\/\//i.test(url)) return "Pond saves web links";
   const result = request(

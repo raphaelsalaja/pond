@@ -8,7 +8,7 @@ export function printPdf(url: string): void {
     () => {
       frame.contentWindow?.focus();
       frame.contentWindow?.print();
-      window.setTimeout(() => frame.remove(), 1_000);
+      window.setTimeout(() => frame.remove(), 1000);
     },
     { once: true },
   );

@@ -24,7 +24,7 @@ const captureApi = {
   present(): Promise<void> {
     return ipcRenderer.invoke(QUICK_CAPTURE_IPC.present);
   },
-  pick(): Promise<string[]> {
+  pick(): Promise<Array<string>> {
     return ipcRenderer.invoke(QUICK_CAPTURE_IPC.pick);
   },
   submit(input: QuickCaptureSubmit): Promise<QuickCaptureResult> {

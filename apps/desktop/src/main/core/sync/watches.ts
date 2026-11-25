@@ -1,16 +1,16 @@
-import {
-  DEFAULT_SOURCE_SYNC_PREFS,
-  type Source,
-  type SourceSyncPrefs,
-  type WatchedAccount,
-  type WatchKind,
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type {
+  Source,
+  SourceSyncPrefs,
+  WatchedAccount,
+  WatchKind,
 } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { getPrefs, setPrefs } from "../prefs";
 import { normalizeHandle } from "./accounts";
 
-export async function listWatches(): Promise<WatchedAccount[]> {
+export async function listWatches(): Promise<Array<WatchedAccount>> {
   const prefs = await getPrefs();
   return Object.values(prefs.sync.watches ?? {}).sort((a, b) =>
     a.addedAt.localeCompare(b.addedAt),

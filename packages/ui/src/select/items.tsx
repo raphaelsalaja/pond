@@ -1,4 +1,5 @@
-import { Fragment, type ReactNode } from "react";
+import { Fragment } from "react";
+import type { ReactNode } from "react";
 
 interface SelectOptionItem<Value> {
   type?: "option";
@@ -15,7 +16,7 @@ interface SelectSeparatorItem {
 interface SelectGroupItem<Value> {
   type: "group";
   label?: ReactNode;
-  items: SelectItemSpec<Value>[];
+  items: Array<SelectItemSpec<Value>>;
 }
 
 interface SelectCustomItem {
@@ -59,7 +60,7 @@ function renderSpec<Value>(
   if (spec.type === "group") {
     return (
       <parts.Group key={key}>
-        {spec.label != null ? (
+        {spec.label !== null && spec.label !== undefined ? (
           <parts.GroupLabel>{spec.label}</parts.GroupLabel>
         ) : null}
         {spec.items.map((child, i) => renderSpec(child, i, parts))}
@@ -71,7 +72,7 @@ function renderSpec<Value>(
     <parts.Item key={key} value={spec.value} disabled={spec.disabled}>
       <parts.ItemText>{spec.label}</parts.ItemText>
       <parts.ItemIndicator />
-      {spec.shortcut != null ? (
+      {spec.shortcut !== null && spec.shortcut !== undefined ? (
         <parts.ItemShortcut>{spec.shortcut}</parts.ItemShortcut>
       ) : null}
     </parts.Item>
@@ -79,7 +80,7 @@ function renderSpec<Value>(
 }
 
 export function renderSelectSpec<Value>(
-  items: readonly SelectItemSpec<Value>[],
+  items: ReadonlyArray<SelectItemSpec<Value>>,
   parts: SelectParts<Value>,
 ): ReactNode {
   return items.map((spec, i) => renderSpec(spec, i, parts));

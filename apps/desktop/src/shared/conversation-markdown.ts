@@ -1,18 +1,17 @@
 export function conversationMarkdown(
   title: string | null,
-  messages: readonly { role: string; content: string }[],
+  messages: ReadonlyArray<{ role: string; content: string }>,
 ): string {
-  const heading = (title || "New Chat").replace(/[\r\n]+/g, " ");
+  const heading = (title || "New Chat").replaceAll(/[\r\n]+/g, " ");
   return [
     `# ${heading}`,
-    ...messages
-      .filter(
-        (message) => message.role === "user" || message.role === "assistant",
-      )
-      .map(
-        (message) =>
-          `## ${message.role === "user" ? "You" : "Fish"}\n\n${message.content}`,
-      ),
+    ...messages.flatMap((message) =>
+      message.role === "user" || message.role === "assistant"
+        ? [
+            `## ${message.role === "user" ? "You" : "Fish"}\n\n${message.content}`,
+          ]
+        : [],
+    ),
     "",
   ].join("\n\n");
 }

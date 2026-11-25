@@ -16,7 +16,7 @@ const MemberRowSchema = z.object({
 });
 const CountRowSchema = z.object({ n: z.number() });
 
-function splitMembersWhere(hiddenFolderIds: readonly string[]) {
+function splitMembersWhere(hiddenFolderIds: ReadonlyArray<string>) {
   return and(
     libraryQueryWhere({ query: EMPTY_QUERY }, hiddenFolderIds),
     isNotNull(splitPostSourceIdSql()),
@@ -26,8 +26,8 @@ function splitMembersWhere(hiddenFolderIds: readonly string[]) {
 /** A post with one live Save left is no longer a gallery, so it drops out of Split Posts. */
 export function querySplitPosts(
   db: Db,
-  hiddenFolderIds: readonly string[] = [],
-): SplitPostSummary[] {
+  hiddenFolderIds: ReadonlyArray<string> = [],
+): Array<SplitPostSummary> {
   const rows = z.array(MemberRowSchema).parse(
     db.all(
       sql`select ${saves.id} as id, ${saves.source} as source, ${splitPostSourceIdSql()} as post,
@@ -62,7 +62,7 @@ export function querySplitPosts(
 
 export function countSplitPosts(
   db: Db,
-  hiddenFolderIds: readonly string[] = [],
+  hiddenFolderIds: ReadonlyArray<string> = [],
 ): number {
   return CountRowSchema.parse(
     db.get(

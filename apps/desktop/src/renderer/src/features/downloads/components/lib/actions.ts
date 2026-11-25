@@ -1,9 +1,6 @@
 import { z } from "zod";
-import {
-  type DownloadRow,
-  statusBucket,
-  statusFeed,
-} from "@/features/downloads/lib/status-feed";
+import { statusBucket, statusFeed } from "@/features/downloads/lib/status-feed";
+import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
 import {
   invalidatePendingSaveHydration,
@@ -41,14 +38,16 @@ export function canRetryDownload(row: DownloadRow): boolean {
 }
 
 function uniqueSaveIds(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
   include: (row: DownloadRow) => boolean,
-): string[] {
-  return [...new Set(rows.filter(include).map((row) => row.saveId))];
+): Array<string> {
+  return [
+    ...new Set(rows.flatMap((row) => (include(row) ? [row.saveId] : []))),
+  ];
 }
 
 export async function retryDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canRetryDownload);
   if (ids.length === 0) return false;
@@ -66,7 +65,7 @@ export async function retryDownloadRows(
 }
 
 export async function cancelDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canCancelDownload);
   if (ids.length === 0) return false;
@@ -87,7 +86,7 @@ export async function cancelDownloadRows(
 }
 
 export async function skipDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
 ): Promise<boolean> {
   const ids = uniqueSaveIds(rows, canSkipDownload);
   if (ids.length === 0) return false;
@@ -110,6 +109,7 @@ export async function skipDownloadRows(
 interface TrashNotificationDependencies {
   notify: typeof notify;
   undo: () => Promise<{ ok: boolean }>;
+  undoFailed?: () => void;
 }
 
 interface TrashDownloadDependencies extends TrashNotificationDependencies {
@@ -118,9 +118,9 @@ interface TrashDownloadDependencies extends TrashNotificationDependencies {
 
 interface ClearUnfinishedDependencies extends TrashNotificationDependencies {
   clear: () => Promise<ClearUnfinishedResult>;
-  invalidate: (ids: readonly string[]) => void;
-  reconcile: (ids: readonly string[]) => void;
-  reload: (ids: readonly string[]) => Promise<void>;
+  invalidate: (ids: ReadonlyArray<string>) => void;
+  reconcile: (ids: ReadonlyArray<string>) => void;
+  reload: (ids: ReadonlyArray<string>) => Promise<void>;
 }
 
 const TRASH_DOWNLOAD_DEPENDENCIES: TrashDownloadDependencies = {
@@ -161,6 +161,7 @@ function notifyTrashedDownloads(
   afterUndo?: () => Promise<void>,
 ): void {
   downloadsSelection.clear();
+  const undoFailed = dependencies.undoFailed ?? reportUndoFailure;
   dependencies.notify({
     id: "trash-downloads",
     title:
@@ -174,19 +175,19 @@ function notifyTrashedDownloads(
           .undo()
           .then(async (result) => {
             if (!result.ok) {
-              reportUndoFailure();
+              undoFailed();
               return;
             }
             await afterUndo?.();
           })
-          .catch(reportUndoFailure);
+          .catch(undoFailed);
       },
     },
   });
 }
 
 async function trashDownloadIds(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   dependencies: TrashDownloadDependencies,
 ): Promise<boolean> {
   const uniqueIds = [...new Set(ids)];
@@ -228,7 +229,7 @@ export async function clearUnfinishedDownloads(
 }
 
 export function trashDownloadRows(
-  rows: readonly DownloadRow[],
+  rows: ReadonlyArray<DownloadRow>,
   dependencies = TRASH_DOWNLOAD_DEPENDENCIES,
 ): Promise<boolean> {
   return trashDownloadIds(uniqueSaveIds(rows, canTrashDownload), dependencies);

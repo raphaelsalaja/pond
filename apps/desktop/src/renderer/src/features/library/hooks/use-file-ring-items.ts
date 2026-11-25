@@ -7,9 +7,9 @@ import { recentFolderIds } from "../lib/recent-folders";
 import { useFolders } from "../state/folders";
 
 interface FileRingItems {
-  items: FileRingItem[];
+  items: Array<FileRingItem>;
   customized: boolean;
-  folders: Folder[];
+  folders: Array<Folder>;
 }
 
 export function useFileRingItems(): FileRingItems {

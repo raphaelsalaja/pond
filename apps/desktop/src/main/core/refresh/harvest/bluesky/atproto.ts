@@ -1,3 +1,4 @@
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonValue } from "@pond/schema/json";
 import { z } from "zod";
 
@@ -154,9 +155,11 @@ export async function readJson(
 ): Promise<{ status: number; body: JsonValue } | null> {
   try {
     const res = await get(url);
-    if (!res.ok) return { status: res.status, body: null };
-    const body: JsonValue = await res.json();
-    return { status: res.status, body };
+    if (!res.ok) {
+      return { status: res.status, body: null };
+    }
+    const body: unknown = await res.json();
+    return { status: res.status, body: isJsonValue(body) ? body : null };
   } catch {
     return null;
   }

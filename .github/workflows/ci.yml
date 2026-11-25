@@ -100,8 +100,19 @@ jobs:
         with:
           turbo-cache: desktop-test-${{ matrix.shard }}
 
+      - name: Install Chromium for browser tests
+        run: pnpm --filter @pond/desktop exec playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
+
       - name: Desktop tests
         run: pnpm exec turbo run test --filter=@pond/desktop -- --shard=${{ matrix.shard }}/4
+
+      - name: Upload browser test failure screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-test-failures-${{ matrix.os }}-${{ matrix.shard }}
+          path: apps/desktop/.vitest/attachments
+          if-no-files-found: ignore
 
   # Build and launch the real app on every platform. These jobs skip the
   # Turborepo cache because a cached build leaves no output to launch.

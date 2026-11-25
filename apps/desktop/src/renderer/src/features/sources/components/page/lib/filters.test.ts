@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   defaultSourceFilters,
-  type FilterableSource,
   matchesSourceFilters,
   sourceFiltersActive,
   sourceStatusId,
 } from "./filters";
+import type { FilterableSource } from "./filters";
 
 function row(
   partial: Partial<FilterableSource> & Pick<FilterableSource, "name">,

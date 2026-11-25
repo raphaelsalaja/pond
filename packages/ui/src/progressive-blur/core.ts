@@ -1,4 +1,5 @@
-import { BOTTOM, CURVE, type Recipe, SHARP, SOFT, TOP } from "./apple";
+import { BOTTOM, CURVE, SHARP, SOFT, TOP } from "./apple";
+import type { Recipe } from "./apple";
 
 export type Side = "top" | "bottom" | "left" | "right";
 
@@ -55,7 +56,7 @@ function gradient(
   stops.push(end, 1);
   const list = stops.map((t) => {
     const a = Math.round(alpha(mask(t, start, end)) * 1000) / 1000;
-    return `rgb(0 0 0 / ${a}) ${Math.round(t * 10000) / 100}%`;
+    return `rgb(0 0 0 / ${a}) ${Math.round(t * 10_000) / 100}%`;
   });
   return `linear-gradient(${DIRECTION[side]}, ${list.join(", ")})`;
 }
@@ -126,9 +127,9 @@ function layers(
   r: Recipe,
   technique: Exclude<Technique, "auto">,
   color: string,
-): Layer[] {
+): Array<Layer> {
   /** The veil sits under the blur so the wide blur smears its fade too. */
-  const out: Layer[] = [{ background: color, alpha: (m) => r.veil * m }];
+  const out: Array<Layer> = [{ background: color, alpha: (m) => r.veil * m }];
   const most = sharp(1);
   for (let k = 1; k <= LEVELS; k++) {
     const from = (most * (k - 1)) / LEVELS;
@@ -182,7 +183,7 @@ export function progressiveBlur(
   host: HTMLElement,
   options: ProgressiveBlurOptions = {},
 ): () => void {
-  let nodes: HTMLElement[] = [];
+  let nodes: Array<HTMLElement> = [];
   const dark = matchMedia("(prefers-color-scheme: dark)");
 
   function render() {

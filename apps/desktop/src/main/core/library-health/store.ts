@@ -1,10 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { z } from "zod";
-import {
-  type LibraryHealthCheck,
-  LibraryHealthCheckSchema,
-} from "../../../shared/library-health-contracts";
+import { LibraryHealthCheckSchema } from "../../../shared/library-health-contracts";
+import type { LibraryHealthCheck } from "../../../shared/library-health-contracts";
 import { renameWithRetry } from "../../lib/rename-retry";
 
 const StoredCheckSchema = z.object({

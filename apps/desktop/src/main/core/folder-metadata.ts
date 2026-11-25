@@ -1,4 +1,5 @@
-import { type FolderMetadata, folderMetadata, folders } from "@pond/schema/db";
+import { folderMetadata, folders } from "@pond/schema/db";
+import type { FolderMetadata } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import type { OkResult } from "../../shared/query-contracts-shared";
 import { getDb } from "../db";

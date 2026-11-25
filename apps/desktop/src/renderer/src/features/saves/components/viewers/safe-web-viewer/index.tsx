@@ -1,9 +1,11 @@
 import { IconCode, IconGlobe } from "@pond/icons";
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
-import { type MhtmlPage, parseMhtml } from "./mhtml";
+import { parseMhtml } from "./mhtml";
+import type { MhtmlPage } from "./mhtml";
 import { sanitizeOfflineHtml } from "./sanitize";
 import styles from "./styles.module.css";
 
@@ -26,8 +28,8 @@ export function SafeWebViewer({
   toolbarStart,
   toolbarActions,
 }: SafeWebViewerProps) {
-  const [source, setSource] = useState<string | null>(null);
-  const [pages, setPages] = useState<MhtmlPage[]>([]);
+  const [loaded, setLoaded] = useState<string | null>(null);
+  const [pages, setPages] = useState<Array<MhtmlPage>>([]);
   const [pageIndex, setPageIndex] = useState(0);
   const [mode, setMode] = useState<"rendered" | "source">("rendered");
 
@@ -46,20 +48,21 @@ export function SafeWebViewer({
         if (!alive) return;
         const bytes = new Uint8Array(buffer);
         let binary = "";
-        for (let offset = 0; offset < bytes.length; offset += 32_768)
+        for (let offset = 0; offset < bytes.length; offset += 32_768) {
           binary += String.fromCharCode(
             ...bytes.subarray(offset, offset + 32_768),
           );
+        }
         if (/\.mhtml?$/i.test(path)) {
           const archivePages = parseMhtml(binary);
           if (archivePages.length === 0) throw new Error("No archived page");
           setPages(archivePages);
           setPageIndex(0);
-          setSource(archivePages[0]?.html ?? "");
+          setLoaded(archivePages[0]?.html ?? "");
           return;
         }
         setPages([]);
-        setSource(new TextDecoder("utf-8").decode(bytes));
+        setLoaded(new TextDecoder("utf-8").decode(bytes));
       })
       .catch(() => {
         if (alive) onUnavailable();
@@ -69,10 +72,7 @@ export function SafeWebViewer({
     };
   }, [onUnavailable, path, size, url]);
 
-  useEffect(() => {
-    const page = pages[pageIndex];
-    if (page) setSource(page.html);
-  }, [pageIndex, pages]);
+  const source = pages[pageIndex]?.html ?? loaded;
 
   const safeHtml = useMemo(
     () => (source === null ? "" : sanitizeOfflineHtml(source)),

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, expect, it } from "vitest";
 import { listSaveFolderIds, scanLibrary } from "./library";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -27,15 +27,19 @@ async function libraryWithSidecars(): Promise<{ root: string; items: string }> {
 it("lists only Save directories when AppleDouble files sit beside them", async () => {
   const { root, items } = await libraryWithSidecars();
   expect((await listSaveFolderIds(items)).sort()).toEqual(["lost", "save"]);
-  const scanned: string[] = [];
-  for await (const entry of scanLibrary(root)) scanned.push(entry.id);
+  const scanned: Array<string> = [];
+  for await (const entry of scanLibrary(root)) {
+    scanned.push(entry.id);
+  }
   expect(scanned.sort()).toEqual(["lost", "save"]);
 });
 
 it("yields nothing when the library has no items directory", async () => {
   const root = await mkdtemp(join(tmpdir(), "pond-library-scan-"));
   roots.push(root);
-  const scanned: string[] = [];
-  for await (const entry of scanLibrary(root)) scanned.push(entry.id);
+  const scanned: Array<string> = [];
+  for await (const entry of scanLibrary(root)) {
+    scanned.push(entry.id);
+  }
   expect(scanned).toEqual([]);
 });

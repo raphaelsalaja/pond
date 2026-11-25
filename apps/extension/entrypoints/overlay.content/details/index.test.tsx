@@ -1,7 +1,8 @@
 /** @vitest-environment jsdom */
 
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import type {
   DetailsDraft,
@@ -11,9 +12,6 @@ import type {
 import { Details } from ".";
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-
-const OPEN_TIMEOUT = 15_000;
-vi.setConfig({ testTimeout: OPEN_TIMEOUT * 2 });
 
 const library: LibraryTargets = {
   name: "Pond",
@@ -38,39 +36,8 @@ const draft: DetailsDraft = {
 let host: HTMLElement;
 let layer: HTMLDivElement;
 let root: Root;
-const boundingRect = HTMLElement.prototype.getBoundingClientRect;
 
 beforeEach(() => {
-  vi.stubGlobal(
-    "ResizeObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  vi.stubGlobal(
-    "IntersectionObserver",
-    class {
-      observe() {}
-      unobserve() {}
-      disconnect() {}
-    },
-  );
-  HTMLElement.prototype.getBoundingClientRect =
-    function getBoundingClientRect() {
-      return {
-        x: 0,
-        y: 0,
-        width: 240,
-        height: 28,
-        top: 0,
-        right: 240,
-        bottom: 28,
-        left: 0,
-        toJSON() {},
-      };
-    };
   if (!Element.prototype.hasPointerCapture) {
     Element.prototype.hasPointerCapture = () => false;
     Element.prototype.setPointerCapture = () => {};
@@ -89,8 +56,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  HTMLElement.prototype.getBoundingClientRect = boundingRect;
-  vi.unstubAllGlobals();
 });
 
 function searchRoot(): ParentNode {
@@ -159,14 +124,14 @@ it("lets overlay tags be selected and created from the shadow dialog", async () 
   if (!input) throw new Error("Missing tags field");
   await press(input);
   await type(input, "Lo");
-  await vi.waitFor(() => option("Logos"), { timeout: OPEN_TIMEOUT });
+  await vi.waitFor(() => option("Logos"));
   await press(option("Logos"));
   await vi.waitFor(() => {
     expect(searchRoot().querySelector('[aria-label="Logos"]')).not.toBeNull();
   });
 
   await type(input, "brand");
-  await vi.waitFor(() => option("Create “brand”"), { timeout: OPEN_TIMEOUT });
+  await vi.waitFor(() => option("Create “brand”"));
   await press(option("Create “brand”"));
   await vi.waitFor(() => {
     expect(searchRoot().querySelector('[aria-label="brand"]')).not.toBeNull();

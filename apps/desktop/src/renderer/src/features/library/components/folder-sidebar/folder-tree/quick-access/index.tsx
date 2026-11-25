@@ -1,7 +1,8 @@
 import { IconFolderSearch, IconGrid, IconWindow } from "@pond/icons";
 import type { Prefs } from "@pond/schema";
 import type { Folder } from "@pond/schema/db";
-import { type MenuItemSpec, Sidebar } from "@pond/ui";
+import { Sidebar } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import {
   enterAll,
   enterFolder,
@@ -32,8 +33,8 @@ const SAVED_VIEW_ICONS = {
 } as const;
 
 interface QuickAccessProps {
-  folderRows: Folder[];
-  quickFolders: Folder[];
+  folderRows: Array<Folder>;
+  quickFolders: Array<Folder>;
   folderViews: Prefs["folderViews"];
   folderCounts: Record<string, number>;
   folderDownloading: Record<string, number>;
@@ -69,7 +70,7 @@ export function QuickAccess({
       parentId: null,
     })),
   ];
-  function openQuickSelection(ids: string[]) {
+  function openQuickSelection(ids: Array<string>) {
     const selectedFolders = quickFolders.filter((folder) =>
       ids.includes(`folder:${folder.id}`),
     );
@@ -107,12 +108,12 @@ export function QuickAccess({
       ],
     });
   }
-  const quickOrganization = useOrganizationTree(
+  const { root: quickRoot, ...quickOrganization } = useOrganizationTree(
     quickEntries,
     openQuickSelection,
     destination,
   );
-  function quickSelectionItems(): MenuItemSpec[] {
+  function quickSelectionItems(): Array<MenuItemSpec> {
     const ids = quickOrganization.selected;
     const selectedFolderIds = quickFolders
       .filter((folder) => ids.includes(`folder:${folder.id}`))
@@ -171,7 +172,7 @@ export function QuickAccess({
 
   return (
     <Sidebar.Group
-      ref={quickOrganization.root}
+      ref={quickRoot}
       role="tree"
       aria-label="Quick Access"
       aria-multiselectable

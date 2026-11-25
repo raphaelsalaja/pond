@@ -7,15 +7,23 @@ import styles from "./styles.module.css";
 
 interface ActionBarSelection {
   count: number;
-  ids: string[];
+  ids: Array<string>;
   clear: () => void;
+}
+
+type ActionBarRender = (selection: ActionBarSelection) => ReactNode;
+
+function isActionBarRender(
+  children: ReactNode | ActionBarRender,
+): children is ActionBarRender {
+  return typeof children === "function";
 }
 
 export function DataTableActionBar<T extends RowData>({
   children,
   className,
 }: {
-  children: ReactNode | ((selection: ActionBarSelection) => ReactNode);
+  children: ReactNode | ActionBarRender;
   className?: string;
 }) {
   const { selectionStore, actions } = useDataTable<T>();
@@ -32,7 +40,7 @@ export function DataTableActionBar<T extends RowData>({
       role="toolbar"
       aria-label="Bulk Actions"
     >
-      {children instanceof Function ? children(selection) : children}
+      {isActionBarRender(children) ? children(selection) : children}
     </div>
   );
 }

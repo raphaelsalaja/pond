@@ -1,11 +1,13 @@
 import type { Folder, NewFolder, Prefs } from "@pond/schema/db";
 import { FolderColorSchema } from "@pond/schema/folder-presentation";
 import {
-  type FolderTemplate,
-  type FolderTemplateNode,
   FolderTemplateSchema,
-  type FolderTemplateView,
   orderFolderTemplateNodes,
+} from "@pond/schema/folder-templates";
+import type {
+  FolderTemplate,
+  FolderTemplateNode,
+  FolderTemplateView,
 } from "@pond/schema/folder-templates";
 
 type FolderView = Partial<Prefs["folderViews"][string]>;
@@ -15,9 +17,9 @@ type TemplateFolder = Pick<
 >;
 
 export interface FolderTemplatePlan {
-  folders: NewFolder[];
+  folders: Array<NewFolder>;
   views: Record<string, FolderView>;
-  automaticTags: Record<string, string[]>;
+  automaticTags: Record<string, Array<string>>;
 }
 
 /** Gives every template folder a fresh ID, so a template never shares folders or Saves with what it was made from. */
@@ -25,7 +27,7 @@ export function planFolderTemplate(input: {
   template: FolderTemplate;
   parentId: string | null;
   rootName?: string;
-  existing: readonly Pick<Folder, "parentId" | "sortOrder">[];
+  existing: ReadonlyArray<Pick<Folder, "parentId" | "sortOrder">>;
   createId: () => string;
 }): FolderTemplatePlan {
   const nodes = orderFolderTemplateNodes(input.template.nodes);
@@ -62,8 +64,9 @@ export function planFolderTemplate(input: {
       if (node.icon) view.icon = node.icon;
       plan.views[id] = view;
     }
-    if (node.automaticTags?.length)
+    if (node.automaticTags?.length) {
       plan.automaticTags[id] = [...node.automaticTags];
+    }
   }
   return plan;
 }
@@ -79,14 +82,16 @@ export function buildFolderTemplate(input: {
   includeSubfolders: boolean;
   name: string;
   description?: string;
-  folders: readonly TemplateFolder[];
+  folders: ReadonlyArray<TemplateFolder>;
   views: Prefs["folderViews"];
   rules: Prefs["folderRules"];
   createId: () => string;
 }): FolderTemplate {
   const root = input.folders.find((row) => row.id === input.folderId);
-  if (!root) throw new Error("Folder no longer exists.");
-  const nodes: FolderTemplateNode[] = [];
+  if (!root) {
+    throw new Error("Folder no longer exists.");
+  }
+  const nodes: Array<FolderTemplateNode> = [];
   const visited = new Set<string>();
   const visit = (folder: TemplateFolder, parentKey: string | null) => {
     const key = `folder-${nodes.length}`;

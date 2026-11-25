@@ -24,10 +24,8 @@ import {
   waitingInInbox,
 } from "@/features/saves/lib/inbox-actions";
 import { saveOwnsKeyboard } from "@/features/saves/lib/keyboard-owner";
-import {
-  type FolderPickerMode,
-  saveLibraryBridge,
-} from "@/features/saves/lib/library-bridge";
+import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import type { FolderPickerMode } from "@/features/saves/lib/library-bridge";
 import { rateSaves } from "@/features/saves/lib/rating";
 import {
   copyFilesForSelection,
@@ -42,8 +40,8 @@ import {
   refreshDetailsForSelection,
   restoreSelection,
   revealFilesForSelection,
-  type SelectionActionResult,
 } from "@/features/saves/lib/selection";
+import type { SelectionActionResult } from "@/features/saves/lib/selection";
 import {
   splitIntoSaves,
   splitTargetIds,
@@ -80,7 +78,7 @@ function primarySave(): Save | null {
 function withSelection(
   single: (save: Save) => void,
   multiple: (
-    ids: readonly string[],
+    ids: ReadonlyArray<string>,
   ) => void | Promise<void> | Promise<SelectionActionResult>,
 ): () => void {
   return () => {
@@ -101,7 +99,7 @@ function withSelection(
 }
 
 /** The viewer moves the primary Save without clearing the grid selection, so one selected id may be stale. */
-function targetIds(): readonly string[] {
+function targetIds(): ReadonlyArray<string> {
   const selected = selection.snapshot();
   const primary = primarySelectionStore.state.id;
   if (selected.length > 1) return selected;
@@ -113,12 +111,12 @@ function openFolderPicker(mode: FolderPickerMode): void {
 }
 
 function canCopyPrimaryMedia(save: Save): boolean {
-  return copyableImageIndex(save) != null || resolveFileIndex(save) != null;
+  return copyableImageIndex(save) !== null || resolveFileIndex(save) !== null;
 }
 
 export function SaveHotkeys() {
   const shortcuts = useShortcutBindings();
-  const hasPrimary = useSelector(primarySelectionStore, (s) => s.id != null);
+  const hasPrimary = useSelector(primarySelectionStore, (s) => s.id !== null);
   const hasMulti = useSelectionSize() > 0;
   const ratingQueue = useRef(Promise.resolve());
   const rate = (rating: number, advance: boolean) => {
@@ -377,9 +375,11 @@ export function SaveHotkeys() {
         callback: () => {
           const ids = selection.snapshot();
           if (ids.length > 0) {
-            if (ids.every((id) => pool.get(id)?.deletedAt))
+            if (ids.every((id) => pool.get(id)?.deletedAt)) {
               void restoreSelection(ids);
-            else void moveSelectionToTrash(ids);
+            } else {
+              void moveSelectionToTrash(ids);
+            }
             return;
           }
           const save = primarySave();
@@ -412,8 +412,9 @@ export function SaveHotkeys() {
         if (
           !("preventDefault" in binding.options) ||
           binding.options.preventDefault !== false
-        )
+        ) {
           event.preventDefault();
+        }
         binding.callback(event);
       },
       options: { ...binding.options, preventDefault: false },

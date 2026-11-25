@@ -403,7 +403,8 @@ export async function noteDurableSourceFailure(
         return;
       }
       const inWindow =
-        row?.failureWindowStartedAt != null &&
+        row !== null &&
+        row.failureWindowStartedAt !== null &&
         at - row.failureWindowStartedAt <= input.windowMs;
       const count = inWindow ? row.failureCount + 1 : 1;
       const startedAt = inWindow ? row.failureWindowStartedAt : at;

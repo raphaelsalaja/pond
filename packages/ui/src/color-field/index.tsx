@@ -6,13 +6,8 @@ import {
   ColorPickerSliderThumb,
 } from "@ui-sdk/react/color-picker";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  createContext,
-  type ReactNode,
-  use,
-  useState,
-} from "react";
+import { createContext, use, useState } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import { Input } from "../input";
 import { Popover } from "../popover";
 import styles from "./styles.module.css";
@@ -36,11 +31,10 @@ function sameHex(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-interface RootProps
-  extends Omit<
-    ComponentPropsWithoutRef<"div">,
-    "onChange" | "aria-label" | "aria-describedby"
-  > {
+interface RootProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "onChange" | "aria-label" | "aria-describedby"
+> {
   value: string;
   onChange: (hex: string) => void;
   "aria-label": string;
@@ -135,11 +129,10 @@ function useLabel(): string {
   return label;
 }
 
-interface PickerRootProps
-  extends Omit<
-    ComponentPropsWithoutRef<"div">,
-    "onChange" | "onSelect" | "defaultValue" | "children"
-  > {
+interface PickerRootProps extends Omit<
+  ComponentPropsWithoutRef<"div">,
+  "onChange" | "onSelect" | "defaultValue" | "children"
+> {
   value: string;
   ariaLabel: string;
   onChange: (hex: string) => void;

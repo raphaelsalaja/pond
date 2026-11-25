@@ -1,6 +1,7 @@
 import type { RecentSaveVisit } from "@pond/schema/db";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { z } from "zod";
 import { protectSaves } from "@/features/saves/state/pool";
@@ -8,7 +9,7 @@ import { loadPrefs, patchPrefsSection } from "@/shared/state/prefs";
 
 const RECENTS_CAP = 20;
 
-const store = new Store<RecentSaveVisit[]>([]);
+const store = new Store<Array<RecentSaveVisit>>([]);
 
 protectSaves(() => store.state.map((entry) => entry.saveId));
 
@@ -34,7 +35,9 @@ function hydrate(): void {
         );
       }
     })
-    .catch(() => {});
+    .catch((cause: unknown) =>
+      log.warn("[pond recents] recent visits load failed", cause),
+    );
 }
 
 hydrate();
@@ -50,15 +53,15 @@ function recordVisit(saveId: string): void {
       ...state.filter((e) => e.saveId !== saveId),
     ].slice(0, RECENTS_CAP);
   });
-  patchPrefsSection("saveRecents", { entries: store.state });
+  void patchPrefsSection("saveRecents", { entries: store.state });
 }
 
 export function clearRecents(): void {
   store.setState(() => []);
-  patchPrefsSection("saveRecents", { entries: [] });
+  void patchPrefsSection("saveRecents", { entries: [] });
 }
 
-export function useRecents(): RecentSaveVisit[] {
+export function useRecents(): Array<RecentSaveVisit> {
   return useSelector(store, (s) => s);
 }
 

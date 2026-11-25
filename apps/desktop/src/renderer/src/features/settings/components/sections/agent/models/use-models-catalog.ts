@@ -1,7 +1,8 @@
 import { ASSISTANT_MODELS } from "@shared/assistant";
 import { modelsForChooser } from "@shared/provider-models";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { type AgentPrefs, keyRowsSchema } from "../types";
+import { keyRowsSchema } from "../types";
+import type { AgentPrefs } from "../types";
 import type { CatalogModel } from "./types";
 
 function uniqueErrors(rows: Array<{ error?: string }>) {
@@ -10,8 +11,8 @@ function uniqueErrors(rows: Array<{ error?: string }>) {
 
 function catalogLoadError(
   isError: boolean,
-  models: CatalogModel[],
-  errors: string[],
+  models: Array<CatalogModel>,
+  errors: Array<string>,
 ) {
   if (models.length) return null;
   if (isError) return "Could not load models. Try again.";
@@ -63,7 +64,7 @@ export function useModelsCatalog(agent: AgentPrefs) {
       },
     ];
   });
-  const models: CatalogModel[] = rows
+  const models: Array<CatalogModel> = rows
     .flatMap((row) => {
       const listed = row.models ?? [];
       const customIds = agent.customModelIds?.[row.provider] ?? [];

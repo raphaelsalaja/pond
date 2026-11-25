@@ -1,6 +1,6 @@
+import { ProgressiveBlur } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { ProgressiveBlur } from ".";
 
 const ROWS = Array.from({ length: 12 }, (_, i) => `Save ${i + 1}`);
 

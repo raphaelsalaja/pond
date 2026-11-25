@@ -139,11 +139,11 @@ function profilePageUrl(
 
 function decodeEntities(s: string): string {
   return s
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+    .replaceAll("&amp;", "&")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">");
 }
 
 function ogImageFrom(html: string): string | null {
@@ -177,8 +177,12 @@ async function fetchOgImage(pageUrl: string): Promise<string | null> {
       if (!res.ok) continue;
       const html = (await res.text()).slice(0, HTML_SCAN_BYTES);
       const image = ogImageFrom(html);
-      if (image) return image;
-    } catch {}
+      if (image) {
+        return image;
+      }
+    } catch {
+      /** A failed fetch falls through to the next user agent. */
+    }
   }
   return null;
 }
@@ -236,8 +240,10 @@ async function pinterestAvatar(user: string): Promise<string | null> {
     if (!res.ok) return null;
     const html = await res.text();
     const raw = /"image_xlarge_url"\s*:\s*"([^"]+)"/.exec(html)?.[1];
-    if (!raw) return null;
-    const url = decodeEntities(raw.replace(/\\\//g, "/"));
+    if (!raw) {
+      return null;
+    }
+    const url = decodeEntities(raw.replaceAll(String.raw`\/`, "/"));
     return /^https?:\/\//i.test(url) ? url : null;
   } catch {
     return null;
@@ -261,11 +267,12 @@ async function redditAvatar(
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       },
     );
-    if (!res.ok) return null;
-    const { avatarFromMeJson } = await import(
-      "../refresh/harvest/reddit/listing"
-    );
-    return avatarFromMeJson(await res.json());
+    if (!res.ok) {
+      return null;
+    }
+    const { avatarFromMeJson, RedditAccountSchema } =
+      await import("../refresh/harvest/reddit/listing");
+    return avatarFromMeJson(RedditAccountSchema.parse(await res.json()));
   } catch {
     return null;
   }
@@ -321,8 +328,8 @@ export function fillMissingAvatars(): void {
         if (!(await needsRefresh(watch))) continue;
         await checkWatch(watch);
       }
-    } catch (err) {
-      log.warn("[pond avatars] sweep failed", err);
+    } catch (error) {
+      log.warn("[pond avatars] sweep failed", error);
     } finally {
       sweeping = false;
     }

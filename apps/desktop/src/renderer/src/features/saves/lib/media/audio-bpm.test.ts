@@ -2,7 +2,7 @@ import { expect, it } from "vitest";
 import { estimateBpm } from "./audio-bpm";
 
 it("estimates a 120 bpm pulse", () => {
-  const sampleRate = 44100;
+  const sampleRate = 44_100;
   const seconds = 8;
   const samples = new Float32Array(sampleRate * seconds);
   const interval = Math.round(sampleRate * (60 / 120));
@@ -13,5 +13,5 @@ it("estimates a 120 bpm pulse", () => {
 });
 
 it("returns null for silence", () => {
-  expect(estimateBpm(new Float32Array(44100), 44100)).toBeNull();
+  expect(estimateBpm(new Float32Array(44_100), 44_100)).toBeNull();
 });

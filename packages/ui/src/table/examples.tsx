@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { Table } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 const sources = [
   { name: "Are.na", saves: "248", synced: "Today" },

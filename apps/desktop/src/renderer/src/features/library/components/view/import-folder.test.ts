@@ -30,7 +30,7 @@ describe("importFolderFor", () => {
   });
 
   it("keeps the default destination outside a custom folder", () => {
-    const views: LibraryNav[] = [
+    const views: Array<LibraryNav> = [
       { kind: "all" },
       { kind: "uncategorized" },
       { kind: "inbox" },

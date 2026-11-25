@@ -1,9 +1,7 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import {
-  type ImportCollection,
-  MEDIA_TYPES,
-  type Source,
-} from "@pond/schema/db";
+import { MEDIA_TYPES } from "@pond/schema/db";
+import type { ImportCollection, Source } from "@pond/schema/db";
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonValue } from "@pond/schema/json";
 import { LIST_KINDS } from "@pond/schema/list-kinds";
 import type { ImportCollectionOption } from "@shared/import-scope";
@@ -29,10 +27,8 @@ import {
   INSTAGRAM_LIKES_URL,
   listInstagramCollections,
 } from "../harvest/instagram";
-import {
-  type CollectionFailureReason,
-  readCollectionsReply,
-} from "../harvest/lib/collections-reply";
+import { readCollectionsReply } from "../harvest/lib/collections-reply";
+import type { CollectionFailureReason } from "../harvest/lib/collections-reply";
 import {
   buildLinkedInListExpression,
   LINKEDIN_LIST_URL,
@@ -87,6 +83,9 @@ import {
 } from "./navigation";
 import { runOnSourcePage } from "./page-run";
 import { leaseWindow } from "./pool";
+
+/** A poll that lands mid-navigation fails; the next tick reads the stats again. */
+function ignoreMissedProgressPoll(): void {}
 
 interface SourceListArgs extends ListHarvestArgs {
   accountKey?: string;
@@ -217,9 +216,8 @@ export async function harvestSourceList(
     return harvestSaveeItems(args, opts.partition);
   }
   if (source === "behance") {
-    const { harvestBehanceAppreciations } = await import(
-      "../harvest/behance/api"
-    );
+    const { harvestBehanceAppreciations } =
+      await import("../harvest/behance/api");
     return harvestBehanceAppreciations(args, opts.partition);
   }
   if (source === "vimeo") {
@@ -290,7 +288,7 @@ export async function harvestSourceList(
               opts.onProgress(stats);
             }
           })
-          .catch(() => {});
+          .catch(ignoreMissedProgressPoll);
       }, 1500);
     }
 
@@ -301,7 +299,7 @@ export async function harvestSourceList(
         true,
       )
       .catch(() => {});
-    const raw = await Promise.race([
+    const raw: unknown = await Promise.race([
       lease.win.webContents.executeJavaScript(expr, true),
       sleep(timeoutMs).then(() => "__pond_list_timeout__"),
     ]).finally(() => {
@@ -354,21 +352,27 @@ export async function harvestSourceList(
       entries: parsed.entries.flatMap((e) => (e ? [e] : [])),
       reachedEnd: parsed.reachedEnd,
     };
-    if (parsed.resumeCursor) result.resumeCursor = parsed.resumeCursor;
-    if (parsed.complete) result.complete = true;
-    if (parsed.seen != null) {
+    if (parsed.resumeCursor) {
+      result.resumeCursor = parsed.resumeCursor;
+    }
+    if (parsed.complete) {
+      result.complete = true;
+    }
+    if (parsed.seen !== undefined) {
       result.seen = parsed.seen;
     } else {
       const collected = await readHarvestCollected(lease.win);
-      if (collected != null) result.seen = collected;
+      if (collected !== null) {
+        result.seen = collected;
+      }
     }
     log.info(
       `[pond list] ${source} read ${result.entries.length} (reachedEnd=${result.reachedEnd})`,
     );
     report(source, { ok: true });
     return result;
-  } catch (err) {
-    log.warn("[pond list]", source, "unexpected error", err);
+  } catch (error) {
+    log.warn("[pond list]", source, "unexpected error", error);
     return { ok: false, reason: "unknown" };
   } finally {
     lease.release();
@@ -379,7 +383,7 @@ async function readHarvestCollected(
   win: Electron.BrowserWindow,
 ): Promise<number | null> {
   try {
-    const raw = await win.webContents.executeJavaScript(
+    const raw: unknown = await win.webContents.executeJavaScript(
       "JSON.stringify(globalThis.__pondHarvestStats ?? null)",
       true,
     );
@@ -393,7 +397,7 @@ async function readHarvestCursor(
   win: Electron.BrowserWindow,
 ): Promise<string | undefined> {
   try {
-    const raw = await win.webContents.executeJavaScript(
+    const raw: unknown = await win.webContents.executeJavaScript(
       "globalThis.__pondHarvestCursor ?? null",
       true,
     );
@@ -407,7 +411,7 @@ async function readHarvestPartial(
   win: Electron.BrowserWindow,
 ): Promise<Array<NonNullable<z.infer<typeof PartialEntrySchema>>> | null> {
   try {
-    const raw = await win.webContents.executeJavaScript(
+    const raw: unknown = await win.webContents.executeJavaScript(
       "JSON.stringify(globalThis.__pondHarvestPartial ?? null)",
       true,
     );
@@ -568,7 +572,7 @@ export async function settleInstagramLikesFailure(
 }
 
 type CollectionListResult =
-  | { ok: true; collections: ImportCollectionOption[] }
+  | { ok: true; collections: Array<ImportCollectionOption> }
   | { ok: false; reason: CollectionFailureReason; detail?: string };
 
 /** Pinterest and TikTok read collections off your profile, so they need the username first. */
@@ -599,9 +603,8 @@ async function readSourceCollections(
   switch (source) {
     case "pinterest": {
       if (!opts.accountKey) return { ok: false, reason: "unknown" };
-      const { listPinterestBoards } = await import(
-        "../harvest/pinterest/resource"
-      );
+      const { listPinterestBoards } =
+        await import("../harvest/pinterest/resource");
       const result = await listPinterestBoards(opts.partition, opts.accountKey);
       if (!result.ok) return result;
       return {
@@ -695,7 +698,8 @@ function pageRunFailure(
 
 function parseJsonText(value: JsonValue): JsonValue {
   try {
-    return JSON.parse(StatsTextSchema.parse(value));
+    const parsed: unknown = JSON.parse(StatsTextSchema.parse(value));
+    return isJsonValue(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -703,15 +707,14 @@ function parseJsonText(value: JsonValue): JsonValue {
 
 export async function harvestSourceCollections(
   source: Source,
-  collections: readonly ImportCollection[],
+  collections: ReadonlyArray<ImportCollection>,
   args: SourceListArgs,
   opts: { partition: string },
 ): Promise<ListHarvestResult> {
   switch (source) {
     case "pinterest": {
-      const { harvestPinterestBoards } = await import(
-        "../harvest/pinterest/resource"
-      );
+      const { harvestPinterestBoards } =
+        await import("../harvest/pinterest/resource");
       return harvestPinterestBoards(args, collections, opts.partition);
     }
     case "youtube":
@@ -727,9 +730,8 @@ export async function harvestSourceCollections(
         ),
       );
     case "cosmos": {
-      const { harvestCosmosCollection, listCosmosCollections } = await import(
-        "../harvest/cosmos/api"
-      );
+      const { harvestCosmosCollection, listCosmosCollections } =
+        await import("../harvest/cosmos/api");
       const listed = await listCosmosCollections(opts.partition);
       if (!listed.ok) {
         return listed.status === 401 || listed.status === 403
@@ -765,7 +767,7 @@ export async function harvestSourceCollections(
 /** Walks collections one at a time; a missing collection is skipped, while a sign-out or rate limit stops the run. */
 async function harvestEachCollection(
   source: Source,
-  collections: readonly ImportCollection[],
+  collections: ReadonlyArray<ImportCollection>,
   harvestOne: (collection: ImportCollection) => Promise<ListHarvestResult>,
 ): Promise<ListHarvestResult> {
   const entries = new Map<string, ListEntry>();
@@ -818,8 +820,9 @@ export async function harvestInstagramLikedList(
       );
       return { ok: false, reason: "auth_required" };
     }
-    if (looksLikeAuthWall(landedUrl))
+    if (looksLikeAuthWall(landedUrl)) {
       return { ok: false, reason: "auth_required" };
+    }
 
     await lease.win.webContents
       .executeJavaScript(
@@ -827,7 +830,7 @@ export async function harvestInstagramLikedList(
         true,
       )
       .catch(() => {});
-    const raw = await Promise.race([
+    const raw: unknown = await Promise.race([
       lease.win.webContents.executeJavaScript(
         buildInstagramLikesExpression(args),
         true,
@@ -845,11 +848,14 @@ export async function harvestInstagramLikedList(
       );
     }
     const parsed = ListResultSchema.parse(raw);
-    if (!parsed) return { ok: false, reason: "no_match" };
-    if (!parsed.ok)
-      return settleInstagramLikesFailure(parsed, () =>
+    if (!parsed) {
+      return { ok: false, reason: "no_match" };
+    }
+    if (!parsed.ok) {
+      return await settleInstagramLikesFailure(parsed, () =>
         readHarvestPartial(lease.win),
       );
+    }
     report("instagram", { ok: true });
     log.info(
       `[pond list] instagram likes read ${parsed.entries.length} (reachedEnd=${parsed.reachedEnd})`,
@@ -860,8 +866,8 @@ export async function harvestInstagramLikedList(
       reachedEnd: parsed.reachedEnd,
       seen: parsed.seen ?? parsed.entries.length,
     };
-  } catch (err) {
-    log.warn("[pond list] instagram likes unexpected error", err);
+  } catch (error) {
+    log.warn("[pond list] instagram likes unexpected error", error);
     return { ok: false, reason: "unknown" };
   } finally {
     lease.release();
@@ -892,7 +898,7 @@ async function harvestYoutubePlaylist(
       return { ok: false, reason: "auth_required" };
     }
     const expr = buildYoutubeListExpression(args);
-    const raw = await Promise.race([
+    const raw: unknown = await Promise.race([
       lease.win.webContents.executeJavaScript(expr, true),
       sleep(90_000).then(() => "__pond_yt_list_timeout__"),
     ]);
@@ -907,8 +913,8 @@ async function harvestYoutubePlaylist(
       entries: parsed.entries.flatMap((e) => (e ? [e] : [])),
       reachedEnd: parsed.reachedEnd,
     };
-  } catch (err) {
-    log.warn(`[pond list] youtube ${listId} unexpected error`, err);
+  } catch (error) {
+    log.warn(`[pond list] youtube ${listId} unexpected error`, error);
     return { ok: false, reason: "timeout" };
   } finally {
     lease.release();

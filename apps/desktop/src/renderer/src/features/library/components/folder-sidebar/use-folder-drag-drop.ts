@@ -11,11 +11,8 @@ import {
 } from "@/features/saves";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
-import {
-  type FolderDropKind,
-  type FolderDropTarget,
-  planFolderDrop,
-} from "./folder-drop";
+import { planFolderDrop } from "./folder-drop";
+import type { FolderDropKind, FolderDropTarget } from "./folder-drop";
 
 export interface FolderDropState {
   id: string;
@@ -24,9 +21,34 @@ export interface FolderDropState {
 }
 
 interface UseFolderDragDropInput {
-  folderRows: Folder[];
-  selectedIds?: string[];
+  folderRows: Array<Folder>;
+  selectedIds?: Array<string>;
   revealFolder: (id: string) => void;
+}
+
+async function addSavesToFolder(
+  folder: Folder,
+  ids: Array<string>,
+): Promise<void> {
+  const count = ids.length;
+  try {
+    const result = await window.pond.query("folders.addSaves", {
+      folderId: folder.id,
+      saveIds: ids,
+    });
+    rememberFolderDestinations([folder.id]);
+    await folders.refresh();
+    notifyFolderMembershipChange(
+      { kind: "add", saveCount: count, folders: [folder] },
+      result.ok ? result.undoId : null,
+    );
+  } catch (error) {
+    notify({
+      id: "add-saves-to-folder",
+      title: `Couldn't add ${count === 1 ? "Save" : "Saves"} to folder`,
+      description: errorCopy(error, "Try again."),
+    });
+  }
 }
 
 export function useFolderDragDrop({
@@ -37,31 +59,6 @@ export function useFolderDragDrop({
   const [folderDrop, setFolderDrop] = useState<FolderDropState | null>(null);
   const announcedSaveTargetRef = useRef<string | null>(null);
   const dragDepthRef = useRef(new Map<string, number>());
-
-  async function addSavesToFolder(
-    folder: Folder,
-    ids: string[],
-  ): Promise<void> {
-    const count = ids.length;
-    try {
-      const result = await window.pond.query("folders.addSaves", {
-        folderId: folder.id,
-        saveIds: ids,
-      });
-      rememberFolderDestinations([folder.id]);
-      await folders.refresh();
-      notifyFolderMembershipChange(
-        { kind: "add", saveCount: count, folders: [folder] },
-        result.ok ? result.undoId : null,
-      );
-    } catch (error) {
-      notify({
-        id: "add-saves-to-folder",
-        title: `Couldn't add ${count === 1 ? "Save" : "Saves"} to folder`,
-        description: errorCopy(error, "Try again."),
-      });
-    }
-  }
 
   function folderMoveTarget(
     draggedId: string,
@@ -98,13 +95,15 @@ export function useFolderDragDrop({
     if (!move) return;
     try {
       const ids = selectedIds.includes(draggedId) ? selectedIds : [draggedId];
-      if (ids.length > 1)
+      if (ids.length > 1) {
         await window.pond.query("folders.moveBatch", {
           ids,
           parentId: move.parentId,
           beforeId: move.beforeId,
         });
-      else await window.pond.query("folders.move", move);
+      } else {
+        await window.pond.query("folders.move", move);
+      }
       await folders.refresh();
       if (move.parentId) revealFolder(move.parentId);
     } catch (error) {
@@ -119,8 +118,9 @@ export function useFolderDragDrop({
   function leaveFolder(id: string) {
     dragDepthRef.current.delete(id);
     setFolderDrop((current) => (current?.id === id ? null : current));
-    if (announcedSaveTargetRef.current === id)
+    if (announcedSaveTargetRef.current === id) {
       announcedSaveTargetRef.current = null;
+    }
   }
 
   /** Native drags report a null `relatedTarget`, so enter and leave are counted per row instead. */
@@ -137,8 +137,9 @@ export function useFolderDragDrop({
         if (ids.length === 0) return;
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
-        if (!dragDepthRef.current.has(folder.id))
+        if (!dragDepthRef.current.has(folder.id)) {
           dragDepthRef.current.set(folder.id, 1);
+        }
         setFolderDrop((current) =>
           current?.id === folder.id &&
           current.kind === "into" &&

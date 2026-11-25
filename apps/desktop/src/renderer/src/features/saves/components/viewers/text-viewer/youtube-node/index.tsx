@@ -1,17 +1,16 @@
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { IconArrowUpRight } from "@pond/icons";
 import { Button, Input } from "@pond/ui";
-import {
-  $applyNodeReplacement,
-  $getNodeByKey,
-  DecoratorNode,
-  type EditorConfig,
-  type LexicalNode,
-  type NodeKey,
-  type SerializedLexicalNode,
-  type Spread,
+import { $applyNodeReplacement, $getNodeByKey, DecoratorNode } from "lexical";
+import type {
+  EditorConfig,
+  LexicalNode,
+  NodeKey,
+  SerializedLexicalNode,
+  Spread,
 } from "lexical";
-import { type JSX, useState } from "react";
+import { useState } from "react";
+import type { JSX } from "react";
 import styles from "./styles.module.css";
 
 const YOUTUBE_ID =
@@ -165,5 +164,5 @@ export function $createYouTubeNode(id: string): YouTubeNode {
 export function $isYouTubeNode(
   node: LexicalNode | null | undefined,
 ): node is YouTubeNode {
-  return node instanceof YouTubeNode;
+  return node?.getType() === YouTubeNode.getType();
 }

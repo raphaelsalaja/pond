@@ -42,7 +42,9 @@ export const inspect = {
           "pond.viewer.showNavigator",
           showNavigator ? "1" : "0",
         );
-      } catch {}
+      } catch {
+        /** Storage can be full or blocked; the toggle still applies for this session. */
+      }
     }
     store.setState((state) =>
       state.showNavigator === showNavigator

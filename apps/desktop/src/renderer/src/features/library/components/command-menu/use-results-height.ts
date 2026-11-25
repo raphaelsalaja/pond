@@ -12,15 +12,19 @@ const RESULTS_LAYOUT = {
 } as const;
 
 function rowHeight(row: MenuRow): number {
-  if (row.kind === "group")
+  if (row.kind === "group") {
     return RESULTS_LAYOUT.group + (row.divided ? RESULTS_LAYOUT.divider : 0);
-  if (row.kind === "entry" && row.item.entry.tall)
+  }
+  if (row.kind === "entry" && row.item.entry.tall) {
     return RESULTS_LAYOUT.tallRow;
+  }
   return RESULTS_LAYOUT.row;
 }
 
-function contentHeight(rows: readonly MenuRow[]): number {
-  if (rows.length === 0) return 0;
+function contentHeight(rows: ReadonlyArray<MenuRow>): number {
+  if (rows.length === 0) {
+    return 0;
+  }
   return rows.reduce(
     (height, row) => height + rowHeight(row),
     RESULTS_LAYOUT.padding * 2,
@@ -29,7 +33,7 @@ function contentHeight(rows: readonly MenuRow[]): number {
 
 /** Results height from row sizes; it only grows until `resetKey` changes, so typing never collapses the panel. */
 export function useResultsHeight(
-  rows: readonly MenuRow[],
+  rows: ReadonlyArray<MenuRow>,
   resetKey: string,
 ): number {
   const natural = Math.min(contentHeight(rows), RESULTS_LAYOUT.cap);

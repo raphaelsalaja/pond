@@ -12,7 +12,7 @@ export interface SettingsSection {
   parent?: string;
 }
 
-export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
+export const SETTINGS_SECTIONS: ReadonlyArray<SettingsSection> = [
   { id: "general", path: "general", label: "Preferences", group: "general" },
   { id: "viewer", path: "viewer", label: "Preview", group: "general" },
   {
@@ -78,19 +78,17 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     group: "ai",
   },
   { id: "mcp", path: "mcp", label: "Model Context Protocol", group: "ai" },
-  ...EXTERNAL_SOURCE_IDS.map(
-    (source): SettingsSection => ({
-      id: `sources-${source}`,
-      path: `sources-${source}`,
-      label: sourceLabel(source),
-      group: "harvesting",
-      hidden: true,
-      parent: "sources",
-    }),
-  ),
+  ...EXTERNAL_SOURCE_IDS.map((source): SettingsSection => ({
+    id: `sources-${source}`,
+    path: `sources-${source}`,
+    label: sourceLabel(source),
+    group: "harvesting",
+    hidden: true,
+    parent: "sources",
+  })),
 ];
 
-export const SETTINGS_GROUP_ORDER: readonly SettingsGroup[] = [
+export const SETTINGS_GROUP_ORDER: ReadonlyArray<SettingsGroup> = [
   "general",
   "library",
   "harvesting",

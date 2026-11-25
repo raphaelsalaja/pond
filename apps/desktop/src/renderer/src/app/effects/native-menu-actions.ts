@@ -6,10 +6,10 @@ import {
   exportDebugReport,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
-import {
-  type SearchScope,
-  type SearchView,
-  searchViewFor,
+import { searchViewFor } from "@/features/library/lib/search-view";
+import type {
+  SearchScope,
+  SearchView,
 } from "@/features/library/lib/search-view";
 import { libraryHeader } from "@/features/library/state/library-header";
 import { savedViews } from "@/features/library/state/saved-views";
@@ -51,21 +51,21 @@ import { pool } from "@/features/saves/state/pool";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { openSnoozeDialog } from "@/features/saves/state/snooze-dialog";
 import { requestUpdateCheck } from "@/features/settings/update-check";
-import { getAppRouter } from "@/shared/lib/app-router";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
 import { isEditableTarget } from "@/shared/lib/editable-target";
 import { openSettings } from "@/shared/lib/open-settings";
 import { currentRouteMeta } from "@/shared/lib/route-meta";
 import { notify } from "@/shared/lib/toast";
 import { whatsNewDialog } from "@/shared/state/whats-new";
 
-function selectedIds(): string[] {
+function selectedIds(): Array<string> {
   const selected = [...selection.snapshot()];
   if (selected.length > 0) return selected;
   const primary = primarySelection.get();
   return primary ? [primary] : [];
 }
 
-function requireSelection(): string[] {
+function requireSelection(): Array<string> {
   const ids = selectedIds();
   if (ids.length === 0) {
     notify({
@@ -76,7 +76,7 @@ function requireSelection(): string[] {
   return ids;
 }
 
-function selectIds(ids: readonly string[]): void {
+function selectIds(ids: ReadonlyArray<string>): void {
   selection.set(ids);
   selection.setCursor(ids[0] ?? null);
   if (!ids.length) selection.clear();
@@ -161,7 +161,10 @@ function searchAllSavesInPlace(): void {
   }
   const q = getViewState().q;
   const router = getAppRouter();
-  router?.history.push(`/${router.options.stringifySearch(q ? { q } : {})}`);
+  if (!router) {
+    return;
+  }
+  getAppHistory()?.push(`/${router.options.stringifySearch(q ? { q } : {})}`);
 }
 
 function openSearch(scope: SearchScope): void {
@@ -221,7 +224,7 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     return true;
   }
   const rating = ratingValue(id);
-  if (rating != null) {
+  if (rating !== null) {
     const ids = requireSelection();
     if (ids.length > 0) void rateSaves(ids, rating);
     return true;
@@ -273,8 +276,9 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     }
     case "save.copy-pond-link": {
       const ids = requireSelection();
-      if (ids.length > 0)
+      if (ids.length > 0) {
         void window.pond.query("saves.copyInternalLinks", { ids });
+      }
       return true;
     }
     case "organize.copy-tags": {
@@ -320,11 +324,12 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
     case "organize.add-to-multiple-folders":
     case "organize.add-to-recent-folder": {
       const ids = requireSelection();
-      if (ids.length > 0)
+      if (ids.length > 0) {
         saveLibraryBridge.openFolderPicker(
           ids,
           id === "organize.add-to-recent-folder" ? "recent" : "multiple",
         );
+      }
       return true;
     }
     case "organize.favorite": {

@@ -17,22 +17,22 @@ function seconds(stamp: string): number {
 
 function clean(line: string): string {
   return line
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
+    .replaceAll(/<[^>]+>/g, "")
+    .replaceAll("&nbsp;", " ")
+    .replaceAll("&amp;", "&")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&#39;", "'")
+    .replaceAll(/\s+/g, " ")
     .trim();
 }
 
 /** Reads WebVTT or SRT cues; YouTube's rolling captions repeat each line, so lines dedupe against the last one kept. */
-export function parseCaptions(text: string): CaptionCue[] {
-  const cues: CaptionCue[] = [];
+export function parseCaptions(text: string): Array<CaptionCue> {
+  const cues: Array<CaptionCue> = [];
   let last = "";
-  for (const block of text.replace(/\r/g, "").split(/\n{2,}/)) {
+  for (const block of text.replaceAll("\r", "").split(/\n{2,}/)) {
     const lines = block.split("\n");
     const timingIndex = lines.findIndex((line) => TIMING.test(line));
     if (timingIndex < 0) continue;
@@ -69,12 +69,12 @@ function cueStamp(totalSeconds: number, separator: "," | "."): string {
 
 /** SubRip or WebVTT, clipped to the range and shifted so the clip starts at zero. */
 export function cuesToSubtitles(
-  cues: CaptionCue[],
+  cues: Array<CaptionCue>,
   format: "srt" | "vtt",
   range: DownloadRange | null = null,
 ): string {
   const offset = range?.start ?? 0;
-  const merged: CaptionCue[] = [];
+  const merged: Array<CaptionCue> = [];
   for (const cue of cues) {
     if (range && (cue.end <= range.start || cue.start >= range.end)) continue;
     const start = Math.max(0, cue.start - offset);
@@ -102,12 +102,12 @@ export function cuesToSubtitles(
 
 /** Paragraphs of about thirty seconds, each led by its timestamp, relative to the clip when trimmed. */
 export function cuesToTranscript(
-  cues: CaptionCue[],
+  cues: Array<CaptionCue>,
   range: DownloadRange | null = null,
 ): string {
   const offset = range?.start ?? 0;
-  const paragraphs: string[] = [];
-  let current: { start: number; words: string[] } | null = null;
+  const paragraphs: Array<string> = [];
+  let current: { start: number; words: Array<string> } | null = null;
   for (const cue of cues) {
     if (range && (cue.end <= range.start || cue.start >= range.end)) continue;
     const at = Math.max(0, cue.start - offset);

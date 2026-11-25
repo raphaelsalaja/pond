@@ -1,9 +1,7 @@
 import { join } from "node:path";
 import { z } from "zod";
-import {
-  DUPLICATE_RELATIONS,
-  type DuplicateDismissal,
-} from "../../../shared/duplicate-contracts";
+import { DUPLICATE_RELATIONS } from "../../../shared/duplicate-contracts";
+import type { DuplicateDismissal } from "../../../shared/duplicate-contracts";
 import { readBundleJson, writeBundleJson } from "../../lib/library-config";
 import { resolvePaths } from "../../paths";
 import { orderIds, pairKey } from "./types";
@@ -22,9 +20,13 @@ export function dismissalsFile(
   return join(libraryRoot, "duplicates", "dismissed.json");
 }
 
-export function readDismissals(file = dismissalsFile()): DuplicateDismissal[] {
-  const stored = readBundleJson<unknown>(file);
-  if (!stored) return [];
+export function readDismissals(
+  file = dismissalsFile(),
+): Array<DuplicateDismissal> {
+  const stored = readBundleJson(file);
+  if (!stored) {
+    return [];
+  }
   return StoredSchema.parse(stored.data).flatMap((item) => {
     const parsed = DismissalSchema.safeParse(item);
     return parsed.success ? [parsed.data] : [];
@@ -32,7 +34,7 @@ export function readDismissals(file = dismissalsFile()): DuplicateDismissal[] {
 }
 
 export function addDismissals(
-  pairs: readonly DuplicateDismissal[],
+  pairs: ReadonlyArray<DuplicateDismissal>,
   file = dismissalsFile(),
 ): number {
   const byPair = new Map(

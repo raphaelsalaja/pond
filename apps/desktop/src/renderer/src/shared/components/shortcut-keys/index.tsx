@@ -1,12 +1,13 @@
 import { Keyboard } from "@pond/ui";
-import { type ComponentProps, Fragment } from "react";
+import { Fragment } from "react";
+import type { ComponentProps } from "react";
 import {
   chordGlyphs,
-  type ShortcutId,
   shortcutChord,
   shortcutSequence,
   useShortcutBindings,
 } from "@/shared/lib/shortcuts";
+import type { ShortcutId } from "@/shared/lib/shortcuts";
 import styles from "./styles.module.css";
 
 type Density = ComponentProps<typeof Keyboard.Cluster>["density"];

@@ -90,10 +90,15 @@ function metadataFromSfnt(bytes: Buffer, offset: number): FontMetadata | null {
     const tag = bytes.toString("ascii", record, record + 4);
     const start = bytes.readUInt32BE(record + 8);
     const length = bytes.readUInt32BE(record + 12);
-    if (start + length > bytes.length) continue;
-    if (tag === "name")
+    if (start + length > bytes.length) {
+      continue;
+    }
+    if (tag === "name") {
       names = parseNameTable(bytes.subarray(start, start + length));
-    if (tag === "OS/2" && length >= 6) weight = bytes.readUInt16BE(start + 4);
+    }
+    if (tag === "OS/2" && length >= 6) {
+      weight = bytes.readUInt16BE(start + 4);
+    }
   }
   const family = names?.get(16) ?? names?.get(1) ?? null;
   const subfamily = names?.get(17) ?? names?.get(2) ?? null;
@@ -123,15 +128,17 @@ function parseNameTable(table: Buffer): Map<number, string> {
       names.set(nameId, decodeUtf16Be(raw));
       continue;
     }
-    if (platform === 1 && !names.has(nameId))
+    if (platform === 1 && !names.has(nameId)) {
       names.set(nameId, raw.toString("latin1"));
+    }
   }
   return names;
 }
 
 function decodeUtf16Be(bytes: Buffer): string {
-  const units: number[] = [];
-  for (let index = 0; index + 1 < bytes.length; index += 2)
+  const units: Array<number> = [];
+  for (let index = 0; index + 1 < bytes.length; index += 2) {
     units.push(bytes.readUInt16BE(index));
+  }
   return String.fromCharCode(...units);
 }

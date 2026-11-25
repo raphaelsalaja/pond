@@ -319,7 +319,7 @@ const FOLDER: FolderIconOption = {
   keywords: "directory files default",
 };
 
-export const FOLDER_ICONS: readonly FolderIconOption[] = [
+export const FOLDER_ICONS: ReadonlyArray<FolderIconOption> = [
   FOLDER,
   {
     id: "bookmark",
@@ -1370,14 +1370,16 @@ export const FOLDER_SWATCHES = [
   { id: "pink", label: "Pink", css: "var(--ds-pink)" },
 ] as const;
 
-function searchTerms(icon: FolderIconOption): string[] {
+function searchTerms(icon: FolderIconOption): Array<string> {
   return `${icon.label} ${icon.id.replaceAll("-", " ")} ${icon.keywords}`
     .toLowerCase()
     .split(/\s+/);
 }
 
 /** Every query word must start a word in the icon's name or keywords; name matches sort first. */
-export function searchFolderIcons(query: string): readonly FolderIconOption[] {
+export function searchFolderIcons(
+  query: string,
+): ReadonlyArray<FolderIconOption> {
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   if (!words.length) return FOLDER_ICONS;
   const named = (icon: FolderIconOption) =>

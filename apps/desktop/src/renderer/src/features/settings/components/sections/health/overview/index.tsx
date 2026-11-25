@@ -13,7 +13,8 @@ import {
 import { formatNumber, formatPlural } from "@/shared/lib/format";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import { systemLocale } from "@/shared/lib/system-locale";
-import { type HealthCategory, healthTotals } from "../categories";
+import { healthTotals } from "../categories";
+import type { HealthCategory } from "../categories";
 import {
   cancelCheck,
   startCheck,
@@ -39,7 +40,7 @@ interface OverviewCopy {
 
 function overviewCopy(
   overview: LibraryHealthOverview | null,
-  categories: readonly HealthCategory[],
+  categories: ReadonlyArray<HealthCategory>,
 ): OverviewCopy {
   if (!overview) {
     return {

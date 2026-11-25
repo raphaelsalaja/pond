@@ -5,7 +5,7 @@ interface SearchEngine {
   param: string;
 }
 
-const SEARCH_ENGINES: readonly SearchEngine[] = [
+const SEARCH_ENGINES: ReadonlyArray<SearchEngine> = [
   {
     label: "Google Search",
     host: /(^|\.)google\.[a-z]{2,3}(\.[a-z]{2})?$/,
@@ -60,7 +60,7 @@ export function searchPageQuery(
       candidate.host.test(host) && candidate.path.test(url.pathname),
   );
   const query = engine
-    ? url.searchParams.get(engine.param)?.replace(/\s+/g, " ").trim()
+    ? url.searchParams.get(engine.param)?.replaceAll(/\s+/g, " ").trim()
     : undefined;
   return engine && query ? { engine: engine.label, query } : null;
 }

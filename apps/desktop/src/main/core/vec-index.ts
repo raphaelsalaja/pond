@@ -33,7 +33,9 @@ export function toVecBlob(vector: ArrayLike<number>): Buffer {
   return Buffer.from(Float32Array.from(vector).buffer);
 }
 
-export function parseJsonVector(raw: JsonValue | undefined): number[] | null {
+export function parseJsonVector(
+  raw: JsonValue | undefined,
+): Array<number> | null {
   const direct = VectorSchema.safeParse(raw);
   if (direct.success) return direct.data;
   const text = z.string().safeParse(raw);

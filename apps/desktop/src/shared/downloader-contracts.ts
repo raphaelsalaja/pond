@@ -84,7 +84,7 @@ export interface DownloadStoryboard {
   rows: number;
   /** Seconds covered by one tile. */
   interval: number;
-  sheets: DownloadStoryboardSheet[];
+  sheets: Array<DownloadStoryboardSheet>;
 }
 
 export interface DownloadVideoOption {
@@ -110,12 +110,12 @@ export interface DownloadSingleProbe {
   duration: number | null;
   thumbnail: string | null;
   isLive: boolean;
-  heatmap: DownloadHeatPoint[];
-  chapters: DownloadChapter[];
+  heatmap: Array<DownloadHeatPoint>;
+  chapters: Array<DownloadChapter>;
   storyboard: DownloadStoryboard | null;
-  videoOptions: DownloadVideoOption[];
+  videoOptions: Array<DownloadVideoOption>;
   audioSize: number | null;
-  captions: DownloadCaption[];
+  captions: Array<DownloadCaption>;
   /** A direct stream a media element can play, or null when the site offers none. */
   preview: string | null;
   existingSaveId: string | null;
@@ -135,7 +135,7 @@ export interface DownloadPlaylistProbe {
   site: string;
   title: string;
   author: string | null;
-  entries: DownloadPlaylistEntry[];
+  entries: Array<DownloadPlaylistEntry>;
 }
 
 /** A link with no media for yt-dlp: a post, page or file that Pond saves through its importer. */
@@ -147,7 +147,7 @@ export interface DownloadPostProbe {
   title: string;
   author: string | null;
   text: string | null;
-  images: string[];
+  images: Array<string>;
   existingSaveId: string | null;
 }
 
@@ -202,8 +202,8 @@ export const DownloadStartInputSchema = z.object({
 });
 
 export interface DownloadStartResult {
-  ids: string[];
-  failed: string[];
+  ids: Array<string>;
+  failed: Array<string>;
 }
 
 /** Export skips the library: the file goes to a folder or the clipboard. */
@@ -241,7 +241,7 @@ export const DownloadExportFilesInputSchema = z.object({
 });
 
 export type DownloadExportFilesResult =
-  | { ok: true; paths: string[] }
+  | { ok: true; paths: Array<string> }
   | { ok: false; message: string };
 
 export const DownloadRevealInputSchema = z.object({
@@ -261,9 +261,9 @@ export interface DownloaderQueryInputs {
 }
 
 export interface DownloaderQueryResults {
-  "downloader.clipboardLinks": { urls: string[] };
+  "downloader.clipboardLinks": { urls: Array<string> };
   "downloader.probe": DownloadProbeResult;
-  "downloader.frames": { frames: string[] };
+  "downloader.frames": { frames: Array<string> };
   "downloader.start": DownloadStartResult;
   "downloader.export": DownloadExportResult;
   "downloader.exportFiles": DownloadExportFilesResult;
@@ -276,14 +276,18 @@ const LINK_PATTERN = /\bhttps?:\/\/[^\s<>"'`]+/gi;
 const MAX_LINKS = 500;
 
 /** Every http(s) link in pasted text, in order, without trailing punctuation or repeats. */
-export function extractLinks(text: string): string[] {
+export function extractLinks(text: string): Array<string> {
   const seen = new Set<string>();
   for (const match of text.matchAll(LINK_PATTERN)) {
     const url = match[0].replace(/[),.;:!?\]]+$/, "");
     try {
       seen.add(new URL(url).toString());
-    } catch {}
-    if (seen.size >= MAX_LINKS) break;
+    } catch {
+      /** A match that isn't a valid URL is skipped. */
+    }
+    if (seen.size >= MAX_LINKS) {
+      break;
+    }
   }
   return [...seen];
 }

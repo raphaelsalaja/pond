@@ -1,22 +1,29 @@
-import { act, type ComponentProps } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { act } from "react";
+import type { ComponentProps } from "react";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { WatchTargetProvider, WatchTargetSection, WatchTargetSubmit } from "./";
 
 type ProviderProps = ComponentProps<typeof WatchTargetProvider>;
+type AddWatchReply = ReturnType<ProviderProps["addWatch"]>;
 let root: Root;
 let host: HTMLDivElement;
-const addWatch = vi.fn<ProviderProps["addWatch"]>();
-const onAdded = vi.fn<ProviderProps["onAdded"]>();
+let replies: Array<() => AddWatchReply>;
+let watches: Pick<ProviderProps, "addWatch">;
+let onAdded: ProviderProps["onAdded"];
 
 beforeEach(() => {
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
-  addWatch
-    .mockReset()
-    .mockResolvedValue({ ok: true, watch: { id: "watch-1" } });
-  onAdded.mockReset();
+  replies = [];
+  watches = {
+    addWatch: async () =>
+      replies.shift()?.() ?? { ok: true, watch: { id: "watch-1" } },
+  };
+  vi.spyOn(watches, "addWatch");
+  onAdded = vi.fn();
 });
 
 afterEach(async () => {
@@ -34,7 +41,7 @@ async function render(
       <WatchTargetProvider
         source={source}
         connectedSources={connectedSources}
-        addWatch={addWatch}
+        addWatch={watches.addWatch}
         onAdded={onAdded}
       >
         <WatchTargetSection />
@@ -43,6 +50,8 @@ async function render(
     ),
   );
 }
+
+function noop() {}
 
 function field() {
   const input = host.querySelector<HTMLInputElement>('input[type="text"]');
@@ -85,10 +94,13 @@ it("is a plain input that only submits on Watch", async () => {
   expect(watchButton().disabled).toBe(false);
   await type("drumarjohnson");
   expect(host.querySelector('[role="group"]')).toBeNull();
-  expect(addWatch).not.toHaveBeenCalled();
+  expect(watches.addWatch).not.toHaveBeenCalled();
   expect(watchButton().disabled).toBe(false);
   await submit();
-  expect(addWatch).toHaveBeenCalledExactlyOnceWith("youtube", "drumarjohnson");
+  expect(watches.addWatch).toHaveBeenCalledExactlyOnceWith(
+    "youtube",
+    "drumarjohnson",
+  );
   await finishAdding();
   expect(onAdded).toHaveBeenCalledWith("watch-1");
 });
@@ -97,7 +109,7 @@ it("submits a full link as typed", async () => {
   await render();
   await type("  https://youtube.com/@alice ");
   await submit();
-  expect(addWatch).toHaveBeenCalledExactlyOnceWith(
+  expect(watches.addWatch).toHaveBeenCalledExactlyOnceWith(
     "youtube",
     "https://youtube.com/@alice",
   );
@@ -110,7 +122,7 @@ it("adds a feed Watch without a connected account", async () => {
   await type("https://example.com/Feed.xml?key=AbC");
   expect(watchButton().disabled).toBe(false);
   await submit();
-  expect(addWatch).toHaveBeenCalledExactlyOnceWith(
+  expect(watches.addWatch).toHaveBeenCalledExactlyOnceWith(
     "web",
     "https://example.com/Feed.xml?key=AbC",
   );
@@ -121,8 +133,8 @@ it("blocks a feed handle and explains an invalid feed response", async () => {
   await type("person");
   expect(watchButton().disabled).toBe(false);
   await submit();
-  expect(addWatch).not.toHaveBeenCalled();
-  addWatch.mockResolvedValueOnce({ ok: false, reason: "invalid" });
+  expect(watches.addWatch).not.toHaveBeenCalled();
+  replies.push(async () => ({ ok: false, reason: "invalid" }));
   await type("https://example.com/feed");
   await submit();
   expect(host.querySelector('[role="alert"]')?.textContent).toBe(
@@ -136,7 +148,7 @@ it("rejects a link from another source", async () => {
   expect(host.textContent).toContain("This link isn't from Instagram.");
   expect(watchButton().disabled).toBe(false);
   await submit();
-  expect(addWatch).not.toHaveBeenCalled();
+  expect(watches.addWatch).not.toHaveBeenCalled();
   expect(document.activeElement).toBe(field());
 });
 
@@ -144,7 +156,7 @@ it("explains an empty submit beside the field and focuses it", async () => {
   await render();
   field().blur();
   await submit();
-  expect(addWatch).not.toHaveBeenCalled();
+  expect(watches.addWatch).not.toHaveBeenCalled();
   expect(host.querySelector('[role="alert"]')?.textContent).toBe(
     "Enter a handle or paste a YouTube link.",
   );
@@ -160,7 +172,7 @@ it("blocks Instagram watches until that account is connected", async () => {
   expect(host.textContent).toContain("Watching needs your Instagram account.");
   expect(watchButton().disabled).toBe(true);
   await submit();
-  expect(addWatch).not.toHaveBeenCalled();
+  expect(watches.addWatch).not.toHaveBeenCalled();
 });
 
 it("offers Connect up front when the source needs a signed-in account", async () => {
@@ -176,7 +188,7 @@ it("offers Connect up front when the source needs a signed-in account", async ()
 });
 
 it("explains a profile Pond couldn't find and clears it on edit", async () => {
-  addWatch.mockResolvedValueOnce({ ok: false, reason: "invalid" });
+  replies.push(async () => ({ ok: false, reason: "invalid" }));
   await render();
   await type("missing-account");
   await submit();
@@ -190,8 +202,8 @@ it("explains a profile Pond couldn't find and clears it on edit", async () => {
 
 it("prevents duplicate starts and lets the user retry after a failure", async () => {
   vi.useFakeTimers({ toFake: ["setTimeout"] });
-  let fail: (error: Error) => void = () => {};
-  addWatch.mockImplementationOnce(
+  let fail: (error: Error) => void = noop;
+  replies.push(
     () =>
       new Promise((_resolve, reject) => {
         fail = reject;
@@ -203,12 +215,12 @@ it("prevents duplicate starts and lets the user retry after a failure", async ()
     host.querySelector("form")?.requestSubmit();
     host.querySelector("form")?.requestSubmit();
   });
-  expect(addWatch).toHaveBeenCalledTimes(1);
+  expect(watches.addWatch).toHaveBeenCalledTimes(1);
   expect(field().disabled).toBe(true);
   await act(async () => fail(new Error("Unavailable")));
   expect(host.querySelector('[role="alert"]')).not.toBeNull();
   await submit();
-  expect(addWatch).toHaveBeenCalledTimes(2);
+  expect(watches.addWatch).toHaveBeenCalledTimes(2);
   await finishAdding();
   expect(onAdded).toHaveBeenCalledWith("watch-1");
 });

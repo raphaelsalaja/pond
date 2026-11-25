@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { type PromptSave, savesPrompt } from "./save-prompt";
+import { savesPrompt } from "./save-prompt";
+import type { PromptSave } from "./save-prompt";
 
 const tweet: PromptSave = {
   source: "twitter",

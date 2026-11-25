@@ -4,6 +4,7 @@ import {
   enrichmentRestMs,
   enrichmentSuspended,
 } from "@shared/machine-pace";
+import log from "electron-log/renderer";
 import pLimit from "p-limit";
 import { enrichmentMonitor } from "@/features/enrichment/state/enrichment-monitor";
 import {
@@ -87,7 +88,9 @@ export function saveNeedsEnrichment(
   save: { id: string; status?: string; deletedAt?: number | Date | null },
   missingIds: ReadonlySet<string>,
 ): boolean {
-  if (save.deletedAt != null || save.status !== "complete") return false;
+  if (save.deletedAt !== null || save.status !== "complete") {
+    return false;
+  }
   return !missingIds.has(save.id);
 }
 
@@ -95,7 +98,7 @@ export async function refreshMissingOriginals(): Promise<ReadonlySet<string>> {
   const report = await window.pond.query("library.rescan", {});
   const missingOriginals = report.missingFiles;
   const ids = new Set(missingOriginals.map((save) => save.id));
-  const stale: string[] = [];
+  const stale: Array<string> = [];
   for (const key of failed) {
     const saveId = key.slice(key.indexOf(":") + 1);
     if (ids.has(saveId)) stale.push(key);
@@ -131,7 +134,7 @@ function recordRun(enricher: Enricher, ms: number): void {
   stats.byEnricher.set(enricher.id, e);
   if (stats.done % 10 === 0) {
     const avg = Math.round(stats.totalMs / stats.done);
-    console.info(
+    log.info(
       `[enrichment] progress done=${stats.done} inflight=${inflight.size} avg=${avg}ms ` +
         `last=${enricher.id} (${Math.round(ms)}ms)`,
     );
@@ -177,14 +180,18 @@ function cooldown(lastRunMs: number): Promise<void> {
     lastRunMs,
     enrichmentCooldownFactor(readMachinePace()),
   );
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function whenIdle(timeout = 2000): Promise<void> {
   return new Promise((resolve) => {
     if (globalThis.requestIdleCallback) {
       globalThis.requestIdleCallback(() => resolve(), { timeout });
-    } else setTimeout(resolve, 0);
+    } else {
+      setTimeout(resolve, 0);
+    }
   });
 }
 
@@ -200,15 +207,16 @@ function dependenciesSatisfied(
     if (
       dep.enabled(prefs) &&
       enrichmentPreferenceAccess.eligible(dep, save, prefs)
-    )
+    ) {
       return false;
+    }
   }
   return true;
 }
 
 async function persist(enricher: Enricher, save: Save): Promise<void> {
   const result = await enrichmentPreferenceAccess.run(enricher, save);
-  if (result == null) {
+  if (result === null) {
     rememberFailure(
       keyFor(enricher, save),
       save,
@@ -234,8 +242,8 @@ async function persist(enricher: Enricher, save: Save): Promise<void> {
         id: save.id,
         patch: result.derived,
       });
-    } catch (err) {
-      console.warn(`[enrichment] persist failed (${enricher.id})`, err);
+    } catch (error) {
+      log.warn(`[enrichment] persist failed (${enricher.id})`, error);
     }
   }
 }
@@ -264,11 +272,11 @@ function schedule(enricher: Enricher, save: Save): void {
       return;
     }
     const startedAt = performance.now();
-    let elapsed = 0;
+    let elapsed: number;
     try {
       await persist(enricher, current);
-    } catch (err) {
-      if (err instanceof Error && isMissingMediaFailure(err)) {
+    } catch (error) {
+      if (error instanceof Error && isMissingMediaFailure(error)) {
         missingDuringSweep.add(save.id);
         const existing = enrichmentMonitor.snapshot().missingOriginals;
         if (!existing.some((item) => item.id === save.id)) {
@@ -284,10 +292,12 @@ function schedule(enricher: Enricher, save: Save): void {
           key,
           current,
           enricher.id,
-          err instanceof Error && err.message ? err.message : "Couldn't finish",
+          error instanceof Error && error.message
+            ? error.message
+            : "Couldn't finish",
         );
       }
-      console.warn(`[enrichment] ${enricher.id} failed for ${save.id}`, err);
+      log.warn(`[enrichment] ${enricher.id} failed for ${save.id}`, error);
     } finally {
       elapsed = performance.now() - startedAt;
       recordRun(enricher, elapsed);
@@ -301,8 +311,10 @@ function schedule(enricher: Enricher, save: Save): void {
 let mutationGeneration = 0;
 let lastFullScanGeneration = -1;
 
-async function scan(ids?: readonly string[]): Promise<void> {
-  if (suspended()) return;
+async function scan(ids?: ReadonlyArray<string>): Promise<void> {
+  if (suspended()) {
+    return;
+  }
   const prefs = getPrefsSnapshot();
   const scope = ids && ids.length > 0 ? new Set(ids) : null;
   let missingIds: ReadonlySet<string> = new Set(
@@ -311,15 +323,15 @@ async function scan(ids?: readonly string[]): Promise<void> {
   if (!scope) {
     try {
       missingIds = await refreshMissingOriginals();
-    } catch (err) {
-      console.warn("[enrichment] missing-file check failed", err);
+    } catch (error) {
+      log.warn("[enrichment] missing-file check failed", error);
     }
   }
   const saves = [...pool.snapshot()]
     .filter((s) => !scope || scope.has(s.id))
     .filter((s) => saveNeedsEnrichment(s, missingIds))
     .sort((a, b) => b.savedAt - a.savedAt);
-  const backlog: string[] = [];
+  const backlog: Array<string> = [];
   for (const enricher of ENRICHERS) {
     if (!enricher.enabled(prefs)) continue;
     let eligible = 0;
@@ -332,7 +344,7 @@ async function scan(ids?: readonly string[]): Promise<void> {
     if (eligible > 0) backlog.push(`${enricher.id}=${eligible}`);
   }
   if (backlog.length > 0) {
-    console.info(
+    log.info(
       `[enrichment] scan backlog ${backlog.join(" ")} (inflight=${inflight.size})`,
     );
   }
@@ -344,7 +356,7 @@ let scanScheduled = false;
 let pendingScope: Set<string> | null = null;
 const FULL_SCAN_MS = 15 * 60_000;
 
-function scheduleScan(ids?: readonly string[]): void {
+function scheduleScan(ids?: ReadonlyArray<string>): void {
   const scoped = ids && ids.length > 0 ? ids : null;
   if (scanScheduled) {
     if (!scoped) pendingScope = null;
@@ -364,7 +376,7 @@ function scheduleScan(ids?: readonly string[]): void {
   }, 250);
 }
 
-export function rescanEnrichment(ids?: readonly string[]): void {
+export function rescanEnrichment(ids?: ReadonlyArray<string>): void {
   if (ids && ids.length > 0) {
     const scope = new Set(ids);
     for (const key of failed) {
@@ -388,8 +400,8 @@ export function startEnrichmentSweep(): () => void {
   const hydrations = ENRICHERS.flatMap((e) =>
     e.hydrate
       ? [
-          e.hydrate().catch((err) => {
-            console.warn(`[enrichment] hydrate failed (${e.id})`, err);
+          e.hydrate().catch((cause: unknown) => {
+            log.warn(`[enrichment] hydrate failed (${e.id})`, cause);
           }),
         ]
       : [],

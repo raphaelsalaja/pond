@@ -17,12 +17,13 @@ import { exportPondPackage, importPondPackage } from "./pond-package";
 import { transferJobStore } from "./transfer-jobs";
 
 export function copySaveSelectionToLibrary(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   target: string,
 ) {
   return runLibraryTransfer(async () => {
-    if ((await realpath(target)) === (await realpath(libraryRoot())))
+    if ((await realpath(target)) === (await realpath(libraryRoot()))) {
       throw new Error("Choose a different library.");
+    }
     const temporary = await mkdtemp(join(tmpdir(), "pond-library-copy-"));
     try {
       const packagePath = join(temporary, "Selection.pondpack");
@@ -35,8 +36,9 @@ export function copySaveSelectionToLibrary(
 }
 export function mergeLibraryFrom(source: string) {
   return runLibraryTransfer(async () => {
-    if ((await realpath(source)) === (await realpath(libraryRoot())))
+    if ((await realpath(source)) === (await realpath(libraryRoot()))) {
       throw new Error("Choose a different library.");
+    }
     const temporary = await mkdtemp(join(tmpdir(), "pond-library-merge-"));
     try {
       await packageLibrary(source, temporary);
@@ -47,8 +49,9 @@ export function mergeLibraryFrom(source: string) {
   });
 }
 async function executeRequest(request: TransferRequest) {
-  if ((await realpath(request.origin)) !== (await realpath(libraryRoot())))
+  if ((await realpath(request.origin)) !== (await realpath(libraryRoot()))) {
     throw new Error("Open the original library before retrying this transfer.");
+  }
   switch (request.kind) {
     case "export_eagle_package":
       return exportSavesToEaglePackage(request.ids ?? [], request.destination);
@@ -71,12 +74,16 @@ async function executeRequest(request: TransferRequest) {
 export async function retryTransferJob(id: string): Promise<OkResult> {
   const store = transferJobStore();
   const job = (await store.list()).find((entry) => entry.id === id);
-  if (!job || !["failed", "cancelled", "interrupted"].includes(job.status))
+  if (!job || !["failed", "cancelled", "interrupted"].includes(job.status)) {
     return { ok: false, error: "This transfer can't be retried." };
-  if ((await realpath(job.request.origin)) !== (await realpath(libraryRoot())))
+  }
+  if (
+    (await realpath(job.request.origin)) !== (await realpath(libraryRoot()))
+  ) {
     throw new Error("Open the original library before retrying this transfer.");
+  }
   void store
     .run(job.request, () => executeRequest(job.request), id)
-    .catch((error) => log.warn("Transfer retry stopped", error));
+    .catch((cause: unknown) => log.warn("Transfer retry stopped", cause));
   return { ok: true };
 }

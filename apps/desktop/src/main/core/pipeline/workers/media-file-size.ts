@@ -5,9 +5,9 @@ import type { WriteFileArgs } from "./apply";
  * adds files and may replace some, so the stored size has to match what remains.
  */
 export function fileSizeAfterMediaWrite(
-  existing: readonly { kind: string; size: number }[] | null | undefined,
-  newFiles: readonly WriteFileArgs[],
-  replaceKinds: readonly string[],
+  existing: ReadonlyArray<{ kind: string; size: number }> | null | undefined,
+  newFiles: ReadonlyArray<WriteFileArgs>,
+  replaceKinds: ReadonlyArray<string>,
 ): number {
   const replaced = new Set(replaceKinds);
   const retained = (existing ?? []).reduce(

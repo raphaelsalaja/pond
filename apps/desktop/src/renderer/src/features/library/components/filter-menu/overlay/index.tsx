@@ -17,8 +17,8 @@ import {
   setVisualProbe,
   useSemanticQuery,
   useVisualProbe,
-  type VisualProbe,
 } from "@/features/library/state/view-store";
+import type { VisualProbe } from "@/features/library/state/view-store";
 import { draggingSaveIds } from "@/features/saves";
 import { pool } from "@/features/saves/pool";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";

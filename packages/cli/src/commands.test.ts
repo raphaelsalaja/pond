@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { registerCommands } from "./commands";
 import { completionScript } from "./commands/core";
 
-function commandPaths(command: Command, parent = ""): string[] {
+function commandPaths(command: Command, parent = ""): Array<string> {
   return command.commands.flatMap((child) => {
     const path = parent ? `${parent} ${child.name()}` : child.name();
     return [path, ...commandPaths(child, path)];

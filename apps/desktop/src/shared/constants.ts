@@ -1,7 +1,7 @@
 import type { ExternalSource } from "@pond/schema/sources";
 import type { BlankDocumentKind } from "./blank-documents";
 
-export const DEFAULT_INGEST_PORT = 41610;
+export const DEFAULT_INGEST_PORT = 41_610;
 
 export const DEFAULT_LIBRARY_NAME = "My Pond";
 

@@ -1,19 +1,21 @@
 import { Button } from "@pond/ui";
 import type { DownloadActivity } from "@shared/download-activity";
 import type { QueueSourceGate } from "@shared/queue-contracts";
-import { type ReactNode, useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { useClientHeight } from "@/shared/hooks/use-client-height";
-import { type DownloadRow, mergeDownloadRows } from "../../../lib/status-feed";
+import { mergeDownloadRows } from "../../../lib/status-feed";
+import type { DownloadRow } from "../../../lib/status-feed";
 import { DownloadTable } from "../table";
 import styles from "./styles.module.css";
 
 const PRE_MEASUREMENT_ROW_LIMIT = 50;
 
 export interface DownloadsViewProps {
-  rows: DownloadRow[];
-  completed: DownloadRow[];
-  activities: readonly DownloadActivity[];
-  gates: readonly QueueSourceGate[];
+  rows: Array<DownloadRow>;
+  completed: Array<DownloadRow>;
+  activities: ReadonlyArray<DownloadActivity>;
+  gates: ReadonlyArray<QueueSourceGate>;
   paused: boolean;
   historyLoading: boolean;
   historyError: boolean;
@@ -33,7 +35,9 @@ function LoadMoreSentinel({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const load = useRef(onLoadMore);
-  load.current = onLoadMore;
+  useLayoutEffect(() => {
+    load.current = onLoadMore;
+  }, [onLoadMore]);
   useEffect(() => {
     const node = ref.current;
     if (!node || loading || !globalThis.IntersectionObserver) return;
@@ -58,7 +62,7 @@ export function DownloadsView(props: DownloadsViewProps) {
     : rows.slice(0, PRE_MEASUREMENT_ROW_LIMIT);
   const extra = props.historyError ? (
     <div className={styles.message} role="alert">
-      Couldn't load download history.
+      Couldn&apos;t load download history.
       <Button size="sm" variant="text" onClick={props.onRetryHistory}>
         Try Again
       </Button>

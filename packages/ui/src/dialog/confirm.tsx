@@ -1,16 +1,10 @@
-import {
-  type ComponentProps,
-  type ReactNode,
-  type RefObject,
-  useId,
-  useRef,
-  useState,
-} from "react";
+import { useId, useRef, useState } from "react";
+import type { ComponentProps, ReactNode, RefObject } from "react";
 import { Button } from "../button";
 import { Checkbox } from "../checkbox";
 import { DialogParts as Dialog } from "./dialog";
-import styles from "./styles.module.css";
 import { useDialogSubmit } from "./use-dialog-submit";
+import styles from "./styles.module.css";
 
 type ButtonVariant = ComponentProps<typeof Button>["variant"];
 

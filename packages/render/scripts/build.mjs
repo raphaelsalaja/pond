@@ -16,10 +16,9 @@ import {
   readdirSync,
   statSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const PACKAGE = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const PACKAGE = resolve(import.meta.dirname, "..");
 const REPO = resolve(PACKAGE, "../..");
 const XEET = resolve(process.env.POND_XEET_DIR ?? join(REPO, "../xeet"));
 const OUT = join(REPO, "apps/desktop/resources/render");
@@ -65,8 +64,9 @@ const open = [
     .filter((f) => /^(Noto|STIX)/.test(f))
     .map((f) => join(XEET, "assets/vendor/fonts", f)),
 ];
-for (const file of open)
+for (const file of open) {
   copyFileSync(file, join(OUT, "fonts", file.split("/").pop()));
+}
 
 const mb = (statSync(join(OUT, "pond-render.wasm")).size / 1e6).toFixed(1);
 console.log(`pond-render.wasm ${mb} MB and ${open.length} fonts in ${OUT}`);

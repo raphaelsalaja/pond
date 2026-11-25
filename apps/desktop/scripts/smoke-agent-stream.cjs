@@ -2,17 +2,17 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const assert = require("node:assert/strict");
 const { mkdtempSync, rmSync } = require("node:fs");
 const { tmpdir } = require("node:os");
-const { join, resolve } = require("node:path");
+const path = require("node:path");
 
-const sandbox = mkdtempSync(join(tmpdir(), "pond-agent-stream-"));
+const sandbox = mkdtempSync(path.join(tmpdir(), "pond-agent-stream-"));
 app.setPath("userData", sandbox);
 app.on("quit", () => rmSync(sandbox, { recursive: true, force: true }));
 const timeout = setTimeout(() => {
   console.error("AGENT_STREAM_FAILED: reply did not finish");
   app.exit(1);
-}, 30000);
+}, 30_000);
 
-app.whenReady().then(async () => {
+void app.whenReady().then(async () => {
   try {
     const { build } = await import("vite");
     const bundle = await build({
@@ -22,7 +22,7 @@ app.whenReady().then(async () => {
         write: false,
         minify: false,
         lib: {
-          entry: resolve(
+          entry: path.resolve(
             __dirname,
             "../src/renderer/src/features/agent/state/chat-transport.ts",
           ),
@@ -65,7 +65,7 @@ app.whenReady().then(async () => {
     const window = new BrowserWindow({
       show: false,
       webPreferences: {
-        preload: resolve(__dirname, "../out/preload/index.cjs"),
+        preload: path.resolve(__dirname, "../out/preload/index.cjs"),
         contextIsolation: true,
         sandbox: true,
       },

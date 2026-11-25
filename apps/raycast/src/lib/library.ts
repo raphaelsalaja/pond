@@ -2,7 +2,8 @@ import { useCachedPromise } from "@raycast/utils";
 import type { ApiTag } from "pond-api";
 import { useMemo } from "react";
 import { pond } from "../api/client";
-import { type FolderPath, folderPaths } from "./display";
+import { folderPaths } from "./display";
+import type { FolderPath } from "./display";
 
 async function loadTags() {
   return pond().tags();
@@ -47,8 +48,8 @@ export function useSources() {
 }
 
 export interface Lookups {
-  tags: ApiTag[];
-  folders: FolderPath[];
+  tags: Array<ApiTag>;
+  folders: Array<FolderPath>;
   folderById: ReadonlyMap<string, FolderPath>;
   revalidate: () => void;
 }

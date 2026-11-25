@@ -40,8 +40,8 @@ type QueuedJob = {
 
 type RuntimeState = {
   active: boolean;
-  interactive: QueuedJob[];
-  background: QueuedJob[];
+  interactive: Array<QueuedJob>;
+  background: Array<QueuedJob>;
 };
 
 export interface LocalRuntimeCoordinator {
@@ -98,7 +98,10 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
       const controller = new AbortController();
       let started = false;
       let settled = false;
-      let timer: ReturnType<typeof setTimeout> | undefined;
+      const timer = setTimeout(
+        () => job.cancel("timeout"),
+        positiveTimeout(request.timeoutMs),
+      );
       let resolveResult!: (value: T) => void;
       let rejectResult!: (reason: Error) => void;
       const result = new Promise<T>((resolve, reject) => {
@@ -115,7 +118,7 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
         if (index >= 0) queue.splice(index, 1);
       };
       const cleanup = (): void => {
-        if (timer) clearTimeout(timer);
+        clearTimeout(timer);
         request.signal.removeEventListener("abort", onAbort);
       };
       const settleFailure = (reason: LocalRuntimeCoordinationFailure): void => {
@@ -151,11 +154,11 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
               }
               finish();
             },
-            (error) => {
+            (cause: unknown) => {
               if (!settled) {
                 settled = true;
                 rejectResult(
-                  error instanceof Error ? error : new Error(String(error)),
+                  cause instanceof Error ? cause : new Error(String(cause)),
                 );
               }
               finish();
@@ -180,10 +183,6 @@ export function createLocalRuntimeCoordinator(): LocalRuntimeCoordinator {
         return result;
       }
       request.signal.addEventListener("abort", onAbort, { once: true });
-      timer = setTimeout(
-        () => job.cancel("timeout"),
-        positiveTimeout(request.timeoutMs),
-      );
       const queue =
         request.priority === "interactive"
           ? state.interactive

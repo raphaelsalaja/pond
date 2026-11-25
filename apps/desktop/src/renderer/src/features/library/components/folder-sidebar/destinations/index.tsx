@@ -1,7 +1,6 @@
 import {
   closestCenter,
   DndContext,
-  type DragEndEvent,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
@@ -9,6 +8,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   SortableContext,
@@ -36,13 +36,8 @@ import { DatePopover, Sidebar } from "@pond/ui";
 import { QueueSummarySchema } from "@shared/queue-contracts";
 import { useQuery } from "@tanstack/react-query";
 import { useReducedMotionConfig } from "motion/react";
-import {
-  type ReactElement,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useRef, useState } from "react";
+import type { ReactElement } from "react";
 import { createPortal } from "react-dom";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import { parseLocalDay } from "@/features/library/lib/local-day";
@@ -238,7 +233,7 @@ export function LibraryDestinations({
     queryKey: ["queue.summary"],
     queryFn: async () =>
       QueueSummarySchema.parse(await window.pond.query("queue.summary", {})),
-    refetchInterval: 2_000,
+    refetchInterval: 2000,
   });
   const counts = useSidebarCounts();
   const [sidebar, patch, loaded] = usePrefs("sidebar");
@@ -260,9 +255,13 @@ export function LibraryDestinations({
   const downloadsCount = queueSummary.data?.actionable ?? 0;
   const downloadingCount = queueSummary.data?.running ?? 0;
 
-  useEffect(() => setOrder(sidebar.order), [sidebar.order]);
+  const [syncedOrder, setSyncedOrder] = useState(sidebar.order);
+  if (syncedOrder !== sidebar.order) {
+    setSyncedOrder(sidebar.order);
+    setOrder(sidebar.order);
+  }
 
-  const saveOrder = (next: SidebarDestination[]) => {
+  const saveOrder = (next: Array<SidebarDestination>) => {
     setOrder(next);
     void patch({ order: next });
   };
@@ -539,9 +538,10 @@ export function LibraryDestinations({
             accessibility={{
               announcements: createSortableAnnouncements(
                 group.destinations,
-                (id) =>
-                  /** SAFETY: this context only registers the group's destination ids. */
-                  SIDEBAR_DESTINATION_LABELS[id as SidebarDestination],
+                (id) => {
+                  const item = group.destinations.find((entry) => entry === id);
+                  return item ? SIDEBAR_DESTINATION_LABELS[item] : String(id);
+                },
               ),
               screenReaderInstructions:
                 SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS,
@@ -549,14 +549,18 @@ export function LibraryDestinations({
             collisionDetection={closestCenter}
             modifiers={VERTICAL_SORT_MODIFIERS}
             sensors={sensors}
-            onDragStart={({ active, activatorEvent }) =>
-              setActiveSort({
-                /** SAFETY: this context only registers the group's destination ids. */
-                destination: active.id as SidebarDestination,
-                group: group.label,
-                keyboard: activatorEvent.type.startsWith("key"),
-              })
-            }
+            onDragStart={({ active, activatorEvent }) => {
+              const destination = group.destinations.find(
+                (item) => item === active.id,
+              );
+              if (destination) {
+                setActiveSort({
+                  destination,
+                  group: group.label,
+                  keyboard: activatorEvent.type.startsWith("key"),
+                });
+              }
+            }}
             onDragCancel={() => setActiveSort(null)}
             onDragEnd={({ active, over }: DragEndEvent) => {
               setActiveSort(null);

@@ -1,11 +1,5 @@
-import {
-  type MediaType,
-  type NewSave,
-  type Save,
-  saves,
-  syncActions,
-  tasks,
-} from "@pond/schema/db";
+import { saves, syncActions, tasks } from "@pond/schema/db";
+import type { MediaType, NewSave, Save } from "@pond/schema/db";
 import type { Capture, CaptureAuthor, RawJson } from "@pond/schema/raw";
 import { and, eq } from "drizzle-orm";
 import { ulid } from "ulid";
@@ -60,7 +54,7 @@ export async function applySeedToExistingSave(
 
 interface SeedMerge {
   changed: boolean;
-  filled: string[];
+  filled: Array<string>;
   didFillAvatarUrl: boolean;
   rawJson: RawJson | null;
 }
@@ -77,7 +71,7 @@ export function mergeSeedIntoExistingSave(
   const existingAuthor: CaptureAuthor = existingCapture?.author ?? {};
   const seedAuthor: CaptureAuthor = seedCapture?.author ?? {};
   const nextAuthor: CaptureAuthor = { ...existingAuthor };
-  const filled: string[] = [];
+  const filled: Array<string> = [];
   let didFillAvatarUrl = false;
   for (const key of [
     "name",
@@ -88,7 +82,11 @@ export function mergeSeedIntoExistingSave(
   ] as const) {
     const have = nextAuthor[key];
     const fresh = seedAuthor[key];
-    if ((have === undefined || have === null || have === "") && fresh != null) {
+    if (
+      (have === undefined || have === null || have === "") &&
+      fresh !== null &&
+      fresh !== undefined
+    ) {
       Object.assign(nextAuthor, { [key]: fresh });
       filled.push(`capture.author.${key}`);
       if (key === "avatarUrl") didFillAvatarUrl = true;

@@ -1,12 +1,12 @@
 import type { ListKind, MediaType } from "@pond/schema/db";
 
 export interface ListHarvestArgs {
-  knownIds: string[];
+  knownIds: Array<string>;
   earlyStop?: boolean;
   /** Page cursor an unfinished backfill stopped at. */
   resumeCursor?: string;
   /** Lists a walk that covers saved and liked items reads; omitted reads both. */
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
   /** A newest-first walk stops at the first item saved before this instant. */
   savedSince?: string;
 }
@@ -21,15 +21,15 @@ export interface ListEntry {
   mediaUrl?: string;
   mediaUrls?: Array<{ url: string; type?: MediaType; poster?: string }>;
   mediaType?: MediaType;
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
   /** Import collections the entry was found in, so sync can file it into matching Folders. */
-  collectionIds?: string[];
+  collectionIds?: Array<string>;
 }
 
 export type ListHarvestResult =
   | {
       ok: true;
-      entries: ListEntry[];
+      entries: Array<ListEntry>;
       reachedEnd: boolean;
       seen?: number;
       resumeCursor?: string;

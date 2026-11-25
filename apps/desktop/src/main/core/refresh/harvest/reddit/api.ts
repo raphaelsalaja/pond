@@ -16,11 +16,11 @@ import {
   entriesFromListing,
   handleFromMeJson,
   RedditAccountSchema,
-  type RedditListingKind,
   RedditListingSchema,
   RedditPostResponseSchema,
   redditListingUrl,
 } from "./listing";
+import type { RedditListingKind } from "./listing";
 
 const CHROME_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 " +
@@ -45,8 +45,8 @@ async function fetchRedditJson<T>(
         "user-agent": CHROME_UA,
       },
     });
-  } catch (err) {
-    log.warn("[pond reddit-api] fetch threw", url, err);
+  } catch (error) {
+    log.warn("[pond reddit-api] fetch threw", url, error);
     return { ok: false, status: 0, html: false };
   }
   const text = await res.text();
@@ -206,8 +206,10 @@ export async function fetchRedditPostCapture(
   const listing = Array.isArray(result.json) ? result.json[0] : result.json;
   const { entries } = entriesFromListing(listing ?? {});
   const entry = entries[0];
-  if (!entry) return null;
-  const media: CaptureMedia[] = [];
+  if (!entry) {
+    return null;
+  }
+  const media: Array<CaptureMedia> = [];
   for (const m of entry.mediaUrls ?? []) {
     const item: CaptureMedia = {
       url: m.url,

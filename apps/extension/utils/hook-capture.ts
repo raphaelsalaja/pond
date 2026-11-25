@@ -35,7 +35,7 @@ export function createRateLimit(
   limit: number,
   windowMs: number,
 ): (now: number) => boolean {
-  const recent: number[] = [];
+  const recent: Array<number> = [];
   return (now) => {
     while (recent.length > 0 && now - (recent[0] ?? 0) >= windowMs) {
       recent.shift();

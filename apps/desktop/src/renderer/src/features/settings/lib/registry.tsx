@@ -25,10 +25,10 @@ import {
   SETTINGS_GROUP_LABELS,
   SETTINGS_GROUP_ORDER,
   SETTINGS_SECTIONS,
-  type SettingsGroup,
-  type SettingsSection,
 } from "@pond/schema";
-import { EXTERNAL_SOURCE_IDS, type ExternalSource } from "@pond/schema/sources";
+import type { SettingsGroup, SettingsSection } from "@pond/schema";
+import { EXTERNAL_SOURCE_IDS } from "@pond/schema/sources";
+import type { ExternalSource } from "@pond/schema/sources";
 import type { ReactNode } from "react";
 import type { SectionConfig } from "@/features/settings/components/engine";
 import { sourceSectionId } from "@/features/settings/lib/download-sources";
@@ -77,7 +77,7 @@ export interface SectionDef extends SettingsSection {
   config: SectionConfig;
 }
 
-export const SECTIONS: SectionDef[] = SETTINGS_SECTIONS.map((section) => {
+export const SECTIONS: Array<SectionDef> = SETTINGS_SECTIONS.map((section) => {
   const icon = sectionIcon(section.id);
   const config = SECTION_CONFIGS.get(section.id);
   if (!icon || !config) {
@@ -103,7 +103,7 @@ function isIndexSection(section: SectionDef): boolean {
   return !section.hidden;
 }
 
-const SECTIONS_BY_GROUP = new Map<SettingsGroup, SectionDef[]>();
+const SECTIONS_BY_GROUP = new Map<SettingsGroup, Array<SectionDef>>();
 for (const section of SECTIONS) {
   if (!isIndexSection(section)) continue;
   const list = SECTIONS_BY_GROUP.get(section.group) ?? [];
@@ -133,10 +133,10 @@ export function sectionForId(id: string): SectionDef | undefined {
 interface SettingsMasterGroup {
   group: SettingsGroup;
   label: string | null;
-  sections: SectionDef[];
+  sections: Array<SectionDef>;
 }
 
-export const SETTINGS_MASTER_GROUPS: SettingsMasterGroup[] =
+export const SETTINGS_MASTER_GROUPS: Array<SettingsMasterGroup> =
   SETTINGS_GROUP_ORDER.flatMap((group) => {
     const sections = SECTIONS_BY_GROUP.get(group) ?? [];
     if (sections.length === 0) return [];

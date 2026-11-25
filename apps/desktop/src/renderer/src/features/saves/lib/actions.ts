@@ -35,7 +35,8 @@ export function resolveFileIndex(
   preferred?: number | null,
 ): number | null {
   if (
-    preferred != null &&
+    preferred !== undefined &&
+    preferred !== null &&
     preferred >= 0 &&
     preferred < save.files.length &&
     save.files[preferred]
@@ -118,7 +119,7 @@ export function focusPaneTitle(): void {
   requestAnimationFrame(tick);
 }
 
-function selectedSaveIds(): readonly string[] {
+function selectedSaveIds(): ReadonlyArray<string> {
   const ids = selection.snapshot();
   if (ids.length > 0) return ids;
   const primary = primarySelection.get();
@@ -130,7 +131,7 @@ function selectedSaveIds(): readonly string[] {
  * turn makes the picker treat the move as a dismissal.
  */
 function menuIsOpen(): boolean {
-  return document.querySelector("[role='menu'][data-open]") != null;
+  return document.querySelector("[role='menu'][data-open]") !== null;
 }
 
 function openAfterMenuCloses(open: () => void): void {
@@ -168,7 +169,9 @@ export async function openDefaultApp(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.openSaveFile(save.id, fileIndex),
   );
@@ -180,7 +183,9 @@ export async function revealFile(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.revealSave(save.id, fileIndex),
   );
@@ -194,7 +199,9 @@ export async function copyFilePath(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = FilePathReplySchema.parse(
     await window.pond.query("saves.filePath", { id: save.id, fileIndex }),
   );
@@ -211,7 +218,9 @@ async function copyFile(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.query("saves.copyFile", { id: save.id, fileIndex }),
   );
@@ -231,7 +240,9 @@ export async function openInBrowser(save: Save): Promise<void> {
     if (parsed.protocol === "http:" || parsed.protocol === "https:") {
       await window.pond.openExternal(parsed.toString());
     }
-  } catch {}
+  } catch {
+    /** A malformed Save URL or a refused open has nothing to recover. */
+  }
 }
 
 export async function refreshSaveMetadata(save: Save): Promise<void> {
@@ -247,7 +258,7 @@ export function copyableImageIndex(
   save: Save,
   preferredIndex?: number | null,
 ): number | null {
-  if (preferredIndex != null) {
+  if (preferredIndex !== undefined && preferredIndex !== null) {
     const file = save.files[preferredIndex];
     return file && isCopyableImageFile(file) ? preferredIndex : null;
   }
@@ -273,7 +284,9 @@ async function copyImage(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = copyableImageIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.query("saves.copyImage", { id: save.id, fileIndex }),
   );
@@ -288,7 +301,7 @@ export async function copyPrimaryMedia(
   save: Save,
   preferredIndex?: number | null,
 ): Promise<void> {
-  if (copyableImageIndex(save, preferredIndex) != null) {
+  if (copyableImageIndex(save, preferredIndex) !== null) {
     await copyImage(save, preferredIndex);
     return;
   }
@@ -311,7 +324,9 @@ export async function copyBase64(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = OkSchema.parse(
     await window.pond.query("saves.copyBase64", {
       id: save.id,
@@ -345,7 +360,9 @@ export async function exportFile(
   preferredIndex?: number | null,
 ): Promise<void> {
   const fileIndex = resolveFileIndex(save, preferredIndex);
-  if (fileIndex == null) return;
+  if (fileIndex === null) {
+    return;
+  }
   const result = FilePathReplySchema.parse(
     await window.pond.query("saves.exportFile", { id: save.id, fileIndex }),
   );

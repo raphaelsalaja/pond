@@ -31,7 +31,7 @@ export const CHROME_WEB_STORE_URL = `https://chromewebstore.google.com/detail/${
 
 export const FIREFOX_ADDONS_URL = `https://addons.mozilla.org/firefox/addon/${encodeURIComponent(FIREFOX_EXTENSION_ID)}/`;
 
-export const CHROMIUM_EXTENSION_IDS: readonly string[] = [
+export const CHROMIUM_EXTENSION_IDS: ReadonlyArray<string> = [
   EXTENSION_ID,
   CHROME_WEB_STORE_ID,
 ];

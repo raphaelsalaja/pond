@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { SAFARI_APP_GROUP, SHARE_INBOX_DIR } from "@pond/schema/native";
 
 const WINDOWS_SID = /^S-\d+(?:-\d+)+$/;
-export const WINDOWS_SID_LOOKUP_TIMEOUT_MS = 3_000;
+export const WINDOWS_SID_LOOKUP_TIMEOUT_MS = 3000;
 const execFileAsync = promisify(execFile);
 
 export type WindowsSidLoader = () => Promise<string>;
@@ -24,7 +24,11 @@ async function loadWindowsUserSid(): Promise<string> {
   try {
     const { stdout } = await execFileAsync(
       /** An absolute path, since Git Bash's whoami can shadow the system one on PATH. */
-      join(process.env.SystemRoot ?? "C:\\Windows", "System32", "whoami.exe"),
+      join(
+        process.env.SystemRoot ?? String.raw`C:\Windows`,
+        "System32",
+        "whoami.exe",
+      ),
       ["/user", "/fo", "csv", "/nh"],
       {
         encoding: "utf8",

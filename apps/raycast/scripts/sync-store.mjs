@@ -1,11 +1,10 @@
 /** Copies this extension into a raycast/extensions checkout, pinned to the published pond-api. */
 import { execFileSync } from "node:child_process";
 import { cp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const FILES = [".prettierrc", "CHANGELOG.md", "README.md", "ai.yaml", "eslint.config.js", "tsconfig.json"];
+const root = resolve(import.meta.dirname, "..");
+const FILES = [".prettierrc", "CHANGELOG.md", "README.md", "ai.yaml", "eslint.config.mjs", "tsconfig.json"];
 const FOLDERS = ["assets", "metadata", "src", "tests"];
 const MANAGED = new Set([...FILES, ...FOLDERS, "package.json", "package-lock.json", "node_modules"]);
 

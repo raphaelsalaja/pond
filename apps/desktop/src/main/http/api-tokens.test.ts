@@ -1,29 +1,46 @@
 import { describe, expect, it } from "vitest";
-import { type ApiTokenStorage, createApiTokenStore } from "./api-tokens";
+import { z } from "zod";
+import { createApiTokenStore } from "./api-tokens";
+import type { ApiTokenStorage } from "./api-tokens";
 
 function memoryStorage(initial: string | null = null) {
   const state = { value: initial, writes: 0 };
+  const waiting: Array<(value: string) => void> = [];
   const storage: ApiTokenStorage = {
     read: async () => state.value,
     write: async (value) => {
       state.value = value;
       state.writes += 1;
+      waiting.shift()?.(value);
     },
   };
-  return { state, storage };
+  const nextWrite = () => {
+    const next = Promise.withResolvers<string>();
+    waiting.push(next.resolve);
+    return next.promise;
+  };
+  return { state, storage, nextWrite };
+}
+
+const StoredUseSchema = z.array(
+  z.looseObject({ lastUsedAt: z.number().nullable() }),
+);
+
+function lastUsedAt(stored: string | null): number | null | undefined {
+  return StoredUseSchema.parse(JSON.parse(stored ?? "[]"))[0]?.lastUsedAt;
 }
 
 describe("createApiTokenStore", () => {
   it("authenticates a created token and never stores it in plain text", async () => {
     const { state, storage } = memoryStorage();
-    const store = createApiTokenStore(storage, () => 1_000);
+    const store = createApiTokenStore(storage, () => 1000);
     const { token, info } = await store.create("Alfred", ["search", "search"]);
 
     expect(token).toMatch(/^pond_[0-9a-f]{48}$/);
     expect(info).toMatchObject({
       name: "Alfred",
       scopes: ["search"],
-      createdAt: 1_000,
+      createdAt: 1000,
       lastUsedAt: null,
     });
     expect(state.value).not.toContain(token);
@@ -54,24 +71,25 @@ describe("createApiTokenStore", () => {
 
   it("records use at most once a minute", async () => {
     let time = 0;
-    const { state, storage } = memoryStorage();
+    const { state, storage, nextWrite } = memoryStorage();
     const store = createApiTokenStore(storage, () => time);
     const { token } = await store.create("Script", ["search"]);
-    const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-    time = 5_000;
+    time = 5000;
+    const firstUse = nextWrite();
     await store.authenticate(token);
-    await settle();
+    expect(lastUsedAt(await firstUse)).toBe(5000);
+
     time = 30_000;
     await store.authenticate(token);
-    await settle();
-    expect(state.writes).toBe(2);
-    expect((await store.list())[0]?.lastUsedAt).toBe(5_000);
+    expect(lastUsedAt(state.value)).toBe(5000);
 
     time = 70_000;
+    const laterUse = nextWrite();
     await store.authenticate(token);
-    await settle();
-    expect((await store.list())[0]?.lastUsedAt).toBe(70_000);
+    /** A write from the 30 s use would resolve this first or raise the count. */
+    expect(lastUsedAt(await laterUse)).toBe(70_000);
+    expect(state.writes).toBe(3);
   });
 
   it("starts empty when the stored list is unreadable", async () => {

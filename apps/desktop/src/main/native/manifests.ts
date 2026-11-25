@@ -101,7 +101,7 @@ const LINUX_CHROMIUM_FLATPAK_DIRS = [
 function linuxChromiumNativeHostDirs(input: {
   home: string;
   configHome: string;
-}): string[] {
+}): Array<string> {
   return [
     ...LINUX_CHROMIUM_CONFIG_DIRS.map((browser) =>
       posix.join(input.configHome, browser, "NativeMessagingHosts"),
@@ -117,7 +117,7 @@ function linuxChromiumNativeHostDirs(input: {
 }
 
 /** Firefox reads a single per-user directory; forks and packaged builds each have their own. */
-function linuxFirefoxNativeHostDirs(input: { home: string }): string[] {
+function linuxFirefoxNativeHostDirs(input: { home: string }): Array<string> {
   return [
     posix.join(input.home, ".mozilla/native-messaging-hosts"),
     posix.join(input.home, ".zen/native-messaging-hosts"),
@@ -182,13 +182,15 @@ function nativeHostBinaryPath(
 export function windowsRegistryArgs(
   key: string,
   manifestPath: string,
-): string[] {
+): Array<string> {
   return ["ADD", key, "/ve", "/t", "REG_SZ", "/d", manifestPath, "/f"];
 }
 
 function hostManifest(
   hostPath: string,
-  allow: { allowed_origins: string[] } | { allowed_extensions: string[] },
+  allow:
+    | { allowed_origins: Array<string> }
+    | { allowed_extensions: Array<string> },
 ): string {
   return `${JSON.stringify(
     {
@@ -225,11 +227,11 @@ interface NativeHostManifestDependencies {
   exists: (path: string) => boolean;
   makeDirectory: (path: string) => void;
   writeFile: (path: string, body: string) => void;
-  warn: (...values: unknown[]) => void;
+  warn: (...values: Array<unknown>) => void;
   userDataDirectory: () => string;
   /** The NSIS installer writes the registry keys, so a packaged app never spawns reg.exe, which antivirus flags. */
   installerRegistersKeys: () => boolean;
-  runRegistry: (args: string[]) => Promise<void>;
+  runRegistry: (args: Array<string>) => Promise<void>;
 }
 
 const defaultDependencies: NativeHostManifestDependencies = {
@@ -251,7 +253,7 @@ const defaultDependencies: NativeHostManifestDependencies = {
   runRegistry: async (args) => {
     await execFileAsync("reg.exe", args, {
       windowsHide: true,
-      timeout: 5_000,
+      timeout: 5000,
       killSignal: "SIGKILL",
     });
   },
@@ -309,11 +311,11 @@ export async function writeNativeHostManifests(
     try {
       dependencies.makeDirectory(dir);
       dependencies.writeFile(join(dir, HOST_FILENAME), body);
-    } catch (err) {
+    } catch (error) {
       dependencies.warn(
         "[pond native] failed to write host manifest",
         dir,
-        err,
+        error,
       );
     }
   }
@@ -343,11 +345,11 @@ function writeLinuxNativeHostManifests(
     try {
       dependencies.makeDirectory(dir);
       dependencies.writeFile(posix.join(dir, HOST_FILENAME), body);
-    } catch (err) {
+    } catch (error) {
       dependencies.warn(
         "[pond native] failed to write host manifest",
         dir,
-        err,
+        error,
       );
     }
   }
@@ -375,11 +377,11 @@ async function writeWindowsNativeHostManifest(
     try {
       dependencies.makeDirectory(dir);
       dependencies.writeFile(manifestPath, body);
-    } catch (err) {
+    } catch (error) {
       dependencies.warn(
         "[pond native] failed to write host manifest",
         manifestPath,
-        err,
+        error,
       );
       continue;
     }
@@ -391,11 +393,11 @@ async function writeWindowsNativeHostManifest(
           await dependencies.runRegistry(
             windowsRegistryArgs(key, manifestPath),
           );
-        } catch (err) {
+        } catch (error) {
           dependencies.warn(
             "[pond native] failed to register host manifest",
             key,
-            err,
+            error,
           );
         }
       }),

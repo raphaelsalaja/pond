@@ -64,7 +64,7 @@ export const ItemByIdSchema = z.object({
   itemByShortID: ItemSchema.nullable().catch(null),
 });
 
-export function parseItems(rows: readonly unknown[]): SaveeItem[] {
+export function parseItems(rows: ReadonlyArray<unknown>): Array<SaveeItem> {
   return rows.flatMap((row) => {
     const parsed = ItemSchema.safeParse(row);
     return parsed.success ? [parsed.data] : [];
@@ -130,7 +130,9 @@ export function captureFromItem(item: SaveeItem): Capture {
         url: item.pageURL,
         host: new URL(item.pageURL).hostname,
       };
-    } catch {}
+    } catch {
+      /** An unparseable page URL leaves the capture without an upstream. */
+    }
   }
   return capture;
 }

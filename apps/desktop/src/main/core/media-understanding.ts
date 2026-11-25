@@ -7,9 +7,9 @@ import type {
 import { loadModel } from "./agent/adapter";
 import {
   LocalRuntimeCoordinationError,
-  type LocalRuntimeCoordinator,
   localRuntimeCoordinator,
 } from "./agent/local-runtime-coordinator";
+import type { LocalRuntimeCoordinator } from "./agent/local-runtime-coordinator";
 
 export type MediaUnderstandingTask = "caption" | "ocr";
 
@@ -81,7 +81,7 @@ type LocalReasoningOptions = {
 
 export interface MediaUnderstandingGenerationInput {
   model: LanguageModel;
-  messages: ModelMessage[];
+  messages: Array<ModelMessage>;
   maxOutputTokens: number;
   abortSignal: AbortSignal;
   providerOptions?: LocalReasoningOptions;
@@ -178,20 +178,22 @@ function validateRequest(
     !mimeType.startsWith("image/") ||
     input.bytes.byteLength === 0 ||
     !input.connection.modelId.trim()
-  )
+  ) {
     throw failure("invalid-input", task);
+  }
   return mimeType;
 }
 
 function cleanOutput(task: MediaUnderstandingTask, output: string): string {
   const config = TASK_CONFIG[task];
-  const text = output.replace(/\r\n?/g, "\n").trim();
+  const text = output.replaceAll(/\r\n?/g, "\n").trim();
   if (!text) {
     if (task === "ocr") return "";
     throw failure("empty-output", task);
   }
-  if (text.length > config.maxCharacters)
+  if (text.length > config.maxCharacters) {
     throw failure("output-too-long", task);
+  }
   const chatter = task === "caption" ? CAPTION_CHATTER : OCR_CHATTER;
   if (chatter.test(text)) throw failure("model-chatter", task);
   return text;
@@ -248,9 +250,12 @@ function asMediaUnderstandingError(
   error: Error,
   task: MediaUnderstandingTask,
 ): MediaUnderstandingError {
-  if (error instanceof MediaUnderstandingError) return error;
-  if (error instanceof LocalRuntimeCoordinationError)
+  if (error instanceof MediaUnderstandingError) {
+    return error;
+  }
+  if (error instanceof LocalRuntimeCoordinationError) {
     return failure(error.reason, task);
+  }
   return failure("generation-failed", task);
 }
 

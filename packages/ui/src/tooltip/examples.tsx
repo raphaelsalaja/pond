@@ -1,7 +1,7 @@
 import { IconFolderPlus, IconTrash } from "@pond/icons";
+import { Tooltip } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Tooltip } from ".";
 
 export const docs: ComponentDocs = {
   slug: "tooltip",

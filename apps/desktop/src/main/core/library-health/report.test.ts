@@ -81,7 +81,7 @@ describe("Debug Report Library Health", () => {
     const report = debugReportHealth({
       overview: OVERVIEW,
       queue: null,
-      redact: (value) => value.replace(/\/Users\/[^\s]+/g, "<path>"),
+      redact: (value) => value.replaceAll(/\/Users\/[^\s]+/g, "<path>"),
     });
     const text = JSON.stringify(report);
 

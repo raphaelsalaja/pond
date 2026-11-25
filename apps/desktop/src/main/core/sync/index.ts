@@ -79,7 +79,7 @@ const SYNC_WATCHDOG_MS = {
   local: 20 * 60_000,
 } satisfies Record<Source, number>;
 
-const SYNCABLE_SOURCES: readonly Source[] = [
+const SYNCABLE_SOURCES: ReadonlySet<Source> = new Set<Source>([
   "mymind",
   "twitter",
   "youtube",
@@ -101,13 +101,13 @@ const SYNCABLE_SOURCES: readonly Source[] = [
   "bluesky",
   "marked",
   "linkedin",
-];
+]);
 
 /** A global run is shared by menu, shortcut, IPC, and scheduled callers. */
 let allSourcesRun: Promise<void> | null = null;
 
 function isSyncableSource(source: Source): boolean {
-  return SYNCABLE_SOURCES.includes(source);
+  return SYNCABLE_SOURCES.has(source);
 }
 
 export function isSyncAllSourcesRunning(): boolean {
@@ -161,15 +161,16 @@ async function syncAllSourcesImpl(opts: SyncOptions): Promise<void> {
     Array.from(sources).map(async (source) => {
       const group = runnable.filter((account) => account.source === source);
       for (const account of group) {
-        await syncAccount(account.id, opts).catch((err) =>
-          log.warn("[pond sync] syncAccount threw", account.id, err),
+        await syncAccount(account.id, opts).catch((cause: unknown) =>
+          log.warn("[pond sync] syncAccount threw", account.id, cause),
         );
       }
       if (
         (opts.trigger === "cron" || opts.trigger === "launch") &&
         (await sourceNeedsSignIn(source))
-      )
+      ) {
         return;
+      }
       await runWatches(
         watches.filter((watch) => watch.source === source),
         opts,
@@ -184,8 +185,8 @@ export async function syncSource(
 ): Promise<void> {
   const accounts = await listAccountsForSource(source);
   for (const account of accounts) {
-    await syncAccount(account.id, opts).catch((err) =>
-      log.warn("[pond sync] syncAccount threw", account.id, err),
+    await syncAccount(account.id, opts).catch((cause: unknown) =>
+      log.warn("[pond sync] syncAccount threw", account.id, cause),
     );
   }
   await syncWatchesForSource(source, opts);
@@ -202,12 +203,13 @@ async function syncWatchesForSource(
 }
 
 async function runWatches(
-  watches: readonly WatchedAccount[],
+  watches: ReadonlyArray<WatchedAccount>,
   opts: SyncOptions,
 ): Promise<void> {
   for (const watch of watches) {
     await watchNow(watch.id, { trigger: opts.trigger ?? "manual" }).catch(
-      (err) => log.warn("[pond watch] watchNow threw", watch.id, err),
+      (cause: unknown) =>
+        log.warn("[pond watch] watchNow threw", watch.id, cause),
     );
   }
 }
@@ -353,11 +355,12 @@ export async function syncAccount(
         lastError: watchdogTripped ? "watchdog_timeout" : cfg.lastError,
       });
     }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    log.error("[pond sync] fatal error", source, accountId, err);
-    await patchAccountSync(accountId, { lastError: msg }).catch((patchErr) =>
-      log.warn("[pond sync] failed to record lastError", accountId, patchErr),
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    log.error("[pond sync] fatal error", source, accountId, error);
+    await patchAccountSync(accountId, { lastError: msg }).catch(
+      (cause: unknown) =>
+        log.warn("[pond sync] failed to record lastError", accountId, cause),
     );
     emit({
       accountId,
@@ -367,13 +370,14 @@ export async function syncAccount(
       lastError: msg,
     });
     ev.outcome = "error";
-    ev.error = toErrorInfo(err);
+    ev.error = toErrorInfo(error);
   } finally {
     const entry = inFlight.get(accountId);
     if (entry) clearTimeout(entry.watchdog);
     inFlight.delete(accountId);
-    await patchAccountSync(accountId, { runningSince: null }).catch((err) =>
-      log.warn("[pond sync] failed to clear runningSince", accountId, err),
+    await patchAccountSync(accountId, { runningSince: null }).catch(
+      (cause: unknown) =>
+        log.warn("[pond sync] failed to clear runningSince", accountId, cause),
     );
     ev.durationMs = Date.now() - startedAt;
     ev.lockHeldMs = ev.durationMs;
@@ -383,8 +387,8 @@ export async function syncAccount(
   }
 }
 
-export async function recoverInterruptedSyncs(): Promise<string[]> {
-  const recovered: string[] = [];
+export async function recoverInterruptedSyncs(): Promise<Array<string>> {
+  const recovered: Array<string> = [];
   for (const account of await listAccounts()) {
     const cfg = await getAccountSync(account.id);
     if (!cfg.runningSince) continue;
@@ -393,11 +397,11 @@ export async function recoverInterruptedSyncs(): Promise<string[]> {
         runningSince: null,
         lastError: "interrupted",
       });
-    } catch (err) {
+    } catch (error) {
       log.warn(
         "[pond sync] failed to recover interrupted run",
         account.id,
-        err,
+        error,
       );
       continue;
     }

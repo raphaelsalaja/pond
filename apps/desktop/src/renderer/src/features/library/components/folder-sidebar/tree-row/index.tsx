@@ -2,14 +2,16 @@ import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Folder, SidebarBadgeStyle } from "@pond/schema/db";
-import { Button, cssVars, type MenuItemSpec } from "@pond/ui";
+import { Button, cssVars } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
 import { memo } from "react";
 import { FolderContextMenu } from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
 import { enterFolder } from "@/features/library/operations/enter-folder";
 import { folders } from "@/features/library/state/folders";
-import { type FolderIconId, folderColorCss } from "@/shared/lib/folder-icons";
+import { folderColorCss } from "@/shared/lib/folder-icons";
+import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { formatPlural } from "@/shared/lib/format";
 import { FolderCover } from "../cover";
 import { buildFolderRowMenuItems } from "../folder-row-menu";
@@ -27,7 +29,7 @@ type FolderDragHandlers = ReturnType<
 
 interface FolderTreeRowProps {
   rowProps?: Omit<React.ComponentPropsWithoutRef<typeof Row>, "label">;
-  selectionItems?: () => MenuItemSpec[];
+  selectionItems?: () => Array<MenuItemSpec>;
   badgeStyle: SidebarBadgeStyle;
   collapsed: boolean;
   count: number;
@@ -38,7 +40,7 @@ interface FolderTreeRowProps {
   doubleClickBehavior: "open" | "expand-collapse";
   editing: boolean;
   /** Resolved when the menu opens, since walking descendants per row on every render is O(N). */
-  exportIds: (includeSubfolders: boolean) => string[];
+  exportIds: (includeSubfolders: boolean) => Array<string>;
   folder: Folder;
   folderDrop: FolderDropState | null;
   folderIcon?: FolderIconId;
@@ -48,7 +50,7 @@ interface FolderTreeRowProps {
   includeSubfolders: boolean;
   dragging: boolean;
   quickAccess: boolean;
-  quickAccessFolderIds: string[];
+  quickAccessFolderIds: Array<string>;
   sameLevelHasChildren: boolean;
   viewing: boolean;
   dragHandlers: FolderDragHandlers;

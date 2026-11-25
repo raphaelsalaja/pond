@@ -116,15 +116,20 @@ export function createUpdaterCoordinator(dependencies: UpdaterDependencies) {
     updater.onProgress(publishProgress);
 
     dependencies.scheduleTimeout(() => {
-      void updater.check().catch((error) => {
+      void updater.check().catch((cause: unknown) => {
         dependencies.warn(
           "[pond updater] startup check failed",
-          error instanceof Error ? error : new Error("Unknown updater error"),
+          cause instanceof Error ? cause : new Error("Unknown updater error"),
         );
       });
     }, 2000);
     dependencies.scheduleInterval(() => {
-      void updater.check().catch(() => {});
+      void updater.check().catch((cause: unknown) => {
+        dependencies.warn(
+          "[pond updater] scheduled check failed",
+          cause instanceof Error ? cause : new Error("Unknown updater error"),
+        );
+      });
     }, SIX_HOURS_MS);
   }
 

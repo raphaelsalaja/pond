@@ -1,9 +1,9 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import {
   memorySkillFiles,
-  type SkillCatalog,
   SkillsExtension,
 } from "@modelcontextprotocol/server/ext/skills";
+import type { SkillCatalog } from "@modelcontextprotocol/server/ext/skills";
 import { registerPondPrompts } from "./prompts";
 import { registerPondResources } from "./resources";
 import { POND_INSTRUCTIONS, POND_SKILL, POND_SKILL_NAME } from "./skill";

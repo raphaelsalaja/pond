@@ -1,9 +1,5 @@
-import {
-  type ConnectedAccount,
-  type SaveStatus,
-  type Source,
-  saves,
-} from "@pond/schema/db";
+import { saves } from "@pond/schema/db";
+import type { ConnectedAccount, SaveStatus, Source } from "@pond/schema/db";
 import { and, eq, isNotNull, isNull, or } from "drizzle-orm";
 
 /**
@@ -33,7 +29,7 @@ export function remembersDeletedSource(
 ): boolean {
   if (reason && RELEASED_DELETES.has(reason)) return false;
   if (
-    save.deletedAt == null &&
+    (save.deletedAt === null || save.deletedAt === undefined) &&
     save.status === "skipped" &&
     save.rawJson?.importFilter
   ) {

@@ -1,17 +1,14 @@
-import { SOURCES, type Source, type WatchKind } from "@pond/schema/db";
+import { SOURCES } from "@pond/schema/db";
+import type { Source, WatchKind } from "@pond/schema/db";
 import { WATCH_KINDS } from "@pond/schema/watches";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
 import { useEffect } from "react";
 import { z } from "zod";
-import {
-  SOURCE_FETCH_PREF_FIELDS,
-  type SourceFetchPrefs,
-} from "@/features/sources/lib/fetch-prefs";
-import {
-  type SyncAccountStatus,
-  syncMonitor,
-} from "@/features/sources/state/sync-monitor";
+import { SOURCE_FETCH_PREF_FIELDS } from "@/features/sources/lib/fetch-prefs";
+import type { SourceFetchPrefs } from "@/features/sources/lib/fetch-prefs";
+import { syncMonitor } from "@/features/sources/state/sync-monitor";
+import type { SyncAccountStatus } from "@/features/sources/state/sync-monitor";
 
 export interface WatchRow {
   id: string;
@@ -59,19 +56,19 @@ const WatchesReplySchema = z
   .catch({ watches: [] });
 
 interface WatchesState {
-  watches: WatchRow[];
+  watches: Array<WatchRow>;
   loaded: boolean;
 }
 
 const store = new Store<WatchesState>({ watches: [], loaded: false });
 
 interface WatchesResult {
-  watches: WatchRow[];
+  watches: Array<WatchRow>;
   loading: boolean;
-  refetch: () => Promise<WatchRow[]>;
+  refetch: () => Promise<Array<WatchRow>>;
 }
 
-async function refetchWatches(): Promise<WatchRow[]> {
+async function refetchWatches(): Promise<Array<WatchRow>> {
   try {
     const rows = WatchesReplySchema.parse(
       await window.pond.query("watches.list", {}),

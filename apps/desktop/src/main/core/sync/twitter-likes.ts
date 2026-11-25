@@ -37,7 +37,7 @@ export async function harvestConfiguredTwitterLikes(
   account: ConnectedAccount,
   input: {
     aborted: boolean;
-    knownIds: string[];
+    knownIds: Array<string>;
     partition: string;
   },
   dependencies: TwitterLikesDependencies,

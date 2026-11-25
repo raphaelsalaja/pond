@@ -5,7 +5,8 @@ import type {
   ListHarvestArgs,
   ListHarvestResult,
 } from "../list-types";
-import { inPageLinkedInNormalize, type VoyagerClusterReply } from "./normalize";
+import { inPageLinkedInNormalize } from "./normalize";
+import type { VoyagerClusterReply } from "./normalize";
 
 declare global {
   var __pondHarvestAbort: boolean | undefined;
@@ -77,12 +78,18 @@ async function inPageLinkedInSavedPosts(
 
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let fresh = 0;
 
   function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  function isClusterReply(value: unknown): value is VoyagerClusterReply {
+    return Object(value) === value;
   }
 
   function pause(): Promise<void> {
@@ -99,7 +106,7 @@ async function inPageLinkedInSavedPosts(
     Object.assign(globalThis, { __pondHarvestStats: stats });
   }
 
-  function ingest(rows: ListEntry[]): number {
+  function ingest(rows: Array<ListEntry>): number {
     let added = 0;
     for (const entry of rows) {
       if (seen.has(entry.sourceId)) continue;
@@ -157,7 +164,9 @@ async function inPageLinkedInSavedPosts(
       .map((entry) => entry.name);
     for (const code of Array.from(document.querySelectorAll("code"))) {
       const match = /"request":"([^"]+)"/.exec(code.textContent ?? "");
-      if (match?.[1]) urls.push(match[1].replace(/\\u0026|&amp;/g, "&"));
+      if (match?.[1]) {
+        urls.push(match[1].replaceAll(/\\u0026|&amp;/g, "&"));
+      }
     }
     for (const url of urls) {
       if (url.includes("/voyager/api/graphql") && url.includes(SAVED_QUERY)) {
@@ -207,8 +216,10 @@ async function inPageLinkedInSavedPosts(
     }
     if (!res.ok) return { kind: "failed" };
     try {
-      const reply: VoyagerClusterReply = await res.json();
-      return { kind: "page", reply };
+      const reply: unknown = await res.json();
+      return isClusterReply(reply)
+        ? { kind: "page", reply }
+        : { kind: "failed" };
     } catch {
       return { kind: "failed" };
     }

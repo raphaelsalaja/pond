@@ -1,11 +1,28 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import { type MymindObject, MymindObjectSchema } from "./client";
+import { MymindObjectSchema } from "./client";
+import type { MymindObject } from "./client";
 import { importMymindObject, mergeMymindMetadata } from "./import";
 import { createMymindSyncState } from "./state";
 
 type ImportDependencies = NonNullable<Parameters<typeof importMymindObject>[1]>;
+
+interface ImportEffects {
+  getBlob: () => Promise<Response>;
+  persist: () => Promise<void>;
+  beforeWrite: () => void;
+}
+
+function failingOnce(error: Error): () => Promise<void> {
+  let failed = false;
+  return async () => {
+    if (!failed) {
+      failed = true;
+      throw error;
+    }
+  };
+}
 
 function fixture(patch: Partial<MymindObject> = {}) {
   const object = MymindObjectSchema.parse({
@@ -18,29 +35,45 @@ function fixture(patch: Partial<MymindObject> = {}) {
     ...patch,
   });
   const state = createMymindSyncState(Date.parse(object.created) - 1000);
-  const client = {
-    getBlob: vi.fn(async () => new Response("file bytes")),
+  const effects: ImportEffects = {
+    getBlob: async () => new Response("file bytes"),
+    persist: async () => {},
+    beforeWrite: () => {},
   };
-  const persist = vi.fn(async () => {});
+  const behavior: ImportDependencies = {
+    enqueueLink: async () => ({ id: "save", created: true }),
+    isOwnedSave: async () => false,
+    createSave: async () => ({ ok: true, id: "save" }),
+    applyMetadata: async () => {},
+  };
+  const client = { getBlob: () => effects.getBlob() };
+  const input = {
+    object,
+    accountId: "account",
+    state,
+    client,
+    persist: () => effects.persist(),
+    beforeWrite: () => effects.beforeWrite(),
+  };
   const dependencies: ImportDependencies = {
-    enqueueLink: vi.fn(async () => ({ id: "save", created: true })),
-    isOwnedSave: vi.fn(async () => false),
-    createSave: vi.fn<ImportDependencies["createSave"]>(async () => ({
-      ok: true,
-      id: "save",
-    })),
-    applyMetadata: vi.fn(async () => {}),
+    enqueueLink: (...args) => behavior.enqueueLink(...args),
+    isOwnedSave: (...args) => behavior.isOwnedSave(...args),
+    createSave: (...args) => behavior.createSave(...args),
+    applyMetadata: (...args) => behavior.applyMetadata(...args),
   };
   return {
-    input: {
-      object,
-      accountId: "account",
-      state,
-      client,
-      persist,
-      beforeWrite: vi.fn(() => {}),
-    },
+    input,
+    effects,
+    behavior,
     dependencies,
+    spy: {
+      getBlob: vi.spyOn(client, "getBlob"),
+      persist: vi.spyOn(input, "persist"),
+      beforeWrite: vi.spyOn(input, "beforeWrite"),
+      enqueueLink: vi.spyOn(dependencies, "enqueueLink"),
+      createSave: vi.spyOn(dependencies, "createSave"),
+      applyMetadata: vi.spyOn(dependencies, "applyMetadata"),
+    },
   };
 }
 
@@ -48,7 +81,7 @@ describe("mymind card import", () => {
   it.each([undefined, " \t\n"])(
     "retries an empty card when content becomes available (%s)",
     async (emptyText) => {
-      const { input, dependencies } = fixture({
+      const { input, dependencies, spy } = fixture({
         title: emptyText,
         content:
           emptyText === undefined
@@ -60,10 +93,10 @@ describe("mymind card import", () => {
       await expect(importMymindObject(input, dependencies)).rejects.toThrow(
         "The mymind card is empty.",
       );
-      expect(dependencies.createSave).not.toHaveBeenCalled();
-      expect(dependencies.enqueueLink).not.toHaveBeenCalled();
-      expect(dependencies.applyMetadata).not.toHaveBeenCalled();
-      expect(input.persist).not.toHaveBeenCalled();
+      expect(spy.createSave).not.toHaveBeenCalled();
+      expect(spy.enqueueLink).not.toHaveBeenCalled();
+      expect(spy.applyMetadata).not.toHaveBeenCalled();
+      expect(spy.persist).not.toHaveBeenCalled();
       expect(input.state.imports.card).toBeUndefined();
       expect(input.state.checkedThrough).toBe(checkedThrough);
 
@@ -77,16 +110,14 @@ describe("mymind card import", () => {
   );
 
   it("finishes an owned note after its state write failed", async () => {
-    const { input, dependencies } = fixture();
-    input.persist.mockRejectedValueOnce(new Error("Disk write failed."));
+    const { input, effects, behavior, dependencies } = fixture();
+    effects.persist = failingOnce(new Error("Disk write failed."));
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "Disk write failed.",
     );
     expect(input.state.imports.card).toBeUndefined();
-    dependencies.createSave = vi.fn<ImportDependencies["createSave"]>(
-      async () => ({ ok: true, id: "save", skipped: true }),
-    );
-    dependencies.isOwnedSave = vi.fn(async () => true);
+    behavior.createSave = async () => ({ ok: true, id: "save", skipped: true });
+    behavior.isOwnedSave = async () => true;
     await expect(importMymindObject(input, dependencies)).resolves.toEqual({
       id: "save",
       imported: true,
@@ -94,12 +125,12 @@ describe("mymind card import", () => {
     expect(input.state.imports.card?.complete).toBe(true);
   });
   it("keeps note content, tags, title, and save date", async () => {
-    const { input, dependencies } = fixture();
+    const { input, dependencies, spy } = fixture();
     expect(await importMymindObject(input, dependencies)).toEqual({
       id: "save",
       imported: true,
     });
-    expect(dependencies.createSave).toHaveBeenCalledWith({
+    expect(spy.createSave).toHaveBeenCalledWith({
       accountId: "account",
       source: "local",
       sourceId: "mymind:card",
@@ -116,26 +147,28 @@ describe("mymind card import", () => {
       saveId: "save",
       complete: true,
     });
-    expect(input.client.getBlob).not.toHaveBeenCalled();
+    expect(spy.getBlob).not.toHaveBeenCalled();
   });
 
   it("records a new link before it applies metadata", async () => {
-    const { input, dependencies } = fixture({
+    const { input, effects, behavior, dependencies, spy } = fixture({
       source: { url: "https://www.youtube.com/watch?v=example" },
     });
-    const savedStates: boolean[] = [];
-    input.persist.mockImplementation(async () => {
+    const savedStates: Array<boolean> = [];
+    effects.persist = async () => {
       savedStates.push(input.state.imports.card?.complete ?? false);
-    });
-    dependencies.applyMetadata = vi.fn(async () => {
-      expect(savedStates).toEqual([false]);
-    });
+    };
+    const savedBeforeMetadata: Array<Array<boolean>> = [];
+    behavior.applyMetadata = async () => {
+      savedBeforeMetadata.push([...savedStates]);
+    };
     await importMymindObject(input, dependencies);
-    expect(dependencies.enqueueLink).toHaveBeenCalledWith(
+    expect(savedBeforeMetadata).toEqual([[false]]);
+    expect(spy.enqueueLink).toHaveBeenCalledWith(
       "https://www.youtube.com/watch?v=example",
       "account",
     );
-    expect(dependencies.applyMetadata).toHaveBeenCalledWith(
+    expect(spy.applyMetadata).toHaveBeenCalledWith(
       "save",
       {
         title: "My title",
@@ -150,16 +183,18 @@ describe("mymind card import", () => {
   });
 
   it("records an existing link without changing its metadata", async () => {
-    const { input, dependencies } = fixture({ url: "https://example.com/" });
-    dependencies.enqueueLink = vi.fn(async () => ({
+    const { input, behavior, dependencies, spy } = fixture({
+      url: "https://example.com/",
+    });
+    behavior.enqueueLink = async () => ({
       id: "existing",
       created: false,
-    }));
+    });
     expect(await importMymindObject(input, dependencies)).toEqual({
       id: "existing",
       imported: false,
     });
-    expect(dependencies.applyMetadata).not.toHaveBeenCalled();
+    expect(spy.applyMetadata).not.toHaveBeenCalled();
     expect(input.state.imports.card).toEqual({
       saveId: "existing",
       complete: true,
@@ -167,10 +202,12 @@ describe("mymind card import", () => {
   });
 
   it("finishes an incomplete link after a metadata failure", async () => {
-    const { input, dependencies } = fixture({ url: "https://example.com/" });
-    dependencies.applyMetadata = vi.fn(async () => {
-      throw new Error("metadata failure");
+    const { input, behavior, dependencies, spy } = fixture({
+      url: "https://example.com/",
     });
+    behavior.applyMetadata = async () => {
+      throw new Error("metadata failure");
+    };
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "metadata failure",
     );
@@ -178,35 +215,37 @@ describe("mymind card import", () => {
       saveId: "save",
       complete: false,
     });
-    dependencies.applyMetadata = vi.fn(async () => {});
+    behavior.applyMetadata = async () => {};
     expect(await importMymindObject(input, dependencies)).toEqual({
       id: "save",
       imported: true,
     });
-    expect(dependencies.enqueueLink).toHaveBeenCalledTimes(1);
-    expect(dependencies.applyMetadata).toHaveBeenCalledTimes(1);
+    expect(spy.enqueueLink).toHaveBeenCalledTimes(1);
+    expect(spy.applyMetadata).toHaveBeenCalledTimes(2);
     await importMymindObject(input, dependencies);
-    expect(dependencies.applyMetadata).toHaveBeenCalledTimes(1);
+    expect(spy.applyMetadata).toHaveBeenCalledTimes(2);
   });
 
   it("recovers a new link when its first state write fails", async () => {
-    const { input, dependencies } = fixture({ url: "https://example.com/" });
-    input.persist.mockRejectedValueOnce(new Error("disk full"));
+    const { input, effects, behavior, dependencies, spy } = fixture({
+      url: "https://example.com/",
+    });
+    effects.persist = failingOnce(new Error("disk full"));
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "disk full",
     );
     expect(input.state.imports.card).toBeUndefined();
-    expect(dependencies.applyMetadata).not.toHaveBeenCalled();
-    dependencies.enqueueLink = vi.fn(async () => ({
+    expect(spy.applyMetadata).not.toHaveBeenCalled();
+    behavior.enqueueLink = async () => ({
       id: "save",
       created: false,
-    }));
-    dependencies.isOwnedSave = vi.fn(async () => true);
+    });
+    behavior.isOwnedSave = async () => true;
     expect(await importMymindObject(input, dependencies)).toEqual({
       id: "save",
       imported: true,
     });
-    expect(dependencies.applyMetadata).toHaveBeenCalledTimes(1);
+    expect(spy.applyMetadata).toHaveBeenCalledTimes(1);
     expect(input.state.imports.card).toEqual({
       saveId: "save",
       complete: true,
@@ -214,51 +253,51 @@ describe("mymind card import", () => {
   });
 
   it("streams a file and removes its temporary copy after import", async () => {
-    const { input, dependencies } = fixture({
-      blob: { name: "..\\photo.png" },
+    const { input, effects, behavior, dependencies, spy } = fixture({
+      blob: { name: String.raw`..\photo.png` },
       source: { url: "https://example.com/source" },
     });
     const bytes = new TextEncoder().encode("file bytes");
-    input.client.getBlob.mockImplementation(
-      async () =>
-        new Response(
-          new ReadableStream({
-            start(controller) {
-              controller.enqueue(bytes.slice(0, 4));
-              controller.enqueue(bytes.slice(4));
-              controller.close();
-            },
-          }),
-          { headers: { "content-type": "image/png" } },
-        ),
-    );
+    effects.getBlob = async () =>
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.enqueue(bytes.slice(0, 4));
+            controller.enqueue(bytes.slice(4));
+            controller.close();
+          },
+        }),
+        { headers: { "content-type": "image/png" } },
+      );
     let path = "";
-    dependencies.createSave = vi.fn<ImportDependencies["createSave"]>(
-      async (save) => {
-        path = save.filePaths?.[0] ?? "";
-        expect(basename(path)).toBe("photo.png");
-        expect(await readFile(path, "utf8")).toBe("file bytes");
-        expect(save.url).toBe("https://example.com/source");
-        return { ok: true, id: "file-save" };
-      },
-    );
+    let contents = "";
+    let url: string | null | undefined;
+    behavior.createSave = async (save) => {
+      path = save.filePaths?.[0] ?? "";
+      contents = await readFile(path, "utf8");
+      url = save.url;
+      return { ok: true, id: "file-save" };
+    };
     expect(await importMymindObject(input, dependencies)).toEqual({
       id: "file-save",
       imported: true,
     });
+    expect(basename(path)).toBe("photo.png");
+    expect(contents).toBe("file bytes");
+    expect(url).toBe("https://example.com/source");
     await expect(stat(path)).rejects.toMatchObject({ code: "ENOENT" });
-    expect(dependencies.enqueueLink).not.toHaveBeenCalled();
+    expect(spy.enqueueLink).not.toHaveBeenCalled();
   });
 
   it("removes the temporary file when the import fails", async () => {
-    const { input, dependencies } = fixture({ blob: { name: "file.pdf" } });
+    const { input, behavior, dependencies } = fixture({
+      blob: { name: "file.pdf" },
+    });
     let path = "";
-    dependencies.createSave = vi.fn<ImportDependencies["createSave"]>(
-      async (save) => {
-        path = save.filePaths?.[0] ?? "";
-        return { ok: false, error: "copy failed" };
-      },
-    );
+    behavior.createSave = async (save) => {
+      path = save.filePaths?.[0] ?? "";
+      return { ok: false, error: "copy failed" };
+    };
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "could not be imported",
     );
@@ -267,29 +306,35 @@ describe("mymind card import", () => {
   });
 
   it("stops before it imports a downloaded file into another library", async () => {
-    const { input, dependencies } = fixture({ blob: { name: "file.pdf" } });
+    const { input, effects, dependencies, spy } = fixture({
+      blob: { name: "file.pdf" },
+    });
     let switched = false;
-    input.client.getBlob.mockImplementation(async () => {
+    effects.getBlob = async () => {
       switched = true;
       return new Response("file bytes");
-    });
-    input.beforeWrite.mockImplementation(() => {
-      if (switched) throw new Error("The library changed.");
-    });
+    };
+    effects.beforeWrite = () => {
+      if (switched) {
+        throw new Error("The library changed.");
+      }
+    };
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "The library changed.",
     );
-    expect(dependencies.createSave).not.toHaveBeenCalled();
-    expect(input.persist).not.toHaveBeenCalled();
+    expect(spy.createSave).not.toHaveBeenCalled();
+    expect(spy.persist).not.toHaveBeenCalled();
   });
 
   it("retains an incomplete mapping when a library change stops metadata", async () => {
-    const { input, dependencies } = fixture({ url: "https://example.com/" });
-    input.persist.mockImplementation(async () => {
-      input.beforeWrite.mockImplementation(() => {
-        throw new Error("The library changed.");
-      });
+    const { input, effects, dependencies, spy } = fixture({
+      url: "https://example.com/",
     });
+    effects.persist = async () => {
+      effects.beforeWrite = () => {
+        throw new Error("The library changed.");
+      };
+    };
     await expect(importMymindObject(input, dependencies)).rejects.toThrow(
       "The library changed.",
     );
@@ -297,17 +342,17 @@ describe("mymind card import", () => {
       saveId: "save",
       complete: false,
     });
-    expect(dependencies.applyMetadata).not.toHaveBeenCalled();
+    expect(spy.applyMetadata).not.toHaveBeenCalled();
   });
 
   it("rejects unsupported content before it imports anything", async () => {
-    const { input, dependencies } = fixture({
+    const { input, dependencies, spy } = fixture({
       content: { type: "application/unsupported", body: { text: "note" } },
     });
     await expect(importMymindObject(input, dependencies)).rejects.toThrow();
-    expect(dependencies.createSave).not.toHaveBeenCalled();
-    expect(dependencies.enqueueLink).not.toHaveBeenCalled();
-    expect(input.persist).not.toHaveBeenCalled();
+    expect(spy.createSave).not.toHaveBeenCalled();
+    expect(spy.enqueueLink).not.toHaveBeenCalled();
+    expect(spy.persist).not.toHaveBeenCalled();
   });
 
   it("keeps user notes and tags when it retries imported metadata", () => {

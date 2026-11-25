@@ -30,10 +30,20 @@ afterEach(() => {
 
 const original = () =>
   inspector.host.querySelector<HTMLImageElement>(`img[src="${ORIGINAL}"]`);
-const covered = () =>
-  inspector.host
+const covered = () => {
+  const cover = inspector.host
     .querySelector(`img[src="${THUMBNAIL}"]`)
-    ?.closest("[data-covered]") != null;
+    ?.closest("[data-covered]");
+  return cover !== null && cover !== undefined;
+};
+
+const jpegFile = (path: string) => ({
+  kind: "image",
+  path,
+  sha256: path,
+  size: 1,
+  mimeType: "image/jpeg",
+});
 
 it("paints the card thumbnail until the original has decoded", async () => {
   rememberCardThumbnail(ORIGINAL, THUMBNAIL);
@@ -64,17 +74,10 @@ it("reveals the original on load when decoding fails early", async () => {
 });
 
 it("paints the save's blurhash only under the file the card shows", async () => {
-  const file = (path: string) => ({
-    kind: "image",
-    path,
-    sha256: path,
-    size: 1,
-    mimeType: "image/jpeg",
-  });
   const save = {
     ...IMAGE_INSPECTOR_SAVE,
     blurhash: "LEHV6nWB2yk8pyo0adR*.7kCMdnj",
-    files: [file("media-1.jpg"), file("media-2.jpg")],
+    files: [jpegFile("media-1.jpg"), jpegFile("media-2.jpg")],
   };
   const hash = () => inspector.host.querySelector("canvas");
 

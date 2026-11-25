@@ -1,14 +1,15 @@
 import { IconMagnifier } from "@pond/icons";
 import { domainFromUrl } from "@pond/schema/domain";
 import { Button, Empty, EmptyPreview, Input, Popover, Tooltip } from "@pond/ui";
-import { type ReactElement, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactElement } from "react";
 import { SaveTile } from "@/features/saves";
 import { ensureSaves, useSave } from "@/features/saves/pool";
 import styles from "./styles.module.css";
 
 const LIMIT = 48;
 
-async function findSaveIds(query: string): Promise<string[]> {
+async function findSaveIds(query: string): Promise<Array<string>> {
   const q = query.trim();
   const ids = q
     ? (await window.pond.query("saves.searchFts", { q, limit: LIMIT })).ids
@@ -21,7 +22,7 @@ async function findSaveIds(query: string): Promise<string[]> {
 
 interface PickerProps {
   onCanvas: ReadonlySet<string>;
-  onAdd(saveIds: string[]): void;
+  onAdd: (saveIds: Array<string>) => void;
 }
 
 interface AddSavesProps extends PickerProps {
@@ -60,8 +61,8 @@ export function AddSaves({
 
 function Picker({ onCanvas, onAdd }: PickerProps) {
   const [query, setQuery] = useState("");
-  const [ids, setIds] = useState<string[] | null>(null);
-  const [picked, setPicked] = useState<string[]>([]);
+  const [ids, setIds] = useState<Array<string> | null>(null);
+  const [picked, setPicked] = useState<Array<string>>([]);
 
   useEffect(() => {
     let live = true;
@@ -155,7 +156,7 @@ interface ChoiceProps {
   id: string;
   placed: boolean;
   picked: boolean;
-  onToggle(id: string): void;
+  onToggle: (id: string) => void;
 }
 
 function Choice({ id, placed, picked, onToggle }: ChoiceProps) {

@@ -1,8 +1,7 @@
 import { mkdir, mkdtemp, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
+import { saves } from "@pond/schema/db";
 import { EMPTY_QUERY } from "@pond/schema/filters";
 import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
@@ -13,6 +12,7 @@ import { afterAll, afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import type { BulkEdit } from "../../../shared/bulk-contracts";
 import { migratePond } from "../../database/migrations";
+import { eventTables, libraryTables } from "../../database/tables";
 import { closeDb, getDb, initializePondSchema } from "../../db";
 import { infoDocFromSave } from "../../lib/library-format";
 import { invalidatePaths, resolvePaths } from "../../paths";
@@ -52,8 +52,8 @@ const QUICK_ADD = { trigger: "user:quickAdd" };
 const github = (path: string, opts: { trigger: string }) =>
   enqueue(`https://github.com/${path}`, opts);
 
-const roots: string[] = [];
-const opened: Database.Database[] = [];
+const roots: Array<string> = [];
+const opened: Array<Database.Database> = [];
 afterEach(async () => {
   for (const db of opened.splice(0)) db.close();
   await Promise.all(
@@ -65,9 +65,12 @@ function memoryDb() {
   const raw = new Database(":memory:");
   opened.push(raw);
   initializePondSchema(raw, () => false);
-  return Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  return Object.assign(
+    drizzle(raw, { schema: { ...libraryTables, ...eventTables } }),
+    {
+      $raw: raw,
+    },
+  );
 }
 
 describe.skipIf(!nativeAvailable())("inbox storage", () => {
@@ -128,7 +131,7 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
     await writeFile(path, JSON.stringify(metadata));
 
     await scan();
-    const row = db.select().from(schema.saves).get();
+    const row = db.select().from(saves).get();
     expect(row).toMatchObject({
       inboxState: "snoozed",
       inboxUntil: Date.parse(until),
@@ -144,7 +147,7 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
     const future = new Date(Date.now() + 5000);
     await utimes(path, future, future);
     await scan();
-    expect(db.select().from(schema.saves).get()).toMatchObject({
+    expect(db.select().from(saves).get()).toMatchObject({
       inboxState: null,
       inboxUntil: null,
     });
@@ -159,7 +162,7 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
     insert.run("done", "done", "processed", null, null);
     insert.run("never", "never", null, null, null);
     insert.run("trashed", "trashed", "review", null, 1);
-    const matching = (operator: "eq" | "nin", value: string | string[]) =>
+    const matching = (operator: "eq" | "nin", value: string | Array<string>) =>
       queryLibraryPage(db, "library", {
         query: {
           combinator: "and",
@@ -191,8 +194,8 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
     insert.run("trashed", "trashed", null, null, 1);
     const ids = ["never", "review", "snoozed", "processed", "trashed"];
     const run = async (operation: BulkEdit["operation"]) => {
-      let committed: Transaction[] = [];
-      let undone: Transaction[] = [];
+      let committed: Array<Transaction> = [];
+      let undone: Array<Transaction> = [];
       await bulkEditSaves(
         { ids, operation },
         db,
@@ -245,23 +248,23 @@ describe.skipIf(!nativeAvailable())("inbox storage", () => {
   });
 });
 
+async function inboxOf(id: string) {
+  const db = await getDb();
+  return db
+    .select({
+      inboxState: saves.inboxState,
+      inboxUntil: saves.inboxUntil,
+    })
+    .from(saves)
+    .where(eq(saves.id, id))
+    .get();
+}
+
 describe.skipIf(!nativeAvailable())("inbox intake", () => {
   let dir = "";
 
-  async function inboxOf(id: string) {
-    const db = await getDb();
-    return db
-      .select({
-        inboxState: schema.saves.inboxState,
-        inboxUntil: schema.saves.inboxUntil,
-      })
-      .from(schema.saves)
-      .where(eq(schema.saves.id, id))
-      .get();
-  }
-
   afterAll(async () => {
-    await closeDb();
+    closeDb();
     vi.restoreAllMocks();
     invalidatePaths();
     if (!dir) return;
@@ -275,7 +278,7 @@ describe.skipIf(!nativeAvailable())("inbox intake", () => {
 
   it("sends one-off captures to the Inbox and keeps Sync out until it is switched on", async () => {
     dir = await mkdtemp(join(tmpdir(), "pond-inbox-intake-"));
-    vi.spyOn(app, "getPath").mockReturnValue(dir);
+    app.setPath("userData", dir);
     invalidatePaths();
     invalidatePrefs();
     resolvePaths(join(dir, "Inbox.pond"));

@@ -84,16 +84,15 @@ it("refuses to delete a file outside the Pond fonts directory", async () => {
   expect(await readFile(outside, "utf8")).toBe("keep");
 });
 
-const FONTS_KEY =
-  "HKCU\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts";
+const FONTS_KEY = String.raw`HKCU\Software\Microsoft\Windows NT\CurrentVersion\Fonts`;
 
 it("installs per-user Windows fonts in the Fonts root and registers them", async () => {
   const root = await mkdtemp(join(tmpdir(), "pond-fonts-"));
   const source = join(root, "Display.otf");
   await writeFile(source, "font");
   const fontsDir = join(root, "Fonts");
-  const registry: string[][] = [];
-  const runRegistry = async (args: string[]) => {
+  const registry: Array<Array<string>> = [];
+  const runRegistry = async (args: Array<string>) => {
     registry.push(args);
   };
   const activated = await activateFont({
@@ -181,7 +180,7 @@ it("keeps the Windows registration when the font file cannot be removed", async 
   const held = join(fontsDir, "save-1.ttf");
   await mkdir(held, { recursive: true });
   await writeFile(join(held, "child"), "x");
-  const registry: string[][] = [];
+  const registry: Array<Array<string>> = [];
   const result = await deactivateFont({
     installedPath: held,
     fontsDir,
@@ -195,10 +194,17 @@ it("keeps the Windows registration when the font file cannot be removed", async 
 });
 
 it("places Windows fonts under LOCALAPPDATA when it is set", () => {
-  expect(pondFontsDir("C:\\Users\\a", "win32", "D:\\Local")).toBe(
-    join("D:\\Local", "Microsoft", "Windows", "Fonts"),
-  );
-  expect(pondFontsDir("C:\\Users\\a", "win32", "")).toBe(
-    join("C:\\Users\\a", "AppData", "Local", "Microsoft", "Windows", "Fonts"),
+  expect(
+    pondFontsDir(String.raw`C:\Users\a`, "win32", String.raw`D:\Local`),
+  ).toBe(join(String.raw`D:\Local`, "Microsoft", "Windows", "Fonts"));
+  expect(pondFontsDir(String.raw`C:\Users\a`, "win32", "")).toBe(
+    join(
+      String.raw`C:\Users\a`,
+      "AppData",
+      "Local",
+      "Microsoft",
+      "Windows",
+      "Fonts",
+    ),
   );
 });

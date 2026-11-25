@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  type RelatedSavesStore,
   rankRecommendations,
   relatedSavesWithStore,
 } from "./semantic-recommendations";
+import type { RelatedSavesStore } from "./semantic-recommendations";
 
-function validVector(): number[] {
+function validVector(): Array<number> {
   const vector = Array.from({ length: 768 }, () => 0);
   vector[0] = 1;
   return vector;
@@ -66,7 +66,7 @@ describe("rankRecommendations", () => {
 
 describe("relatedSavesWithStore", () => {
   it("uses only the current source vector and compatible candidates", async () => {
-    const calls: Array<{ vector: number[]; limit: number }> = [];
+    const calls: Array<{ vector: Array<number>; limit: number }> = [];
     const vector = validVector();
     const store: RelatedSavesStore = {
       source: async () => ({

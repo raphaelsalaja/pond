@@ -41,7 +41,7 @@ export function NoteForm({ save, onSubmit }: { save: ApiSave; onSubmit: (note: s
   );
 }
 
-export function TagsForm({ save, onSubmit }: { save: ApiSave; onSubmit: (tags: string[]) => Promise<void> }) {
+export function TagsForm({ save, onSubmit }: { save: ApiSave; onSubmit: (tags: Array<string>) => Promise<void> }) {
   const { pop } = useNavigation();
   const [error, setError] = useState<string>();
 

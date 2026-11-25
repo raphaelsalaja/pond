@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import { neighbors } from "../pages";
 import styles from "./styles.module.css";
 
-interface PagerProps extends React.ComponentPropsWithoutRef<"nav"> {}
+type PagerProps = React.ComponentPropsWithoutRef<"nav">;
 
 export function Pager({ className, ...props }: PagerProps) {
   const { previous, next } = neighbors(usePathname());

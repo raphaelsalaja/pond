@@ -142,7 +142,7 @@ export function handleFromMeData(data: CosmosMeData): string | null {
 }
 
 export interface LibraryPage {
-  entries: ListEntry[];
+  entries: Array<ListEntry>;
   nextPageCursor: string | null;
 }
 
@@ -155,7 +155,7 @@ export interface CosmosCollection {
 }
 
 export interface ClustersPage {
-  collections: CosmosCollection[];
+  collections: Array<CosmosCollection>;
   nextPageCursor: string | null;
 }
 
@@ -171,7 +171,7 @@ function entryFromTile(tile: CosmosTile | null | undefined): ListEntry | null {
 }
 
 function libraryPage(
-  tiles: readonly (CosmosTile | null | undefined)[],
+  tiles: ReadonlyArray<CosmosTile | null | undefined>,
   nextPageCursor: string | undefined,
 ): LibraryPage {
   return {
@@ -197,15 +197,16 @@ export function pageFromClusterConnections(
 
 export function pageFromClusters(data: CosmosClustersData): ClustersPage {
   const list = data.userClusters;
-  const collections: CosmosCollection[] = [];
+  const collections: Array<CosmosCollection> = [];
   for (const cluster of list?.items ?? []) {
     /** Cosmos addresses a collection by slug, so one without a slug cannot be read. */
     if (
       cluster.id === undefined ||
       cluster.name === undefined ||
       cluster.slug === undefined
-    )
+    ) {
       continue;
+    }
     const collection: CosmosCollection = {
       id: String(cluster.id),
       name: cluster.name,

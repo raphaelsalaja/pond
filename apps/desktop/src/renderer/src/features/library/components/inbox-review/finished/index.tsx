@@ -1,9 +1,7 @@
 import { IconCheck } from "@pond/icons";
 import { Button, Empty, EmptyPreview } from "@pond/ui";
-import {
-  countOutcomes,
-  type ReviewQueue,
-} from "@/features/library/lib/review-queue";
+import { countOutcomes } from "@/features/library/lib/review-queue";
+import type { ReviewQueue } from "@/features/library/lib/review-queue";
 
 const LIST = new Intl.ListFormat("en", { type: "conjunction" });
 

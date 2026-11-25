@@ -2,8 +2,10 @@
 
 import type { Source } from "@pond/schema/db";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ArticleViewer } from ".";
 
 let host: HTMLDivElement;
@@ -22,12 +24,10 @@ const ARTICLE = `<!doctype html><html><head>
 <meta name="pond:preview" content="true">
 </head><body><p>The opening. <a href="https://example.com/a">A link</a></p></body></html>`;
 
+const ARTICLE_URL = `data:text/html;charset=utf-8,${encodeURIComponent(ARTICLE)}`;
+
 beforeEach(() => {
-  vi.stubGlobal("pond", { openExternal: vi.fn(async () => ({ ok: true })) });
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async () => new Response(ARTICLE, { status: 200 })),
-  );
+  bridge.use({ openExternal: async () => ({ ok: true }) });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -36,19 +36,23 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 async function render(source: Source = "substack") {
   await act(async () => {
     root.render(
       <ArticleViewer
-        url="pond://s1/article.html"
+        url={ARTICLE_URL}
         source={source}
         onUnavailable={vi.fn()}
       />,
     );
   });
+  await act(() =>
+    vi.waitFor(() => {
+      expect(host.querySelector("h1")).not.toBeNull();
+    }),
+  );
 }
 
 it("renders the header, body, and paywall note", async () => {

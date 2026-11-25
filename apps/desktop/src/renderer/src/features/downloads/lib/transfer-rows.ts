@@ -37,12 +37,17 @@ export function transferRevealable(job: TransferJob): boolean {
 }
 
 export function transferStatusLabel(job: TransferJob): string {
-  if (job.status === "cancelling") return "Canceling";
-  if (job.status === "interrupted") return "Interrupted";
-  if (job.status === "running")
+  if (job.status === "cancelling") {
+    return "Canceling";
+  }
+  if (job.status === "interrupted") {
+    return "Interrupted";
+  }
+  if (job.status === "running") {
     return job.total
       ? `${job.phase} ${job.completed} of ${job.total}`
       : job.phase || "In Progress";
+  }
   return "";
 }
 

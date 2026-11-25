@@ -55,7 +55,7 @@ export function InspectorTextField({
   maxLength?: number;
   clamp?: number;
   inputRef?: React.Ref<HTMLInputElement>;
-  commit(value: string): Promise<void>;
+  commit: (value: string) => Promise<void>;
 }) {
   const [, update] = useState(0);
   const cancelled = useRef(false);
@@ -137,8 +137,9 @@ export function InspectorTextField({
         event.key === "Enter" &&
         !multiline &&
         !event.nativeEvent.isComposing
-      )
+      ) {
         event.currentTarget.blur();
+      }
     },
   };
   const clampStyle: ClampStyle | undefined = clamp

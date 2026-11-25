@@ -1,8 +1,13 @@
 import { runInNewContext } from "node:vm";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import { buildInstagramLikesExpression } from "./likes";
 
 const NEXT_APP = "com.instagram.privacy.activity_center.liked_next";
+
+const LikesResultSchema = z.looseObject({
+  entries: z.array(z.looseObject({})).optional(),
+});
 
 function item(
   code: string,
@@ -17,7 +22,7 @@ function nextMarker(cursor: string) {
   return `(dmi, \\"${NEXT_APP}\\", (f4i, (dkc, \\"page_size\\", \\"cursor\\", \\"container_id\\", \\"element_id\\"), (dkc, \\"9\\", \\"${cursor}\\", \\"17841400000000000\\", \\"12345678\\")))`;
 }
 
-function payload(...parts: string[]) {
+function payload(...parts: Array<string>) {
   return `for (;;);{"payload":{"layout":{"bloks_payload":"${parts.join(", ")}"}}}`;
 }
 
@@ -41,9 +46,12 @@ function run(firstPage: string, laterPages: Array<string | Error>) {
       return { ok: true, status: 200, text: async () => page };
     },
   };
-  const result = runInNewContext(
+  const evaluated: unknown = runInNewContext(
     buildInstagramLikesExpression({ knownIds: [], earlyStop: false }),
     context,
+  );
+  const result = Promise.resolve(evaluated).then((value) =>
+    LikesResultSchema.parse(value),
   );
   return Object.assign(result, { context });
 }
@@ -115,7 +123,7 @@ describe("Instagram likes", () => {
       reason: "page_error",
       error: "TypeError: Failed to fetch",
     });
-    expect(pending.context.__pondHarvestPartial).toEqual([
+    expect(pending.context).toHaveProperty("__pondHarvestPartial", [
       {
         sourceId: "Dd3tj5djHqQ",
         url: "https://www.instagram.com/reel/Dd3tj5djHqQ/",

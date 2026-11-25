@@ -1,11 +1,12 @@
-import { expect, it, vi } from "vitest";
+import type { JsonObject } from "@pond/schema/json";
+import { expect, it } from "vitest";
 import { agentStreamRequest } from "../../../shared/assistant";
 import {
   latestUserText,
-  type StreamTurnDependencies,
   streamAgentTurn,
   uiMessageErrorResponse,
 } from "./stream";
+import type { StreamTurnDependencies } from "./stream";
 
 const user = {
   id: "user-1",
@@ -30,76 +31,93 @@ it("reads the latest user text from UIMessage parts", () => {
   ).toBe("Find film references");
 });
 
-it.each(["stopped", "failed"] as const)(
-  "preserves timing and final activity for a %s reply",
-  async (outcome) => {
-    const response = await streamAgentTurn(
-      {
+async function finishedReplyBody(reply: {
+  stopped: boolean;
+  error: string | undefined;
+  status: "stopped" | "error";
+}) {
+  const metadata: JsonObject = {
+    elapsedMs: 2500,
+    stopped: reply.stopped,
+    steps: [{ id: "read", label: "Read Save", status: reply.status }],
+  };
+  if (reply.error !== undefined) {
+    metadata.error = reply.error;
+  }
+  const response = await streamAgentTurn(
+    {
+      chatId: "chat",
+      requestId: "request",
+      attachmentIds: [],
+      fileAttachmentIds: [],
+      scope: { kind: "library" },
+      provider: "openai",
+      messages: [user],
+    },
+    {
+      sendMessage: async () => ({
         chatId: "chat",
-        requestId: "request",
-        attachmentIds: [],
-        fileAttachmentIds: [],
-        scope: { kind: "library" },
-        provider: "openai",
-        messages: [user],
-      },
-      {
-        sendMessage: async () => ({
+        accepted: true,
+        stopped: reply.stopped,
+        error: reply.error,
+      }),
+      listMessages: async () => [
+        {
+          id: "reply",
           chatId: "chat",
-          accepted: true,
-          stopped: outcome === "stopped",
-          error: outcome === "failed" ? "Provider unavailable" : undefined,
-        }),
-        listMessages: async () => {
-          const metadata = {
-            elapsedMs: 2500,
-            stopped: outcome === "stopped",
-            steps: [
-              {
-                id: "read",
-                label: "Read Save",
-                status: outcome === "stopped" ? "stopped" : "error",
-              },
-            ],
-          };
-          return [
-            {
-              id: "reply",
-              chatId: "chat",
-              role: "assistant",
-              content: "",
-              createdAt: new Date(),
-              metadata:
-                outcome === "failed"
-                  ? { ...metadata, error: "Provider unavailable" }
-                  : metadata,
-            },
-          ];
+          role: "assistant",
+          content: "",
+          createdAt: new Date(),
+          metadata,
         },
-      },
-    );
-    const body = await response.text();
+      ],
+    },
+  );
+  return response.text();
+}
+
+it.each([
+  { outcome: "stopped", stopped: true, error: undefined, status: "stopped" },
+  {
+    outcome: "failed",
+    stopped: false,
+    error: "Provider unavailable",
+    status: "error",
+  },
+] as const)(
+  "preserves timing and final activity for a $outcome reply",
+  async ({ stopped, error, status }) => {
+    const body = await finishedReplyBody({ stopped, error, status });
     expect(body).toContain('"elapsedMs":2500');
     expect(body).toContain('"data-pond-steps"');
-    expect(body).toContain(
-      outcome === "stopped" ? '"status":"stopped"' : '"status":"error"',
-    );
-    if (outcome === "failed")
-      expect(body.indexOf('"message-metadata"')).toBeLessThan(
-        body.indexOf('"type":"error"'),
-      );
+    expect(body).toContain(`"status":"${status}"`);
   },
 );
 
-it("writes a UIMessage SSE round-trip for validated text and Pond data parts", async () => {
-  const send = vi.fn<StreamTurnDependencies["sendMessage"]>(
-    async (_input, _deps, onEvent) => {
-      onEvent?.({ type: "activity", activity: "searching" });
-      onEvent?.({ type: "text", text: "A " });
-      onEvent?.({ type: "text", text: "lighting study." });
-      return { chatId: "chat", accepted: true };
-    },
+it("writes a failed reply's metadata before its error", async () => {
+  const body = await finishedReplyBody({
+    stopped: false,
+    error: "Provider unavailable",
+    status: "error",
+  });
+  expect(body.indexOf('"message-metadata"')).toBeLessThan(
+    body.indexOf('"type":"error"'),
   );
+});
+
+it("writes a UIMessage SSE round-trip for validated text and Pond data parts", async () => {
+  let sends = 0;
+  const send: StreamTurnDependencies["sendMessage"] = async (
+    _input,
+    _deps,
+    onEvent,
+  ) => {
+    sends += 1;
+    onEvent?.({ type: "activity", activity: "searching" });
+    onEvent?.({ type: "text", text: "A " });
+    onEvent?.({ type: "text", text: "lighting study." });
+    return { chatId: "chat", accepted: true };
+  };
   const response = await streamAgentTurn(
     {
       chatId: "chat",
@@ -119,7 +137,7 @@ it("writes a UIMessage SSE round-trip for validated text and Pond data parts", a
           role: "assistant",
           content: "A lighting study.",
           metadata: {
-            elapsedMs: 90000,
+            elapsedMs: 90_000,
             question: {
               question: "Which topic?",
               options: ["Film", "Architecture"],
@@ -143,7 +161,7 @@ it("writes a UIMessage SSE round-trip for validated text and Pond data parts", a
   expect(body).toContain('"id":"current-activity"');
   expect(body).toContain('"activity":"searching"');
   expect(body).not.toContain('"transient":true');
-  expect(send).toHaveBeenCalledOnce();
+  expect(sends).toBe(1);
 });
 
 it("surfaces send errors as UI stream error chunks", async () => {

@@ -3,23 +3,15 @@ import {
   watchKindLabel,
   watchSourceLabel,
 } from "@pond/schema/watches";
-import {
-  type CardModel,
-  cardModel,
-} from "@/features/sources/components/sync-monitor/lib/helpers";
+import { cardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
+import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
-import {
-  type WatchedFolderStatus,
-  watchedFolderName,
-} from "@/features/sources/hooks/use-watched-folder";
+import { watchedFolderName } from "@/features/sources/hooks/use-watched-folder";
+import type { WatchedFolderStatus } from "@/features/sources/hooks/use-watched-folder";
 import type { WatchRow } from "@/features/sources/hooks/use-watches";
 import { getSourceDef } from "@/features/sources/lib/registry";
-import {
-  type FilterableSource,
-  type SourceStatusId,
-  sourceStatusId,
-  sourceStatusLabel,
-} from "./filters";
+import { sourceStatusId, sourceStatusLabel } from "./filters";
+import type { FilterableSource, SourceStatusId } from "./filters";
 
 export type SourceEntry =
   | { kind: "account"; row: AccountRow }
@@ -74,7 +66,7 @@ export function toFolderTableRow(
     handle: null,
     avatarUrl: null,
     items: imported.length,
-    lastSyncedAt: lastMs == null ? null : new Date(lastMs).toISOString(),
+    lastSyncedAt: lastMs === null ? null : new Date(lastMs).toISOString(),
     lastSyncedMs: lastMs ?? Number.NEGATIVE_INFINITY,
     statusId,
     statusLabel: sourceStatusLabel(statusId),

@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import type { HapticPattern } from "../../shared/haptics";
-import { createHapticPlayer, type HelperProcess } from "./haptic-player";
+import { createHapticPlayer } from "./haptic-player";
+import type { HelperProcess } from "./haptic-player";
 
 const HELPER = "pond-haptics";
 

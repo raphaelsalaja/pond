@@ -13,7 +13,7 @@ export type FilterChipId = FieldId | OverlayId;
 
 export type FilterLayout = "applied" | "pinned";
 
-const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
+const DEFAULT_FILTER_FIELDS: ReadonlyArray<FieldId> = [
   "color",
   "tags",
   "folder",
@@ -30,9 +30,12 @@ const DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "modifiedAt",
 ];
 
-const DEFAULT_FILTER_OVERLAYS: readonly OverlayId[] = ["visual", "semantic"];
+const DEFAULT_FILTER_OVERLAYS: ReadonlyArray<OverlayId> = [
+  "visual",
+  "semantic",
+];
 
-const STOCK_FILTER_FIELDS_TO_REPLACE: readonly FieldId[] = [
+const STOCK_FILTER_FIELDS_TO_REPLACE: ReadonlyArray<FieldId> = [
   "color",
   "tags",
   "folder",
@@ -47,7 +50,7 @@ const STOCK_FILTER_FIELDS_TO_REPLACE: readonly FieldId[] = [
   "modifiedAt",
 ];
 
-const PREVIOUS_DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
+const PREVIOUS_DEFAULT_FILTER_FIELDS: ReadonlyArray<FieldId> = [
   "color",
   "tags",
   "folder",
@@ -64,7 +67,10 @@ const PREVIOUS_DEFAULT_FILTER_FIELDS: readonly FieldId[] = [
   "modifiedAt",
 ];
 
-function sameIds(left: readonly string[], right: readonly string[]): boolean {
+function sameIds(
+  left: ReadonlyArray<string>,
+  right: ReadonlyArray<string>,
+): boolean {
   return left.length === right.length && left.every((id, i) => id === right[i]);
 }
 
@@ -75,7 +81,10 @@ const Field = z.custom<FieldId>(
     Object.hasOwn(FIELD_META, String(value)),
 );
 
-function parseList<T>(text: string | null, item: z.ZodType<T>): T[] | null {
+function parseList<T>(
+  text: string | null,
+  item: z.ZodType<T>,
+): Array<T> | null {
   const saved = StoredList.safeParse(JSON.parse(text ?? "null"));
   if (!saved.success) return null;
   return [
@@ -88,11 +97,11 @@ function parseList<T>(text: string | null, item: z.ZodType<T>): T[] | null {
   ];
 }
 
-function parseFields(text: string | null): FieldId[] | null {
+function parseFields(text: string | null): Array<FieldId> | null {
   return parseList(text, Field);
 }
 
-function readPinnedFields(): FieldId[] {
+function readPinnedFields(): Array<FieldId> {
   try {
     const fields = parseFields(readViewPref("filterFields"));
     if (fields) {
@@ -104,11 +113,13 @@ function readPinnedFields(): FieldId[] {
       }
       return fields;
     }
-  } catch {}
+  } catch {
+    /** A corrupt stored pin list falls back to the defaults. */
+  }
   return [...DEFAULT_FILTER_FIELDS];
 }
 
-function readPinnedOverlays(): OverlayId[] {
+function readPinnedOverlays(): Array<OverlayId> {
   try {
     const overlays = parseList(readViewPref("filterOverlays"), OverlayIdSchema);
     const stockPins = sameIds(
@@ -121,15 +132,17 @@ function readPinnedOverlays(): OverlayId[] {
       }
       return overlays;
     }
-  } catch {}
+  } catch {
+    /** A corrupt stored overlay list falls back to the defaults. */
+  }
   return [...DEFAULT_FILTER_OVERLAYS];
 }
 
 interface ToolbarState {
   open: boolean;
   layout: FilterLayout;
-  pinned: FieldId[];
-  overlays: OverlayId[];
+  pinned: Array<FieldId>;
+  overlays: Array<OverlayId>;
 }
 
 const store = new Store<ToolbarState>({

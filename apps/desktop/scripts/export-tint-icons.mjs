@@ -11,11 +11,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const tintsRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
+  import.meta.dirname,
   "../../../packages/icons/brand/tints",
 );
 const ictool = "/Applications/Icon Composer.app/Contents/Executables/ictool";

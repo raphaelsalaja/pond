@@ -1,23 +1,15 @@
+import { DEFAULT_SOURCE_SYNC_PREFS } from "@pond/schema/db";
+import type { QueryResult } from "@shared/query-contracts";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { refetchAccounts, useAccounts } from "./use-accounts";
 
 let root: Root;
 let host: HTMLDivElement;
-interface AccountsFixture {
-  accounts: Array<{
-    id: string;
-    source: string;
-    handle: string;
-    label: null;
-    addedAt: string;
-    sync: { lastSyncedAt: null; lastError: null; knownCount: number };
-    connected: boolean;
-    syncing: boolean;
-  }>;
-}
-let payload: AccountsFixture;
+let payload: QueryResult<"accounts.list">;
 
 function View() {
   const { accounts } = useAccounts();
@@ -35,9 +27,7 @@ function Reload() {
 
 beforeEach(() => {
   payload = { accounts: [] };
-  vi.stubGlobal("pond", {
-    query: async () => payload,
-  });
+  bridge.use({ query: { "accounts.list": () => payload } });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -48,7 +38,6 @@ afterEach(async () => {
   await refetchAccounts();
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 it("updates every subscriber when one refetch finds a new account", async () => {
@@ -69,9 +58,10 @@ it("updates every subscriber when one refetch finds a new account", async () => 
         id: "acc-twitter",
         source: "twitter",
         handle: "raph",
+        identityKey: null,
         label: null,
         addedAt: "2026-01-01T00:00:00.000Z",
-        sync: { lastSyncedAt: null, lastError: null, knownCount: 0 },
+        sync: DEFAULT_SOURCE_SYNC_PREFS,
         connected: true,
         syncing: false,
       },

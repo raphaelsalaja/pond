@@ -90,7 +90,9 @@ export function createPreviewMedia({
       if (isVideo) {
         image.removeAttribute("src");
         video.src = displayUrl;
-      } else image.src = displayUrl;
+      } else {
+        image.src = displayUrl;
+      }
     },
     dispose() {
       image.removeEventListener("error", failed);

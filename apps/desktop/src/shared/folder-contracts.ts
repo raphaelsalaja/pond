@@ -6,13 +6,13 @@ export interface FolderSummary {
   directSaveCount: number;
   downloadingCount: number;
   childFolderCount: number;
-  previewSaveIds: string[];
+  previewSaveIds: Array<string>;
 }
 
 export interface FolderQueryInputs {
   "folders.summaries": { parentId: string };
-  "folders.previews": { folderIds: string[]; limit: number };
-  "folders.downloading": { folderIds: string[] };
+  "folders.previews": { folderIds: Array<string>; limit: number };
+  "folders.downloading": { folderIds: Array<string> };
   "folders.metadata.get": { folderId: string };
   "folders.metadata.set": {
     folderId: string;
@@ -22,8 +22,8 @@ export interface FolderQueryInputs {
 }
 
 export interface FolderQueryResults {
-  "folders.summaries": FolderSummary[];
-  "folders.previews": Record<string, string[]>;
+  "folders.summaries": Array<FolderSummary>;
+  "folders.previews": Record<string, Array<string>>;
   "folders.downloading": { count: number };
   "folders.metadata.get": FolderMetadata;
   "folders.metadata.set": OkResult;

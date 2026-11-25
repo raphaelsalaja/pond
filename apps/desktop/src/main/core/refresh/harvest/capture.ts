@@ -8,17 +8,10 @@ import {
   TransientError,
 } from "../../pipeline/extractors/errors";
 import { partitionForIngest } from "../../sync/accounts";
-import {
-  type HarvestArgs,
-  type HarvestResult,
-  harvestUrl,
-} from "../harvest-window/harvest";
-import {
-  fetchPinterestCapture,
-  type PinterestCaptureResult,
-  type PinterestGet,
-  pinterestSessionGet,
-} from "./pinterest/api";
+import { harvestUrl } from "../harvest-window/harvest";
+import type { HarvestArgs, HarvestResult } from "../harvest-window/harvest";
+import { fetchPinterestCapture, pinterestSessionGet } from "./pinterest/api";
+import type { PinterestCaptureResult, PinterestGet } from "./pinterest/api";
 
 interface CaptureArgs {
   url: string;

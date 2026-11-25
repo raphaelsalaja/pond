@@ -25,7 +25,7 @@ export async function decodeMono16k(
   url: string,
   options: DecodeMono16kOptions = {},
 ): Promise<Float32Array> {
-  if (options.maxSamples != null) {
+  if (options.maxSamples !== undefined) {
     const result = await window.pond.query("media.decodeAudio", {
       src: url,
       maxSamples: options.maxSamples,
@@ -36,7 +36,7 @@ export async function decodeMono16k(
   if (!response.ok) throw new Error(`Audio fetch failed (${response.status})`);
   if (!response.body) throw new Error("Audio response has no body");
   const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
+  const chunks: Array<Uint8Array> = [];
   let size = 0;
   try {
     while (true) {
@@ -59,16 +59,19 @@ export async function decodeMono16k(
     offset += chunk.length;
   }
   const Ctx = window.AudioContext ?? window.webkitAudioContext;
-  if (!Ctx) throw new Error("No AudioContext available");
-  const context = new Ctx({ sampleRate: 16000 });
+  if (!Ctx) {
+    throw new Error("No AudioContext available");
+  }
+  const context = new Ctx({ sampleRate: 16_000 });
   try {
     const buffer = await context.decodeAudioData(bytes.buffer);
     const mono = new Float32Array(buffer.length);
     for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
       const data = buffer.getChannelData(channel);
-      for (let index = 0; index < mono.length; index += 1)
+      for (let index = 0; index < mono.length; index += 1) {
         mono[index] =
           (mono[index] ?? 0) + (data[index] ?? 0) / buffer.numberOfChannels;
+      }
     }
     return mono;
   } finally {

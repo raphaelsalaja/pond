@@ -1,10 +1,6 @@
 import { Button, Toast } from "@pond/ui";
-import {
-  TOAST_TIMEOUT_MS,
-  type ToastAsk,
-  type ToastData,
-  toastManager,
-} from "@/shared/lib/toast";
+import { TOAST_TIMEOUT_MS, toastManager } from "@/shared/lib/toast";
+import type { ToastAsk, ToastData } from "@/shared/lib/toast";
 
 type ToastObject = ReturnType<
   typeof Toast.useToastManager<ToastData>

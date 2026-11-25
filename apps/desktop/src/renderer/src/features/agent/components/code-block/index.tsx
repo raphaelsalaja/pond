@@ -1,7 +1,8 @@
 import { IconCheck, IconCopy } from "@pond/icons";
 import { Button } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import { type ComponentPropsWithoutRef, useState } from "react";
+import { useState } from "react";
+import type { ComponentPropsWithoutRef } from "react";
 import styles from "./styles.module.css";
 
 interface HeaderProps extends ComponentPropsWithoutRef<"div"> {

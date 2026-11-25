@@ -26,24 +26,24 @@ export interface SplitAllProgress {
 export interface SavesMutationQueryInputs {
   "saves.emptyTrash": EmptyInput;
   "saves.restoreAll": EmptyInput;
-  "saves.retryFailed": { ids?: string[] };
-  "saves.skipIngest": { ids: string[] };
+  "saves.retryFailed": { ids?: Array<string> };
+  "saves.skipIngest": { ids: Array<string> };
   "saves.setPhash": { id: string; phash: string | null };
   "saves.setEmbedding": {
     id: string;
-    embedding: number[] | null;
+    embedding: Array<number> | null;
     embeddingModel: string | null;
   };
   "saves.patchDerived": { id: string; patch: SavesDerivedPatch };
   "saves.ensureTextCover": { id: string; force?: boolean };
-  "saves.mergeDuplicates": { keepId: string; ids: string[] };
-  "saves.split": { ids: string[] };
-  "saves.group": { ids: string[] };
+  "saves.mergeDuplicates": { keepId: string; ids: Array<string> };
+  "saves.split": { ids: Array<string> };
+  "saves.group": { ids: Array<string> };
   "saves.splittableCount": EmptyInput;
   "saves.splitAll": EmptyInput;
   "saves.splitAllStatus": EmptyInput;
   "saves.batchRename": BatchRenameInput;
-  "saves.batchEditExtension": { ids: string[]; extension: string };
+  "saves.batchEditExtension": { ids: Array<string>; extension: string };
   "saves.activateFont": SavesIdInput;
   "saves.deactivateFont": SavesIdInput;
   "saves.setAudioAnalysis": { id: string; bpm: number };
@@ -68,14 +68,14 @@ export interface SavesMutationQueryInputs {
   "saves.convertTextEncoding": SavesIdInput & { fileIndex: number };
   "saves.exportDotLottie": SavesIdInput & { fileIndex: number };
   "saves.regeneratePoster": SavesIdInput;
-  "saves.downloadVideo": { ids: string[] };
-  "saves.removeVideo": { ids: string[] };
+  "saves.downloadVideo": { ids: Array<string> };
+  "saves.removeVideo": { ids: Array<string> };
   "saves.missingVideoCount": { source?: ExternalSource };
   "saves.downloadMissingVideos": { source?: ExternalSource };
-  "saves.findDuplicates": { ids?: string[] };
+  "saves.findDuplicates": { ids?: Array<string> };
   "saves.duplicateIndexStatus": EmptyInput;
   "saves.rebuildDuplicateIndex": EmptyInput;
-  "saves.dismissDuplicates": { pairs: DuplicateDismissal[] };
+  "saves.dismissDuplicates": { pairs: Array<DuplicateDismissal> };
 }
 
 export interface SavesMutationQueryResults {

@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
+import type { Predicate } from "@pond/schema/filters/types";
+import { describe, expect, it } from "vitest";
 import type { Save } from "@/features/saves/types";
 import { factFilters } from "./fact-actions";
 
@@ -33,18 +33,21 @@ function makeSave(partial: Partial<Save>): Save {
 }
 
 function filtersFor(id: string, value: string, save: Save) {
-  const spy = vi
-    .spyOn(saveLibraryBridge, "showMatching")
-    .mockImplementation(() => {});
-  return factFilters({ id, value, display: value }, save).map((filter) => {
+  const shown: Array<Predicate> = [];
+  const filters = factFilters(
+    { id, value, display: value },
+    save,
+    (predicate) => {
+      shown.push(predicate);
+    },
+  );
+  return filters.map((filter) => {
     filter.run();
-    return { label: filter.label, predicate: spy.mock.lastCall?.[0] };
+    return { label: filter.label, predicate: shown.at(-1) };
   });
 }
 
 describe("factFilters", () => {
-  afterEach(() => vi.restoreAllMocks());
-
   it("filters by format, then by media type", () => {
     expect(filtersFor("type", "PNG", makeSave({}))).toEqual([
       {

@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 import { TimelinePreview } from ".";
 
@@ -25,15 +26,19 @@ it("keeps a stable frame for portrait video", async () => {
   expect(host.querySelector("video")?.style.aspectRatio).toBe("16 / 9");
 });
 
+async function render(time: number) {
+  await act(async () => {
+    root.render(<TimelinePreview src="pond://test/clip.mp4" time={time} />);
+  });
+  await act(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => resolve(0));
+      }),
+  );
+}
+
 it("stays visible and coalesces seeks while the time changes", async () => {
-  const render = async (time: number) => {
-    await act(async () => {
-      root.render(<TimelinePreview src="pond://test/clip.mp4" time={time} />);
-    });
-    await act(
-      () => new Promise((resolve) => requestAnimationFrame(() => resolve(0))),
-    );
-  };
   await render(4);
   const video = host.querySelector("video");
   if (!video) throw new Error("Missing preview video");

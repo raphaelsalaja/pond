@@ -30,32 +30,35 @@ function summarize(
     remainingDaily: Math.max(0, rate.maxPerDay - (usage?.daily ?? 0)),
     maxPerHour: rate.maxPerHour,
     maxPerDay: rate.maxPerDay,
-    recoveryProbe: gate.state === "half_open" && gate.probeLeaseToken != null,
+    recoveryProbe: gate.state === "half_open" && gate.probeLeaseToken !== null,
   };
 }
 
 /** A closed gate still holds work back once its source spends the hourly or daily request budget, so those sources are listed too. */
 export function summarizeSourceGates(
-  gates: readonly StoredSourceGate[],
-  usage: readonly SourceRequestUsage[],
-): QueueSourceGate[] {
+  gates: ReadonlyArray<StoredSourceGate>,
+  usage: ReadonlyArray<SourceRequestUsage>,
+): Array<QueueSourceGate> {
   const bySource = new Map(usage.map((row) => [row.source, row]));
   const listed = new Set(gates.map((gate) => gate.source));
-  const capped = usage
-    .filter((row) => !listed.has(row.source))
-    .map((row) =>
-      summarize(
-        {
-          source: row.source,
-          state: "closed",
-          reason: null,
-          retryAt: null,
-          probeLeaseToken: null,
-        },
-        row,
-      ),
-    )
-    .filter((gate) => gate.remainingHourly === 0 || gate.remainingDaily === 0);
+  const capped = usage.flatMap((row) => {
+    if (listed.has(row.source)) {
+      return [];
+    }
+    const gate = summarize(
+      {
+        source: row.source,
+        state: "closed",
+        reason: null,
+        retryAt: null,
+        probeLeaseToken: null,
+      },
+      row,
+    );
+    return gate.remainingHourly === 0 || gate.remainingDaily === 0
+      ? [gate]
+      : [];
+  });
   return [
     ...gates.map((gate) => summarize(gate, bySource.get(gate.source))),
     ...capped,

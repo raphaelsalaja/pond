@@ -39,7 +39,7 @@ import { getPrefsSnapshot, savePrefsSection } from "@/shared/state/prefs";
 import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
-function buildThumbnailBackgroundItems(): MenuItemSpec[] {
+function buildThumbnailBackgroundItems(): Array<MenuItemSpec> {
   const thumbnailBackground =
     getPrefsSnapshot()?.viewer?.thumbnailBackground ?? "none";
   return (
@@ -77,7 +77,7 @@ function buildThumbnailBackgroundItems(): MenuItemSpec[] {
 
 export function buildViewerDisplayItems(
   context: SaveMenuContext,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const visible =
     context.opened &&
     !context.batch &&
@@ -119,11 +119,11 @@ function removeVideoTitle(removed: number): string {
 }
 
 export interface DetailMenuItems {
-  file: MenuItemSpec[];
-  media: MenuItemSpec[];
-  organization: MenuItemSpec[];
-  source: MenuItemSpec[];
-  thumbnail: MenuItemSpec[];
+  file: Array<MenuItemSpec>;
+  media: Array<MenuItemSpec>;
+  organization: Array<MenuItemSpec>;
+  source: Array<MenuItemSpec>;
+  thumbnail: Array<MenuItemSpec>;
 }
 
 export function buildDetailItems({
@@ -229,11 +229,12 @@ export function buildDetailItems({
               frameIndex: Number.isFinite(frameIndex) ? frameIndex : 0,
             })
             .then((result) => {
-              if (!result.ok)
+              if (!result.ok) {
                 notify({
                   id: "gif-thumb",
                   title: "Couldn't set the current frame as thumbnail",
                 });
+              }
             });
         },
       },
@@ -245,11 +246,12 @@ export function buildDetailItems({
           void window.pond
             .query("saves.loadSubtitles", { id: save.id })
             .then((result) => {
-              if (!result.ok && result.reason !== "cancelled")
+              if (!result.ok && result.reason !== "cancelled") {
                 notify({
                   id: "subtitles",
                   title: "Couldn't load subtitles",
                 });
+              }
             });
         },
       },
@@ -372,11 +374,12 @@ export function buildDetailItems({
           void window.pond
             .query("saves.setThumbnailFromClipboard", { id: save.id })
             .then((result) => {
-              if (!result.ok)
+              if (!result.ok) {
                 notify({
                   id: "thumbnail-clipboard",
                   title: "No image found on the clipboard",
                 });
+              }
             });
         },
       },

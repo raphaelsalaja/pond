@@ -40,16 +40,18 @@ export async function emulateColorScheme(
       { features: [{ name: "prefers-color-scheme", value: scheme }] },
       CDP_COMMAND_TIMEOUT_MS,
     );
-  } catch (err) {
+  } catch (error) {
     log.warn(
       "[pond screenshot:tweet] emulated media setup failed",
       scheme,
-      err,
+      error,
     );
     if (attachedHere) {
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** A debugger that failed to set up may already be detached. */
+      }
     }
     return async () => {};
   }
@@ -61,11 +63,15 @@ export async function emulateColorScheme(
         { features: [] },
         CDP_COMMAND_TIMEOUT_MS,
       );
-    } catch {}
+    } catch {
+      /** The window may be gone; the emulation dies with it. */
+    }
     if (attachedHere) {
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** The window may be gone, which detaches the debugger. */
+      }
     }
   };
 }
@@ -104,11 +110,15 @@ export async function withDeviceScaleFactor<T>(
         undefined,
         CDP_COMMAND_TIMEOUT_MS,
       );
-    } catch {}
+    } catch {
+      /** The window may be gone; the override dies with it. */
+    }
     if (attachedHere) {
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** The window may be gone, which detaches the debugger. */
+      }
     }
   }
 }

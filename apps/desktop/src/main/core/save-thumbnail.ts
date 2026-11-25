@@ -156,7 +156,7 @@ export async function ensureSaveThumbnail(
         ],
       },
     );
-  } catch (err) {
-    log.warn("[pond thumbnail] could not write sidecar", saveId, err);
+  } catch (error) {
+    log.warn("[pond thumbnail] could not write sidecar", saveId, error);
   }
 }

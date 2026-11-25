@@ -25,12 +25,8 @@ import {
   videoSampleTimes,
 } from "../../lib/fingerprint/video-print";
 import { binariesAvailable } from "../refresh/binaries";
-import {
-  FFMPEG_UNAVAILABLE,
-  FINGERPRINT_ALGORITHMS,
-  type FingerprintAlgorithm,
-  type FingerprintStatus,
-} from "./fingerprints";
+import { FFMPEG_UNAVAILABLE, FINGERPRINT_ALGORITHMS } from "./fingerprints";
+import type { FingerprintAlgorithm, FingerprintStatus } from "./fingerprints";
 
 export interface FingerprintOutcome {
   status: FingerprintStatus;
@@ -77,8 +73,9 @@ async function videoFingerprint(path: string): Promise<FingerprintOutcome> {
     plan.windowSeconds / frames.length,
     frames,
   );
-  if (detailedFrameCount(print) < MIN_DETAILED_FRAMES)
+  if (detailedFrameCount(print) < MIN_DETAILED_FRAMES) {
     return { status: "low-detail" };
+  }
   return { status: "ok", value: encodeVideoPrint(print) };
 }
 
@@ -95,13 +92,17 @@ async function audioFingerprint(path: string): Promise<FingerprintOutcome> {
     ));
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (NO_AUDIO_STREAM.test(message))
+    if (NO_AUDIO_STREAM.test(message)) {
       return { status: "unsupported", error: "No audio track" };
+    }
     throw error;
   }
-  if (samples.length === 0)
+  if (samples.length === 0) {
     return { status: "unsupported", error: "No audio track" };
-  if (isSilent(samples)) return { status: "low-detail" };
+  }
+  if (isSilent(samples)) {
+    return { status: "low-detail" };
+  }
   const print = audioPrintFromSamples(samples, duration);
   if (print.frames.length === 0) return { status: "low-detail" };
   return { status: "ok", value: encodeAudioPrint(print) };
@@ -111,8 +112,9 @@ export async function computeFingerprint(
   algorithm: FingerprintAlgorithm,
   path: string,
 ): Promise<FingerprintOutcome> {
-  if (algorithm.needsFfmpeg && !binariesAvailable().ffmpeg)
+  if (algorithm.needsFfmpeg && !binariesAvailable().ffmpeg) {
     return { status: "unsupported", error: FFMPEG_UNAVAILABLE };
+  }
   switch (algorithm.algorithm) {
     case FINGERPRINT_ALGORITHMS.image.algorithm:
       return imageFingerprint(path);

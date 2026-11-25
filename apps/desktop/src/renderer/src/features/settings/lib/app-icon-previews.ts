@@ -1,10 +1,10 @@
 import {
-  type AppIconAppearance,
   appIconLabel,
   appIconTint,
   pickIconGeneration,
   sortAppIconIds,
 } from "@shared/app-icons";
+import type { AppIconAppearance } from "@shared/app-icons";
 import { z } from "zod";
 
 const previews = import.meta.glob(
@@ -64,12 +64,13 @@ for (const [path, url] of Object.entries(previews)) {
       ? entry.base
       : (entry.generations.get(preview.generation) ?? {});
   set[preview.dark ? "dark" : "light"] = parsed.data;
-  if (preview.generation !== null)
+  if (preview.generation !== null) {
     entry.generations.set(preview.generation, set);
+  }
   previewsById.set(preview.id, entry);
 }
 
-export function listAppIconPreviews(): AppIconPreview[] {
+export function listAppIconPreviews(): Array<AppIconPreview> {
   const ids = [...previewsById].flatMap(([id, entry]) =>
     entry.base.light ? [id] : [],
   );

@@ -2,7 +2,7 @@ import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef } from "react";
 import styles from "./styles.module.css";
 
-interface HintProps extends ComponentPropsWithoutRef<"div"> {}
+type HintProps = ComponentPropsWithoutRef<"div">;
 
 export function Hint({ className, ...props }: HintProps) {
   return (

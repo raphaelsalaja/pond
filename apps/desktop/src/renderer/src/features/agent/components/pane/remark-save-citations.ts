@@ -2,7 +2,7 @@ interface MarkdownNode {
   type: string;
   value?: string;
   url?: string;
-  children?: MarkdownNode[];
+  children?: Array<MarkdownNode>;
   position?: { start: { offset?: number }; end: { offset?: number } };
 }
 
@@ -31,7 +31,7 @@ function endsWithSaveCitation(node: MarkdownNode): boolean {
   return false;
 }
 
-function bindCitationPunctuation(children: MarkdownNode[]) {
+function bindCitationPunctuation(children: Array<MarkdownNode>) {
   for (let index = 0; index < children.length - 1; index += 1) {
     const citation = children[index];
     const next = children[index + 1];
@@ -85,8 +85,10 @@ export function remarkSaveCitations({
           rawCursor = escapedCharacter.index + escapedCharacter[0].length;
         }
         unescaped += raw.slice(rawCursor);
-        if (escaped.size && unescaped !== child.value) return [child];
-        const parts: MarkdownNode[] = [];
+        if (escaped.size && unescaped !== child.value) {
+          return [child];
+        }
+        const parts: Array<MarkdownNode> = [];
         let cursor = 0;
         for (const match of child.value.matchAll(
           /\[([1-9]\d*(?:\s*,\s*[1-9]\d*)*)\]|(?<![\p{L}\p{N}_/#-])#save-([1-9]\d*)(?![\p{L}\p{N}_#-]|\.\d)/gu,
@@ -100,8 +102,9 @@ export function remarkSaveCitations({
               (offset) =>
                 offset >= match.index && offset < match.index + match[0].length,
             )
-          )
+          ) {
             continue;
+          }
           parts.push({
             type: "text",
             value: child.value.slice(cursor, match.index),

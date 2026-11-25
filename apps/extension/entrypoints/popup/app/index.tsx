@@ -41,18 +41,11 @@ import { Button } from "@pond/ui/button";
 import { Empty } from "@pond/ui/empty";
 import { Keyboard } from "@pond/ui/keyboard";
 import { Loader } from "@pond/ui/loader";
-import {
-  type ComponentType,
-  type ReactNode,
-  type SVGProps,
-  useState,
-} from "react";
+import { useState } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
 import { HOOK_SOURCES, harvestSourceForUrl } from "@/sources";
-import {
-  type CaptureTool,
-  sendMessage,
-  type ToolResult,
-} from "@/utils/messaging";
+import { sendMessage } from "@/utils/messaging";
+import type { CaptureTool, ToolResult } from "@/utils/messaging";
 import type { NativeUnreachable } from "@/utils/native";
 import { useLibrary } from "@/utils/use-library";
 import { useActiveTab, useShortcuts } from "../hooks";
@@ -99,7 +92,10 @@ interface Command {
   icon: ReactNode;
 }
 
-const GROUPS: readonly { label: string; commands: readonly Command[] }[] = [
+const GROUPS: ReadonlyArray<{
+  label: string;
+  commands: ReadonlyArray<Command>;
+}> = [
   {
     label: "Save",
     commands: [
@@ -266,8 +262,9 @@ export function App() {
     "commands",
   );
 
-  if (view === "shortcuts")
+  if (view === "shortcuts") {
     return <ShortcutsPanel onBack={() => setView("returned")} />;
+  }
   return (
     <Commands
       {...library}
@@ -355,7 +352,7 @@ function Commands({ result, refresh, returned, onShortcuts }: CommandsProps) {
     <Shell returned={returned}>
       {tabId === undefined ? (
         <p className={styles.notice} role="status">
-          Pond can't capture this page. Open a regular web page to save it.
+          Pond can&apos;t capture this page. Open a regular web page to save it.
         </p>
       ) : null}
       {error ? (

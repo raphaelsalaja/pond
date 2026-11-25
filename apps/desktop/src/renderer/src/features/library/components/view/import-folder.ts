@@ -10,7 +10,7 @@ export function importFolderFor({
 }: {
   mode: SaveListMode;
   nav: LibraryNav;
-  folders: readonly Folder[];
+  folders: ReadonlyArray<Folder>;
 }): Folder | undefined {
   if (mode !== "library" || nav.kind !== "folder") return undefined;
   const { id } = nav;

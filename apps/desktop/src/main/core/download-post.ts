@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
-import { type Capture, walkCaptureMedia } from "@pond/schema/raw";
+import { walkCaptureMedia } from "@pond/schema/raw";
+import type { Capture } from "@pond/schema/raw";
 import { sourceLabel } from "@pond/schema/sources";
 import type { DownloadPostProbe } from "@shared/downloader-contracts";
 
@@ -19,15 +20,16 @@ function clip(line: string): string {
 }
 
 /** The post's own media first; quoted and replied-to media only when it has none. */
-function imagesOf(capture: Capture): string[] {
+function imagesOf(capture: Capture): Array<string> {
   const own =
     capture.media.length > 0 ? capture.media : walkCaptureMedia(capture);
   const images = own.flatMap((media) => {
     if (media.type === "image") return [media.url];
     return media.posterUrl ? [media.posterUrl] : [];
   });
-  if (images.length === 0 && capture.card?.imageUrl)
+  if (images.length === 0 && capture.card?.imageUrl) {
     images.push(capture.card.imageUrl);
+  }
   return [...new Set(images)];
 }
 

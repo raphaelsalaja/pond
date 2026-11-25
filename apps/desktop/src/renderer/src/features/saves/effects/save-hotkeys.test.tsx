@@ -1,6 +1,7 @@
 import { HotkeysProvider } from "@tanstack/react-hotkeys";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearSaveSelection,
@@ -22,6 +23,7 @@ import {
   shortcutConflict,
   shortcutGlyphs,
 } from "@/shared/lib/shortcuts";
+import { bridge } from "@/shared/test/pond-bridge";
 import { SaveHotkeys } from "./save-hotkeys";
 
 function image(path: string): SaveFile {
@@ -36,7 +38,7 @@ function image(path: string): SaveFile {
 
 function save(
   id: string,
-  files: SaveFile[],
+  files: Array<SaveFile>,
   overrides: Partial<Save> = {},
 ): Save {
   return {
@@ -63,10 +65,14 @@ function save(
 const carousel = save("carousel", [image("one.jpg"), image("two.jpg")]);
 const single = save("single", [image("only.jpg")]);
 
+function primary(id: string) {
+  return vi.waitFor(() => expect(primarySelection.get()).toBe(id));
+}
+
 describe("Split Into Saves hotkey", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const calls: Array<{ name: string; ids: readonly string[] }> = [];
+  const calls: Array<{ name: string; ids: ReadonlyArray<string> }> = [];
 
   function collection(): HTMLElement {
     const element = host.querySelector<HTMLElement>("[data-save-collection]");
@@ -91,10 +97,12 @@ describe("Split Into Saves hotkey", () => {
   beforeEach(() => {
     calls.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: { ids?: readonly string[] }) => {
-        calls.push({ name, ids: input.ids ?? [] });
-        return { ok: true, split: 1, created: 1 };
+    bridge.use({
+      query: {
+        "saves.split": ({ ids }) => {
+          calls.push({ name: "saves.split", ids });
+          return { ok: true, split: 1, created: 1 };
+        },
       },
     });
     host = document.createElement("div");
@@ -109,7 +117,6 @@ describe("Split Into Saves hotkey", () => {
     host.remove();
     pool.clear();
     clearSaveSelection();
-    vi.unstubAllGlobals();
   });
 
   async function mount() {
@@ -201,13 +208,17 @@ describe("Split Into Saves hotkey", () => {
 });
 
 interface TriageInput {
-  ids?: readonly string[];
+  ids?: ReadonlyArray<string>;
 }
 
 describe("Triage hotkeys", () => {
   let host: HTMLDivElement;
   let root: Root;
   const calls: Array<{ name: string; input: TriageInput }> = [];
+
+  function bulkEdits() {
+    return calls.filter((call) => call.name === "saves.bulkEdit");
+  }
 
   function collection(): HTMLElement {
     const element = host.querySelector<HTMLElement>("[data-save-collection]");
@@ -234,12 +245,17 @@ describe("Triage hotkeys", () => {
     calls.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
     document.documentElement.setAttribute("data-reduce-motion", "true");
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: TriageInput) => {
-        calls.push({ name, input });
-        if (name === "saves.bulkEdit")
-          return { changed: input.ids?.length ?? 0, undoId: "step-1" };
-        return [];
+    bridge.use({
+      query: {
+        "saves.bulkEdit": (input) => {
+          calls.push({ name: "saves.bulkEdit", input });
+          return { changed: input.ids.length, undoId: "step-1" };
+        },
+        "saves.getMany": (input) => {
+          calls.push({ name: "saves.getMany", input });
+          return [];
+        },
+        "feedback.emit": () => ({ ok: true }),
       },
     });
     pool.clear();
@@ -274,7 +290,6 @@ describe("Triage hotkeys", () => {
     document.documentElement.removeAttribute("data-reduce-motion");
     pool.clear();
     clearSaveSelection();
-    vi.unstubAllGlobals();
   });
 
   it("binds triage actions without colliding in either profile", () => {
@@ -288,16 +303,15 @@ describe("Triage hotkeys", () => {
     for (const profile of ["pond", "eagle"] as const) {
       const preferences = { profile, overrides: {} };
       const bindings = resolveShortcuts(preferences);
-      for (const id of ids)
+      for (const id of ids) {
         expect(
           shortcutConflict(id, bindingKeys(bindings, id), preferences),
         ).toBeNull();
+      }
     }
   });
 
   it("skips forward and back without editing the Save", async () => {
-    const primary = (id: string) =>
-      vi.waitFor(() => expect(primarySelection.get()).toBe(id));
     await press("j");
     await primary("b");
     await press("j");
@@ -341,10 +355,9 @@ describe("Triage hotkeys", () => {
   });
 
   it("moves the open Save to Trash without asking", async () => {
-    const edits = () => calls.filter((call) => call.name === "saves.bulkEdit");
     await press("Backspace", { code: "Backspace" });
-    await vi.waitFor(() => expect(edits()).toHaveLength(1));
-    expect(edits()).toEqual([
+    await vi.waitFor(() => expect(bulkEdits()).toHaveLength(1));
+    expect(bulkEdits()).toEqual([
       {
         name: "saves.bulkEdit",
         input: { ids: ["a"], operation: { kind: "trash" } },
@@ -354,10 +367,9 @@ describe("Triage hotkeys", () => {
 
   it("restores a selected Save that is already in Trash", async () => {
     pool.upsert(save("a", [image("a")], { deletedAt: 5 }));
-    const edits = () => calls.filter((call) => call.name === "saves.bulkEdit");
     await press("Backspace", { code: "Backspace" });
-    await vi.waitFor(() => expect(edits()).toHaveLength(1));
-    expect(edits()).toEqual([
+    await vi.waitFor(() => expect(bulkEdits()).toHaveLength(1));
+    expect(bulkEdits()).toEqual([
       {
         name: "saves.bulkEdit",
         input: { ids: ["a"], operation: { kind: "untrash" } },
@@ -367,7 +379,7 @@ describe("Triage hotkeys", () => {
 });
 
 interface EditInput {
-  ids?: readonly string[];
+  ids?: ReadonlyArray<string>;
   operation?: { kind: string; state?: string | null };
 }
 
@@ -379,7 +391,7 @@ function SnoozeProbe() {
 describe("Inbox hotkeys", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const edits: EditInput[] = [];
+  const edits: Array<EditInput> = [];
 
   function snoozing(): string | null {
     return (
@@ -407,10 +419,12 @@ describe("Inbox hotkeys", () => {
   beforeEach(async () => {
     edits.length = 0;
     configureShortcuts({ profile: "pond", overrides: {} });
-    vi.stubGlobal("pond", {
-      query: async (name: string, input: EditInput) => {
-        if (name === "saves.bulkEdit") edits.push(input);
-        return { changed: input.ids?.length ?? 0 };
+    bridge.use({
+      query: {
+        "saves.bulkEdit": (input) => {
+          edits.push(input);
+          return { changed: input.ids.length, undoId: null };
+        },
       },
     });
     host = document.createElement("div");
@@ -443,7 +457,6 @@ describe("Inbox hotkeys", () => {
     host.remove();
     pool.clear();
     clearSaveSelection();
-    vi.unstubAllGlobals();
   });
 
   it("binds P and H without colliding in either profile", () => {

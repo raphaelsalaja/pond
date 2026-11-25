@@ -96,7 +96,8 @@ it("renders bare bold references as Pond Save controls with verified titles", ()
     />,
   );
   expect(html.match(/<button/g)).toHaveLength(3);
-  for (const title of ["boy essentials", "flatlays", "Composition101"])
+  for (const title of ["boy essentials", "flatlays", "Composition101"]) {
     expect(html).toContain(`title="Open ${title}"`);
+  }
   expect(html).not.toContain("#save-");
 });

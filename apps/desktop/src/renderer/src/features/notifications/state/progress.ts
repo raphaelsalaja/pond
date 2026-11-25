@@ -16,15 +16,15 @@ export interface InboxProgress {
 const SAVES = { one: "Save", other: "Saves" };
 
 /** Work still running in this window, pinned above the Inbox list until it settles. */
-export function useInboxProgress(): InboxProgress[] {
+export function useInboxProgress(): Array<InboxProgress> {
   const entries = useStatusFeed();
   const { checking } = useHealthSignal();
   const processed = checking?.processed ?? 0;
   const total = checking ? checking.total : null;
 
   return useMemo(() => {
-    const rows: InboxProgress[] = [];
-    if (total !== null)
+    const rows: Array<InboxProgress> = [];
+    if (total !== null) {
       rows.push({
         id: "progress:library-check",
         title: "Checking Library",
@@ -36,7 +36,8 @@ export function useInboxProgress(): InboxProgress[] {
           "Pond checks files, previews, and the library index. Nothing changes until you choose a repair.",
         health: true,
       });
-    for (const entry of entries)
+    }
+    for (const entry of entries) {
       rows.push({
         id: `progress:activity:${entry.id}`,
         title: entry.label,
@@ -45,6 +46,7 @@ export function useInboxProgress(): InboxProgress[] {
         startedAt: entry.startedAt,
         health: false,
       });
+    }
     return rows;
   }, [entries, processed, total]);
 }

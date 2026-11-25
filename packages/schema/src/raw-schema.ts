@@ -176,5 +176,6 @@ export type StoredRawJsonInput = z.input<typeof StoredRawJsonSchema>;
 
 export function storedAsRawJson(stored: StoredRawJsonInput): RawJson {
   /** SAFETY: the stored shape is `RawJson` with the gaps above, and every reader uses optional chaining. */
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- This function is the one sanctioned widening of the stored shape to `RawJson`; removing it means retyping every `RawJson` reader.
   return stored as RawJson;
 }

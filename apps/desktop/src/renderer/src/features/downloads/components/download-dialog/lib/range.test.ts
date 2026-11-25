@@ -8,7 +8,7 @@ import {
   storyboardTile,
 } from "./range";
 
-const flat = (values: number[], step = 2) =>
+const flat = (values: Array<number>, step = 2) =>
   values.map((value, index) => ({
     start: index * step,
     end: (index + 1) * step,

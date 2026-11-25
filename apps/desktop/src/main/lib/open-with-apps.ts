@@ -34,11 +34,11 @@ export function openWithListingKey(filePath: string): string {
 }
 
 export function rankOpenWithApps(
-  input: { defaultPath: string | null; paths: string[] },
+  input: { defaultPath: string | null; paths: Array<string> },
   limit = 24,
-): OpenWithAppInfo[] {
+): Array<OpenWithAppInfo> {
   const seen = new Set<string>();
-  const apps: OpenWithAppInfo[] = [];
+  const apps: Array<OpenWithAppInfo> = [];
   const add = (path: string, isDefault: boolean) => {
     if (!path.endsWith(".app") || seen.has(path)) return;
     seen.add(path);

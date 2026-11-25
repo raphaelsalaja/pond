@@ -1,14 +1,12 @@
 import { useMemo } from "react";
-import {
-  BatchRenameDialog,
-  type BatchRenameItem,
-} from "@/features/library/components/batch-rename";
+import { BatchRenameDialog } from "@/features/library/components/batch-rename";
+import type { BatchRenameItem } from "@/features/library/components/batch-rename";
 import { folders, useFolders } from "@/features/library/state/folders";
 import {
   closeOrganizationRenameDialog,
-  type OrganizationRenameKind,
   useOrganizationRenameDialog,
 } from "@/features/library/state/organization-rename-dialog";
+import type { OrganizationRenameKind } from "@/features/library/state/organization-rename-dialog";
 import {
   savedViews,
   useSavedViews,
@@ -29,16 +27,16 @@ const NOUNS = {
 } satisfies Record<OrganizationRenameKind, { one: string; other: string }>;
 
 function treeOrder<Row extends { id: string; parentId: string | null }>(
-  rows: readonly Row[],
+  rows: ReadonlyArray<Row>,
   selected: ReadonlySet<string>,
-): Row[] {
+): Array<Row> {
   const ids = new Set(rows.map((row) => row.id));
-  const children = new Map<string | null, Row[]>();
+  const children = new Map<string | null, Array<Row>>();
   for (const row of rows) {
     const parent = row.parentId && ids.has(row.parentId) ? row.parentId : null;
     children.set(parent, [...(children.get(parent) ?? []), row]);
   }
-  const ordered: Row[] = [];
+  const ordered: Array<Row> = [];
   const visit = (parent: string | null) => {
     for (const row of children.get(parent) ?? []) {
       if (selected.has(row.id)) ordered.push(row);
@@ -69,13 +67,13 @@ function OrganizationRenameDialog({
 }: {
   open: boolean;
   kind: OrganizationRenameKind;
-  initialIds?: string[];
+  initialIds?: Array<string>;
 }) {
   const folderRows = useFolders();
   const viewRows = useSavedViews();
   const selected = useMemo(() => new Set(initialIds), [initialIds]);
   const items = useMemo(
-    (): BatchRenameItem[] =>
+    (): Array<BatchRenameItem> =>
       kind === "folders"
         ? treeOrder(folderRows, selected).map((row) => ({
             id: row.id,

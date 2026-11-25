@@ -28,7 +28,9 @@ export function setLibrarySaveGap(gap: number): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(GAP_KEY, String(next));
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the in-memory gap still applies. */
+    }
   }
   store.setState(() => next);
 }

@@ -20,7 +20,7 @@ export function TableOptionsMenu<Id extends string>({
   onHiddenChange,
   onSortChange,
 }: {
-  columns: readonly TableColumnSpec<Id>[];
+  columns: ReadonlyArray<TableColumnSpec<Id>>;
   lockedId: Id;
   layout: TableColumnLayout<Id>;
   onHiddenChange: (id: Id, hidden: boolean) => void;

@@ -63,8 +63,8 @@ export async function startArticleBackfill(): Promise<{
         .where(and(eq(tasks.saveId, id), eq(tasks.op, "harvest_metadata")))
         .run();
       harvested += 1;
-    } catch (err) {
-      log.warn("[pond article-backfill] harvest failed", id, err);
+    } catch (error) {
+      log.warn("[pond article-backfill] harvest failed", id, error);
     }
   }
 

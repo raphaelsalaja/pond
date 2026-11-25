@@ -1,6 +1,8 @@
 import { clsx as cn } from "clsx";
-import { forwardRef, type Ref } from "react";
-import { Button, type ButtonProps } from "../button";
+import { forwardRef } from "react";
+import type { Ref } from "react";
+import { Button } from "../button";
+import type { ButtonProps } from "../button";
 import { Popover } from "../popover";
 import { stopPageHotkeys } from "../stop-page-hotkeys";
 import { Item, ItemIcon, ItemLabel, ItemMeta, SelectionMark } from "./item";

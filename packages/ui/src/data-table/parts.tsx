@@ -1,15 +1,8 @@
 import { useSelector } from "@tanstack/react-store";
 import type { RowData } from "@tanstack/react-table";
 import { clsx as cn } from "clsx";
-import {
-  Children,
-  type FunctionComponent,
-  isValidElement,
-  type ReactNode,
-  type RefObject,
-  useLayoutEffect,
-  useState,
-} from "react";
+import { Children, isValidElement, useLayoutEffect, useState } from "react";
+import type { FunctionComponent, ReactNode, RefObject } from "react";
 import { cssVars } from "../css-vars";
 import { HoverHighlight } from "../hover-highlight";
 import { DataTableBody } from "./body";
@@ -84,8 +77,9 @@ export function DataTableRoot<T extends RowData>({
       !cursorId ||
       meta.rows.some((row) => row.id === cursorId) ||
       document.activeElement !== meta.gridRef.current
-    )
+    ) {
       return;
+    }
     const first = meta.rows[0];
     if (first) actions.focusRow(first.id);
   }, [cursorId, meta.rows, meta.gridRef, actions]);
@@ -98,16 +92,18 @@ export function DataTableRoot<T extends RowData>({
     else if (child.type === DataTableEmpty) emptyState = child.props.children;
   });
 
-  const hasRows = meta.rows.length > 0 || extraRow != null;
+  const hasRows =
+    meta.rows.length > 0 || (extraRow !== null && extraRow !== undefined);
   const showHeader = variant !== "list" && hasRows;
   const sized = meta.height !== undefined;
+  const { gridRef, scrollRef } = meta;
   const scrollMargin = useStickyHeaderOffset(meta.headerRef, showHeader);
-  useHorizontalScrollFlag(meta.scrollRef);
+  useHorizontalScrollFlag(scrollRef);
 
   return (
     <div
       className={cn(styles.container, className)}
-      ref={meta.gridRef}
+      ref={gridRef}
       role="grid"
       tabIndex={0}
       onFocus={(event) => {
@@ -144,7 +140,7 @@ export function DataTableRoot<T extends RowData>({
       data-selecting={selecting || undefined}
     >
       <div
-        ref={meta.scrollRef}
+        ref={scrollRef}
         className={styles.viewport}
         data-viewport=""
         data-scroll-fade="vertical"

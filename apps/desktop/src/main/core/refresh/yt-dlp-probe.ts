@@ -14,9 +14,9 @@ import { cookieAttempts } from "./yt-dlp-format";
 import {
   frameSourceOf,
   toDownloadProbe,
-  type YtdlpProbeInfo,
   YtdlpProbeInfoSchema,
 } from "./yt-dlp-probe-parse";
+import type { YtdlpProbeInfo } from "./yt-dlp-probe-parse";
 import { runWithTimeout } from "./yt-dlp-process";
 import { ensureYtDlp } from "./yt-dlp-updater";
 
@@ -128,7 +128,7 @@ function classifyProbeFailure(
 }
 
 async function readProbeInfo(dir: string): Promise<YtdlpProbeInfo | null> {
-  let names: string[];
+  let names: Array<string>;
   try {
     names = await readdir(dir);
   } catch {
@@ -229,7 +229,7 @@ export async function probeLink(
   }
 }
 
-function headerArg(headers: Record<string, string>): string[] {
+function headerArg(headers: Record<string, string>): Array<string> {
   const lines = Object.entries(headers)
     .filter(([key, value]) => key && value && !/[\r\n]/.test(key + value))
     .map(([key, value]) => `${key}: ${value}\r\n`);
@@ -241,7 +241,7 @@ export async function probeFrames(
   rawUrl: string,
   count: number,
   signal?: AbortSignal,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const url = normalizeProbeUrl(rawUrl);
   if (!url) return [];
   let cached = fresh(url);
@@ -294,7 +294,9 @@ export async function probeFrames(
             const bytes = await readFile(out);
             frames[index] =
               `data:image/jpeg;base64,${bytes.toString("base64")}`;
-          } catch {}
+          } catch {
+            /** A frame that failed to write stays empty. */
+          }
         }),
       );
     }

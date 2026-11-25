@@ -28,6 +28,6 @@ export function resolvePreload(
   return path;
 }
 
-export function resolveMainOut(...parts: string[]): string {
+export function resolveMainOut(...parts: Array<string>): string {
   return join(mainOutDir(), ...parts);
 }

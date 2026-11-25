@@ -7,7 +7,7 @@ export interface SpeciesArt {
   /** Tight to the ink, so every species fills its box. */
   viewBox: string;
   /** Overlapping primitives in one fill that read as one outline; the eyes clip to them. */
-  body: readonly string[];
+  body: ReadonlyArray<string>;
   /** Drawn behind the body with its root buried, so it can swing without opening a gap. */
   tail: { d: string; root: Point };
   /** A stalk and bulb that sway on their own, rooted in the head. */
@@ -45,7 +45,7 @@ function spikes(
   cy: number,
   rx: number,
   ry: number,
-  angles: readonly number[],
+  angles: ReadonlyArray<number>,
   reach = 1.16,
   base = 1,
 ): string {

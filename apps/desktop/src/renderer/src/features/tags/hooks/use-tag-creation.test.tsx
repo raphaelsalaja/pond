@@ -39,7 +39,7 @@ function Harness({
 }
 
 it("commits each draft once and cancels before blur can create it", async () => {
-  const created: { kind: TagEntity; name: string }[] = [];
+  const created: Array<{ kind: TagEntity; name: string }> = [];
   const host = document.createElement("div");
   const root = createRoot(host);
   const operations = {

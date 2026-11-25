@@ -1,4 +1,5 @@
-import { type NativeImage, nativeImage } from "electron";
+import { nativeImage } from "electron";
+import type { NativeImage } from "electron";
 
 /** Optical size of a Tahoe menu glyph; named images render much larger. */
 const MENU_SYMBOL_PX = 16;

@@ -1,37 +1,31 @@
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { relative, resolve } from "node:path";
 
-export const packageRoot = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "..",
-);
+export const packageRoot = resolve(import.meta.dirname, "..");
 export const repoRoot = resolve(packageRoot, "../..");
 
 /** `ArrowRotate2` becomes `arrow-rotate-2`. */
 export function fileName(glyph) {
   return glyph
-    .replace(/([a-z])([A-Z0-9])/g, "$1-$2")
-    .replace(/([0-9])([A-Z])/g, "$1-$2")
+    .replaceAll(/([a-z])([A-Z0-9])/g, "$1-$2")
+    .replaceAll(/([0-9])([A-Z])/g, "$1-$2")
     .toLowerCase();
 }
 
-/** Generated files go through Biome so `--check` compares against what CI enforces. */
+/** Generated files go through oxfmt so `--check` compares against what CI enforces. */
 function format(path, source) {
   return execFileSync(
     process.execPath,
     [
-      resolve(repoRoot, "node_modules/@biomejs/biome/bin/biome"),
-      "check",
-      "--write",
-      `--stdin-file-path=${relative(repoRoot, path)}`,
+      resolve(repoRoot, "node_modules/oxfmt/bin/oxfmt"),
+      `--stdin-filepath=${relative(repoRoot, path)}`,
     ],
     { cwd: repoRoot, encoding: "utf8", input: source },
   );
 }
 
-/** Outputs marked `raw` skip Biome, which does not format Markdown. */
+/** Outputs marked `raw` skip oxfmt, which the repo config keeps off Markdown. */
 export function emit(outputs, { check, command }) {
   const stale = [];
   for (const [path, source, raw] of outputs) {

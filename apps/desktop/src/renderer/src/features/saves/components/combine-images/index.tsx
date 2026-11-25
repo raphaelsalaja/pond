@@ -1,3 +1,4 @@
+import { isNode } from "@pond/ui/dom";
 import { pickCombineImageFile } from "@shared/combine-image-file";
 import type {
   CombineImagesOptions,
@@ -5,7 +6,8 @@ import type {
 } from "@shared/combine-images-contracts";
 import { layoutCombinedImages } from "@shared/combine-images-layout";
 import { useSelector } from "@tanstack/react-store";
-import { type DragEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { DragEvent } from "react";
 import { useMediaPickOptions } from "@/features/saves/hooks/use-media-pick-options";
 import { useRetainedSaves } from "@/features/saves/hooks/use-saves";
 import { ensureSaves } from "@/features/saves/lib/ensure-saves";
@@ -13,13 +15,15 @@ import { savesStore } from "@/features/saves/state/pool";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
-import { type Highlight, readStoredOptions, storeOptions } from "./options";
-import { type CombineImage, Preview } from "./preview";
+import { readStoredOptions, storeOptions } from "./options";
+import type { Highlight } from "./options";
+import { Preview } from "./preview";
+import type { CombineImage } from "./preview";
 import { CombineSettings } from "./settings";
 import { Strip } from "./strip";
 import styles from "./styles.module.css";
 
-function useImages(order: readonly string[]): CombineImage[] {
+function useImages(order: ReadonlyArray<string>): Array<CombineImage> {
   const cover = useMediaPickOptions();
   const saves = useSelector(
     savesStore,
@@ -55,10 +59,10 @@ export function CombineImages({
   onResolveDrop,
   subscribeZoom,
 }: {
-  ids: readonly string[];
+  ids: ReadonlyArray<string>;
   folderId: string | null;
   onClose: () => void;
-  onResolveDrop: (files: readonly File[]) => Promise<string[]>;
+  onResolveDrop: (files: ReadonlyArray<File>) => Promise<Array<string>>;
   subscribeZoom: (
     callback: (action: CombineImagesZoomAction) => void,
   ) => () => void;
@@ -91,7 +95,7 @@ export function CombineImages({
     setOrder(shown);
   };
 
-  async function drop(files: readonly File[]) {
+  async function drop(files: ReadonlyArray<File>) {
     const added = await onResolveDrop(files);
     if (added.length === 0) {
       notify({
@@ -117,12 +121,13 @@ export function CombineImages({
         options: { ...options, order: "selection" },
       });
       if (!result.ok) {
-        if (result.reason !== "cancelled")
+        if (result.reason !== "cancelled") {
           notify({
             id: "combine-images",
             title: "Couldn't combine images",
             description: result.error ?? "Try again.",
           });
+        }
         return;
       }
       notify({
@@ -157,10 +162,11 @@ export function CombineImages({
       }}
       onDragLeave={(event) => {
         if (
-          event.relatedTarget instanceof Node &&
+          isNode(event.relatedTarget) &&
           event.currentTarget.contains(event.relatedTarget)
-        )
+        ) {
           return;
+        }
         setDropping(false);
       }}
       onDrop={(event) => {

@@ -9,7 +9,7 @@ export interface ProcOutcome {
 
 export function runWithTimeout(
   bin: string,
-  argv: string[],
+  argv: Array<string>,
   timeoutMs: number,
   signal?: AbortSignal,
   onLine?: (line: string) => void,
@@ -33,7 +33,7 @@ export function runWithTimeout(
     let settled = false;
     let stdoutPending = "";
     let stderrPending = "";
-    const stallEnabled = maxMs != null;
+    const stallEnabled = maxMs !== undefined;
     let stallTimer: NodeJS.Timeout | undefined;
     let maxTimer: NodeJS.Timeout | undefined;
 
@@ -53,7 +53,9 @@ export function runWithTimeout(
     function killWith(code: number, extra: string) {
       try {
         killProcessTree(child, "SIGKILL");
-      } catch {}
+      } catch {
+        /** The run settles with this code whether or not the kill lands. */
+      }
       finish(code, extra);
     }
 

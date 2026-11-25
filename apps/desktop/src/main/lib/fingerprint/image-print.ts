@@ -1,4 +1,5 @@
-import { dhashFromGray, type GrayImage, sampleDhashGrid } from "./dhash";
+import { dhashFromGray, sampleDhashGrid } from "./dhash";
+import type { GrayImage } from "./dhash";
 
 export const IMAGE_PRINT_ALGORITHM = "image-dhash";
 export const IMAGE_PRINT_VERSION = 1;

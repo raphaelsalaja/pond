@@ -6,6 +6,10 @@ import {
 import { choiceOptions, presetOptions } from "./options";
 import { filterSummary } from "./summary";
 
+function summary(rule: Parameters<typeof filterSummary>[0][number]) {
+  return filterSummary([rule], presetOptions(rule.field));
+}
+
 it("summarizes multiple types and negative filters using their display labels", () => {
   const options = presetOptions("type");
   expect(
@@ -56,8 +60,6 @@ it("does not invert absent notes or numeric exclusions twice", () => {
 });
 
 it("names the unit of numeric filters", () => {
-  const summary = (rule: Parameters<typeof filterSummary>[0][number]) =>
-    filterSummary([rule], presetOptions(rule.field));
   expect(summary({ field: "rating", operator: "gte", value: 3 })).toBe(
     "≥ 3 Stars",
   );
@@ -77,8 +79,6 @@ it("names the unit of numeric filters", () => {
 });
 
 it("prefixes dates with the field they filter", () => {
-  const summary = (rule: Parameters<typeof filterSummary>[0][number]) =>
-    filterSummary([rule], presetOptions(rule.field));
   expect(summary({ field: "savedAt", operator: "gte", value: "-P1W" })).toBe(
     "Saved Past Week",
   );
@@ -91,8 +91,6 @@ it("prefixes dates with the field they filter", () => {
 });
 
 it("names a single-day range by its day", () => {
-  const summary = (rule: Parameters<typeof filterSummary>[0][number]) =>
-    filterSummary([rule], presetOptions(rule.field));
   const day = new Date(2026, 10, 14);
   const now = new Date(2026, 10, 19, 15);
   expect(summary(localDayPredicate("savedAt", day, now))).toBe(

@@ -58,10 +58,11 @@ export function hydrateOrganizationBundle(db: Db, root: string): void {
     return;
   }
   const envelope = readBundleJson(file);
-  if (!envelope)
+  if (!envelope) {
     throw new Error(
       "Library organization could not be read. Restore a verified backup.",
     );
+  }
   const data = OrganizationBundleSchema.parse(envelope.data);
   db.$raw.transaction(() => {
     const folder = db.$raw.prepare(

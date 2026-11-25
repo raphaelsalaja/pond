@@ -1,4 +1,5 @@
-import { type PerspectiveCamera, Spherical, Vector3 } from "three";
+import { Spherical, Vector3 } from "three";
+import type { PerspectiveCamera } from "three";
 import type { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 export function moveCameraWithKey(
@@ -37,7 +38,9 @@ export function moveCameraWithKey(
       ),
     );
     camera.position.copy(controls.target).add(offset.setLength(distance));
-  } else return false;
+  } else {
+    return false;
+  }
   controls.update();
   return true;
 }
@@ -49,11 +52,16 @@ export function bindCameraKeys(
   reset: () => void,
 ): () => void {
   const onKeyDown = (event: KeyboardEvent) => {
-    if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey)
+    if (event.isComposing || event.metaKey || event.ctrlKey || event.altKey) {
       return;
-    if (event.key === "Home") reset();
-    else if (!moveCameraWithKey(camera, controls, event.key, event.shiftKey))
+    }
+    if (event.key === "Home") {
+      reset();
+    } else if (
+      !moveCameraWithKey(camera, controls, event.key, event.shiftKey)
+    ) {
       return;
+    }
     event.preventDefault();
     event.stopPropagation();
   };

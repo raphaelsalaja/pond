@@ -70,10 +70,12 @@ export const fishQueries = {
       const fish = readFish(id);
       if (!fish) return { ok: false, error: "This fish no longer exists." };
       const routine = fish.routines.find((entry) => entry.id === routineId);
-      if (!routine)
+      if (!routine) {
         return { ok: false, error: "This routine no longer exists." };
-      if (fishPresence(id))
+      }
+      if (fishPresence(id)) {
         return { ok: false, error: `${fish.name} is already working.` };
+      }
       const { runFishRoutine } = await import("../../core/fish/routines");
       void runFishRoutine(fish, routine, { kind: "manual" });
       return { ok: true };

@@ -59,11 +59,11 @@ export interface VoyagerClusterReply {
     data?: { searchDashClustersByAll?: VoyagerClusterCollection };
     searchDashClustersByAll?: VoyagerClusterCollection;
   };
-  included?: VoyagerEntityResult[];
+  included?: Array<VoyagerEntityResult>;
 }
 
 export interface LinkedInClusterPage {
-  entries: ListEntry[];
+  entries: Array<ListEntry>;
   /** Counts unreadable results too, so the walk still advances past a post it could not parse. */
   count: number;
   total?: number;
@@ -168,11 +168,11 @@ export function inPageLinkedInNormalize() {
   function clean(text: string | null | undefined): string {
     if (!text) return "";
     return String(text)
-      .replace(/\u00a0/g, " ")
+      .replaceAll("\u00A0", " ")
       .split("\n")
-      .map((line) => line.replace(/\s+/g, " ").trim())
+      .map((line) => line.replaceAll(/\s+/g, " ").trim())
       .join("\n")
-      .replace(/\n{3,}/g, "\n\n")
+      .replaceAll(/\n{3,}/g, "\n\n")
       .trim();
   }
 
@@ -265,7 +265,7 @@ export function inPageLinkedInNormalize() {
     for (const item of included) {
       if (item.entityUrn) byUrn.set(item.entityUrn, item);
     }
-    const ordered: VoyagerEntityResult[] = [];
+    const ordered: Array<VoyagerEntityResult> = [];
     const placed = new Set<VoyagerEntityResult>();
     let slots = 0;
     for (const cluster of collection?.elements ?? []) {
@@ -286,7 +286,7 @@ export function inPageLinkedInNormalize() {
       placed.add(item);
       ordered.push(item);
     }
-    const entries: ListEntry[] = [];
+    const entries: Array<ListEntry> = [];
     const seen = new Set<string>();
     for (const result of ordered) {
       const entry = entryFromResult(result);
@@ -324,8 +324,8 @@ export function inPageLinkedInNormalize() {
   }
 
   /** The My items page renders saved posts as search results tagged with the post URN. */
-  function renderedEntries(root: ParentNode): ListEntry[] {
-    const entries: ListEntry[] = [];
+  function renderedEntries(root: ParentNode): Array<ListEntry> {
+    const entries: Array<ListEntry> = [];
     const seen = new Set<string>();
     for (const el of Array.from(root.querySelectorAll(RESULT))) {
       const postLink = el.querySelector("a[href*='/feed/update/']");

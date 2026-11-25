@@ -1,3 +1,4 @@
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonValue } from "@pond/schema/json";
 import type { NativeMessage } from "@pond/schema/native";
 export const MAX_NATIVE_MSG = 8 * 1024 * 1024;
@@ -32,10 +33,13 @@ export function tryDecodeFrame(buf: Buffer): DecodeFrame {
   }
   if (buf.length < 4 + len) return { status: "need-more" };
   try {
-    return {
-      status: "ok",
-      value: JSON.parse(buf.subarray(4, 4 + len).toString("utf8")),
-    };
+    const value: unknown = JSON.parse(
+      buf.subarray(4, 4 + len).toString("utf8"),
+    );
+    if (!isJsonValue(value)) {
+      return { status: "invalid", error: "invalid" };
+    }
+    return { status: "ok", value };
   } catch {
     return { status: "invalid", error: "invalid" };
   }

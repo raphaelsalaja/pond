@@ -2,14 +2,16 @@ import { cn } from "@pond/ui";
 import { Code } from "../code";
 import styles from "./styles.module.css";
 
-interface RootProps extends React.ComponentPropsWithoutRef<"ul"> {}
+type RootProps = React.ComponentPropsWithoutRef<"ul">;
 
 function Root({ className, ...props }: RootProps) {
   return <ul className={cn(styles.root, className)} {...props} />;
 }
 
-interface ItemProps
-  extends Omit<React.ComponentPropsWithoutRef<"li">, "title"> {
+interface ItemProps extends Omit<
+  React.ComponentPropsWithoutRef<"li">,
+  "title"
+> {
   visual: React.ReactNode;
   title: string;
   token?: string;

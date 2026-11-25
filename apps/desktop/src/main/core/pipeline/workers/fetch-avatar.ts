@@ -3,7 +3,8 @@ import log from "electron-log/main.js";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
 import { persistSave } from "../../persist-save";
 import { TransientError } from "../extractors/errors";
-import { readSave, type WriteFileArgs } from "./apply";
+import { readSave } from "./apply";
+import type { WriteFileArgs } from "./apply";
 
 export async function runFetchAvatar(saveId: string): Promise<void> {
   const save = await readSave(saveId);

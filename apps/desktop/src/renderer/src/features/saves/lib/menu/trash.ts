@@ -18,7 +18,7 @@ export function buildTrashItems({
   ids,
   batch,
   allTrashed,
-}: SaveMenuContext): MenuItemSpec[] {
+}: SaveMenuContext): Array<MenuItemSpec> {
   return allTrashed
     ? [
         {

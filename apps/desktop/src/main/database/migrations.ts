@@ -357,7 +357,7 @@ export function migratePond(sqlite: Database.Database): void {
   ensureSavesFts(sqlite);
 }
 
-function savesColumns(sqlite: Database.Database): string[] {
+function savesColumns(sqlite: Database.Database): Array<string> {
   return sqlite
     .prepare("PRAGMA table_info(saves)")
     .all()
@@ -375,10 +375,12 @@ function ensureFavorite(sqlite: Database.Database): void {
 function ensureInboxColumns(sqlite: Database.Database): void {
   const columns = savesColumns(sqlite);
   sqlite.transaction(() => {
-    if (!columns.includes("inbox_state"))
+    if (!columns.includes("inbox_state")) {
       sqlite.exec("ALTER TABLE saves ADD COLUMN inbox_state TEXT");
-    if (!columns.includes("inbox_until"))
+    }
+    if (!columns.includes("inbox_until")) {
       sqlite.exec("ALTER TABLE saves ADD COLUMN inbox_until INTEGER");
+    }
     sqlite.exec(
       "CREATE INDEX IF NOT EXISTS saves_inbox_idx ON saves(inbox_state, inbox_until)",
     );
@@ -396,8 +398,9 @@ function ensureImportedFrom(sqlite: Database.Database): void {
 				AND imported_from IS NULL
 				AND substr(source_id, 1, length(?)) = ?
 		`);
-    for (const [prefix, origin] of LEGACY_IMPORT_PREFIXES)
+    for (const [prefix, origin] of LEGACY_IMPORT_PREFIXES) {
       backfill.run(origin, prefix, prefix);
+    }
   })();
 }
 

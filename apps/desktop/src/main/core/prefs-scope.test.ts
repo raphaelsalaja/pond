@@ -1,4 +1,5 @@
-import { PrefsSchema, type SyncAccounts } from "@pond/schema/db";
+import { PrefsSchema } from "@pond/schema/db";
+import type { SyncAccounts } from "@pond/schema/db";
 import { describe, expect, it } from "vitest";
 import {
   mergeAppSlice,

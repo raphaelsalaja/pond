@@ -13,8 +13,8 @@
   display: flex;
   gap: var(--ds-space-xs);
   align-items: center;
-  max-width: 100%;
   min-width: 0;
+  max-width: 100%;
   padding: var(--ds-space-xs);
   pointer-events: auto;
   background: var(--ds-background-primary);

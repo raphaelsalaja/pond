@@ -1,3 +1,4 @@
+import type { Dirent } from "node:fs";
 import { readdir, stat, statfs } from "node:fs/promises";
 import { join } from "node:path";
 import log from "electron-log/main.js";
@@ -99,7 +100,7 @@ async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
     other: 0,
   };
 
-  let entries: { name: string; isDir: boolean; abs: string }[];
+  let entries: Array<{ name: string; isDir: boolean; abs: string }>;
   try {
     const dirents = await readdir(root, { withFileTypes: true });
     entries = dirents.flatMap((d) =>
@@ -107,8 +108,8 @@ async function computeLibraryBreakdown(): Promise<LibraryBreakdown> {
         ? []
         : [{ name: d.name, isDir: d.isDirectory(), abs: join(root, d.name) }],
     );
-  } catch (err) {
-    log.warn("[pond storage-stats] failed to read library root", err);
+  } catch (error) {
+    log.warn("[pond storage-stats] failed to read library root", error);
     return { ...buckets, total: 0 };
   }
 
@@ -152,8 +153,8 @@ async function getDeviceDiskInfo(path: string): Promise<DeviceDiskInfo> {
       freeBytes: Number.isFinite(freeBytes) ? freeBytes : 0,
       usedByOthers: 0,
     };
-  } catch (err) {
-    log.warn("[pond storage-stats] statfs failed", err);
+  } catch (error) {
+    log.warn("[pond storage-stats] statfs failed", error);
     return { totalBytes: 0, freeBytes: 0, usedByOthers: 0 };
   }
 }
@@ -165,8 +166,8 @@ async function indexDbSize(): Promise<number> {
       [dbPath, `${dbPath}-wal`, `${dbPath}-shm`].map(safeFileSize),
     );
     return sizes.reduce((sum, size) => sum + size, 0);
-  } catch (err) {
-    log.warn("[pond storage-stats] failed to stat indexDb", err);
+  } catch (error) {
+    log.warn("[pond storage-stats] failed to stat indexDb", error);
     return 0;
   }
 }
@@ -175,11 +176,11 @@ async function indexDbSize(): Promise<number> {
 const fsLimit = pLimit(8);
 
 async function sumDirSizes(dir: string): Promise<number> {
-  let dirents: import("node:fs").Dirent[];
+  let dirents: Array<Dirent>;
   try {
     dirents = await fsLimit(() => readdir(dir, { withFileTypes: true }));
-  } catch (err) {
-    log.debug("[pond storage-stats] readdir failed", dir, err);
+  } catch (error) {
+    log.debug("[pond storage-stats] readdir failed", dir, error);
     return 0;
   }
   const sizes = await Promise.all(

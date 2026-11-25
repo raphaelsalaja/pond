@@ -7,6 +7,7 @@ import {
   EXTENSION_KEY,
 } from "@pond/schema/native";
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
 import {
   chromiumNativeHostManifest,
   nativeHostFilename,
@@ -39,7 +40,9 @@ describe("native host manifests", () => {
       writeFile: (path, body) => writes.set(path, body),
     });
 
-    expect([...writes.values()].map((body) => JSON.parse(body))).toEqual([
+    expect(
+      [...writes.values()].map((body) => z.json().parse(JSON.parse(body))),
+    ).toEqual([
       {
         name: "so.pond.host",
         description: "Pond",
@@ -61,7 +64,7 @@ describe("native host manifests", () => {
   });
 
   it("registers Dia without a Chrome install", async () => {
-    const writes: string[] = [];
+    const writes: Array<string> = [];
 
     await writeNativeHostManifests({
       platform: "darwin",
@@ -80,7 +83,7 @@ describe("native host manifests", () => {
   });
 
   it("registers Helium", async () => {
-    const writes: string[] = [];
+    const writes: Array<string> = [];
 
     await writeNativeHostManifests({
       platform: "darwin",
@@ -100,7 +103,7 @@ describe("native host manifests", () => {
   });
 
   it("registers Firefox before its support directory exists", async () => {
-    const writes: string[] = [];
+    const writes: Array<string> = [];
 
     await writeNativeHostManifests({
       platform: "darwin",
@@ -127,9 +130,11 @@ describe("native host manifests", () => {
   it("registers the Chromium browsers supported on Windows", () => {
     expect(WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS).toEqual(
       expect.arrayContaining([
-        expect.stringContaining("Google\\Chrome\\NativeMessagingHosts"),
-        expect.stringContaining("Microsoft\\Edge\\NativeMessagingHosts"),
-        expect.stringContaining("BraveSoftware\\Brave-Browser"),
+        expect.stringContaining(String.raw`Google\Chrome\NativeMessagingHosts`),
+        expect.stringContaining(
+          String.raw`Microsoft\Edge\NativeMessagingHosts`,
+        ),
+        expect.stringContaining(String.raw`BraveSoftware\Brave-Browser`),
       ]),
     );
   });
@@ -175,13 +180,13 @@ describe("native host manifests", () => {
   });
 
   it("leaves the registry to the installer in a packaged Windows app", async () => {
-    const writes: string[] = [];
-    const registry: string[][] = [];
+    const writes: Array<string> = [];
+    const registry: Array<Array<string>> = [];
     await writeNativeHostManifests({
       platform: "win32",
-      hostPath: () => "C:\\Pond\\pond-native-host.exe",
+      hostPath: () => String.raw`C:\Pond\pond-native-host.exe`,
       exists: () => true,
-      userDataDirectory: () => "C:\\Users\\test\\AppData\\Roaming\\Pond",
+      userDataDirectory: () => String.raw`C:\Users\test\AppData\Roaming\Pond`,
       makeDirectory: () => {},
       writeFile: (path) => writes.push(path),
       installerRegistersKeys: () => true,
@@ -201,18 +206,17 @@ describe("native host manifests", () => {
     expect(
       JSON.parse(
         chromiumNativeHostManifest(
-          "C:\\Program Files\\Pond\\pond-native-host.exe",
+          String.raw`C:\Program Files\Pond\pond-native-host.exe`,
         ),
       ),
     ).toMatchObject({
-      path: "C:\\Program Files\\Pond\\pond-native-host.exe",
+      path: String.raw`C:\Program Files\Pond\pond-native-host.exe`,
       type: "stdio",
     });
   });
 
   it("passes manifest paths with spaces as one registry argument", () => {
-    const manifestPath =
-      "C:\\Users\\A Person\\AppData\\Roaming\\Pond\\native-messaging\\so.pond.host.json";
+    const manifestPath = String.raw`C:\Users\A Person\AppData\Roaming\Pond\native-messaging\so.pond.host.json`;
     expect(
       windowsRegistryArgs(
         WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS[0],
@@ -223,12 +227,12 @@ describe("native host manifests", () => {
 
   it("registers a Chromium and a Firefox manifest on Windows", async () => {
     const writes = new Map<string, string>();
-    const registry: string[][] = [];
+    const registry: Array<Array<string>> = [];
     await writeNativeHostManifests({
       platform: "win32",
-      hostPath: () => "C:\\Pond\\pond-native-host.exe",
+      hostPath: () => String.raw`C:\Pond\pond-native-host.exe`,
       exists: () => true,
-      userDataDirectory: () => "C:\\Users\\test\\AppData\\Roaming\\Pond",
+      userDataDirectory: () => String.raw`C:\Users\test\AppData\Roaming\Pond`,
       makeDirectory: () => {},
       writeFile: (path, body) => writes.set(path, body),
       installerRegistersKeys: () => false,
@@ -258,22 +262,24 @@ describe("native host manifests", () => {
       WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS.length +
         WINDOWS_FIREFOX_REGISTRY_KEYS.length,
     );
-    for (const key of WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS)
+    for (const key of WINDOWS_NATIVE_MESSAGING_REGISTRY_KEYS) {
       expect(registry).toContainEqual(
         windowsRegistryArgs(key, chromiumPath ?? ""),
       );
-    for (const key of WINDOWS_FIREFOX_REGISTRY_KEYS)
+    }
+    for (const key of WINDOWS_FIREFOX_REGISTRY_KEYS) {
       expect(registry).toContainEqual(
         windowsRegistryArgs(key, firefoxPath ?? ""),
       );
+    }
     expect(WINDOWS_FIREFOX_REGISTRY_KEYS).toContain(
-      "HKCU\\Software\\Mozilla\\NativeMessagingHosts\\so.pond.host",
+      String.raw`HKCU\Software\Mozilla\NativeMessagingHosts\so.pond.host`,
     );
   });
 
   it("writes browser manifests on Linux without touching the registry", async () => {
     const writes = new Map<string, string>();
-    const registry: string[][] = [];
+    const registry: Array<Array<string>> = [];
     const hostPath = "/home/test/.local/share/Pond/bin/pond-native-host";
     const configHome = "/home/test/.config";
 
@@ -331,7 +337,7 @@ describe("native host manifests", () => {
   });
 
   it("uses the XDG config root on Linux", async () => {
-    const writes: string[] = [];
+    const writes: Array<string> = [];
 
     await writeNativeHostManifests({
       platform: "linux",
@@ -355,9 +361,9 @@ describe("native host manifests", () => {
       .update(Buffer.from(EXTENSION_KEY, "base64"))
       .digest("hex")
       .slice(0, 32);
-    const derived = [...digest]
-      .map((hex) => String.fromCharCode(97 + Number.parseInt(hex, 16)))
-      .join("");
+    const derived = digest.replaceAll(/[0-9a-f]/g, (hex) =>
+      String.fromCharCode(97 + Number.parseInt(hex, 16)),
+    );
     expect(derived).toBe(EXTENSION_ID);
     expect(
       JSON.parse(chromiumNativeHostManifest("/host")).allowed_origins,

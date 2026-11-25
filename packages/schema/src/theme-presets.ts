@@ -1,8 +1,5 @@
-import {
-  CONTRAST_DEFAULT,
-  type ThemeAppearance,
-  type ThemeDef,
-} from "./prefs.types";
+import { CONTRAST_DEFAULT } from "./prefs.types";
+import type { ThemeAppearance, ThemeDef } from "./prefs.types";
 
 export type ThemePresetAppearance = "light" | "dark";
 
@@ -45,7 +42,7 @@ function dark(
   };
 }
 
-export const THEME_PRESETS: readonly ThemePreset[] = [
+export const THEME_PRESETS: ReadonlyArray<ThemePreset> = [
   light("light", "Light", "#5E6AD2", "#ffffff", "#1B1B1B"),
   light("paper", "Paper", "#E8590C", "#FCFBF8", "#1C1917"),
   light("mint", "Mint", "#0CA678", "#F5FBF8", "#0B1F18"),
@@ -109,11 +106,11 @@ export function isCustomTheme(presetId: string, def: ThemeDef): boolean {
   return !themeDefsMatch(preset.def, def);
 }
 
-export function lightPresets(): ThemePreset[] {
+export function lightPresets(): Array<ThemePreset> {
   return THEME_PRESETS.filter((p) => p.appearance === "light");
 }
 
-export function darkPresets(): ThemePreset[] {
+export function darkPresets(): Array<ThemePreset> {
   return THEME_PRESETS.filter((p) => p.appearance === "dark");
 }
 

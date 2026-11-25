@@ -118,7 +118,7 @@ export class CosmosTileExtractor implements Extractor {
     );
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
     if (!first) return null;
     if (COSMOS_RESERVED_ROOTS.has(first.toLowerCase())) return null;

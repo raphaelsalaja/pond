@@ -1,23 +1,25 @@
-import {
-  type FileRingOverlayFolder,
-  type FileRingOverlaySnapshot,
-  overlayMenuAction,
+import { overlayMenuAction } from "@shared/file-ring-overlay-contracts";
+import type {
+  FileRingOverlayFolder,
+  FileRingOverlaySnapshot,
 } from "@shared/file-ring-overlay-contracts";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RING_ACTIONS } from "@/features/library/components/file-ring/actions";
 import { Disc } from "@/features/library/components/file-ring/disc";
 import {
   RING_SLOTS,
-  type RingSlot,
   ringHitAt,
 } from "@/features/library/components/file-ring/geometry";
+import type { RingSlot } from "@/features/library/components/file-ring/geometry";
 import { hubCopy } from "@/features/library/components/file-ring/hub";
 import {
   autoRingItems,
   layoutRing,
-  type RingAction,
-  type RingLayout,
-  type RingTarget,
+} from "@/features/library/components/file-ring/slots";
+import type {
+  RingAction,
+  RingLayout,
+  RingTarget,
 } from "@/features/library/components/file-ring/slots";
 import {
   recentFolderIds,
@@ -27,7 +29,8 @@ import { FolderIcon } from "@/shared/lib/folder-icons";
 import type { PondRingApi } from "../../../../preload/file-ring";
 import { paintShell } from "../boot-shell";
 import { dropPayload } from "./drop-payload";
-import { type DropStatus, dropStatus } from "./status";
+import { dropStatus } from "./status";
+import type { DropStatus } from "./status";
 import styles from "./styles.module.css";
 
 declare global {
@@ -124,17 +127,20 @@ export function FileRingOverlay() {
   }
 
   function activate(target: Target | undefined) {
-    if (!target || result) return;
-    if (target.kind === "folder")
+    if (!target || result) {
+      return;
+    }
+    if (target.kind === "folder") {
       void window.pondRing?.activate({
         kind: "folder",
         folderId: target.folder.id,
       });
-    else if (!target.disabled)
+    } else if (!target.disabled) {
       void window.pondRing?.activate({
         kind: "action",
         action: target.action,
       });
+    }
   }
 
   function onPointerMove(event: React.PointerEvent) {
@@ -206,8 +212,9 @@ export function FileRingOverlay() {
       api.pathForFile(file),
     );
     const reply = payload ? await api.drop(payload) : null;
-    if (reply?.ok && reply.imported > 0)
+    if (reply?.ok && reply.imported > 0) {
       rememberFolderDestinations([hit.folder.id]);
+    }
     setResult({ ...hit, status: dropStatus(reply, hit.folder.name) });
   }
 

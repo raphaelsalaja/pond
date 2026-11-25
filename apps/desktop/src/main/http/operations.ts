@@ -3,7 +3,8 @@ import {
   ApiOperationRequestSchema,
   ApiOperationRunSchema,
 } from "@pond/schema/api";
-import { type Context, Hono } from "hono";
+import { Hono } from "hono";
+import type { Context } from "hono";
 import { z } from "zod";
 import {
   applyPondOperation,
@@ -93,12 +94,13 @@ export function operationRoutes(): Hono {
         preview.operation !== selected.name ||
         preview.libraryId !== libraryId ||
         preview.arguments !== JSON.stringify(parsed.data.arguments)
-      )
+      ) {
         return apiError(
           c,
           "stale_preview",
           "The preview expired or changed. Preview the operation again.",
         );
+      }
     }
     const result = await applyPondOperation(
       {

@@ -4,7 +4,8 @@ import type { ConversionPreset } from "@shared/conversion-contracts";
 import { typeLabelForPath } from "@shared/file-format";
 import { CardThumb } from "@/features/saves";
 import type { Save, SaveFile } from "@/features/saves/types";
-import { type Dimensions, fitInside } from "../export-plan";
+import { fitInside } from "../export-plan";
+import type { Dimensions } from "../export-plan";
 import styles from "./styles.module.css";
 
 export interface ExportRow {
@@ -102,12 +103,12 @@ export function FileList({
   disabled,
   onRemove,
 }: {
-  rows: readonly ExportRow[];
+  rows: ReadonlyArray<ExportRow>;
   target: ExportTarget | null;
   disabled: boolean;
   onRemove: (id: string) => void;
 }) {
-  if (rows.length === 0)
+  if (rows.length === 0) {
     return (
       <div className={styles.empty}>
         <Empty.Root size="card">
@@ -127,6 +128,7 @@ export function FileList({
         </Empty.Root>
       </div>
     );
+  }
   return (
     <ul
       className={styles.list}

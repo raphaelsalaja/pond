@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { Window } from ".";
 import { Button } from "../button";
 import { cssVars } from "../css-vars";
 import type { ComponentDocs } from "../shared/docs";
-import { Window } from ".";
 
 function PanesExample() {
   const [sidebarOpen, setSidebarOpen] = useState(true);

@@ -6,7 +6,6 @@ import type { LanguageModel } from "ai";
 import { z } from "zod";
 import { joinMessages } from "../../../shared/assistant-text";
 import {
-  type CliProvider,
   CODEX_ISOLATION_ARGS,
   checkCliConnection,
   claudeInvocationArgs,
@@ -14,6 +13,7 @@ import {
   prepareCodexRuntime,
   runCli,
 } from "./cli-runtime";
+import type { CliProvider } from "./cli-runtime";
 
 type CliLanguageModel = Extract<LanguageModel, { specificationVersion: "v4" }>;
 type CallOptions = Parameters<CliLanguageModel["doGenerate"]>[0];
@@ -45,10 +45,11 @@ async function generate(
     if (
       Array.isArray(message.content) &&
       message.content.some((part) => part.type === "file")
-    )
+    ) {
       throw new Error(
         "This subscription connection supports text and Library tools. Choose a vision provider for file attachments.",
       );
+    }
   }
   const directory = await mkdtemp(join(tmpdir(), "pond-cli-"));
   try {
@@ -94,10 +95,11 @@ async function generate(
       }),
     });
     options.abortSignal?.throwIfAborted();
-    if (result.code !== 0)
+    if (result.code !== 0) {
       throw new Error(
         `${provider} exited with code ${result.code}. Check your CLI sign-in and subscription limits, then try again.`,
       );
+    }
     let reply: z.infer<typeof replySchema>;
     try {
       if (provider === "codex") {
@@ -110,13 +112,15 @@ async function generate(
         let text = "";
         for (const line of result.stdout.split("\n").filter(Boolean)) {
           const event = eventSchema.parse(JSON.parse(line));
-          if (event.type === "turn.failed" || event.type === "error")
+          if (event.type === "turn.failed" || event.type === "error") {
             throw new Error("CLI request failed");
+          }
           if (
             event.type === "item.completed" &&
             event.item?.type === "agent_message"
-          )
+          ) {
             text = event.item.text ?? "";
+          }
         }
         reply = replySchema.parse(JSON.parse(text));
       } else {
@@ -133,16 +137,20 @@ async function generate(
           replySchema.parse(JSON.parse(response.result ?? ""));
       }
       const parts = reply.messages.filter((message) => message.trim());
-      if (parts.length) reply.text = joinMessages(parts);
-      if (!reply.text.trim() && !reply.toolCalls.length)
+      if (parts.length) {
+        reply.text = joinMessages(parts);
+      }
+      if (!reply.text.trim() && !reply.toolCalls.length) {
         throw new Error("Empty reply");
+      }
       for (const call of reply.toolCalls) {
         if (
           !options.tools?.some(
             (tool) => tool.type === "function" && tool.name === call.name,
           )
-        )
+        ) {
           throw new Error("Unknown Pond tool");
+        }
         z.record(z.string(), z.json()).parse(JSON.parse(call.arguments));
       }
     } catch {
@@ -226,7 +234,9 @@ export function createCliLanguageModel(
                   delta: part.text,
                 });
                 controller.enqueue({ type: "text-end", id });
-              } else if (part.type === "tool-call") controller.enqueue(part);
+              } else if (part.type === "tool-call") {
+                controller.enqueue(part);
+              }
             }
             controller.enqueue({
               type: "finish",

@@ -14,7 +14,8 @@ import {
 } from "@pond/icons";
 import type { Source, WatchKind } from "@pond/schema/db";
 import { watchHandleLabel } from "@pond/schema/watches";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { viewAccountItems } from "@/features/library";
 import type { CardModel } from "@/features/sources/components/sync-monitor/lib/helpers";
 import type { AccountRow } from "@/features/sources/hooks/use-accounts";
@@ -44,7 +45,7 @@ export interface SourceMenuTarget {
 }
 
 export interface SourceMenuOptions {
-  accounts?: readonly AccountRow[];
+  accounts?: ReadonlyArray<AccountRow>;
   onChanged?: () => void;
 }
 
@@ -144,7 +145,7 @@ async function copyText(
   });
 }
 
-function profileItems(target: SourceMenuTarget): MenuItemSpec[] {
+function profileItems(target: SourceMenuTarget): Array<MenuItemSpec> {
   const sourceLabel = getSourceDef(target.source).label;
   const kind = targetKind(target);
   const url = sourceTargetUrl({
@@ -177,7 +178,7 @@ function profileItems(target: SourceMenuTarget): MenuItemSpec[] {
   ];
 }
 
-function copyItems(target: SourceMenuTarget): MenuItemSpec[] {
+function copyItems(target: SourceMenuTarget): Array<MenuItemSpec> {
   const kind = targetKind(target);
   const identity = identityKind(target);
   const url = sourceTargetUrl({
@@ -246,9 +247,9 @@ function importScopeItem(target: SourceMenuTarget): MenuItemSpec | null {
   };
 }
 
-function fetchItems(target: SourceMenuTarget): MenuItemSpec[] {
+function fetchItems(target: SourceMenuTarget): Array<MenuItemSpec> {
   const scopeItem = importScopeItem(target);
-  const items: MenuItemSpec[] = target.importPending
+  const items: Array<MenuItemSpec> = target.importPending
     ? []
     : [primaryFetchItem(target)];
   if (scopeItem) items.push(scopeItem);
@@ -314,7 +315,7 @@ function confirmOriginalMedia(source: Source): void {
 
 function startSourceSignIn(
   source: Source,
-  accounts: readonly AccountRow[],
+  accounts: ReadonlyArray<AccountRow>,
   accountId?: string,
 ): void {
   if (source === "mymind") {
@@ -323,9 +324,7 @@ function startSourceSignIn(
   }
   connectFlow.start(
     source,
-    accounts
-      .filter((account) => account.connected)
-      .map((account) => account.id),
+    accounts.flatMap((account) => (account.connected ? [account.id] : [])),
   );
   sourceFlow.open("connect-wait");
 }
@@ -362,9 +361,9 @@ function confirmRemove(target: SourceMenuTarget, onChanged: () => void): void {
 function connectionItems(
   target: SourceMenuTarget,
   options: SourceMenuOptions,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   const sourceLabel = getSourceDef(target.source).label;
-  const items: MenuItemSpec[] = [];
+  const items: Array<MenuItemSpec> = [];
   if (target.type === "account") {
     items.push({
       label: target.source === "mymind" ? "Reconnect" : "Sign In Again",
@@ -387,7 +386,7 @@ function connectionItems(
 function singleSourceMenu(
   target: SourceMenuTarget,
   options: SourceMenuOptions,
-): MenuItemSpec[] {
+): Array<MenuItemSpec> {
   return [
     { type: "group", items: profileItems(target) },
     { type: "separator" },
@@ -416,7 +415,7 @@ export interface SourceActionRow {
   description?: string;
   value?: string;
   disabled?: boolean;
-  actions: SourceActionButton[];
+  actions: Array<SourceActionButton>;
   /** An on/off setting, shown as a switch after any actions. */
   toggle?: {
     checked: boolean;
@@ -427,16 +426,16 @@ export interface SourceActionRow {
 export interface SourceActionSections {
   /** Titles the profile section by what the target is: Profile, Playlist, Board. */
   kind: string;
-  profile: SourceActionRow[];
-  fetch: SourceActionRow[];
-  connection: SourceActionRow[];
+  profile: Array<SourceActionRow>;
+  fetch: Array<SourceActionRow>;
+  connection: Array<SourceActionRow>;
 }
 
 function displayUrl(url: string): string {
   return url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
 }
 
-function profileRows(target: SourceMenuTarget): SourceActionRow[] {
+function profileRows(target: SourceMenuTarget): Array<SourceActionRow> {
   const sourceLabel = getSourceDef(target.source).label;
   const kind = targetKind(target);
   const identity = identityKind(target);
@@ -445,7 +444,7 @@ function profileRows(target: SourceMenuTarget): SourceActionRow[] {
     handle: target.handle,
     kind: target.watchKind,
   });
-  const rows: SourceActionRow[] = [];
+  const rows: Array<SourceActionRow> = [];
   if (url) {
     rows.push({
       id: "link",
@@ -524,11 +523,11 @@ function profileRows(target: SourceMenuTarget): SourceActionRow[] {
   return rows;
 }
 
-function fetchRows(target: SourceMenuTarget): SourceActionRow[] {
+function fetchRows(target: SourceMenuTarget): Array<SourceActionRow> {
   const sourceLabel = getSourceDef(target.source).label;
   const { connected, tone } = target.model;
   const pending = target.importPending === true;
-  const rows: SourceActionRow[] = [];
+  const rows: Array<SourceActionRow> = [];
   if (tone === "err" && target.lastError) {
     const error = target.lastError;
     rows.push({
@@ -636,7 +635,7 @@ function fetchRows(target: SourceMenuTarget): SourceActionRow[] {
 function connectionRows(
   target: SourceMenuTarget,
   options: SourceMenuOptions,
-): SourceActionRow[] {
+): Array<SourceActionRow> {
   const sourceLabel = getSourceDef(target.source).label;
   const remove = () =>
     confirmRemove(target, options.onChanged ?? sourceDetail.changed);
@@ -690,7 +689,9 @@ export function buildSourceActionRows(
   };
 }
 
-function batchSourceMenu(targets: readonly SourceMenuTarget[]): MenuItemSpec[] {
+function batchSourceMenu(
+  targets: ReadonlyArray<SourceMenuTarget>,
+): Array<MenuItemSpec> {
   const fetchable = targets.filter(
     (target) => target.model.connected && target.model.tone !== "run",
   );
@@ -724,11 +725,17 @@ function batchSourceMenu(targets: readonly SourceMenuTarget[]): MenuItemSpec[] {
   ];
 }
 
+function isTargetList(
+  value: SourceMenuTarget | ReadonlyArray<SourceMenuTarget>,
+): value is ReadonlyArray<SourceMenuTarget> {
+  return Array.isArray(value);
+}
+
 export function buildSourceActionMenu(
-  targetOrTargets: SourceMenuTarget | readonly SourceMenuTarget[],
+  targetOrTargets: SourceMenuTarget | ReadonlyArray<SourceMenuTarget>,
   options: SourceMenuOptions = {},
-): MenuItemSpec[] {
-  const targets = Array.isArray(targetOrTargets)
+): Array<MenuItemSpec> {
+  const targets = isTargetList(targetOrTargets)
     ? targetOrTargets
     : [targetOrTargets];
   const target = targets[0];

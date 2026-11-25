@@ -10,10 +10,10 @@ export async function retrieveSaveIds(input: {
   query?: string;
   visual?:
     | { kind: "saveId"; id: string }
-    | { kind: "vector"; model: string; values: number[] };
-  saveIds?: string[];
+    | { kind: "vector"; model: string; values: Array<number> };
+  saveIds?: Array<string>;
   limit?: number;
-}): Promise<string[]> {
+}): Promise<Array<string>> {
   const parsed = HitSchema.parse(
     await window.pond.query("saves.retrieve", {
       query: input.query,

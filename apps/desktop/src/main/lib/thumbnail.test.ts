@@ -58,7 +58,7 @@ describe("thumbnail scheduler", () => {
   it("runs a waiting foreground job before a waiting background job", async () => {
     const scheduler = createThumbnailScheduler(1);
     const release = Promise.withResolvers<void>();
-    const order: string[] = [];
+    const order: Array<string> = [];
     const first = scheduler.run("background", async () => {
       order.push("active-background");
       await release.promise;
@@ -88,7 +88,9 @@ describe("thumbnail scheduler", () => {
       scheduler.run("background", async () => {
         activeBackground += 1;
         peakBackground = Math.max(peakBackground, activeBackground);
-        await new Promise((resolve) => setTimeout(resolve, 5));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 5);
+        });
         activeBackground -= 1;
       });
 
@@ -100,7 +102,7 @@ describe("thumbnail scheduler", () => {
   it("runs visible cards after foreground work, newest first, ahead of background", async () => {
     const scheduler = createThumbnailScheduler(1);
     const release = Promise.withResolvers<void>();
-    const order: string[] = [];
+    const order: Array<string> = [];
     const record = (label: string) => async () => {
       order.push(label);
     };
@@ -133,7 +135,9 @@ describe("thumbnail scheduler", () => {
       scheduler.run("visible", async () => {
         activeVisible += 1;
         peakVisible = Math.max(peakVisible, activeVisible);
-        await new Promise((resolve) => setTimeout(resolve, 5));
+        await new Promise((resolve) => {
+          setTimeout(resolve, 5);
+        });
         activeVisible -= 1;
       });
 

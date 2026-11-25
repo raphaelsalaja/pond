@@ -98,7 +98,7 @@ export const COLORED_TOOLS: ReadonlySet<CanvasTool> = new Set([
 const MODES: ReadonlyArray<{
   tool: CanvasTool;
   label: string;
-  shortcut: readonly string[];
+  shortcut: ReadonlyArray<string>;
   Icon: typeof IconCursor;
 }> = [
   { tool: "select", label: "Select", shortcut: ["V"], Icon: IconCursor },
@@ -148,12 +148,12 @@ interface ToolsProps {
   showColors: boolean;
   showOutlines: boolean;
   onCanvas: ReadonlySet<string>;
-  onTool(tool: CanvasTool): void;
-  onColor(color: CanvasColor): void;
-  onOutline(outline: CanvasOutline): void;
-  onPenMode(mode: PenMode): void;
-  onKeep(kept: boolean): void;
-  onAddSaves(saveIds: string[]): void;
+  onTool: (tool: CanvasTool) => void;
+  onColor: (color: CanvasColor) => void;
+  onOutline: (outline: CanvasOutline) => void;
+  onPenMode: (mode: PenMode) => void;
+  onKeep: (kept: boolean) => void;
+  onAddSaves: (saveIds: Array<string>) => void;
 }
 
 export function Tools({

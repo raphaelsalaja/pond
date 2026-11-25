@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeWrittenFiles } from "./library";
-import {
-  applyPatchToInfo,
-  type InfoFile,
-  StoredInfoDocSchema,
-} from "./library-format";
+import { applyPatchToInfo, StoredInfoDocSchema } from "./library-format";
+import type { InfoFile } from "./library-format";
 
 const original: InfoFile = {
   kind: "video",

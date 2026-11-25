@@ -35,7 +35,7 @@ function onSave(entry: MenuEntry, focus: () => void): MenuEntry {
 export function saveActions(
   save: Save,
   options: { openId: string | null; onOpenSave: (id: string) => void },
-): MenuEntry[] {
+): Array<MenuEntry> {
   const { openId, onOpenSave } = options;
   const select = () => {
     if (!selection.has(save.id)) flushSync(() => selectOnlySave(save.id));

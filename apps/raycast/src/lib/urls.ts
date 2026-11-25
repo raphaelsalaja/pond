@@ -17,9 +17,9 @@ export function webUrl(value: string | null | undefined): string {
 
 const TAG_LIMIT = 100;
 
-export function cleanTags(values: readonly string[]): string[] {
+export function cleanTags(values: ReadonlyArray<string>): Array<string> {
   const seen = new Set<string>();
-  const tags: string[] = [];
+  const tags: Array<string> = [];
   for (const value of values) {
     const tag = value.trim().replace(/^#/, "").trim();
     if (!tag || seen.has(tag.toLowerCase())) continue;
@@ -30,6 +30,6 @@ export function cleanTags(values: readonly string[]): string[] {
   return tags;
 }
 
-export function parseTags(value: string | undefined): string[] {
+export function parseTags(value: string | undefined): Array<string> {
   return cleanTags((value ?? "").split(","));
 }

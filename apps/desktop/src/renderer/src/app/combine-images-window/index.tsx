@@ -21,7 +21,7 @@ function close(): void {
   void window.pondCombine?.close();
 }
 
-function resolveDrop(files: readonly File[]): Promise<string[]> {
+function resolveDrop(files: ReadonlyArray<File>): Promise<Array<string>> {
   return window.pondCombine?.resolveDrop(files) ?? Promise.resolve([]);
 }
 
@@ -38,10 +38,11 @@ export function CombineImagesWindow() {
     if (!api) return;
     let active = true;
     const apply = (next: CombineImagesWindowLoad) => {
-      if (active)
+      if (active) {
         setLoad((current) =>
           current && current.nonce >= next.nonce ? current : next,
         );
+      }
     };
     const stop = api.onLoad(apply);
     void api.ready().then(apply);

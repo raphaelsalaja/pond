@@ -12,11 +12,13 @@ export async function ipcChatFetch(
   signal?.throwIfAborted();
   let closePort: (() => void) | undefined;
   let settled = false;
+  let abort: (() => void) | null = null;
   const cleanup = () => {
-    signal?.removeEventListener("abort", abort);
+    if (abort) {
+      signal?.removeEventListener("abort", abort);
+    }
     closePort?.();
   };
-  let abort = () => {};
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       const finish = (error?: Error) => {

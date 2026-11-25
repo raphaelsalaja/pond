@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import { runSetup, SETUP_STEPS } from "./postinstall.mjs";
 
-test("runs the setup orchestrator without shell failure masking", () => {
+void test("runs the setup orchestrator without shell failure masking", () => {
   const packageJson = JSON.parse(
     readFileSync(new URL("../package.json", import.meta.url), "utf8"),
   );
@@ -13,7 +13,7 @@ test("runs the setup orchestrator without shell failure masking", () => {
   );
 });
 
-test("classifies desktop setup steps by runtime requirement", () => {
+void test("classifies desktop setup steps by runtime requirement", () => {
   assert.deepEqual(
     SETUP_STEPS.map(({ script, required }) => [script, required]),
     [
@@ -29,7 +29,7 @@ test("classifies desktop setup steps by runtime requirement", () => {
   );
 });
 
-test("fails installation when the Electron native rebuild fails", () => {
+void test("fails installation when the Electron native rebuild fails", () => {
   const nativeRebuild = SETUP_STEPS.find(
     ({ script }) => script === "rebuild-native.mjs",
   );
@@ -47,7 +47,7 @@ test("fails installation when the Electron native rebuild fails", () => {
   );
 });
 
-test("continues after optional cosmetic preparation fails", () => {
+void test("continues after optional cosmetic preparation fails", () => {
   const calls = [];
   const warnings = [];
   const steps = [

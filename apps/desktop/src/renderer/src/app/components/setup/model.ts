@@ -39,7 +39,7 @@ export const AI_OPTION_IDS = [
   "enableClip",
   "enableAutoTitle",
   "enableSuggestedTags",
-] as const satisfies readonly AiOptionId[];
+] as const satisfies ReadonlyArray<AiOptionId>;
 
 export type AssistantChoice = "later" | "cloud" | "subscription" | "local";
 

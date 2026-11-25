@@ -15,51 +15,51 @@ import {
 } from "../src/lib/display";
 import { SAVE } from "./fixtures";
 
-describe("saveTitle", () => {
-  test("drops links and trailing hashtags", () => {
+void describe("saveTitle", () => {
+  void test("drops links and trailing hashtags", () => {
     assert.equal(saveTitle(SAVE), "Calm interfaces");
   });
 
-  test("keeps a caption that is only hashtags", () => {
+  void test("keeps a caption that is only hashtags", () => {
     assert.equal(saveTitle({ ...SAVE, description: "#design #ui" }), "#design #ui");
   });
 
-  test("falls back to the author, then the host", () => {
+  void test("falls back to the author, then the host", () => {
     assert.equal(saveTitle({ ...SAVE, description: "https://t.co/abc" }), "pond");
     assert.equal(saveTitle({ ...SAVE, description: null, author: null }), "x.com");
   });
 });
 
-test("sourceName labels known sources and passes unknown ones through", () => {
+void test("sourceName labels known sources and passes unknown ones through", () => {
   assert.equal(sourceName("arena"), "Are.na");
   assert.equal(sourceName("somewhere"), "somewhere");
 });
 
-test("kindName names link saves as websites", () => {
+void test("kindName names link saves as websites", () => {
   assert.equal(kindName("link"), "Website");
   assert.equal(kindName(null), null);
 });
 
-test("escapeMarkdown escapes syntax characters", () => {
-  assert.equal(escapeMarkdown("*bold* [x](y)"), "\\*bold\\* \\[x\\]\\(y\\)");
+void test("escapeMarkdown escapes syntax characters", () => {
+  assert.equal(escapeMarkdown("*bold* [x](y)"), String.raw`\*bold\* \[x\]\(y\)`);
 });
 
-describe("savedSection", () => {
+void describe("savedSection", () => {
   const now = new Date(2026, 9, 22, 15);
 
-  test("names recent days", () => {
+  void test("names recent days", () => {
     assert.equal(savedSection(new Date(2026, 9, 22, 1), now), "Today");
     assert.equal(savedSection(new Date(2026, 9, 21, 23), now), "Yesterday");
     assert.equal(savedSection(new Date(2026, 9, 17), now), "Previous 7 Days");
     assert.equal(savedSection(new Date(2026, 9, 1), now), "Previous 30 Days");
   });
 
-  test("names older saves by month", () => {
+  void test("names older saves by month", () => {
     assert.match(savedSection(new Date(2026, 5, 3), now), /2026/);
   });
 });
 
-test("sectionsBySavedDay keeps order and groups neighbors", () => {
+void test("sectionsBySavedDay keeps order and groups neighbors", () => {
   const now = new Date(2026, 9, 22, 15);
   const items = [
     { id: "a", savedAt: new Date(2026, 9, 22, 9).getTime() },
@@ -76,7 +76,7 @@ test("sectionsBySavedDay keeps order and groups neighbors", () => {
   );
 });
 
-test("formatters", () => {
+void test("formatters", () => {
   assert.equal(formatDuration(75), "1:15");
   assert.equal(formatDuration(3725), "1:02:05");
   assert.equal(formatBytes(204_800), "204.8 KB");
@@ -85,7 +85,7 @@ test("formatters", () => {
   assert.equal(ratingStars(null), null);
 });
 
-test("folderPaths builds nested paths and survives cycles", () => {
+void test("folderPaths builds nested paths and survives cycles", () => {
   const paths = folderPaths([
     { id: "b", name: "Fonts", parentId: "a", color: null, count: 2 },
     { id: "a", name: "Design", parentId: null, color: null, count: 1 },

@@ -1,4 +1,5 @@
-import { type Source, sourceLabel } from "./source-ids";
+import { sourceLabel } from "./source-ids";
+import type { Source } from "./source-ids";
 
 export const WATCH_KINDS = [
   "channel",
@@ -22,7 +23,7 @@ const WATCHABLE_SOURCES = [
   "pinterest",
   "cosmos",
   "web",
-] as const satisfies readonly Source[];
+] as const satisfies ReadonlyArray<Source>;
 
 export function isWatchableSource(
   source: Source,
@@ -30,7 +31,10 @@ export function isWatchableSource(
   return WATCHABLE_SOURCES.some((candidate) => candidate === source);
 }
 
-export const WATCH_NEEDS_SESSION: readonly Source[] = ["instagram", "twitter"];
+export const WATCH_NEEDS_SESSION: ReadonlyArray<Source> = [
+  "instagram",
+  "twitter",
+];
 
 export function watchSourceLabel(source: Source): string {
   return source === "web" ? "RSS Feed" : sourceLabel(source);

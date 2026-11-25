@@ -22,7 +22,7 @@ export type MenuPage =
       title: string;
       /** What the title names, shown before it in the breadcrumb. */
       context?: string;
-      entries: readonly MenuEntry[];
+      entries: ReadonlyArray<MenuEntry>;
     }
   | { kind: "views"; key: string; title: string };
 
@@ -40,14 +40,14 @@ export interface MenuEntry {
   icon: ReactNode;
   shortcut?: ShortcutId;
   /** Key glyphs for entries that come from a menu spec rather than a shortcut id. */
-  keys?: readonly string[];
+  keys?: ReadonlyArray<string>;
   checked?: boolean;
   /** Lowest score while a query is active, for entries matched on text the label doesn't show. */
   scoreFloor?: number;
   /** Multiplies the label score, so near ties go to commands. */
   scoreWeight?: number;
   /** Secondary actions, opened with Tab, Right Arrow, or Command-Return. */
-  actions?: () => readonly MenuEntry[];
+  actions?: () => ReadonlyArray<MenuEntry>;
   /** Opens a page instead of running. */
   page?: () => MenuPage;
   run?: () => void;
@@ -56,7 +56,7 @@ export interface MenuEntry {
 export interface RankedEntry {
   entry: MenuEntry;
   score: number;
-  ranges: readonly MatchRange[];
+  ranges: ReadonlyArray<MatchRange>;
 }
 
 export type MenuRow =
@@ -65,8 +65,8 @@ export type MenuRow =
   | { kind: "status"; key: string; label: string; busy: boolean };
 
 export interface MenuModel {
-  rows: readonly MenuRow[];
+  rows: ReadonlyArray<MenuRow>;
   /** Selectable entries in display order with the footer last; a row's `index` points here. */
-  entries: readonly RankedEntry[];
+  entries: ReadonlyArray<RankedEntry>;
   footer: RankedEntry | null;
 }

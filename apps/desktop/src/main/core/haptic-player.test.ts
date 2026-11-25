@@ -5,7 +5,7 @@ import { createHapticPlayer } from "./haptic-player";
 
 class FakeHelper extends EventEmitter {
   readonly stdin = new PassThrough();
-  readonly lines: string[] = [];
+  readonly lines: Array<string> = [];
 
   constructor() {
     super();
@@ -26,7 +26,7 @@ class FakeHelper extends EventEmitter {
 }
 
 function setup() {
-  const helpers: FakeHelper[] = [];
+  const helpers: Array<FakeHelper> = [];
   const player = createHapticPlayer(() => {
     const helper = new FakeHelper();
     helpers.push(helper);
@@ -36,7 +36,9 @@ function setup() {
 }
 
 async function flush() {
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => {
+    setImmediate(resolve);
+  });
 }
 
 describe("createHapticPlayer", () => {

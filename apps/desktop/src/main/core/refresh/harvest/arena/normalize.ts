@@ -11,7 +11,7 @@ interface ArenaBlockPageMedia {
 interface ArenaBlockPageMeta {
   authorUrl?: string;
   sourceUrl?: string;
-  connectedChannels?: string[];
+  connectedChannels?: Array<string>;
   lang?: string;
 }
 
@@ -21,7 +21,7 @@ export interface ArenaBlockPage {
   author?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: ArenaBlockPageMedia[];
+  mediaUrls?: Array<ArenaBlockPageMedia>;
   mediaType?: MediaType;
   meta?: ArenaBlockPageMeta;
 }
@@ -77,7 +77,7 @@ export function inPageArenaNormalize() {
         "[class*='BlockConnections'] a, [class*='connected'] a",
       ),
     );
-    const channels: string[] = [];
+    const channels: Array<string> = [];
     for (const a of channelLinks) {
       const text = a.textContent?.trim();
       if (text) channels.push(text);

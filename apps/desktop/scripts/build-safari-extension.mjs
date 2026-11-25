@@ -15,11 +15,10 @@
 
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 import nodeApiHeaders from "node-api-headers";
 
-const desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const desktopRoot = resolve(import.meta.dirname, "..");
 const extensionRoot = resolve(desktopRoot, "../extension");
 const workDir = resolve(desktopRoot, ".safari-build");
 const outDir = resolve(desktopRoot, "resources/SafariExtension");
@@ -93,8 +92,9 @@ const extensionSource = join(
   projectRoot,
   "Pond Extension/SafariWebExtensionHandler.swift",
 );
-if (!existsSync(extensionSource))
+if (!existsSync(extensionSource)) {
   fail("the converter did not produce an extension target");
+}
 
 cpSync(
   resolve(extensionRoot, "safari/SafariWebExtensionHandler.swift"),

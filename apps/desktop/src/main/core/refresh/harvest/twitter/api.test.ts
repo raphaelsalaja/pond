@@ -9,8 +9,8 @@ const ResultSchema = z.object({
   reachedEnd: z.boolean(),
 });
 
-function xwebPage(ids: string[], next: string | null) {
-  const entries: object[] = ids.map((id) => ({
+function xwebPage(ids: Array<string>, next: string | null) {
+  const entries: Array<object> = ids.map((id) => ({
     entry_id: `tweet-${id}`,
     content: { __typename: "TimelineTimelineItem" },
   }));

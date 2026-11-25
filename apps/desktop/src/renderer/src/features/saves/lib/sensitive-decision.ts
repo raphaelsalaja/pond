@@ -18,13 +18,13 @@ export function saveMarkedSensitive(save: Save): boolean {
 
 export function saveHasSensitiveResult(save: Save): boolean {
   return (
-    save.sensitiveScore != null ||
+    (save.sensitiveScore !== undefined && save.sensitiveScore !== null) ||
     isManualSensitiveDecision(save.sensitiveModel)
   );
 }
 
 export async function setSensitiveDecision(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   sensitive: boolean,
 ): Promise<void> {
   const targets = [...new Set(ids)];

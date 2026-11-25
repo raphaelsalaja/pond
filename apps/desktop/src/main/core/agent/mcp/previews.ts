@@ -7,7 +7,7 @@ import { readLibraryMedia } from "../../storage/library-media-storage";
 export type PreviewSize = Exclude<ApiThumbnailSize, "original">;
 
 export async function savePreview(
-  save: { id: string; files: SaveFile[] },
+  save: { id: string; files: Array<SaveFile> },
   size: PreviewSize,
 ): Promise<ImageContent | null> {
   try {

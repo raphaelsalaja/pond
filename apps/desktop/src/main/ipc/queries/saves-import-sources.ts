@@ -22,12 +22,13 @@ import { UnsupportedError } from "../../core/pipeline/extractors/errors";
 import { setPrefs } from "../../core/prefs";
 import { restoreSave } from "../../core/restore-save";
 import { setSaveTags } from "../../core/tags";
-import { type QueryHandlerMap, query, StringParam } from "./params";
+import { query, StringParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 import {
   normalizeQuickAddInput,
-  type QuickAddInput,
   QuickAddParamsSchema,
 } from "./saves-import-input";
+import type { QuickAddInput } from "./saves-import-input";
 
 const EAGLE_IMPORT_PROGRESS_INTERVAL_MS = 100;
 
@@ -69,8 +70,9 @@ async function quickAdd({
         tags,
         inboxChannel: "captures",
       });
-      if (result.ok && result.trashed)
+      if (result.ok && result.trashed) {
         await restoreSave(result.id, "user:quickAdd");
+      }
       return result.ok
         ? { ok: true, id: result.id, created: !result.skipped }
         : { ok: false, error: "unsupported_url" };
@@ -232,12 +234,13 @@ export const savesImportSourceQueries = {
     const path = picked.filePaths[0];
     if (picked.canceled || !path) return { ok: false, reason: "cancelled" };
     const file = parseBookmarkFile(await readFile(path, "utf8"));
-    if (!file?.bookmarks.length)
+    if (!file?.bookmarks.length) {
       return {
         ok: false,
         error:
           "That file has no web bookmarks. Export bookmarks as HTML from your browser and try again.",
       };
+    }
     return importBookmarkFile(file);
   },
 

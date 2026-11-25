@@ -15,13 +15,8 @@ import {
 } from "../../core/sync/watches";
 import { resolveWatchTarget } from "../../core/watch/resolve";
 import { watchNow } from "../../core/watch/run";
-import {
-  type QueryHandlerMap,
-  query,
-  SourceParam,
-  StringParam,
-  TrimmedTextParam,
-} from "./params";
+import { query, SourceParam, StringParam, TrimmedTextParam } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const WATCH_NOT_FOUND: OkFailure = { ok: false, error: "Watch not found." };
 

@@ -9,8 +9,8 @@ import type { Save } from "@/features/saves/types";
 import { glyph } from "./shared";
 
 export function sensitiveContentMenuItem(input: {
-  ids: readonly string[];
-  saves: readonly Save[];
+  ids: ReadonlyArray<string>;
+  saves: ReadonlyArray<Save>;
   allTrashed: boolean;
 }): MenuItemSpec {
   const visible = !input.allTrashed && input.saves.some(saveHasSensitiveResult);

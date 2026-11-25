@@ -1,13 +1,14 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it } from "vitest";
-import { type McpHostLoss, watchMcpHost } from "./mcp-host";
+import { watchMcpHost } from "./mcp-host";
+import type { McpHostLoss } from "./mcp-host";
 
 function harness(initialParent = 42) {
   const stdin = new EventEmitter();
   let parent = initialParent;
   let tick: (() => void) | null = null;
   let cancelled = false;
-  const lost: McpHostLoss[] = [];
+  const lost: Array<McpHostLoss> = [];
   const stop = watchMcpHost({
     stdin,
     parentPid: () => parent,

@@ -8,7 +8,7 @@ import {
 } from "./process-tree";
 
 function fakeChild(pid: number | undefined) {
-  const signals: (NodeJS.Signals | number | undefined)[] = [];
+  const signals: Array<NodeJS.Signals | number | undefined> = [];
   const child: Pick<ChildProcess, "pid" | "kill"> = {
     pid,
     kill: (signal) => {
@@ -22,7 +22,7 @@ function fakeChild(pid: number | undefined) {
 describe("killProcessTree", () => {
   it("kills the whole tree with taskkill on windows", () => {
     const { child, signals } = fakeChild(4321);
-    const calls: string[][] = [];
+    const calls: Array<Array<string>> = [];
     killProcessTree(child, "SIGKILL", {
       platform: "win32",
       spawnTaskkill: (args) => calls.push(args),
@@ -33,7 +33,7 @@ describe("killProcessTree", () => {
 
   it("signals the child directly on other platforms", () => {
     const { child, signals } = fakeChild(4321);
-    const calls: string[][] = [];
+    const calls: Array<Array<string>> = [];
     killProcessTree(child, "SIGTERM", {
       platform: "linux",
       spawnTaskkill: (args) => calls.push(args),
@@ -72,7 +72,7 @@ describe("tracked children", () => {
     trackChildProcess(running, "win32");
     trackChildProcess(finished, "win32");
     finished.emit("close");
-    const calls: string[][] = [];
+    const calls: Array<Array<string>> = [];
     killTrackedProcessTrees({
       platform: "win32",
       spawnTaskkill: (args) => calls.push(args),
@@ -87,7 +87,7 @@ describe("tracked children", () => {
 
   it("tracks nothing on other platforms", () => {
     trackChildProcess(trackable(21), "linux");
-    const calls: string[][] = [];
+    const calls: Array<Array<string>> = [];
     killTrackedProcessTrees({
       platform: "win32",
       spawnTaskkill: (args) => calls.push(args),

@@ -6,7 +6,7 @@ const map = (h, s, leaves) => {
   const root = s.keylines.square[0] + r;
   const spine = 8.75;
   const leaf = 13.875;
-  const [top, bottom] = [leaves[0], leaves[leaves.length - 1]];
+  const [top, bottom] = [leaves[0], leaves.at(-1)];
   return [
     h.circle(root, 9, r),
     `M ${root + r} 9 H ${leaves.includes(9) ? leaf : spine}`,

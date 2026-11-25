@@ -1,4 +1,5 @@
 import { fileURLToPath } from "node:url";
+import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 
 const stub = (p: string) =>
@@ -20,7 +21,6 @@ const rendererTypeScriptTests = [
   "src/renderer/src/features/library/state/saved-views.test.ts",
   "src/renderer/src/features/library/state/view-store.test.ts",
   "src/renderer/src/features/library/state/folder-appearance.test.ts",
-  "src/renderer/src/features/library/lib/library-layout-transition.test.ts",
   "src/renderer/src/features/library/lib/folder-appearance-menu.test.ts",
   "src/renderer/src/features/library/components/view/empty-gallery-menu.test.ts",
   "src/renderer/src/features/library/components/new-menu/spec.test.ts",
@@ -29,11 +29,18 @@ const rendererTypeScriptTests = [
   "src/renderer/src/features/canvas/state/minimap.test.ts",
 ];
 
+const browserTests = "src/**/*.browser.test.{ts,tsx}";
+
+const MAC_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) jsdom";
+
 export default defineConfig({
   resolve: {
     alias: {
       electron: stub("electron.ts"),
       "electron-log/main.js": stub("electron-log.ts"),
+      /** Without Electron, the renderer logger stalls the jsdom worker forever. */
+      "electron-log/renderer": stub("electron-log.ts"),
       "@": fileURLToPath(new URL("./src/renderer/src", import.meta.url)),
       "@shared": fileURLToPath(new URL("./src/shared", import.meta.url)),
       "@pond/render": fileURLToPath(
@@ -47,7 +54,7 @@ export default defineConfig({
         test: {
           name: "node",
           include: ["src/**/*.test.ts"],
-          exclude: rendererTypeScriptTests,
+          exclude: [...rendererTypeScriptTests, browserTests],
           environment: "node",
         },
       },
@@ -55,12 +62,30 @@ export default defineConfig({
         test: {
           name: "renderer",
           include: ["src/**/*.test.tsx", ...rendererTypeScriptTests],
+          exclude: [browserTests],
           environment: "jsdom",
+          /** Pond ships only on macOS; a Mac user agent keeps `Mod` as ⌘ where jsdom would otherwise read as Linux. */
+          environmentOptions: { jsdom: { userAgent: MAC_USER_AGENT } },
           setupFiles: ["./test/renderer-setup.ts"],
-          // The first jsdom test in a file pays for a cold module graph; the
-          // Windows runner is roughly four times slower than Linux.
-          testTimeout: 20_000,
-          hookTimeout: 20_000,
+        },
+      },
+      {
+        test: {
+          name: "browser",
+          include: [browserTests],
+          setupFiles: ["./test/browser-setup.ts"],
+          browser: {
+            enabled: true,
+            headless: true,
+            /** Headless Chromium otherwise denies `navigator.clipboard`. */
+            provider: playwright({
+              contextOptions: {
+                permissions: ["clipboard-read", "clipboard-write"],
+              },
+            }),
+            instances: [{ browser: "chromium" }],
+            viewport: { width: 1280, height: 800 },
+          },
         },
       },
     ],

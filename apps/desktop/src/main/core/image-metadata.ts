@@ -73,8 +73,10 @@ function entryValue(reader: TiffReader, entry: number): ExifValue {
   const type = uint16(reader, entry + 2);
   const count = uint32(reader, entry + 4);
   const offset = valueOffset(reader, entry, type, count);
-  if (offset === null) return null;
-  if (type === 2)
+  if (offset === null) {
+    return null;
+  }
+  if (type === 2) {
     return {
       kind: "text",
       value: reader.bytes
@@ -82,9 +84,16 @@ function entryValue(reader: TiffReader, entry: number): ExifValue {
         .replace(/\0+$/, "")
         .trim(),
     };
-  if (type === 3) return { kind: "number", value: uint16(reader, offset) };
-  if (type === 4) return { kind: "number", value: uint32(reader, offset) };
-  if (type === 9) return { kind: "number", value: int32(reader, offset) };
+  }
+  if (type === 3) {
+    return { kind: "number", value: uint16(reader, offset) };
+  }
+  if (type === 4) {
+    return { kind: "number", value: uint32(reader, offset) };
+  }
+  if (type === 9) {
+    return { kind: "number", value: int32(reader, offset) };
+  }
   if (type === 5) {
     const denominator = uint32(reader, offset + 4);
     return denominator
@@ -167,35 +176,38 @@ export function parseExif(exif: Buffer | undefined): ImageMetadata {
   };
   if (uint16(reader, base + 2) !== 42) return {};
   const primary = readIfd(reader, uint32(reader, base + 4));
-  const exifPointer = number(primary, 0x8769);
-  const details = exifPointer ? readIfd(reader, exifPointer) : new Map();
-  const exposure = number(details, 0x829a);
-  const colorCode = number(details, 0xa001);
+  const exifPointer = number(primary, 0x87_69);
+  const details = exifPointer
+    ? readIfd(reader, exifPointer)
+    : new Map<number, { entry: number; value: ExifValue }>();
+  const exposure = number(details, 0x82_9a);
+  const colorCode = number(details, 0xa0_01);
   return {
-    cameraMake: text(primary, 0x010f),
-    cameraModel: text(primary, 0x0110),
-    lensModel: text(details, 0xa434),
-    focalLength: number(details, 0x920a),
-    aperture: number(details, 0x829d),
+    cameraMake: text(primary, 0x01_0f),
+    cameraModel: text(primary, 0x01_10),
+    lensModel: text(details, 0xa4_34),
+    focalLength: number(details, 0x92_0a),
+    aperture: number(details, 0x82_9d),
     exposureTime:
       exposure && exposure > 0
         ? exposure < 1
           ? `1/${Math.round(1 / exposure)}`
           : `${exposure}`
         : undefined,
-    iso: number(details, 0x8827),
-    takenAt: exifDate(text(details, 0x9003)) ?? exifDate(text(primary, 0x0132)),
+    iso: number(details, 0x88_27),
+    takenAt:
+      exifDate(text(details, 0x90_03)) ?? exifDate(text(primary, 0x01_32)),
     colorSpace:
       colorCode === 1
         ? "sRGB"
-        : colorCode === 0xffff
+        : colorCode === 0xff_ff
           ? "Uncalibrated"
           : undefined,
   };
 }
 
 const PHOTOSHOP_HEADER = "Photoshop 3.0\u0000";
-const IPTC_RESOURCE_ID = 0x0404;
+const IPTC_RESOURCE_ID = 0x04_04;
 /** IPTC IIM caps a keyword at 64 octets. */
 const MAX_KEYWORD_BYTES = 64;
 
@@ -233,14 +245,16 @@ function decodeKeyword(value: Buffer): string | null {
   return keyword && !/\p{Cc}/u.test(keyword) ? keyword : null;
 }
 
-export function parseIptcKeywords(iptc: Buffer | undefined): string[] {
+export function parseIptcKeywords(iptc: Buffer | undefined): Array<string> {
   const iim = iptc ? iimBlock(iptc) : null;
   if (!iim) return [];
   const keywords = new Set<string>();
   let offset = 0;
   while (offset + 5 <= iim.length && iim[offset] === 0x1c) {
     const length = iim.readUInt16BE(offset + 3);
-    if ((length & 0x8000) !== 0) break;
+    if ((length & 0x80_00) !== 0) {
+      break;
+    }
     const start = offset + 5;
     const end = start + length;
     if (end > iim.length) break;
@@ -255,7 +269,7 @@ export function parseIptcKeywords(iptc: Buffer | undefined): string[] {
 
 export async function extractImageKeywords(
   source: string | Buffer,
-): Promise<string[]> {
+): Promise<Array<string>> {
   try {
     const { iptc } = await sharp(source, {
       failOn: "none",

@@ -11,7 +11,7 @@ const STARS_URL = githubStarsUrl("octocat");
 /** The real cursor is base64 msgpack around the last star's time; only the time matters here. */
 function cursorFor(lastStarredAt: string): string {
   return Buffer.from(
-    `cursor:v2:\x92\xb4${lastStarredAt}\xce\x00`,
+    `cursor:v2:\u0092\u00b4${lastStarredAt}\u00ce\u0000`,
     "latin1",
   ).toString("base64");
 }
@@ -19,13 +19,13 @@ function cursorFor(lastStarredAt: string): string {
 const PAGE_2 = cursorFor("2026-09-01T00:00:00Z");
 const PAGE_3 = cursorFor("2026-06-01T00:00:00Z");
 
-const PAGES = new Map<string, { repos: string[]; next?: string }>([
+const PAGES = new Map<string, { repos: Array<string>; next?: string }>([
   ["top", { repos: ["Vercel/Next.js", "tj/commander.js"], next: PAGE_2 }],
   [PAGE_2, { repos: ["octo/one", "octo/two"], next: PAGE_3 }],
   [PAGE_3, { repos: ["octo/three"] }],
 ]);
 
-function starsPage(repos: string[], next?: string): string {
+function starsPage(repos: Array<string>, next?: string): string {
   const rows = repos
     .map(
       (repo) => `<div class="col-12 d-block">
@@ -44,13 +44,13 @@ function starsPage(repos: string[], next?: string): string {
 async function walk(
   args: Partial<ListHarvestArgs>,
   opts: { expire?: string } = {},
-): Promise<{ result: ListHarvestResult; requested: string[] }> {
+): Promise<{ result: ListHarvestResult; requested: Array<string> }> {
   const top = PAGES.get("top");
   const dom = new JSDOM(starsPage(top?.repos ?? [], top?.next), {
     url: STARS_URL,
     runScripts: "outside-only",
   });
-  const requested: string[] = [];
+  const requested: Array<string> = [];
   Object.assign(dom.window, {
     setTimeout: (fn: () => void) => setTimeout(fn, 0),
     fetch: async (url: string) => {
@@ -70,7 +70,7 @@ async function walk(
   return { result, requested };
 }
 
-function ids(result: ListHarvestResult): string[] {
+function ids(result: ListHarvestResult): Array<string> {
   return result.ok ? result.entries.map((entry) => entry.sourceId) : [];
 }
 

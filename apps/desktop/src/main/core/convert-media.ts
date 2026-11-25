@@ -2,7 +2,8 @@ import { spawn } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
-import sharp, { type Sharp } from "sharp";
+import sharp from "sharp";
+import type { Sharp } from "sharp";
 import type { ConversionPreset } from "../../shared/conversion-contracts";
 import { killProcessTree, trackChildProcess } from "../lib/process-tree";
 import { requireConversionCapability } from "./conversion-capabilities";
@@ -25,29 +26,32 @@ export async function convertMedia(input: {
     preset.format,
     ffmpegPath,
   );
-  if (preset.lossless && !capability.supportsLossless)
+  if (preset.lossless && !capability.supportsLossless) {
     throw new Error(`${preset.format} does not support lossless conversion.`);
+  }
   const stem = basename(source, extname(source));
-  if (capability.adapter === "ffmpeg")
+  if (capability.adapter === "ffmpeg") {
     return convertWithFfmpeg({
       ...input,
       ffmpegPath,
       stem,
       extension: capability.extension,
     });
+  }
 
   const image = sharp(source, { limitInputPixels: 100_000_000 }).rotate();
   const abort = () => image.destroy(new Error("Conversion canceled."));
   signal.addEventListener("abort", abort, { once: true });
   try {
     input.onProgress?.(0.05);
-    if (preset.width || preset.height)
+    if (preset.width || preset.height) {
       image.resize({
         width: preset.width ?? undefined,
         height: preset.height ?? undefined,
         fit: "inside",
         withoutEnlargement: true,
       });
+    }
     encodeSharp(image, preset);
     const bytes = await image.toBuffer();
     input.onProgress?.(0.9);
@@ -141,7 +145,7 @@ export function buildFfmpegConversionArguments(
   preset: ConversionPreset,
   source: string,
   output: string,
-): string[] {
+): Array<string> {
   const args = [
     "-nostdin",
     "-hide_banner",
@@ -261,7 +265,7 @@ export function buildFfmpegConversionArguments(
 
 export async function runFfmpeg(input: {
   path: string;
-  args: string[];
+  args: Array<string>;
   signal: AbortSignal;
   duration: number;
   onProgress?: (progress: number) => void;
@@ -285,8 +289,9 @@ export async function runFfmpeg(input: {
         const [key, raw] = line.trim().split("=", 2);
         if (key !== "out_time_us" || !raw) continue;
         const elapsed = Number(raw) / 1_000_000;
-        if (Number.isFinite(elapsed))
+        if (Number.isFinite(elapsed)) {
           input.onProgress?.(Math.min(0.99, elapsed / input.duration));
+        }
       }
     });
     process.stderr.on("data", (chunk: Buffer) => {
@@ -294,7 +299,7 @@ export async function runFfmpeg(input: {
     });
     const timeout =
       input.timeoutMs ??
-      Math.min(2 * 60 * 60_000, Math.max(120_000, input.duration * 4_000));
+      Math.min(2 * 60 * 60_000, Math.max(120_000, input.duration * 4000));
     const timer = setTimeout(
       () => killProcessTree(process, "SIGKILL"),
       timeout,
@@ -305,8 +310,9 @@ export async function runFfmpeg(input: {
     });
     process.once("close", (code, signal) => {
       clearTimeout(timer);
-      if (code === 0) resolve();
-      else
+      if (code === 0) {
+        resolve();
+      } else {
         reject(
           new Error(
             error ||
@@ -315,6 +321,7 @@ export async function runFfmpeg(input: {
                 : "FFmpeg conversion failed."),
           ),
         );
+      }
     });
   });
 }

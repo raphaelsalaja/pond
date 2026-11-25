@@ -11,15 +11,15 @@ export function saveCanSplit(save: Save): boolean {
 
 /** Selection when present, otherwise the primary save. Empty when none can split. */
 export function splitTargetIds(
-  selectedIds: readonly string[],
+  selectedIds: ReadonlyArray<string>,
   primaryId: string | null,
   saveById: (id: string) => Save | undefined,
-): string[] {
+): Array<string> {
   const ids =
     selectedIds.length > 0 ? [...selectedIds] : primaryId ? [primaryId] : [];
   const applicable = ids.some((id) => {
     const save = saveById(id);
-    return save != null && saveCanSplit(save);
+    return save !== undefined && saveCanSplit(save);
   });
   return applicable ? ids : [];
 }
@@ -30,8 +30,10 @@ function splitTitle(split: number, created: number): string {
   return `Split ${split} saves into ${total}`;
 }
 
-export function splitIntoSaves(ids: readonly string[]): void {
-  if (ids.length === 0) return;
+export function splitIntoSaves(ids: ReadonlyArray<string>): void {
+  if (ids.length === 0) {
+    return;
+  }
   void window.pond.query("saves.split", { ids: [...ids] }).then((result) =>
     notify({
       id: "split-saves",

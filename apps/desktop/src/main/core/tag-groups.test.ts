@@ -1,16 +1,15 @@
+import { tagGroupMembers, tagGroups } from "@pond/schema/db";
 import type { TagGroup, TagGroupMember } from "@pond/schema/db";
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import type { Transaction } from "@pond/schema/tx";
 import Database from "better-sqlite3";
 import { and, asc, eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
+import { wrapSqlite } from "../database/client";
 import { initializePondSchema } from "../db";
 import { mergeGroup, planGroupMergeTransactions } from "./tag-groups";
 
 const createdAt = new Date(0);
-const databases: Database.Database[] = [];
+const databases: Array<Database.Database> = [];
 
 afterEach(() => {
   for (const database of databases.splice(0)) database.close();
@@ -122,65 +121,57 @@ describe("tag group merge transactions", () => {
   });
 });
 
-describe.skipIf(!nativeSqliteAvailable())("tag group merge", () => {
-  function setup() {
-    const sqlite = new Database(":memory:");
-    databases.push(sqlite);
-    initializePondSchema(sqlite, () => false);
-    const db = Object.assign(
-      drizzle(sqlite, { schema: { ...schema, ...events } }),
-      { $raw: sqlite },
-    );
-    sqlite.exec(`
-      insert into tags(id, name) values
-        ('shared', 'Shared'), ('source-only', 'Source only'), ('target-only', 'Target only');
-      insert into tag_groups(id, name) values ('source', 'Source'), ('target', 'Target');
-      insert into tag_group_members(tag_id, group_id, sort_order) values
-        ('shared', 'source', 0), ('source-only', 'source', 1),
-        ('target-only', 'target', 4), ('shared', 'target', 5);
-    `);
-    const batches: Transaction[][] = [];
-    const undo: Transaction[][] = [];
-    const apply = sqlite.transaction((transactions: Transaction[]) => {
-      for (const transaction of transactions) {
-        if (transaction.model === "tag_group_member") {
-          if (transaction.kind === "create") {
-            db.insert(schema.tagGroupMembers).values(transaction.data).run();
-          } else if (transaction.kind === "delete") {
-            db.delete(schema.tagGroupMembers)
-              .where(
-                and(
-                  eq(schema.tagGroupMembers.tagId, transaction.before.tagId),
-                  eq(
-                    schema.tagGroupMembers.groupId,
-                    transaction.before.groupId,
-                  ),
-                ),
-              )
-              .run();
-          }
-        } else if (
-          transaction.model === "tag_group" &&
-          transaction.kind === "delete"
-        ) {
-          db.delete(schema.tagGroups)
-            .where(eq(schema.tagGroups.id, transaction.id))
+function setup() {
+  const sqlite = new Database(":memory:");
+  databases.push(sqlite);
+  initializePondSchema(sqlite, () => false);
+  const db = wrapSqlite(sqlite);
+  sqlite.exec(`
+    insert into tags(id, name) values
+      ('shared', 'Shared'), ('source-only', 'Source only'), ('target-only', 'Target only');
+    insert into tag_groups(id, name) values ('source', 'Source'), ('target', 'Target');
+    insert into tag_group_members(tag_id, group_id, sort_order) values
+      ('shared', 'source', 0), ('source-only', 'source', 1),
+      ('target-only', 'target', 4), ('shared', 'target', 5);
+  `);
+  const batches: Array<Array<Transaction>> = [];
+  const undo: Array<Array<Transaction>> = [];
+  const apply = sqlite.transaction((transactions: Array<Transaction>) => {
+    for (const transaction of transactions) {
+      if (transaction.model === "tag_group_member") {
+        if (transaction.kind === "create") {
+          db.insert(tagGroupMembers).values(transaction.data).run();
+        } else if (transaction.kind === "delete") {
+          db.delete(tagGroupMembers)
+            .where(
+              and(
+                eq(tagGroupMembers.tagId, transaction.before.tagId),
+                eq(tagGroupMembers.groupId, transaction.before.groupId),
+              ),
+            )
             .run();
         }
+      } else if (
+        transaction.model === "tag_group" &&
+        transaction.kind === "delete"
+      ) {
+        db.delete(tagGroups).where(eq(tagGroups.id, transaction.id)).run();
       }
-    });
-    const runtime = {
-      run: async <T>(operation: () => Promise<T>) => operation(),
-      getDb: async () => db,
-      async commit(transactions: Transaction[]) {
-        apply(transactions);
-        batches.push(transactions);
-      },
-      recordUndo: (transactions: Transaction[]) => undo.push(transactions),
-    };
-    return { db, runtime, batches, undo };
-  }
+    }
+  });
+  const runtime = {
+    run: async <T>(operation: () => Promise<T>) => operation(),
+    getDb: async () => db,
+    async commit(transactions: Array<Transaction>) {
+      apply(transactions);
+      batches.push(transactions);
+    },
+    recordUndo: (transactions: Array<Transaction>) => undo.push(transactions),
+  };
+  return { db, runtime, batches, undo };
+}
 
+describe.skipIf(!nativeSqliteAvailable())("tag group merge", () => {
   it("moves memberships and removes the source in one undoable commit", async () => {
     const fixture = setup();
 
@@ -190,20 +181,17 @@ describe.skipIf(!nativeSqliteAvailable())("tag group merge", () => {
     expect(fixture.batches).toHaveLength(1);
     expect(fixture.undo).toEqual(fixture.batches);
     expect(
-      fixture.db
-        .select({ name: schema.tagGroups.name })
-        .from(schema.tagGroups)
-        .all(),
+      fixture.db.select({ name: tagGroups.name }).from(tagGroups).all(),
     ).toEqual([{ name: "Target" }]);
     expect(
       fixture.db
         .select({
-          tagId: schema.tagGroupMembers.tagId,
-          sortOrder: schema.tagGroupMembers.sortOrder,
+          tagId: tagGroupMembers.tagId,
+          sortOrder: tagGroupMembers.sortOrder,
         })
-        .from(schema.tagGroupMembers)
-        .where(eq(schema.tagGroupMembers.groupId, "target"))
-        .orderBy(asc(schema.tagGroupMembers.sortOrder))
+        .from(tagGroupMembers)
+        .where(eq(tagGroupMembers.groupId, "target"))
+        .orderBy(asc(tagGroupMembers.sortOrder))
         .all(),
     ).toEqual([
       { tagId: "target-only", sortOrder: 4 },
@@ -225,7 +213,7 @@ describe.skipIf(!nativeSqliteAvailable())("tag group merge", () => {
     expect(
       fixture.db
         .select()
-        .from(schema.tagGroups)
+        .from(tagGroups)
         .all()
         .map((row) => row.name),
     ).toEqual(["Source", "Target"]);

@@ -19,7 +19,7 @@ const FacetSchema = z.object({
 }) satisfies z.ZodType<CaptureFacet>;
 
 /** Extras are stored JSON, so a facet from an older or hand-edited save is checked before use. */
-function facetsOf(capture: Capture): CaptureFacet[] {
+function facetsOf(capture: Capture): Array<CaptureFacet> {
   const raw = capture.extras?.facets;
   if (!Array.isArray(raw)) return [];
   return raw.flatMap((facet) => {
@@ -43,11 +43,14 @@ function toShortUrl(url: string): string {
 }
 
 /** Facet offsets are UTF-8 bytes into the record text. */
-function facetRuns(text: string, facets: readonly CaptureFacet[]): TextRun[] {
+function facetRuns(
+  text: string,
+  facets: ReadonlyArray<CaptureFacet>,
+): Array<TextRun> {
   const bytes = new TextEncoder().encode(text);
   const decode = (a: number, b: number) =>
     new TextDecoder().decode(bytes.subarray(a, b));
-  const out: TextRun[] = [];
+  const out: Array<TextRun> = [];
   let at = 0;
   for (const f of [...facets].sort((a, b) => a.start - b.start)) {
     if (f.start < at || f.end > bytes.length || f.end <= f.start) continue;
@@ -84,7 +87,7 @@ function author(a: Capture["author"], fallback: string): BlueskyAuthor {
 }
 
 function media(
-  list: readonly CaptureMedia[],
+  list: ReadonlyArray<CaptureMedia>,
   cardThumb: string | undefined,
 ): BlueskyMedia {
   const out: BlueskyMedia = { images: [] };
@@ -168,8 +171,9 @@ export function captureToBlueskyPost(
     stats: [],
     controls: { replies: "", reposts: "", likes: "" },
   };
-  if (facets.length === 0 && text.length <= 15 && SINGLE_EMOJI_RE.test(text))
+  if (facets.length === 0 && text.length <= 15 && SINGLE_EMOJI_RE.test(text)) {
     post.emojiOnly = true;
+  }
 
   const card = cardOf(capture.card);
   if (card) post.card = card;
@@ -188,8 +192,9 @@ export function captureToBlueskyPost(
 
   const m = capture.metrics ?? {};
   const stat = (n: number | undefined, one: string, other: string) => {
-    if (n)
+    if (n) {
       post.stats.push({ value: statCount(n), label: n === 1 ? one : other });
+    }
   };
   stat(m.retweets, "repost", "reposts");
   stat(m.quotes, "quote", "quotes");

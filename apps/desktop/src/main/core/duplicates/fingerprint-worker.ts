@@ -3,7 +3,8 @@ import { powerMonitor } from "electron";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { saveFile } from "../../paths";
-import { mediaWarmPauseReason, type ThermalState } from "../media-warm/policy";
+import { mediaWarmPauseReason } from "../media-warm/policy";
+import type { ThermalState } from "../media-warm/policy";
 import { binariesAvailable } from "../refresh/binaries";
 import { runFingerprintBatch } from "./fingerprint-batch";
 import { computeFingerprint } from "./fingerprint-compute";
@@ -12,9 +13,9 @@ import {
   deleteOrphanFingerprints,
 } from "./fingerprints";
 
-const PAUSE_POLL_MS = 5_000;
+const PAUSE_POLL_MS = 5000;
 const BATCH_GAP_MS = 250;
-const KICK_DELAY_MS = 2_000;
+const KICK_DELAY_MS = 2000;
 
 let started = false;
 let running = false;
@@ -109,8 +110,9 @@ export async function startFingerprintWorker(): Promise<void> {
       : "unknown";
   powerMonitor.on("on-ac", kickFingerprintWorker);
   powerMonitor.on("resume", kickFingerprintWorker);
-  if (process.platform === "darwin")
+  if (process.platform === "darwin") {
     powerMonitor.on("thermal-state-change", onThermalStateChange);
+  }
   if (binariesAvailable().ffmpeg) {
     const db = await getDb();
     clearUnavailableFingerprints(db.$raw);
@@ -124,6 +126,7 @@ export function stopFingerprintWorker(): void {
   timer = null;
   powerMonitor.off("on-ac", kickFingerprintWorker);
   powerMonitor.off("resume", kickFingerprintWorker);
-  if (process.platform === "darwin")
+  if (process.platform === "darwin") {
     powerMonitor.off("thermal-state-change", onThermalStateChange);
+  }
 }

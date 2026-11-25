@@ -16,10 +16,9 @@ export default ({ poly }, s) => [
 ];
 
 /** Each panel is drawn on the left and mirrored. */
-export const open = () => {
-  const panel = (f) => {
-    const x = (v) => (f > 0 ? v : 18 - v);
-    return `M ${x(3.375)} 2.375 V 13.375 A 2.25 2.25 0 0 ${f > 0 ? 0 : 1} ${x(5.625)} 15.625 H ${x(6.625)} C ${x(6.625)} 13.125 ${x(5.125)} 11.125 ${x(5.125)} 9.5 C ${x(5.125)} 7.875 ${x(7.375)} 5.5 ${x(7.375)} 2.375`;
-  };
-  return [rod, panel(1), panel(-1)];
+const panel = (f) => {
+  const x = (v) => (f > 0 ? v : 18 - v);
+  return `M ${x(3.375)} 2.375 V 13.375 A 2.25 2.25 0 0 ${f > 0 ? 0 : 1} ${x(5.625)} 15.625 H ${x(6.625)} C ${x(6.625)} 13.125 ${x(5.125)} 11.125 ${x(5.125)} 9.5 C ${x(5.125)} 7.875 ${x(7.375)} 5.5 ${x(7.375)} 2.375`;
 };
+
+export const open = () => [rod, panel(1), panel(-1)];

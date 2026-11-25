@@ -1,10 +1,11 @@
 import { runInNewContext } from "node:vm";
+import { isJsonValue } from "@pond/schema/json";
 import type { JsonObject } from "@pond/schema/json";
-import { describe, expect, it, vi } from "vitest";
-import {
-  type CollectionsReply,
-  type CollectionsResult,
-  readCollectionsReply,
+import { describe, expect, it } from "vitest";
+import { readCollectionsReply } from "../lib/collections-reply";
+import type {
+  CollectionsReply,
+  CollectionsResult,
 } from "../lib/collections-reply";
 import {
   buildInstagramCollectionsExpression,
@@ -24,7 +25,13 @@ interface Request {
   headers: Record<string, string>;
 }
 
+type PageModule =
+  | { token: string }
+  | { getViewerData_DO_NOT_USE: () => { username: string } }
+  | { params: { id: string } };
+
 interface Modules {
+  [name: string]: PageModule | undefined;
   DTSGInitialData?: { token: string };
   PolarisConfig?: { getViewerData_DO_NOT_USE: () => { username: string } };
   PolarisProfileSavedTabContentQuery$Parameters?: { params: { id: string } };
@@ -51,7 +58,7 @@ const SIGNED_IN: Page = {
 
 /** What the web app's Saved tab gets back from its collections query. */
 function savedTab(
-  nodes: JsonObject[],
+  nodes: Array<JsonObject>,
   page: { end_cursor?: string; has_next_page?: boolean } = {},
 ): Reply {
   return {
@@ -135,8 +142,8 @@ const onApiHost = (r: Request) => r.url.startsWith("https://i.instagram.com/");
 async function run(
   respond: (request: Request) => Reply | Error,
   page: Page = SIGNED_IN,
-): Promise<{ result: CollectionsReply; requests: Request[] }> {
-  const requests: Request[] = [];
+): Promise<{ result: CollectionsReply; requests: Array<Request> }> {
+  const requests: Array<Request> = [];
   const modules = new Map(Object.entries(page.modules ?? {}));
   const result = await runInNewContext(buildInstagramCollectionsExpression(), {
     URLSearchParams,
@@ -147,8 +154,9 @@ async function run(
       documentElement: { innerHTML: page.html ?? "<html></html>" },
     },
     require: (name: string) => {
-      if (!modules.has(name))
+      if (!modules.has(name)) {
         throw new Error(`Requiring unknown module "${name}"`);
+      }
       return modules.get(name);
     },
     setTimeout: (fn: () => void) => setTimeout(fn, 0),
@@ -353,7 +361,7 @@ describe("buildInstagramCollectionsExpression over GraphQL", () => {
 
 /** GraphQL replies can start with `for (;;);`. */
 async function runPrefixed() {
-  const requests: Request[] = [];
+  const requests: Array<Request> = [];
   const body = JSON.stringify(savedTab([RECIPES_NODE]).body);
   const result: CollectionsReply = await runInNewContext(
     buildInstagramCollectionsExpression(),
@@ -574,9 +582,11 @@ describe("buildInstagramCollectionsExpression when everything fails", () => {
     expect(detail).toMatch(
       /; www\.instagram\.com 200 x+; i\.instagram\.com 200 x+$/,
     );
-    expect(readCollectionsReply(JSON.parse(JSON.stringify(result)))).toEqual(
-      result,
-    );
+    const serialized = JSON.stringify(result);
+    const received: unknown = JSON.parse(serialized);
+    expect(
+      isJsonValue(received) ? readCollectionsReply(received) : null,
+    ).toEqual(result);
   });
 });
 
@@ -589,27 +599,37 @@ describe("listInstagramCollections", () => {
   };
 
   it("reads from the home page when that works", async () => {
-    const readAt = vi.fn(async () => ({ ok: true as const, collections: [] }));
+    const urls: Array<string> = [];
+    const readAt = async (url: string): Promise<CollectionsResult> => {
+      urls.push(url);
+      return { ok: true, collections: [] };
+    };
     await expect(listInstagramCollections(readAt)).resolves.toEqual({
       ok: true,
       collections: [],
     });
-    expect(readAt).toHaveBeenCalledTimes(1);
-    expect(readAt).toHaveBeenCalledWith("https://www.instagram.com/");
+    expect(urls).toEqual(["https://www.instagram.com/"]);
   });
 
   it("retries on your Saved page, where the current query ids load", async () => {
-    const readAt = vi
-      .fn<(url: string) => Promise<CollectionsResult>>()
-      .mockResolvedValueOnce(failed)
-      .mockResolvedValueOnce({ ok: true, collections: [] });
+    const replies: Array<CollectionsResult> = [
+      failed,
+      { ok: true, collections: [] },
+    ];
+    const urls: Array<string> = [];
+    const readAt = async (url: string): Promise<CollectionsResult> => {
+      urls.push(url);
+      const reply = replies.shift();
+      if (!reply) {
+        throw new Error(`unexpected read of ${url}`);
+      }
+      return reply;
+    };
     await expect(listInstagramCollections(readAt)).resolves.toEqual({
       ok: true,
       collections: [],
     });
-    expect(readAt).toHaveBeenLastCalledWith(
-      "https://www.instagram.com/oluwa.rafa/saved/",
-    );
+    expect(urls.at(-1)).toBe("https://www.instagram.com/oluwa.rafa/saved/");
   });
 
   it("doesn't retry a sign-out or a failure without a username", async () => {
@@ -621,9 +641,13 @@ describe("listInstagramCollections", () => {
       },
       { ok: false as const, reason: "unknown" as const },
     ]) {
-      const readAt = vi.fn(async () => result);
+      const urls: Array<string> = [];
+      const readAt = async (url: string): Promise<CollectionsResult> => {
+        urls.push(url);
+        return result;
+      };
       await expect(listInstagramCollections(readAt)).resolves.toEqual(result);
-      expect(readAt).toHaveBeenCalledTimes(1);
+      expect(urls).toHaveLength(1);
     }
   });
 });

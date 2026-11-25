@@ -81,8 +81,9 @@ export async function probeDownload(url: string): Promise<DownloadProbeResult> {
     result.probe.duration === null
   ) {
     const file = await probeLinkedFile(url);
-    if (file && !/^(audio|video)\//.test(file.mimeType ?? ""))
+    if (file && !/^(audio|video)\//.test(file.mimeType ?? "")) {
       return { ok: true, probe: file };
+    }
   }
   const existingSaveId = await findExistingSave(result.probe.url);
   return { ok: true, probe: { ...result.probe, existingSaveId } };
@@ -91,16 +92,16 @@ export async function probeDownload(url: string): Promise<DownloadProbeResult> {
 export function sampleDownloadFrames(
   url: string,
   count: number,
-): Promise<string[]> {
+): Promise<Array<string>> {
   return probeFrames(url, count);
 }
 
 export async function startDownloads(
-  urls: readonly string[],
+  urls: ReadonlyArray<string>,
   request: DownloadRequest,
 ): Promise<DownloadStartResult> {
-  const ids: string[] = [];
-  const failed: string[] = [];
+  const ids: Array<string> = [];
+  const failed: Array<string> = [];
   const single = urls.length === 1;
   for (const url of urls) {
     try {

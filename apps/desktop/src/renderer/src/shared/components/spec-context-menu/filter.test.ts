@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { menuLabels as labels } from "@/shared/test/menu-labels";
 import { filterMenuItems } from "./filter";
 
-const MENU: MenuItemSpec[] = [
+const MENU: Array<MenuItemSpec> = [
   { label: "Open Save", onClick: () => {} },
   { type: "separator" },
   {

@@ -50,8 +50,8 @@ describe("applyNavFilter", () => {
   });
 });
 
-it("keeps a split post's Saves and nothing else", () => {
-  const split = (id: string, sourceId: string) => ({
+function splitSave(id: string, sourceId: string) {
+  return {
     id,
     source: "instagram",
     tags: [],
@@ -61,8 +61,15 @@ it("keeps a split post's Saves and nothing else", () => {
       extractedAt: "2026-11-14T00:00:00.000Z",
       split: { sourceId, media: [0] },
     },
-  });
-  const saves = [split("a", "DAbC"), split("b", "dabc"), split("c", "DAbC")];
+  };
+}
+
+it("keeps a split post's Saves and nothing else", () => {
+  const saves = [
+    splitSave("a", "DAbC"),
+    splitSave("b", "dabc"),
+    splitSave("c", "DAbC"),
+  ];
   expect(
     applyNavFilter(saves, { kind: "post", key: "instagram:DAbC" }, {}, []).map(
       (save) => save.id,

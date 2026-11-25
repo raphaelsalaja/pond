@@ -5,14 +5,12 @@ import type { DownloadHealthRow } from "@/features/downloads/health";
 import { formatNumber } from "@/shared/lib/format";
 import { THIS_DEVICE } from "@/shared/lib/platform";
 import { healthActions } from "../actions";
-import {
-  categoryFact,
-  type HealthCategory,
-  type HealthCategoryId,
-  type HealthGroup,
-  type HealthStatus,
-  STATUS_LABELS,
-  statusBreakdown,
+import { categoryFact, STATUS_LABELS, statusBreakdown } from "../categories";
+import type {
+  HealthCategory,
+  HealthCategoryId,
+  HealthGroup,
+  HealthStatus,
 } from "../categories";
 import { HealthDrilldown } from "../drilldown";
 import { STATUS_TONES } from "../tones";
@@ -61,7 +59,7 @@ function CategoryRow({
   onReview,
 }: {
   category: HealthCategory;
-  downloads: readonly DownloadHealthRow[];
+  downloads: ReadonlyArray<DownloadHealthRow>;
   onReview: () => void;
 }) {
   const qc = useQueryClient();
@@ -144,7 +142,7 @@ export function HealthCategoryList({ group }: { group: HealthGroup }) {
       </Settings.List>
       <HealthDrilldown
         category={active}
-        open={open && active != null}
+        open={open && active !== null}
         onOpenChange={setOpen}
         downloads={downloads}
       />

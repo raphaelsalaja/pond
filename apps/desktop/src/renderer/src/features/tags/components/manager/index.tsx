@@ -66,7 +66,8 @@ export function TagsSection() {
     (row): row is Extract<TagsRowData, { kind: "tag" }> => row.kind === "tag",
   );
 
-  const hasList = creating != null || groups.length > 0 || ungrouped.length > 0;
+  const hasList =
+    creating !== null || groups.length > 0 || ungrouped.length > 0;
 
   return (
     <DataTable.Provider

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { electronNodeInvocation } from "./with-electron-node.mjs";
 
-test("runs the script as Node inside Electron", () => {
+void test("runs the script as Node inside Electron", () => {
   const invocation = electronNodeInvocation(
     "electron.exe",
     ["./node_modules/drizzle-kit/bin.cjs", "generate"],

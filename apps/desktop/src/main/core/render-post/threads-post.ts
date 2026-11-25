@@ -24,8 +24,8 @@ function prettifyUrl(url: string): string {
   return bare.length > 30 ? `${bare.slice(0, 30)}\u2026` : bare;
 }
 
-function textRuns(text: string): TextRun[] {
-  const out: TextRun[] = [];
+function textRuns(text: string): Array<TextRun> {
+  const out: Array<TextRun> = [];
   let last = 0;
   for (const match of text.matchAll(ENTITY)) {
     const idx = match.index ?? 0;
@@ -62,17 +62,28 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+const two = (n: number) => String(n).padStart(2, "0");
+
 /** The post header's age at render time: `42m`, `18h`, `3d`, then `11/18/26` from a week on. */
 function relativeTime(value: string | undefined, now = Date.now()): string {
   if (!value) return "";
   const then = new Date(value);
   const ms = now - then.getTime();
-  if (!Number.isFinite(ms)) return "";
-  if (ms < MINUTE) return `${Math.max(0, Math.floor(ms / 1000))}s`;
-  if (ms < HOUR) return `${Math.floor(ms / MINUTE)}m`;
-  if (ms < DAY) return `${Math.floor(ms / HOUR)}h`;
-  if (ms < 7 * DAY) return `${Math.floor(ms / DAY)}d`;
-  const two = (n: number) => String(n).padStart(2, "0");
+  if (!Number.isFinite(ms)) {
+    return "";
+  }
+  if (ms < MINUTE) {
+    return `${Math.max(0, Math.floor(ms / 1000))}s`;
+  }
+  if (ms < HOUR) {
+    return `${Math.floor(ms / MINUTE)}m`;
+  }
+  if (ms < DAY) {
+    return `${Math.floor(ms / HOUR)}h`;
+  }
+  if (ms < 7 * DAY) {
+    return `${Math.floor(ms / DAY)}d`;
+  }
   return `${two(then.getMonth() + 1)}/${two(then.getDate())}/${two(then.getFullYear() % 100)}`;
 }
 
@@ -86,7 +97,7 @@ function author(a: TweetCardAuthor): ThreadsAuthor {
   return out;
 }
 
-function media(list: TweetCardMedia[] | undefined): ThreadsMedia[] {
+function media(list: Array<TweetCardMedia> | undefined): Array<ThreadsMedia> {
   return (list ?? []).map((m) => {
     const out: ThreadsMedia = {};
     const src = m.type === "video" ? m.posterUrl : m.url;
@@ -109,7 +120,7 @@ function nested(data: TweetCardData, plain: boolean): ThreadsNested {
   };
 }
 
-const METRICS: { key: keyof TweetCardMetrics; icon: string }[] = [
+const METRICS: Array<{ key: keyof TweetCardMetrics; icon: string }> = [
   { key: "likes", icon: "threads-like" },
   { key: "replies", icon: "threads-reply" },
   { key: "retweets", icon: "threads-repost" },

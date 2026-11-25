@@ -1,12 +1,13 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
 
 interface DribbbleTextNode {
   text?: string;
-  content?: DribbbleTextNode[];
+  content?: Array<DribbbleTextNode>;
 }
 
 interface DribbbleBlock {
@@ -29,7 +30,7 @@ interface DribbbleShotData {
     url?: string;
     avatarUrl?: string;
   };
-  contentBlocks?: { results?: DribbbleBlock[] };
+  contentBlocks?: { results?: Array<DribbbleBlock> };
 }
 
 declare global {
@@ -62,8 +63,12 @@ async function inPageDribbbleHarvest(): Promise<DribbbleShotPage | null> {
   let shot: DribbbleShotData | undefined;
   while (Date.now() < deadline) {
     shot = globalThis.Dribbble?.JsConfig?.shotData;
-    if (shot) break;
-    await new Promise((r) => setTimeout(r, 250));
+    if (shot) {
+      break;
+    }
+    await new Promise((r) => {
+      setTimeout(r, 250);
+    });
   }
   const meta = (key: string): string =>
     document

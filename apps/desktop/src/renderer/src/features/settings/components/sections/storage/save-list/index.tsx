@@ -9,14 +9,16 @@ import styles from "./styles.module.css";
 
 export interface SaveSelection {
   selected: ReadonlySet<string>;
-  chosen: LargestSave[];
+  chosen: Array<LargestSave>;
   toggle: (id: string, checked: boolean) => void;
   setAll: (checked: boolean) => void;
   clear: () => void;
 }
 
 /** Selection survives filtering, but actions only ever see the Saves still on screen. */
-export function useSaveSelection(rows: readonly LargestSave[]): SaveSelection {
+export function useSaveSelection(
+  rows: ReadonlyArray<LargestSave>,
+): SaveSelection {
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
@@ -37,7 +39,7 @@ export function useSaveSelection(rows: readonly LargestSave[]): SaveSelection {
 }
 
 interface SelectionProps extends React.ComponentPropsWithoutRef<"div"> {
-  rows: readonly LargestSave[];
+  rows: ReadonlyArray<LargestSave>;
   selection: SaveSelection;
 }
 
@@ -74,7 +76,7 @@ function Selection({
 }
 
 interface ItemsProps extends React.ComponentPropsWithoutRef<"ol"> {
-  rows: readonly LargestSave[];
+  rows: ReadonlyArray<LargestSave>;
   selection: SaveSelection;
 }
 

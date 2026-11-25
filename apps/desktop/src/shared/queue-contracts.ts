@@ -68,7 +68,7 @@ export interface QueueQueryInputs {
   "queue.sourceGates": EmptyInput;
   "queue.generations": EmptyInput;
   "queue.attempts": { saveId: string; limit?: number };
-  "queue.retry": { ids?: string[] };
+  "queue.retry": { ids?: Array<string> };
   "queue.generation.pause": { id: string };
   "queue.generation.resume": { id: string };
   "queue.generation.cancel": { id: string };
@@ -82,9 +82,9 @@ export interface QueueQueryInputs {
 
 export interface QueueQueryResults {
   "queue.summary": QueueSummary;
-  "queue.sourceGates": QueueSourceGate[];
-  "queue.generations": QueueGeneration[];
-  "queue.attempts": QueueAttempt[];
+  "queue.sourceGates": Array<QueueSourceGate>;
+  "queue.generations": Array<QueueGeneration>;
+  "queue.attempts": Array<QueueAttempt>;
   "queue.retry": {
     generationId: string | null;
     queued: number;

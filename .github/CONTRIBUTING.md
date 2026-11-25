@@ -3,7 +3,7 @@
 ## General
 
 - **Node** 24 and **pnpm** 11.27.0 (see `.nvmrc` and `package.json`).
-- **Style**: [Biome](https://biomejs.dev/) handles formatting; `pnpm lint` checks the repository standards, including the anti-slop plugin rules in `tools/biome/anti-slop`.
+- **Style**: [Oxfmt](https://oxc.rs/docs/guide/usage/formatter) handles formatting; `pnpm lint` runs [Oxlint](https://oxc.rs/docs/guide/usage/linter) with [`@cloudflare/oxlint-config`](https://github.com/cloudflare/oxlint-config) and the [Landmines](https://github.com/interfere-inc/landmines) recommended test rules, and checks formatting.
 - **Commits**: [Conventional Commits](https://www.conventionalcommits.org/) enforced by commitlint + husky.
 - **Checks**: run `pnpm check` and `pnpm build` before opening a PR. CI also verifies generated files, and it runs the build, tests, and desktop smoke test on Ubuntu x64 and ARM, Windows, and macOS.
 - **PRs**: Keep scope focused; link issues when relevant. Lay out the body and proof as [pull requests](PULL_REQUESTS.md) describes.
@@ -14,7 +14,7 @@ Read [Code standards](#code-standards) below for naming, interfaces, React, type
 
 Turborepo owns the build, typecheck, test, generation-check, and repository verification graphs. A transit task makes source-first package changes invalidate consuming apps without serializing unrelated work. Package-level `turbo.json` files define framework inputs and reusable outputs.
 
-`pnpm check` runs Biome, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
+`pnpm check` runs Oxlint, Oxfmt, Knip, architecture checks, non-mutating generated-file checks, type checks, and offline tests in one cacheable graph. `pnpm architecture:check` runs the focused architecture task. `pnpm build` verifies production bundles and performance budgets. `pnpm lint:fix` applies safe fixes explicitly; `pnpm format` formats files. Pre-commit checks never rewrite your working tree.
 
 Run `pnpm generate` only when you intend to update tracked generated files. Run `pnpm generate:check` to verify them without writing. CI runs both the non-mutating checks and a generated diff gate.
 
@@ -43,7 +43,7 @@ A scenario exports `async function run(ctx)`; `proof-scenarios/library.cjs` show
 
 ## Code standards
 
-These standards apply to hand-written repository code. Generated output follows its generator; fix the generator when output violates a rule. Check in the corresponding output when the required generation tools are available. Biome owns formatting and linting, including the additional type and test rules in its anti-slop plugin. It is a required check.
+These standards apply to hand-written repository code. Generated output follows its generator; fix the generator when output violates a rule. Check in the corresponding output when the required generation tools are available. Oxfmt owns formatting and Oxlint owns linting, including the type-aware rules in `@cloudflare/oxlint-config`. Both are required checks. Rules listed in `baseline` in `oxlint.config.ts` are off until the codebase passes them; re-enable one per commit with its fixes.
 
 ### Naming and files
 

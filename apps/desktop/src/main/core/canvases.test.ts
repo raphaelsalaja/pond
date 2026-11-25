@@ -12,7 +12,7 @@ import {
   updateCanvas,
 } from "./canvases";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 afterEach(async () => {
   await Promise.all(
     roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
@@ -73,12 +73,12 @@ it("lays a large set of Saves out in a roughly square grid", async () => {
 
 it("stops adding Saves once the Canvas is full instead of writing an unreadable file", async () => {
   const root = await library();
-  const ids = Array.from({ length: 5_003 }, (_, index) => `save-${index}`);
-  const canvas = createCanvas({ saveIds: ids.slice(0, 4_999) }, root, 1);
+  const ids = Array.from({ length: 5003 }, (_, index) => `save-${index}`);
+  const canvas = createCanvas({ saveIds: ids.slice(0, 4999) }, root, 1);
 
   const full = addSavesToCanvas(canvas.id, ids, root, 2);
-  expect(full.items).toHaveLength(5_000);
-  expect(readCanvas(canvas.id, root)?.items).toHaveLength(5_000);
+  expect(full.items).toHaveLength(5000);
+  expect(readCanvas(canvas.id, root)?.items).toHaveLength(5000);
   expect(addSavesToCanvas(canvas.id, ["another"], root, 3).updatedAt).toBe(2);
 });
 
@@ -131,19 +131,20 @@ it("keeps the stored name when content is updated and rejects connectors to miss
   expect(readCanvas(canvas.id, root)?.items).toEqual([note]);
 });
 
+const blankNote = (id: string) => ({
+  kind: "note",
+  id,
+  x: 0,
+  y: 0,
+  width: 200,
+  height: 200,
+  text: "",
+  color: "yellow",
+});
+
 it("reads connectors saved before they had a style", async () => {
   const root = await library();
   const canvas = createCanvas({}, root, 1);
-  const note = (id: string) => ({
-    kind: "note",
-    id,
-    x: 0,
-    y: 0,
-    width: 200,
-    height: 200,
-    text: "",
-    color: "yellow",
-  });
   await writeFile(
     join(root, "canvases", `${canvas.id}.json`),
     JSON.stringify({
@@ -151,7 +152,7 @@ it("reads connectors saved before they had a style", async () => {
       updatedAt: 1,
       data: {
         ...canvas,
-        items: [note("a"), note("b")],
+        items: [blankNote("a"), blankNote("b")],
         connectors: [
           { id: "line", from: "a", to: "b", fromSide: "right", toSide: "left" },
         ],

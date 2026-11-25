@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { SOURCES, type Source } from "./source-ids";
+import { SOURCES } from "./source-ids";
+import type { Source } from "./source-ids";
 import type { ExternalSource } from "./sources";
 
 /** Sites where the browser extension can also save what you like or upvote, not only what you save. */
@@ -11,7 +12,7 @@ export const EXTENSION_LIKE_SOURCES = [
   "reddit",
   "threads",
   "substack",
-] as const satisfies readonly ExternalSource[];
+] as const satisfies ReadonlyArray<ExternalSource>;
 
 const sourceFlags = z.partialRecord(z.enum(SOURCES), z.boolean()).catch({});
 

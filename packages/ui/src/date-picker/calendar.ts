@@ -46,7 +46,7 @@ export function clampDay(date: Date, min: Date | null, max: Date | null) {
 }
 
 /** Six full weeks starting on `weekStart` (0 is Sunday), so the grid never changes height. */
-export function monthGrid(month: Date, weekStart: number): Date[] {
+export function monthGrid(month: Date, weekStart: number): Array<Date> {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
   const offset = (first.getDay() - weekStart + 7) % 7;
   const start = addDays(first, -offset);

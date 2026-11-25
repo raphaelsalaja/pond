@@ -1,7 +1,9 @@
 import type { ExtensionSettings } from "@pond/schema/browser-extension";
 import type { SessionImportResponse } from "@pond/schema/session";
-import { SOURCES, type Source } from "@pond/schema/source-ids";
-import { at, isRecord, type JsonValue } from "./json";
+import { SOURCES } from "@pond/schema/source-ids";
+import type { Source } from "@pond/schema/source-ids";
+import { at, isRecord } from "./json";
+import type { JsonValue } from "./json";
 
 export const POND_EVENT = "pond:capture";
 
@@ -93,7 +95,7 @@ export const DEFAULT_SETTINGS: PondSettings = {
   theme: "library",
 };
 
-const THEMES: readonly ThemePreference[] = [
+const THEMES: ReadonlyArray<ThemePreference> = [
   "library",
   "system",
   "light",

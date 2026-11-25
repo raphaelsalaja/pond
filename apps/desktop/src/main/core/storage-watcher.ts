@@ -65,8 +65,8 @@ export async function applyStorageWatcherPrefs(): Promise<void> {
   let prefs: Prefs;
   try {
     prefs = await getPrefs();
-  } catch (err) {
-    log.warn("[pond storage-watcher] prefs read failed", err);
+  } catch (error) {
+    log.warn("[pond storage-watcher] prefs read failed", error);
     return;
   }
   const cfg = prefs.storage;
@@ -114,8 +114,8 @@ async function runTick(): Promise<void> {
   let prefs: Prefs;
   try {
     prefs = await getPrefs();
-  } catch (err) {
-    log.warn("[pond storage-watcher] tick prefs read failed", err);
+  } catch (error) {
+    log.warn("[pond storage-watcher] tick prefs read failed", error);
     return;
   }
   const cfg = prefs.storage;
@@ -128,8 +128,8 @@ async function runTick(): Promise<void> {
   let snapshot: Awaited<ReturnType<typeof getStorageSnapshot>>;
   try {
     snapshot = await getStorageSnapshot();
-  } catch (err) {
-    log.warn("[pond storage-watcher] snapshot failed", err);
+  } catch (error) {
+    log.warn("[pond storage-watcher] snapshot failed", error);
     return;
   }
 
@@ -142,9 +142,11 @@ async function runTick(): Promise<void> {
 
   let next: StorageGuardState = "ok";
   if (cap !== null) {
-    if (snapshot.pondBytes >= cap) next = "exceeded";
-    else if (warnBytes !== null && snapshot.pondBytes >= warnBytes)
+    if (snapshot.pondBytes >= cap) {
+      next = "exceeded";
+    } else if (warnBytes !== null && snapshot.pondBytes >= warnBytes) {
       next = "warn";
+    }
   }
 
   applyAction(next, cfg.action);
@@ -184,8 +186,8 @@ function applyAction(state: StorageGuardState, action: StorageGuardAction) {
       log.info("[pond storage-watcher] cap exceeded, pausing source syncs");
       try {
         cancelAllSyncs();
-      } catch (err) {
-        log.warn("[pond storage-watcher] cancelAllSyncs threw", err);
+      } catch (error) {
+        log.warn("[pond storage-watcher] cancelAllSyncs threw", error);
       }
     }
     syncBlocked = true;

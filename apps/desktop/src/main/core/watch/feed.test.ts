@@ -157,16 +157,23 @@ it("reports a network failure", async () => {
 
 it("passes cancellation to the request and omits browser credentials", async () => {
   const controller = new AbortController();
-  const fetchPage = vi.fn<FetchWatchPage>(async (_url, init) => {
-    expect(init.credentials).toBe("omit");
+  const requests: Array<{
+    credentials: RequestCredentials | undefined;
+    aborted: boolean | undefined;
+  }> = [];
+  const fetchPage: FetchWatchPage = async (_url, init) => {
     controller.abort();
-    expect(init.signal?.aborted).toBe(true);
+    requests.push({
+      credentials: init.credentials,
+      aborted: init.signal?.aborted,
+    });
     throw new Error("Stopped");
-  });
+  };
   expect(await readFeed(ADDRESS, fetchPage, controller.signal)).toEqual({
     ok: false,
     reason: "timeout",
   });
+  expect(requests).toEqual([{ credentials: "omit", aborted: true }]);
 });
 
 it("rejects a feed that exceeds the response limit", async () => {

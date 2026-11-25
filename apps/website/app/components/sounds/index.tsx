@@ -1,6 +1,8 @@
 "use client";
 
-import { SOUND_PATCH, type UiSoundName } from "@pond/ui/sounds";
+import { isElement } from "@pond/ui/dom";
+import { SOUND_PATCH } from "@pond/ui/sounds";
+import type { UiSoundName } from "@pond/ui/sounds";
 import { ensureReady } from "@web-kits/audio";
 import { useEffect } from "react";
 
@@ -13,14 +15,21 @@ function cueFor(control: Element): UiSoundName {
   return control.hasAttribute("data-variant") ? "tap" : "soft";
 }
 
+/** A click sound is decoration, so a cue the browser won't play is dropped. */
+function skipCue() {}
+
 export function Sounds() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     let last = 0;
 
     const onPointerDown = (event: PointerEvent) => {
-      if (event.button !== 0 || reduce.matches) return;
-      if (!(event.target instanceof Element)) return;
+      if (event.button !== 0 || reduce.matches) {
+        return;
+      }
+      if (!isElement(event.target)) {
+        return;
+      }
       const control = event.target.closest(CONTROL);
       if (!control) return;
 
@@ -33,7 +42,7 @@ export function Sounds() {
       const detune = (Math.random() - 0.5) * 28;
       void ensureReady()
         .then(() => SOUND_PATCH.play(name, { detune, volume }))
-        .catch(() => {});
+        .catch(skipCue);
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);

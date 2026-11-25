@@ -1,6 +1,8 @@
-import { BrandTile, Button, type ButtonProps, Checkbox } from "@pond/ui";
+import { BrandTile, Button, Checkbox } from "@pond/ui";
+import type { ButtonProps } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import React, { memo, type ReactNode } from "react";
+import React, { memo } from "react";
+import type { ReactNode } from "react";
 import type { SaveCardOverlayModel } from "@/features/saves/components/card/model";
 import styles from "./styles.module.css";
 
@@ -94,18 +96,24 @@ function Frame({ className, ...props }: React.ComponentPropsWithoutRef<"div">) {
   return <div className={cn(styles.frame, className)} {...props} />;
 }
 
-interface MetaProps
-  extends Omit<React.ComponentPropsWithoutRef<"div">, "title"> {
+interface MetaProps extends Omit<
+  React.ComponentPropsWithoutRef<"div">,
+  "title"
+> {
   title?: ReactNode;
   time?: ReactNode;
 }
 
 function Meta({ title, time, className, ...props }: MetaProps) {
-  if (title == null && time == null) return null;
+  const hasTitle = title !== null && title !== undefined;
+  const hasTime = time !== null && time !== undefined;
+  if (!hasTitle && !hasTime) {
+    return null;
+  }
   return (
     <div className={cn(styles.meta, className)} {...props}>
-      {title != null ? <span className={styles.title}>{title}</span> : null}
-      {time != null ? <span className={styles.time}>{time}</span> : null}
+      {hasTitle ? <span className={styles.title}>{title}</span> : null}
+      {hasTime ? <span className={styles.time}>{time}</span> : null}
     </div>
   );
 }
@@ -121,7 +129,7 @@ function Source({
   return <span className={cn(styles.source, className)} {...props} />;
 }
 
-interface CountProps extends React.ComponentPropsWithoutRef<"span"> {}
+type CountProps = React.ComponentPropsWithoutRef<"span">;
 
 function Count({ className, role, ...props }: CountProps) {
   return (

@@ -98,8 +98,8 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
   const [title, setTitle] = useState(draft.title);
   const [notes, setNotes] = useState("");
   const [rating, setRating] = useState(0);
-  const [tags, setTags] = useState<string[]>([]);
-  const [folderIds, setFolderIds] = useState<string[]>([]);
+  const [tags, setTags] = useState<Array<string>>([]);
+  const [folderIds, setFolderIds] = useState<Array<string>>([]);
   const [fishId, setFishId] = useState<string | null>(null);
   const name = useRef<HTMLInputElement>(null);
 
@@ -129,8 +129,9 @@ export function Details({ draft, library, container, onFinish }: DetailsProps) {
             return name.current;
           }}
           onKeyDown={(event) => {
-            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey))
+            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey)) {
               return;
+            }
             event.preventDefault();
             save();
           }}

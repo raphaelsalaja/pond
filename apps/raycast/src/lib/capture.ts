@@ -78,7 +78,7 @@ export async function findUrl(): Promise<FoundUrl | null> {
 }
 
 export interface SaveOptions {
-  tags?: string[];
+  tags?: Array<string>;
   folderId?: string;
 }
 
@@ -109,8 +109,18 @@ export async function saveWithToast(
     const result = await enqueue(target, options);
     toast.style = Toast.Style.Success;
     toast.title = savedTitle(result, options);
-    toast.primaryAction = { title: "Open in Pond", onAction: () => open(saveLink({ id: result.id })) };
-    toast.secondaryAction = { title: "Copy URL", onAction: () => Clipboard.copy(target) };
+    toast.primaryAction = {
+      title: "Open in Pond",
+      onAction: () => {
+        void open(saveLink({ id: result.id }));
+      },
+    };
+    toast.secondaryAction = {
+      title: "Copy URL",
+      onAction: () => {
+        void Clipboard.copy(target);
+      },
+    };
     return result;
   } catch (error) {
     failToast(toast, toError(error), "Couldn't save the URL");

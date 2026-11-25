@@ -28,8 +28,9 @@ export function createDragHaptics(perform: PerformHaptic = performNative) {
       const key = target ? `${target.id}:${target.kind}` : null;
       if (key === last) return;
       last = key;
-      if (target)
+      if (target) {
         perform(target.kind === "into" ? "level-change" : "alignment");
+      }
     },
     drop(placed: boolean): void {
       if (active && placed) perform("generic");

@@ -1,6 +1,8 @@
 import { Button, Dialog, Logo, Progress, Shimmer } from "@pond/ui";
 import type { QueryResult } from "@shared/query-contracts";
-import { type UpdateNotice, UpdateNoticeSchema } from "@shared/update-notice";
+import { UpdateNoticeSchema } from "@shared/update-notice";
+import type { UpdateNotice } from "@shared/update-notice";
+import log from "electron-log/renderer";
 import { useEffect, useRef, useState } from "react";
 import { updateScreen } from "./screen";
 import {
@@ -9,10 +11,10 @@ import {
   readUpdateDialog,
   requestUpdateCheck,
   showUpdateRestarting,
-  type UpdateDialogView,
 } from "./session";
-import styles from "./styles.module.css";
+import type { UpdateDialogView } from "./session";
 import { useUpdateDialog } from "./use-update-dialog";
+import styles from "./styles.module.css";
 
 type UpdateAction = "updates.download" | "updates.install";
 type UpdateActionResult = QueryResult<UpdateAction>;
@@ -29,7 +31,7 @@ const defaultSubscriptionDependencies: UpdateNoticeSubscriptionDependencies = {
     return UpdateNoticeSchema.nullable().parse(result);
   },
   subscribe: (listener) => window.pond.onUpdateNotice(listener),
-  warn: (error) => console.warn("[pond updater] replay failed", error),
+  warn: (error) => log.warn("[pond updater] replay failed", error),
 };
 
 const FALLBACK_ERRORS = {
@@ -112,8 +114,9 @@ export function UpdateDialog() {
     if (
       !readUpdateDialog().open ||
       viewKey(readUpdateDialog().view) !== started
-    )
+    ) {
       return;
+    }
     if (!failure && action === "updates.install") {
       showUpdateRestarting(view.notice.version);
       return;
@@ -233,9 +236,9 @@ export function subscribeToUpdateNotices(
     .then((notice) => {
       if (active && notice) presentOnce(notice);
     })
-    .catch((error) => {
+    .catch((cause: unknown) => {
       dependencies.warn(
-        error instanceof Error ? error : new Error("Unknown updater error"),
+        cause instanceof Error ? cause : new Error("Unknown updater error"),
       );
     });
   return () => {

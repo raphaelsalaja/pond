@@ -1,13 +1,12 @@
 import { clsx as cn } from "clsx";
-import {
-  type ComponentPropsWithoutRef,
-  forwardRef,
-  type ReactNode,
-} from "react";
+import { forwardRef } from "react";
+import type { ComponentPropsWithoutRef, ReactNode } from "react";
 import styles from "./styles.module.css";
 
-interface HeaderProps
-  extends Omit<ComponentPropsWithoutRef<"header">, "title"> {
+interface HeaderProps extends Omit<
+  ComponentPropsWithoutRef<"header">,
+  "title"
+> {
   title: ReactNode;
 }
 

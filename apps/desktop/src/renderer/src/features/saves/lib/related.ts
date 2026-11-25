@@ -8,10 +8,10 @@ const TTL_MS = 30_000;
 const LIMIT = 12;
 const MAX_ENTRIES = 32;
 
-const pending = new Map<string, Promise<RelatedItem[]>>();
-const settled = new Map<string, { items: RelatedItem[]; at: number }>();
+const pending = new Map<string, Promise<Array<RelatedItem>>>();
+const settled = new Map<string, { items: Array<RelatedItem>; at: number }>();
 
-export function peekRelated(id: string): RelatedItem[] | null {
+export function peekRelated(id: string): Array<RelatedItem> | null {
   const entry = settled.get(id);
   if (!entry) return null;
   if (Date.now() - entry.at > TTL_MS) {
@@ -21,7 +21,10 @@ export function peekRelated(id: string): RelatedItem[] | null {
   return entry.items;
 }
 
-export function loadRelated(id: string, fresh = false): Promise<RelatedItem[]> {
+export function loadRelated(
+  id: string,
+  fresh = false,
+): Promise<Array<RelatedItem>> {
   const cached = fresh ? null : peekRelated(id);
   if (cached) return Promise.resolve(cached);
   const inflight = pending.get(id);

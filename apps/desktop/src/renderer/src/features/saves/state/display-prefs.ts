@@ -31,7 +31,9 @@ function readKey(key: DisplayPrefKey): boolean {
   if (!globalThis.window) return DISPLAY_DEFAULTS[key];
   try {
     const raw = window.localStorage.getItem(STORAGE_KEYS[key]);
-    if (raw == null) return DISPLAY_DEFAULTS[key];
+    if (raw === null) {
+      return DISPLAY_DEFAULTS[key];
+    }
     return raw === "1";
   } catch {
     return DISPLAY_DEFAULTS[key];
@@ -54,7 +56,9 @@ export function setDisplayPref(key: DisplayPrefKey, value: boolean): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(STORAGE_KEYS[key], value ? "1" : "0");
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the pref still applies for this session. */
+    }
   }
   store.setState((s) => (s[key] === value ? s : { ...s, [key]: value }));
 }
@@ -100,7 +104,7 @@ function readItemInfo(): ItemInfo {
     const visible = window.localStorage.getItem(ITEM_INFO_VISIBLE_KEY);
     return {
       field: readItemInfoField(field),
-      visible: visible == null ? readKey("date") : visible === "1",
+      visible: visible === null ? readKey("date") : visible === "1",
     };
   } catch {
     return { field: "created", visible: true };
@@ -117,7 +121,9 @@ export function setItemInfoField(field: ItemInfoField): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(ITEM_INFO_FIELD_KEY, field);
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the pref still applies for this session. */
+    }
   }
   itemInfoStore.setState((info) =>
     info.field === field ? info : { ...info, field },
@@ -128,7 +134,9 @@ export function setItemInfoVisible(visible: boolean): void {
   if (globalThis.window) {
     try {
       window.localStorage.setItem(ITEM_INFO_VISIBLE_KEY, visible ? "1" : "0");
-    } catch {}
+    } catch {
+      /** Storage can be full or blocked; the pref still applies for this session. */
+    }
   }
   itemInfoStore.setState((info) =>
     info.visible === visible ? info : { ...info, visible },

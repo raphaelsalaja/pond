@@ -122,8 +122,9 @@ export function renameRecentLibrary(
 export async function listRecentLibraries(file: string, activePath: string) {
   const active = resolve(activePath);
   const history = readHistory(file);
-  if (!history.some((entry) => entry.path === active))
+  if (!history.some((entry) => entry.path === active)) {
     history.unshift({ path: active, lastOpened: 0 });
+  }
   return Promise.all(
     history
       .filter((entry) => !entry.hidden)

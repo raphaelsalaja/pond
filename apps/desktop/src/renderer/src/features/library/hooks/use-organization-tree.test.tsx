@@ -1,4 +1,5 @@
-import { act, type ComponentProps, memo, useState } from "react";
+import { act, memo, useState } from "react";
+import type { ComponentProps } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import type { LibraryNav } from "@/shared/lib/library-nav";
@@ -15,34 +16,36 @@ function Fixture({
   navigation,
   onSelection = () => {},
 }: {
-  removed?: string[];
+  removed?: Array<string>;
   navigation?: LibraryNav;
-  onSelection?: (ids: string[]) => void;
+  onSelection?: (ids: Array<string>) => void;
 }) {
   const [open, setOpen] = useState(true);
-  const tree = useOrganizationTree(
+  const { root: treeRoot, ...tree } = useOrganizationTree(
     entries.filter((entry) => !removed.includes(entry.id)),
     onSelection,
     navigation,
   );
   return (
-    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
-      {entries
-        .filter((entry) => open || entry.id !== "b")
-        .map((entry) => (
-          <button
-            type="button"
-            key={entry.id}
-            {...tree.rowProps(
-              entry.id,
-              entry.parentId ? 1 : 0,
-              entry.id === "a" ? open : undefined,
-              () => setOpen((value) => !value),
-            )}
-          >
-            {entry.name}
-          </button>
-        ))}
+    <div ref={treeRoot} role="tree" aria-label="Folders" aria-multiselectable>
+      {entries.flatMap((entry) =>
+        open || entry.id !== "b"
+          ? [
+              <button
+                type="button"
+                key={entry.id}
+                {...tree.rowProps(
+                  entry.id,
+                  entry.parentId ? 1 : 0,
+                  entry.id === "a" ? open : undefined,
+                  () => setOpen((value) => !value),
+                )}
+              >
+                {entry.name}
+              </button>,
+            ]
+          : [],
+      )}
     </div>
   );
 }
@@ -117,7 +120,7 @@ it("opens a context menu on an unselected row without selecting it", async () =>
 });
 it("clears the selection when navigation moves elsewhere", async () => {
   let navigation: LibraryNav = { kind: "all" };
-  const onSelection = (ids: string[]) => {
+  const onSelection = (ids: Array<string>) => {
     navigation = { kind: "folder", id: ids.join(",") };
   };
   const render = () =>
@@ -162,12 +165,12 @@ function VirtualFixture({
   expose,
   mounted = ["a", "b"],
 }: {
-  onSelection?: (ids: string[]) => void;
-  expose?: (cursor: string | null, selected: string[]) => void;
-  mounted?: string[];
+  onSelection?: (ids: Array<string>) => void;
+  expose?: (cursor: string | null, selected: Array<string>) => void;
+  mounted?: Array<string>;
 }) {
   const [open, setOpen] = useState(true);
-  const tree = useOrganizationTree(
+  const { root: treeRoot, ...tree } = useOrganizationTree(
     entries,
     onSelection,
     undefined,
@@ -175,32 +178,32 @@ function VirtualFixture({
   );
   expose?.(tree.cursor, tree.selected);
   return (
-    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
-      {entries
-        .filter(
-          (entry) => (open || entry.id !== "b") && mounted.includes(entry.id),
-        )
-        .map((entry) => (
-          <button
-            type="button"
-            key={entry.id}
-            {...tree.rowProps(
-              entry.id,
-              entry.parentId ? 1 : 0,
-              entry.id === "a" ? open : undefined,
-              () => setOpen((value) => !value),
-            )}
-          >
-            {entry.name}
-          </button>
-        ))}
+    <div ref={treeRoot} role="tree" aria-label="Folders" aria-multiselectable>
+      {entries.flatMap((entry) =>
+        (open || entry.id !== "b") && mounted.includes(entry.id)
+          ? [
+              <button
+                type="button"
+                key={entry.id}
+                {...tree.rowProps(
+                  entry.id,
+                  entry.parentId ? 1 : 0,
+                  entry.id === "a" ? open : undefined,
+                  () => setOpen((value) => !value),
+                )}
+              >
+                {entry.name}
+              </button>,
+            ]
+          : [],
+      )}
     </div>
   );
 }
 
 it("navigates and range-selects across unmounted rows using the data list", async () => {
   let cursor: string | null = null;
-  let chosen: string[] = [];
+  let chosen: Array<string> = [];
   await act(async () =>
     root.render(
       <VirtualFixture
@@ -223,7 +226,7 @@ it("navigates and range-selects across unmounted rows using the data list", asyn
 
 it("selects all rows and typeaheads to unmounted rows from the data list", async () => {
   let cursor: string | null = null;
-  let chosen: string[] = [];
+  let chosen: Array<string> = [];
   await act(async () =>
     root.render(
       <VirtualFixture
@@ -251,7 +254,7 @@ function TrackingFixture({
 }: {
   trackCursor: (cursor: string | null) => void;
 }) {
-  const tree = useOrganizationTree(
+  const { root: treeRoot, ...tree } = useOrganizationTree(
     entries,
     () => {},
     undefined,
@@ -263,18 +266,20 @@ function TrackingFixture({
       ? ["a", "b", tree.cursor]
       : ["a", "b"];
   return (
-    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
-      {entries
-        .filter((entry) => mounted.includes(entry.id))
-        .map((entry) => (
-          <button
-            type="button"
-            key={entry.id}
-            {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
-          >
-            {entry.name}
-          </button>
-        ))}
+    <div ref={treeRoot} role="tree" aria-label="Folders" aria-multiselectable>
+      {entries.flatMap((entry) =>
+        mounted.includes(entry.id)
+          ? [
+              <button
+                type="button"
+                key={entry.id}
+                {...tree.rowProps(entry.id, entry.parentId ? 1 : 0)}
+              >
+                {entry.name}
+              </button>,
+            ]
+          : [],
+      )}
     </div>
   );
 }
@@ -300,11 +305,11 @@ const FrozenRow = memo(
 function FrozenFixture({
   onSelection,
 }: {
-  onSelection: (ids: string[]) => void;
+  onSelection: (ids: Array<string>) => void;
 }) {
-  const tree = useOrganizationTree(entries, onSelection);
+  const { root: treeRoot, ...tree } = useOrganizationTree(entries, onSelection);
   return (
-    <div ref={tree.root} role="tree" aria-label="Folders" aria-multiselectable>
+    <div ref={treeRoot} role="tree" aria-label="Folders" aria-multiselectable>
       {entries.map((entry) => (
         <FrozenRow
           key={entry.id}

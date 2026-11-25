@@ -18,7 +18,7 @@ import {
 function random(seed: number) {
   let state = seed >>> 0;
   return () => {
-    state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
     return state;
   };
 }
@@ -30,8 +30,8 @@ function randomHash(next: () => number): bigint {
 describe("bits", () => {
   it("counts bits across both halves", () => {
     expect(popcount64(0n)).toBe(0);
-    expect(popcount64(0xffff_ffff_ffff_ffffn)).toBe(64);
-    expect(popcount64(0x8000_0000_0000_0001n)).toBe(2);
+    expect(popcount64(0xff_ff_ff_ff_ff_ff_ff_ffn)).toBe(64);
+    expect(popcount64(0x80_00_00_00_00_00_00_01n)).toBe(2);
     expect(hamming64(0b1010n, 0b0110n)).toBe(2);
   });
 });
@@ -42,7 +42,7 @@ describe("dHash", () => {
       { length: DHASH_WIDTH * DHASH_HEIGHT },
       (_, index) => DHASH_WIDTH - (index % DHASH_WIDTH),
     );
-    expect(dhashFromGray(falling)).toBe(0xffff_ffff_ffff_ffffn);
+    expect(dhashFromGray(falling)).toBe(0xff_ff_ff_ff_ff_ff_ff_ffn);
     expect(dhashFromGray(falling.map((value) => -value))).toBe(0n);
     const first = Array.from({ length: DHASH_WIDTH * DHASH_HEIGHT }, () => 0);
     first[0] = 1;
@@ -51,9 +51,9 @@ describe("dHash", () => {
 
   it("treats near-empty and near-full hashes as low detail", () => {
     expect(isLowDetailHash(0n)).toBe(true);
-    expect(isLowDetailHash(0b11111n)).toBe(true);
-    expect(isLowDetailHash(0x0f0f_0f0f_0f0f_0f0fn)).toBe(false);
-    expect(isLowDetailHash(0xffff_ffff_ffff_fff0n)).toBe(true);
+    expect(isLowDetailHash(0b1_1111n)).toBe(true);
+    expect(isLowDetailHash(0x0f_0f_0f_0f_0f_0f_0f_0fn)).toBe(false);
+    expect(isLowDetailHash(0xff_ff_ff_ff_ff_ff_ff_f0n)).toBe(true);
   });
 
   it("averages each cell of the requested region", () => {
@@ -71,7 +71,7 @@ describe("dHash", () => {
 
 describe("image print", () => {
   it("round-trips both hashes", () => {
-    const print = { full: 0x0123_4567_89ab_cdefn, center: 0xfedc_ba98n };
+    const print = { full: 0x01_23_45_67_89_ab_cd_efn, center: 0xfe_dc_ba_98n };
     expect(decodeImagePrint(encodeImagePrint(print))).toEqual(print);
     expect(decodeImagePrint(new Uint8Array(8))).toBeNull();
   });
@@ -104,8 +104,9 @@ describe("Hamming index", () => {
     const next = random(7);
     const hashes = Array.from({ length: 2000 }, () => randomHash(next));
     const base = hashes[0] ?? 0n;
-    for (let flip = 0; flip < 12; flip++)
+    for (let flip = 0; flip < 12; flip++) {
       hashes.push(base ^ (1n << BigInt(flip * 5)) ^ (1n << BigInt(flip)));
+    }
     const lookup = new HammingIndex<number>();
     for (const [index, hash] of hashes.entries()) lookup.add(hash, index);
     for (const radius of [0, 2, 6, 10]) {

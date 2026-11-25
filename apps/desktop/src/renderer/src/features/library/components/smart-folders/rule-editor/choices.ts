@@ -12,13 +12,13 @@ export interface RuleChoiceTag {
 
 export interface RuleChoiceTagGroup {
   name: string;
-  tagNames: readonly string[];
+  tagNames: ReadonlyArray<string>;
 }
 
 export interface RuleChoiceSource {
-  folders: readonly RuleChoiceFolder[];
-  tags: readonly RuleChoiceTag[];
-  tagGroups: readonly RuleChoiceTagGroup[];
+  folders: ReadonlyArray<RuleChoiceFolder>;
+  tags: ReadonlyArray<RuleChoiceTag>;
+  tagGroups: ReadonlyArray<RuleChoiceTagGroup>;
 }
 
 /** Parent or group, then name. Matches the details panel and Add Filter lists. */
@@ -26,7 +26,9 @@ function choiceOrderKey(choice: RuleChoice): string {
   return choice.crumb ? `${choice.crumb} ${choice.label}` : choice.label;
 }
 
-export function orderRuleChoices(choices: readonly RuleChoice[]): RuleChoice[] {
+export function orderRuleChoices(
+  choices: ReadonlyArray<RuleChoice>,
+): Array<RuleChoice> {
   return [...choices].sort((a, b) =>
     choiceOrderKey(a).localeCompare(choiceOrderKey(b)),
   );
@@ -42,10 +44,13 @@ function choice(
 
 export function ruleChoices(source: RuleChoiceSource): RuleChoices {
   const tagGroupOf = new Map<string, string>();
-  for (const group of source.tagGroups)
-    for (const name of group.tagNames)
-      if (!tagGroupOf.has(name.toLowerCase()))
+  for (const group of source.tagGroups) {
+    for (const name of group.tagNames) {
+      if (!tagGroupOf.has(name.toLowerCase())) {
         tagGroupOf.set(name.toLowerCase(), group.name);
+      }
+    }
+  }
   const folderNames = new Map(
     source.folders.map((folder) => [folder.id, folder.name]),
   );

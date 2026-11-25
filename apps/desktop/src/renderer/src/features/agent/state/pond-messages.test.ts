@@ -1,22 +1,18 @@
 import { expect, it } from "vitest";
-import {
-  fromUIMessage,
-  type PondUIMessage,
-  partData,
-  toUIMessage,
-} from "./pond-messages";
+import { fromUIMessage, partData, toUIMessage } from "./pond-messages";
+import type { PondUIMessage } from "./pond-messages";
 
 it("preserves work timing for streamed and reopened replies without tools", () => {
   const live: PondUIMessage = {
     id: "reply",
     role: "assistant",
     parts: [{ type: "text", text: "Hello" }],
-    metadata: { elapsedMs: 90000 },
+    metadata: { elapsedMs: 90_000 },
   };
   const saved = fromUIMessage(live, "chat");
-  expect(saved.metadata?.elapsedMs).toBe(90000);
+  expect(saved.metadata?.elapsedMs).toBe(90_000);
   expect(fromUIMessage(toUIMessage(saved), "chat").metadata?.elapsedMs).toBe(
-    90000,
+    90_000,
   );
 });
 

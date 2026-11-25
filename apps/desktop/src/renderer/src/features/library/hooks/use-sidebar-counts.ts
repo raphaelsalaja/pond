@@ -1,6 +1,7 @@
 import type { LibrarySidebarCounts } from "@shared/sidebar-counts";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
+import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { useRecents } from "@/features/saves";
 
@@ -45,7 +46,7 @@ const EMPTY: LibrarySidebarCounts = {
 
 /** The query runs synchronously on the main process, so every sidebar part shares one result instead of querying per mount. */
 const store = new Store<LibrarySidebarCounts>(EMPTY);
-let recentIds: string[] = [];
+let recentIds: Array<string> = [];
 let loadedKey: string | null = null;
 let users = 0;
 let stopListening: (() => void) | undefined;
@@ -70,10 +71,11 @@ async function refresh(): Promise<void> {
   dirty = false;
   try {
     const next = await window.pond.query("saves.sidebarCounts", { recentIds });
-    if (users > 0 && next)
+    if (users > 0 && next) {
       store.setState((prev) => (sameCounts(prev, next) ? prev : next));
-  } catch (error) {
-    console.warn("[pond] sidebar counts failed", error);
+    }
+  } catch (cause) {
+    log.warn("[pond] sidebar counts failed", cause);
   } finally {
     pending = false;
     if (users > 0 && dirty) schedule();

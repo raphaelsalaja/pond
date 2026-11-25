@@ -1,17 +1,18 @@
 import { PickerPanel } from "@pond/ui";
+import { isHTMLElement } from "@pond/ui/dom";
 import { useSelector } from "@tanstack/react-store";
 import { useRef, useState } from "react";
 import { pool, savesStore } from "@/features/saves/state/pool";
 import {
   closeSaveTagPicker,
-  type SaveTagPickerRequest,
   saveTagPickerStore,
 } from "@/features/saves/state/tag-picker";
+import type { SaveTagPickerRequest } from "@/features/saves/state/tag-picker";
 import type { Save } from "@/features/saves/types";
 import { TagMenu } from "@/features/tags";
 import { usePrefs } from "@/shared/state/prefs";
 
-function savesFor(ids: readonly string[]): Save[] {
+function savesFor(ids: ReadonlyArray<string>): Array<Save> {
   return ids.flatMap((id) => {
     const save = pool.get(id);
     return save ? [save] : [];
@@ -19,10 +20,10 @@ function savesFor(ids: readonly string[]): Save[] {
 }
 
 function nextTags(
-  tags: readonly string[],
+  tags: ReadonlyArray<string>,
   name: string,
   remove: boolean,
-): string[] {
+): Array<string> {
   const lower = name.toLowerCase();
   if (remove) return tags.filter((tag) => tag.toLowerCase() !== lower);
   if (tags.some((tag) => tag.toLowerCase() === lower)) return [...tags];
@@ -31,7 +32,7 @@ function nextTags(
 
 /** Adds the tag to every targeted Save, or removes it when every Save already has it. */
 async function toggleTagOnSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   name: string,
 ): Promise<void> {
   const cleaned = name.trim();
@@ -69,7 +70,7 @@ async function toggleTagOnSaves(
 function cardElement(id: string | null): HTMLElement | null {
   if (!id) return null;
   const node = document.querySelector(`[data-save-id="${CSS.escape(id)}"]`);
-  return node instanceof HTMLElement ? node : null;
+  return isHTMLElement(node) ? node : null;
 }
 
 function SaveTagPicker({

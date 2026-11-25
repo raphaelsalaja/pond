@@ -1,9 +1,8 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 import { parseSync, Visitor } from "oxc-parser";
 
-const repository = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const repository = resolve(import.meta.dirname, "..");
 const desktop = join(repository, "apps/desktop/src");
 const workspaceRoots = ["apps", "packages"];
 
@@ -13,10 +12,11 @@ export function runtimeImports(
   includeTypes = false,
 ) {
   const parsed = parseSync(filename, source);
-  if (parsed.errors.length)
+  if (parsed.errors.length) {
     throw new Error(
       `Cannot parse ${filename}: ${parsed.errors.map((error) => error.message).join("; ")}`,
     );
+  }
   const imports = [];
   new Visitor({
     ImportDeclaration(node) {
@@ -34,21 +34,24 @@ export function runtimeImports(
         node.exportKind === "type" ||
         (node.specifiers.length > 0 &&
           node.specifiers.every((entry) => entry.exportKind === "type"));
-      if (node.source && (includeTypes || !onlyTypes))
+      if (node.source && (includeTypes || !onlyTypes)) {
         imports.push(node.source.value);
+      }
     },
     ExportAllDeclaration(node) {
-      if (includeTypes || node.exportKind !== "type")
+      if (includeTypes || node.exportKind !== "type") {
         imports.push(node.source.value);
+      }
     },
     ImportExpression(node) {
-      if (node.source.type === "Literal" && node.source.raw?.startsWith('"'))
+      if (node.source.type === "Literal" && node.source.raw?.startsWith('"')) {
         imports.push(node.source.value);
-      else if (
+      } else if (
         node.source.type === "Literal" &&
         node.source.raw?.startsWith("'")
-      )
+      ) {
         imports.push(node.source.value);
+      }
     },
   }).visit(parsed.program);
   return imports;
@@ -60,8 +63,9 @@ function sourceFiles(directory) {
       [".next", ".output", "dist", "generated", "node_modules", "out"].includes(
         entry.name,
       )
-    )
+    ) {
       return [];
+    }
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(path);
     return /\.(ts|tsx)$/.test(path) &&
@@ -114,8 +118,9 @@ export function declaredWorkspaceDependencyErrors(packages) {
           dependency === manifest.name ||
           !workspaceNames.has(dependency) ||
           declared.has(dependency)
-        )
+        ) {
           continue;
+        }
         errors.push(
           `${manifest.name} imports undeclared workspace dependency ${dependency}: ${relative(repository, source)}`,
         );
@@ -127,15 +132,17 @@ export function declaredWorkspaceDependencyErrors(packages) {
 
 function resolveImport(source, specifier) {
   let base;
-  if (specifier.startsWith("@/"))
+  if (specifier.startsWith("@/")) {
     base = join(desktop, "renderer/src", specifier.slice(2));
-  else if (specifier.startsWith("@shared/"))
+  } else if (specifier.startsWith("@shared/")) {
     base = join(desktop, "shared", specifier.slice(8));
-  else if (specifier.startsWith("@main/"))
+  } else if (specifier.startsWith("@main/")) {
     base = join(desktop, "main", specifier.slice(6));
-  else if (specifier.startsWith("."))
+  } else if (specifier.startsWith(".")) {
     base = resolve(dirname(source), specifier);
-  else return null;
+  } else {
+    return null;
+  }
   const candidates = [
     base,
     `${base}.ts`,
@@ -167,8 +174,9 @@ export function dependencyCycles(graph) {
       if (!index.has(target)) {
         visit(target);
         low.set(node, Math.min(low.get(node), low.get(target)));
-      } else if (active.has(target))
+      } else if (active.has(target)) {
         low.set(node, Math.min(low.get(node), index.get(target)));
+      }
     }
     if (low.get(node) !== index.get(node)) return;
     const group = [];
@@ -178,8 +186,9 @@ export function dependencyCycles(graph) {
       active.delete(member);
       group.push(member);
     } while (member !== node);
-    if (group.length > 1 || graph.get(node)?.includes(node))
-      cycles.push(group.sort());
+    if (group.length > 1 || graph.get(node)?.includes(node)) {
+      cycles.push(group.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
+    }
   };
   for (const node of graph.keys()) if (!index.has(node)) visit(node);
   return cycles;
@@ -189,8 +198,9 @@ export function rendererOwnershipError(from, to) {
   if (
     from.startsWith("renderer/src/features/saves/") &&
     to.startsWith("renderer/src/features/library/")
-  )
+  ) {
     return `Save code depends on Library code: ${from} -> ${to}`;
+  }
   return null;
 }
 
@@ -224,35 +234,38 @@ function main() {
       if (
         from.startsWith("renderer/src/shared/") &&
         /renderer\/src\/(features|app|dev|routes)\//.test(to)
-      )
+      ) {
         errors.push(
           `Shared code depends on application code: ${from} -> ${to}`,
         );
+      }
       if (
         (from.startsWith("renderer/") && to.startsWith("main/")) ||
         (from.startsWith("main/") && to.startsWith("renderer/")) ||
         (from.startsWith("shared/") && /^(main|renderer|preload)\//.test(to))
-      )
+      ) {
         errors.push(`Process implementation import: ${from} -> ${to}`);
-      if (to === "main/index.ts" && from !== to)
+      }
+      if (to === "main/index.ts" && from !== to) {
         errors.push(`Startup entrypoint imported: ${from}`);
+      }
     }
   }
-  for (const cycle of dependencyCycles(graph))
+  for (const cycle of dependencyCycles(graph)) {
     errors.push(
       `Runtime dependency cycle:\n  ${cycle.map((path) => relative(desktop, path)).join("\n  ")}`,
     );
+  }
   if (errors.length) {
     for (const error of errors) process.stderr.write(`${error}\n`);
     process.exitCode = 1;
-  } else
+  } else {
     process.stdout.write(
       `Architecture verified across ${files.length} desktop modules.\n`,
     );
+  }
 }
 
-if (
-  process.argv[1] &&
-  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
-)
+if (process.argv[1] && resolve(process.argv[1]) === import.meta.filename) {
   main();
+}

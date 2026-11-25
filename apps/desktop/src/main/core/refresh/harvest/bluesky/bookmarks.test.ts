@@ -1,6 +1,7 @@
 import type { JsonValue } from "@pond/schema/json";
 import { describe, expect, it } from "vitest";
-import { type BookmarkPage, readBlueskyBookmarks } from "./bookmarks";
+import { readBlueskyBookmarks } from "./bookmarks";
+import type { BookmarkPage } from "./bookmarks";
 
 const AUTHOR = "did:plc:t2dnigzpoovty4qcxzgv73fu";
 

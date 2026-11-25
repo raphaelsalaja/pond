@@ -5,7 +5,7 @@ import { folderPaths } from "../lib/display";
 
 type Input = {
   /** Save IDs from Search Saves, all from the same library. */
-  ids: string[];
+  ids: Array<string>;
   /** Library ID returned with the saves. */
   libraryId: string;
   /** Folder ID from List Folders. */

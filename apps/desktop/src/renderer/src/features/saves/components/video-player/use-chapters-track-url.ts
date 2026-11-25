@@ -1,20 +1,24 @@
 import { useEffect, useState } from "react";
-import {
-  type ChapterCue,
-  chaptersToVttUrl,
-} from "@/features/saves/lib/media/chapters-vtt";
+import { chaptersToVttUrl } from "@/features/saves/lib/media/chapters-vtt";
+import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 
 export function useChaptersTrackUrl(
-  chapters?: readonly ChapterCue[],
+  chapters?: ReadonlyArray<ChapterCue>,
 ): string | null {
-  const [url, setUrl] = useState<string | null>(null);
+  const [track, setTrack] = useState<{
+    chapters: ReadonlyArray<ChapterCue>;
+    url: string | null;
+  } | null>(null);
   useEffect(() => {
-    const next =
-      chapters && chapters.length > 0 ? chaptersToVttUrl(chapters) : null;
-    setUrl(next);
+    if (!chapters || chapters.length === 0) {
+      return;
+    }
+    const next = chaptersToVttUrl(chapters);
+    // oxlint-disable-next-line react/set-state-in-effect -- the blob URL is created and revoked by this effect so StrictMode remounts never reuse a revoked URL
+    setTrack({ chapters, url: next });
     return () => {
       if (next) URL.revokeObjectURL(next);
     };
   }, [chapters]);
-  return url;
+  return track && track.chapters === chapters ? track.url : null;
 }

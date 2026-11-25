@@ -1,13 +1,12 @@
 import { mkdir, mkdtemp, rm, stat, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
+import { libraryScan, saveFolders, saves, tasks } from "@pond/schema/db";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import { afterEach, describe, expect, it } from "vitest";
-import * as database from "../db";
+import { wrapSqlite } from "../database/client";
+import { initializePondSchema } from "../db";
 import { createMutationQueue } from "./mutation-queue";
 import { reconcileLibraryIndex } from "./scan";
 
@@ -20,8 +19,8 @@ function nativeAvailable() {
     return false;
   }
 }
-const roots: string[] = [];
-const opened: Database.Database[] = [];
+const roots: Array<string> = [];
+const opened: Array<Database.Database> = [];
 afterEach(async () => {
   for (const db of opened.splice(0)) db.close();
   await Promise.all(
@@ -33,10 +32,8 @@ async function fixture() {
   roots.push(root);
   const raw = new Database(":memory:");
   opened.push(raw);
-  database.initializePondSchema(raw, () => false);
-  const db = Object.assign(drizzle(raw, { schema: { ...schema, ...events } }), {
-    $raw: raw,
-  });
+  initializePondSchema(raw, () => false);
+  const db = wrapSqlite(raw);
   const mutate = createMutationQueue().run;
   const scan = () => reconcileLibraryIndex({ root, db, mutate, changed() {} });
   raw.exec("insert into folders(id,name) values('folder','References')");
@@ -88,7 +85,7 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
   it("rebuilds attachment metadata, organization, notes and readiness into a fresh index", async () => {
     const f = await fixture();
     expect(await f.scan()).toMatchObject({ updated: 1, total: 1 });
-    const save = f.db.select().from(schema.saves).get();
+    const save = f.db.select().from(saves).get();
     expect(save).toMatchObject({
       status: "complete",
       rating: 4,
@@ -97,7 +94,7 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
       notes: "Review",
       publishedAt: new Date("2018-01-02T00:00:00Z"),
     });
-    expect(f.db.select().from(schema.saveFolders).all()).toEqual([
+    expect(f.db.select().from(saveFolders).all()).toEqual([
       { saveId: "image", folderId: "folder" },
     ]);
     expect(await f.scan()).toMatchObject({ updated: 0, total: 1 });
@@ -114,7 +111,7 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     await utimes(f.path, future, future);
     await utimes(f.directory, before.atime, before.mtime);
     expect((await f.scan()).updated).toBe(1);
-    expect(f.db.select().from(schema.saves).get()?.title).toBe("Changed");
+    expect(f.db.select().from(saves).get()?.title).toBe("Changed");
   });
   it("marks missing originals as failed and retries an SQL failure without a permanent scan stamp", async () => {
     const f = await fixture();
@@ -123,29 +120,29 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
       "create trigger fail_scan before insert on save_folders begin select raise(abort,'injected failure'); end",
     );
     expect((await f.scan()).updated).toBe(0);
-    expect(f.db.select().from(schema.saves).all()).toEqual([]);
-    expect(f.db.select().from(schema.libraryScan).all()).toEqual([]);
+    expect(f.db.select().from(saves).all()).toEqual([]);
+    expect(f.db.select().from(libraryScan).all()).toEqual([]);
     f.raw.exec("drop trigger fail_scan");
     expect((await f.scan()).updated).toBe(1);
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+    expect(f.db.select().from(saves).get()?.status).toBe("failed");
   });
   it("marks a row failed when its record and originals are both gone", async () => {
     const f = await fixture();
     await f.scan();
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    expect(f.db.select().from(saves).get()?.status).toBe("complete");
     await rm(f.path);
     await rm(join(f.directory, "photo.png"));
     const future = new Date(Date.now() + 5000);
     await utimes(f.directory, future, future);
     expect((await f.scan()).updated).toBe(1);
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+    expect(f.db.select().from(saves).get()?.status).toBe("failed");
     expect((await f.scan()).updated).toBe(0);
   });
   it("marks a save failed when its folder disappears so enrichment will not run", async () => {
     const f = await fixture();
     await f.scan();
     f.db
-      .insert(schema.tasks)
+      .insert(tasks)
       .values({
         id: "completed-harvest",
         saveId: "image",
@@ -154,11 +151,11 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
         status: "done",
       })
       .run();
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    expect(f.db.select().from(saves).get()?.status).toBe("complete");
     await rm(f.directory, { recursive: true });
     const missing = await f.scan();
     expect(missing.missingFiles).toEqual([{ id: "image", title: "Original" }]);
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+    expect(f.db.select().from(saves).get()?.status).toBe("failed");
     expect((await f.scan()).missingFiles).toEqual([
       { id: "image", title: "Original" },
     ]);
@@ -167,14 +164,14 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     await writeFile(f.path, JSON.stringify(f.metadata));
     await writeFile(join(f.directory, "photo.png"), "data");
     const restored = await f.scan();
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    expect(f.db.select().from(saves).get()?.status).toBe("complete");
     expect(restored.missingFiles).toEqual([]);
   });
   it("does not hide a pipeline refresh failure when old originals are present", async () => {
     const f = await fixture();
     await f.scan();
     f.db
-      .insert(schema.tasks)
+      .insert(tasks)
       .values({
         id: "refresh-harvest",
         saveId: "image",
@@ -185,13 +182,13 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
       })
       .run();
     f.db
-      .update(schema.saves)
+      .update(saves)
       .set({ status: "failed" })
-      .where(eq(schema.saves.id, "image"))
+      .where(eq(saves.id, "image"))
       .run();
     await writeFile(f.path, JSON.stringify(f.metadata));
     expect((await f.scan()).updated).toBe(1);
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("failed");
+    expect(f.db.select().from(saves).get()?.status).toBe("failed");
   });
 
   it("keeps a row complete when only its record is gone but its originals remain", async () => {
@@ -201,6 +198,6 @@ describe.skipIf(!nativeAvailable())("portable index reconciliation", () => {
     const future = new Date(Date.now() + 5000);
     await utimes(f.directory, future, future);
     expect((await f.scan()).updated).toBe(0);
-    expect(f.db.select().from(schema.saves).get()?.status).toBe("complete");
+    expect(f.db.select().from(saves).get()?.status).toBe("complete");
   });
 });

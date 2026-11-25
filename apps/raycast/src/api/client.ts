@@ -36,9 +36,9 @@ async function verify(probe: PondApi): Promise<void> {
 
 /** Checks the running Pond once per process, and again after any failed check. */
 function ensureReady(probe: PondApi): Promise<void> {
-  ready ??= verify(probe).catch((error) => {
+  ready ??= verify(probe).catch((cause: unknown) => {
     ready = null;
-    throw error;
+    throw cause;
   });
   return ready;
 }

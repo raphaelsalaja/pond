@@ -2,6 +2,7 @@ import { IconFile } from "@pond/icons";
 import { Button } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
+import log from "electron-log/renderer";
 import type { ComponentProps, CSSProperties, ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -20,10 +21,22 @@ interface ThumbnailStyle extends CSSProperties {
   "--thumbnail-width-scale": number;
 }
 
-export function useSourceCovers(ids: string[]) {
+function isIdList(value: unknown): value is Array<string> {
+  return (
+    Array.isArray(value) &&
+    value.every((id): id is string => typeof id === "string")
+  );
+}
+
+export function useSourceCovers(ids: Array<string>) {
   const key = JSON.stringify(ids);
   useEffect(() => {
-    if (key !== "[]") void ensureSaves(JSON.parse(key)).catch(() => undefined);
+    const parsed: unknown = JSON.parse(key);
+    if (key !== "[]" && isIdList(parsed)) {
+      void ensureSaves(parsed).catch((cause: unknown) => {
+        log.warn("[pond fish] loading source covers failed", cause);
+      });
+    }
   }, [key]);
 }
 
@@ -179,7 +192,7 @@ export function SaveCitation({
       showCitedSentence(event.currentTarget),
     onBlur: hideCitedSentence,
   };
-  if (compact)
+  if (compact) {
     return (
       <Button
         type="button"
@@ -194,6 +207,7 @@ export function SaveCitation({
         <span>{reference}</span>
       </Button>
     );
+  }
   return (
     <InlineReference
       data-citation=""

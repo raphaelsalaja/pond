@@ -1,52 +1,44 @@
+import type { QueryResult } from "@shared/query-contracts";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it } from "vitest";
 import { SettingsSectionView } from "@/features/settings/components/engine";
 import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
 import {
   DEFAULT_IMAGE_DOWNLOAD,
   DEFAULT_VIDEO_DOWNLOAD,
 } from "@/features/settings/lib/section-types";
+import { bridge } from "@/shared/test/pond-bridge";
 import { DownloadSources, MissingVideos } from ".";
-
-interface QueryParams {
-  source?: string;
-}
-
-interface Call {
-  name: string;
-  params: QueryParams;
-}
 
 let host: HTMLDivElement;
 let root: Root;
-let calls: Call[];
 
 function stubPond(
   overrides: {
-    videoDownloadSources?: Record<string, Record<string, number>>;
+    videoDownloadSources?: QueryResult<"settings.get">["videoDownloadSources"];
     missing?: number;
   } = {},
 ) {
-  calls = [];
-  vi.stubGlobal("pond", {
-    async query(name: string, params: QueryParams) {
-      calls.push({ name, params });
-      if (name === "saves.missingVideoCount")
-        return { count: overrides.missing ?? 0 };
-      if (name === "saves.downloadMissingVideos")
-        return { ok: true, queued: overrides.missing ?? 0 };
-      return {
+  bridge.use({
+    query: {
+      "saves.missingVideoCount": () => ({ count: overrides.missing ?? 0 }),
+      "saves.downloadMissingVideos": () => ({
+        ok: true,
+        queued: overrides.missing ?? 0,
+      }),
+      "settings.get": () => ({
         id: "singleton",
         libraryRoot: null,
+        updatedAt: new Date(0),
         videoDownload: { ...DEFAULT_VIDEO_DOWNLOAD, maxHeight: 720 },
         imageDownload: DEFAULT_IMAGE_DOWNLOAD,
         videoDownloadSources: overrides.videoDownloadSources ?? {},
         imageDownloadSources: {},
-      };
+      }),
     },
-    tx: async () => ({ ok: true }),
   });
 }
 
@@ -64,12 +56,22 @@ async function render(node: React.ReactNode) {
 
 async function settle() {
   for (let tick = 0; tick < 5; tick += 1) {
-    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    await act(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(resolve, 0);
+        }),
+    );
   }
 }
 
 function row(key: string) {
   return host.querySelector(`#setting-sources-youtube-${key}`);
+}
+
+function item(label: string) {
+  return host.querySelector(`[aria-label="Edit ${label}"]`)?.parentElement
+    ?.parentElement;
 }
 
 beforeEach(() => {
@@ -81,7 +83,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 
 it("shows global values on a source page and locks them while it follows global", async () => {
@@ -124,10 +125,6 @@ it("marks only sources with custom settings", async () => {
   stubPond({ videoDownloadSources: { youtube: {} } });
   await render(<DownloadSources />);
 
-  const item = (label: string) =>
-    host.querySelector(`[aria-label="Edit ${label}"]`)?.parentElement
-      ?.parentElement;
-
   expect(item("YouTube")?.textContent).toContain("Custom");
   expect(item("Reddit")?.textContent).not.toContain("Custom");
   expect(item("Reddit")?.textContent).not.toContain("Global");
@@ -144,10 +141,10 @@ it("downloads missing videos for one source", async () => {
   await act(async () => button?.click());
   await settle();
 
-  expect(calls).toContainEqual({
-    name: "saves.downloadMissingVideos",
-    params: { source: "youtube" },
-  });
+  expect(window.pond.query).toHaveBeenCalledWith(
+    "saves.downloadMissingVideos",
+    { source: "youtube" },
+  );
   const queued = [...host.querySelectorAll("button")].find(
     (candidate) => candidate.textContent === "Queued",
   );

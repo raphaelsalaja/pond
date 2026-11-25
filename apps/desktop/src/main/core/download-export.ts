@@ -10,11 +10,8 @@ import type {
 } from "@shared/downloader-contracts";
 import log from "electron-log/main.js";
 import type { z } from "zod";
-import {
-  FileTooLargeError,
-  type fetchFile,
-  type RemoteFile,
-} from "./download-file";
+import { FileTooLargeError } from "./download-file";
+import type { fetchFile, RemoteFile } from "./download-file";
 import { copyExportFile, writeExportFile } from "./export-files";
 import { normalizeUrl } from "./pipeline/enqueue-input";
 import { classifyUrlToSource } from "./pipeline/extractors";
@@ -36,13 +33,13 @@ export interface DownloadExportRuntime {
   /** Clipboard files need a home that outlives the export. */
   clipboardFolder: () => string;
   writeClipboardText: (text: string) => void;
-  writeClipboardFiles: (paths: string[]) => Promise<void>;
+  writeClipboardFiles: (paths: Array<string>) => Promise<void>;
   fetchFile: typeof fetchFile;
   saveFiles: (input: {
     url: string;
     title: string | null;
-    files: RemoteFile[];
-    sourceUrls: string[];
+    files: Array<RemoteFile>;
+    sourceUrls: Array<string>;
   }) => Promise<{ ok: boolean }>;
 }
 
@@ -114,7 +111,7 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
         `${stemOf(captions.infoJson?.title)}.${format}`,
         format === "txt" ? `${text}\n` : text,
       );
-      return finish(destination, path);
+      return await finish(destination, path);
     } finally {
       await captions.cleanup();
     }
@@ -155,14 +152,15 @@ export function createDownloadExports(runtime: DownloadExportRuntime) {
             : { ok: false, message: FILES_FAILED };
         }
         const folder = await destinationFolder(input.destination);
-        const paths: string[] = [];
+        const paths: Array<string> = [];
         for (const file of fetched) {
           const path = await writeExportFile(folder, file.filename, file.bytes);
           exported.add(path);
           paths.push(path);
         }
-        if (input.destination === "clipboard")
+        if (input.destination === "clipboard") {
           await runtime.writeClipboardFiles(paths);
+        }
         return { ok: true, paths };
       } catch (error) {
         log.warn("[pond downloader] file export failed", input.url, error);

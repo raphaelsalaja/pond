@@ -1,16 +1,10 @@
-import {
-  type AgentChat,
-  agentChatFish,
-  agentChats,
-  agentMessages,
-} from "@pond/schema/db";
+import { agentChatFish, agentChats, agentMessages } from "@pond/schema/db";
+import type { AgentChat } from "@pond/schema/db";
 import { asc, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { ulid } from "ulid";
 import { z } from "zod";
-import {
-  type AssistantMetadata,
-  assistantMetadata,
-} from "../../../shared/assistant";
+import { assistantMetadata } from "../../../shared/assistant";
+import type { AssistantMetadata } from "../../../shared/assistant";
 import { DEFAULT_FISH_ID } from "../../../shared/fish-contracts";
 import type {
   OkResult,
@@ -42,7 +36,7 @@ function fishFilter(fishId: string) {
     : eq(agentChatFish.fishId, fishId);
 }
 
-export async function listChats(fishId?: string): Promise<ChatListing[]> {
+export async function listChats(fishId?: string): Promise<Array<ChatListing>> {
   const db = await getDb();
   return db
     .select(listing)
@@ -81,7 +75,7 @@ export async function fishThread(
 
 export async function fishIdForChat(chatId: string): Promise<string> {
   const db = await getDb();
-  const row = await db
+  const row = db
     .select({ fishId: agentChatFish.fishId })
     .from(agentChatFish)
     .where(eq(agentChatFish.chatId, chatId))
@@ -176,23 +170,26 @@ export async function rewindLastTurn(chatId: string): Promise<RewoundTurn> {
   const rows = await listMessages(chatId);
   const start = rows.findLastIndex((row) => row.role === "user");
   const request = rows[start];
-  if (!request || start === rows.length - 1)
+  if (!request || start === rows.length - 1) {
     return { ok: false, error: "There's no reply to run again." };
+  }
   const metadata = assistantMetadata.parse(request.metadata ?? {});
-  if (metadata.routine)
+  if (metadata.routine) {
     return { ok: false, error: "Run the routine again from its page." };
+  }
   const replies = rows.slice(start + 1);
   const applied = replies.some((row) =>
     assistantMetadata
       .parse(row.metadata ?? {})
       .changes?.some((change) => change.status === "applied"),
   );
-  if (applied)
+  if (applied) {
     return {
       ok: false,
       error:
         "This reply has applied changes. Undo them before running it again.",
     };
+  }
   const db = await getDb();
   await db.delete(agentMessages).where(
     inArray(

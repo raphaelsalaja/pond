@@ -3,14 +3,12 @@ import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
 import {
   SETTINGS_MASTER_GROUPS,
-  type SectionDef,
   sectionForId,
   sectionForPath,
 } from "@/features/settings/lib/registry";
-import {
-  SETTINGS_SEARCH_INDEX,
-  type SettingsSearchEntry,
-} from "@/features/settings/lib/search-index";
+import type { SectionDef } from "@/features/settings/lib/registry";
+import { SETTINGS_SEARCH_INDEX } from "@/features/settings/lib/search-index";
+import type { SettingsSearchEntry } from "@/features/settings/lib/search-index";
 import { SECTION_PRELOADS } from "@/features/settings/lib/sections";
 import { SearchChrome } from "@/shared/components/search-chrome";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
@@ -19,7 +17,7 @@ import { openSettings } from "@/shared/lib/open-settings";
 
 interface SectionResult {
   section: SectionDef;
-  items: SettingsSearchEntry[];
+  items: Array<SettingsSearchEntry>;
 }
 
 export function SettingsSidebar() {
@@ -56,8 +54,10 @@ export function SettingsSidebarView({
     [],
   );
 
-  const results = useMemo<SectionResult[] | null>(() => {
-    if (!needle) return null;
+  const results = useMemo<Array<SectionResult> | null>(() => {
+    if (!needle) {
+      return null;
+    }
     const bySection = new Map<string, SectionResult>();
     for (const { item } of fuse.search(needle)) {
       const section = sectionForId(item.sectionId);

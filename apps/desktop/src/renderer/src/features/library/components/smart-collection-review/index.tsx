@@ -17,7 +17,7 @@ type Cluster =
 type Classification = SavesReadQueryResults["saves.classifyLabels"];
 
 interface SmartCollectionReviewProps {
-  scopeIds: string[] | null;
+  scopeIds: Array<string> | null;
   onClose: () => void;
   open?: boolean;
 }
@@ -44,9 +44,9 @@ export function SmartCollectionReview({
   onClose,
   open = true,
 }: SmartCollectionReviewProps) {
-  const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [unclustered, setUnclustered] = useState<string[]>([]);
-  const [previewIds, setPreviewIds] = useState<string[]>([]);
+  const [clusters, setClusters] = useState<Array<Cluster>>([]);
+  const [unclustered, setUnclustered] = useState<Array<string>>([]);
+  const [previewIds, setPreviewIds] = useState<Array<string>>([]);
   const [representatives, setRepresentatives] = useState(
     new Map<string, string>(),
   );
@@ -75,7 +75,7 @@ export function SmartCollectionReview({
 
   useEffect(() => {
     let active = true;
-    const limit = Math.max(3, Math.min(2_000, scopeIds?.length ?? 2_000));
+    const limit = Math.max(3, Math.min(2000, scopeIds?.length ?? 2000));
     void window.pond
       .query("saves.semanticClusters", {
         saveIds: scopeIds ?? undefined,
@@ -106,11 +106,11 @@ export function SmartCollectionReview({
         }
         setLoading(false);
       })
-      .catch((reason) => {
-        if (!active) return;
-        setError(
-          errorCopy(reason, "Couldn't preview organization. Try again."),
-        );
+      .catch((cause: unknown) => {
+        if (!active) {
+          return;
+        }
+        setError(errorCopy(cause, "Couldn't preview organization. Try again."));
         setLoading(false);
       });
     return () => {
@@ -173,23 +173,23 @@ export function SmartCollectionReview({
       });
       skip();
       await folders.refresh();
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't create the folder. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't create the folder. Try again."));
     } finally {
       setBusy(false);
     }
   }
 
-  function classificationIds(): string[] {
-    return [...new Set(scopeIds ?? previewIds)].slice(0, 2_000);
+  function classificationIds(): Array<string> {
+    return [...new Set(scopeIds ?? previewIds)].slice(0, 2000);
   }
 
-  function classificationLabels(): string[] {
+  function classificationLabels(): Array<string> {
     return [
       ...new Set(
         labelsText
           .split(/[,\n]/)
-          .map((label) => label.replace(/\s+/g, " ").trim())
+          .map((label) => label.replaceAll(/\s+/g, " ").trim())
           .filter(Boolean),
       ),
     ].slice(0, 50);
@@ -210,16 +210,18 @@ export function SmartCollectionReview({
       setClassification(
         await window.pond.query("saves.classifyLabels", { saveIds, labels }),
       );
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't preview labels. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't preview labels. Try again."));
     } finally {
       setBusy(false);
     }
   }
 
   async function applyLabels(): Promise<void> {
-    if (!classification) return;
-    const assignments = new Map<string, string[]>();
+    if (!classification) {
+      return;
+    }
+    const assignments = new Map<string, Array<string>>();
     for (const item of classification.items) {
       const label = item.scores[0]?.label;
       if (!label) continue;
@@ -238,8 +240,8 @@ export function SmartCollectionReview({
         });
       }
       setClassification(null);
-    } catch (reason) {
-      setError(errorCopy(reason, "Couldn't apply labels. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't apply labels. Try again."));
     } finally {
       setBusy(false);
     }
@@ -399,7 +401,8 @@ export function SmartCollectionReview({
                       {classification.excludedIds.length > 0 ? (
                         <p className={styles.meta}>
                           {formatNumber(classification.excludedIds.length)}{" "}
-                          Saves skipped because they haven't been analyzed yet.
+                          Saves skipped because they haven&apos;t been analyzed
+                          yet.
                         </p>
                       ) : null}
                     </>

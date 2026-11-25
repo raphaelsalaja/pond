@@ -92,13 +92,14 @@ export function useGifPlayer(
         element.height = image.displayHeight;
         element.getContext("2d")?.drawImage(image, 0, 0);
       }
-      const duration = Math.max(10, (image.duration ?? 100000) / 1000) / rate;
+      const duration = Math.max(10, (image.duration ?? 100_000) / 1000) / rate;
       image.close();
-      if (playing && active)
+      if (playing && active) {
         timer = window.setTimeout(
           () => setFrameIndex((index) => nextGifFrame(index, frameCount, loop)),
           Math.max(0, duration - (performance.now() - started)),
         );
+      }
     };
     void draw().catch(() => {
       if (current) setError(true);
@@ -108,10 +109,13 @@ export function useGifPlayer(
       window.clearTimeout(timer);
     };
   }, [decoder, frameIndex, frameCount, playing, active, rate, loop]);
-  useEffect(() => {
-    if (!frameCount) return;
-    setFrameIndex((index) => clampGifFrame(index, frameCount, loop));
-  }, [frameCount, loop]);
+  const [clampedFor, setClampedFor] = useState({ frameCount, loop });
+  if (clampedFor.frameCount !== frameCount || clampedFor.loop !== loop) {
+    setClampedFor({ frameCount, loop });
+    if (frameCount) {
+      setFrameIndex((index) => clampGifFrame(index, frameCount, loop));
+    }
+  }
   return {
     canvas,
     ready: !!decoder && frameCount > 0 && !error,

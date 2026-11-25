@@ -51,12 +51,18 @@ function jsonAfter(text, marker) {
   for (let index = start; index < text.length; index += 1) {
     const character = text[index];
     if (quoted) {
-      if (character === "\\") index += 1;
-      else if (character === '"') quoted = false;
-    } else if (character === '"') quoted = true;
-    else if (character === "{") depth += 1;
-    else if (character === "}" && --depth === 0)
+      if (character === "\\") {
+        index += 1;
+      } else if (character === '"') {
+        quoted = false;
+      }
+    } else if (character === '"') {
+      quoted = true;
+    } else if (character === "{") {
+      depth += 1;
+    } else if (character === "}" && --depth === 0) {
       return JSON.parse(text.slice(start, index + 1));
+    }
   }
   return null;
 }
@@ -157,8 +163,9 @@ async function tiktokVideo() {
   assert(item.author?.uniqueId, "itemStruct.author.uniqueId is missing");
   assert(item.video?.cover, "itemStruct.video.cover is missing");
   const integers = { createTime: item.createTime, ...item.stats };
-  for (const [key, value] of Object.entries(integers))
+  for (const [key, value] of Object.entries(integers)) {
     assert(/^\d+$/.test(String(value)), `${key} is ${JSON.stringify(value)}`);
+  }
   return "itemStruct has author, cover, createTime, and stats as integers";
 }
 

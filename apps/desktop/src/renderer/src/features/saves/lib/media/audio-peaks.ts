@@ -1,8 +1,10 @@
 export function downsamplePeaks(
   samples: Float32Array,
   buckets: number,
-): number[] {
-  if (buckets <= 0) return [];
+): Array<number> {
+  if (buckets <= 0) {
+    return [];
+  }
   const peaks = Array.from({ length: buckets }, () => 0);
   if (samples.length === 0) return peaks;
   const width = samples.length / buckets;
@@ -14,8 +16,9 @@ export function downsamplePeaks(
       let sample = start;
       sample < end && sample < samples.length;
       sample += 1
-    )
+    ) {
       peak = Math.max(peak, Math.abs(samples[sample] ?? 0));
+    }
     peaks[index] = peak;
   }
   return peaks;

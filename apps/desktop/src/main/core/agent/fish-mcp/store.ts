@@ -4,10 +4,10 @@ import { dirname, join } from "node:path";
 import { app } from "electron";
 import log from "electron-log/main.js";
 import { z } from "zod";
-import {
-  FishMcpServerConfig,
-  type FishMcpServerDraft,
-  type FishMcpToolAccess,
+import { FishMcpServerConfig } from "../../../../shared/fish-mcp-contracts";
+import type {
+  FishMcpServerDraft,
+  FishMcpToolAccess,
 } from "../../../../shared/fish-mcp-contracts";
 import { userError } from "../../../../shared/user-error";
 import { deleteSecret, getSecret, setSecret } from "../../../keychain";
@@ -42,17 +42,18 @@ export function createFishMcpStore(
     return next;
   }
 
-  async function list(): Promise<FishMcpServerConfig[]> {
+  async function list(): Promise<Array<FishMcpServerConfig>> {
     try {
       return FileSchema.parse(JSON.parse(await readFile(file, "utf8"))).servers;
     } catch (error) {
-      if (ErrorCodeSchema.safeParse(error).data?.code !== "ENOENT")
+      if (ErrorCodeSchema.safeParse(error).data?.code !== "ENOENT") {
         log.warn("[pond fish-mcp] unreadable config", error);
+      }
       return [];
     }
   }
 
-  async function write(servers: FishMcpServerConfig[]): Promise<void> {
+  async function write(servers: Array<FishMcpServerConfig>): Promise<void> {
     await mkdir(dirname(file), { recursive: true });
     const temp = `${file}.tmp`;
     await writeFile(temp, JSON.stringify({ version: 1, servers }, null, 2), {
@@ -78,8 +79,9 @@ export function createFishMcpStore(
     return serial(async () => {
       const servers = await list();
       const id = input.id ?? newId();
-      if (servers.some((s) => s.name === input.name && s.id !== id))
+      if (servers.some((s) => s.name === input.name && s.id !== id)) {
         throw userError(`A server named ${input.name} already exists.`);
+      }
       const server = FishMcpServerConfig.parse({ ...input, id });
       const previous = await secrets(id);
       const next: Record<string, string> = {};

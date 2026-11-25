@@ -1,10 +1,12 @@
-import { Action, ActionPanel, Form, Icon, type LaunchProps, showToast, Toast, useNavigation } from "@raycast/api";
+import { Action, ActionPanel, Form, Icon, showToast, Toast, useNavigation } from "@raycast/api";
+import type { LaunchProps } from "@raycast/api";
 import { createDeeplink } from "@raycast/utils";
 import { useEffect, useRef, useState } from "react";
 import { toError } from "./api/problems";
 import { CaptureProgress } from "./components/capture-progress";
 import { failToast } from "./components/problem";
-import { enqueue, findUrl, savedTitle, type UrlOrigin } from "./lib/capture";
+import { enqueue, findUrl, savedTitle } from "./lib/capture";
+import type { UrlOrigin } from "./lib/capture";
 import { useLookups } from "./lib/library";
 import { cleanTags, parseTags, parseWebUrl } from "./lib/urls";
 
@@ -13,13 +15,13 @@ interface SaveUrlArguments {
 }
 
 interface SaveUrlContext {
-  tags?: string[];
+  tags?: Array<string>;
   folderId?: string;
 }
 
 interface SaveUrlValues {
   url: string;
-  tags: string[];
+  tags: Array<string>;
   newTags: string;
   folderId: string;
 }
@@ -43,7 +45,7 @@ export default function Command(
   const [url, setUrl] = useState(props.arguments.url?.trim() || draft?.url || "");
   const [origin, setOrigin] = useState<UrlOrigin | null>(null);
   const [urlError, setUrlError] = useState<string>();
-  const [tags, setTags] = useState<string[]>(draft?.tags ?? context?.tags ?? []);
+  const [tags, setTags] = useState<Array<string>>(draft?.tags ?? context?.tags ?? []);
   const [newTags, setNewTags] = useState(draft?.newTags ?? "");
   const [folderId, setFolderId] = useState(draft?.folderId ?? context?.folderId ?? NO_FOLDER);
   const [finding, setFinding] = useState(!url);
@@ -70,7 +72,7 @@ export default function Command(
     ]),
   ];
 
-  function allTags(): string[] {
+  function allTags(): Array<string> {
     return cleanTags([...tags, ...parseTags(newTags)]);
   }
 
@@ -133,8 +135,9 @@ export default function Command(
         }}
         onBlur={(event) => {
           const value = event.target.value?.trim();
-          if (value && !parseWebUrl(value))
+          if (value && !parseWebUrl(value)) {
             setUrlError("Enter a full web address that starts with http:// or https://.");
+          }
         }}
       />
       <Form.TagPicker id="tags" title="Tags" value={tags} onChange={setTags} placeholder="Pick tags">

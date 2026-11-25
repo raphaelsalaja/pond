@@ -13,7 +13,7 @@ interface ImportDialog<Window> {
 }
 
 export function createImportPicker<Window>(dialog: ImportDialog<Window>) {
-  return async (kind: ImportKind): Promise<{ paths: string[] }> => {
+  return async (kind: ImportKind): Promise<{ paths: Array<string> }> => {
     const mode = ImportKindSchema.parse(kind);
     const options: OpenDialogOptions = {
       title: mode === "folders" ? "Import Folders" : "Import Files",
@@ -30,7 +30,7 @@ export function createImportPicker<Window>(dialog: ImportDialog<Window>) {
 
 export async function pickImportPaths(
   kind: ImportKind,
-): Promise<{ paths: string[] }> {
+): Promise<{ paths: Array<string> }> {
   const { BrowserWindow, dialog } = await import("electron");
   return createImportPicker({
     focusedWindow: () => BrowserWindow.getFocusedWindow(),

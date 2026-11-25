@@ -3,7 +3,7 @@
 type Lobe = readonly [cx: number, cy: number, r: number];
 
 export interface SpeciesArt {
-  lobes: readonly Lobe[];
+  lobes: ReadonlyArray<Lobe>;
   fins?: string;
   stripes?: string;
   strokes?: string;
@@ -12,7 +12,7 @@ export interface SpeciesArt {
   eyeScale: number;
 }
 
-function ring(count: number, radius: number, r: number): Lobe[] {
+function ring(count: number, radius: number, r: number): Array<Lobe> {
   return Array.from({ length: count }, (_, index) => {
     const angle = (index / count) * Math.PI * 2;
     return [

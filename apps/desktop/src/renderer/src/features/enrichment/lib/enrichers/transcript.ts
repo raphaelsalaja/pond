@@ -1,3 +1,4 @@
+import log from "electron-log/renderer";
 import {
   buildPondUrl,
   deriveTypeKind,
@@ -28,8 +29,12 @@ export const transcriptEnricher: Enricher = {
   id: "transcript",
   enabled: (prefs) => prefs?.ai?.enableTranscript === true,
   eligible(save: Save) {
-    if (save.status !== "complete" || save.deletedAt != null) return false;
-    if (!isAudioVisual(save)) return false;
+    if (save.status !== "complete" || save.deletedAt !== null) {
+      return false;
+    }
+    if (!isAudioVisual(save)) {
+      return false;
+    }
     /** Captions from the site are a better transcript than on-device speech recognition. */
     if (save.transcriptModel === CAPTIONS_TRANSCRIPT_MODEL) return false;
     return save.transcriptModel !== whisperModelVersion();
@@ -38,16 +43,18 @@ export const transcriptEnricher: Enricher = {
     const model = whisperModelVersion();
     const file = pickPrimaryFile(save);
     const url = file ? buildPondUrl(save.id, file) : null;
-    if (!url) return skipped(model);
-    if (file?.size != null && file.size > MAX_TRANSCRIPT_BYTES) {
+    if (!url) {
+      return skipped(model);
+    }
+    if (file !== null && file.size > MAX_TRANSCRIPT_BYTES) {
       return skipped(model);
     }
     try {
       const transcript = await transcribeAudio(url);
       const fields = { transcript: transcript || null, transcriptModel: model };
       return { derived: fields, optimistic: fields };
-    } catch (err) {
-      console.warn(`[enrichment] transcript failed for ${save.id}`, err);
+    } catch (error) {
+      log.warn(`[enrichment] transcript failed for ${save.id}`, error);
       return skipped(model);
     }
   },

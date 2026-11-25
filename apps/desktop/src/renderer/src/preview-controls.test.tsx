@@ -1,11 +1,10 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
-import {
-  type PreviewControlActions,
-  PreviewControls,
-} from "./preview-controls";
+import { PreviewControls } from "./preview-controls";
+import type { PreviewControlActions } from "./preview-controls";
 
 const actions = {
   close: vi.fn(),
@@ -61,13 +60,13 @@ describe("detached preview controls", () => {
     root = createRoot(container);
   });
 
-  afterEach(async () => {
-    await act(() => root.unmount());
+  afterEach(() => {
+    act(() => root.unmount());
     container.remove();
   });
 
   async function render(state: PreviewWindowState, slideshow = false) {
-    await act(() =>
+    await act(async () =>
       root.render(
         <PreviewControls
           actions={actions}

@@ -1,19 +1,19 @@
 import { Tooltip } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { RaycastRow } from "./raycast";
 
 it("copies the Local API Token without rendering it", async () => {
-  const copied: string[] = [];
-  vi.stubGlobal("pond", {
-    async query(name: string, params: { text?: string }) {
-      if (name === "settings.ingestToken") return { token: "secret-token" };
-      if (name === "clipboard.writeText") {
-        copied.push(params.text ?? "");
+  const copied: Array<string> = [];
+  bridge.use({
+    query: {
+      "settings.ingestToken": () => ({ token: "secret-token" }),
+      "clipboard.writeText": ({ text }) => {
+        copied.push(text);
         return { ok: true };
-      }
-      throw new Error(`Unexpected query: ${name}`);
+      },
     },
   });
   const host = document.createElement("div");
@@ -39,6 +39,5 @@ it("copies the Local API Token without rendering it", async () => {
   } finally {
     await act(async () => root.unmount());
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

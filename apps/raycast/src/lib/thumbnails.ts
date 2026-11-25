@@ -55,7 +55,7 @@ export async function downloadThumbnail(save: Keyed, size: ApiThumbnailSize): Pr
 }
 
 /** Maps thumbnail keys to a cached path, `null` for no image, or nothing while loading. */
-export function useThumbnails(saves: readonly Keyed[], size: ApiThumbnailSize): ReadonlyMap<string, string | null> {
+export function useThumbnails(saves: ReadonlyArray<Keyed>, size: ApiThumbnailSize): ReadonlyMap<string, string | null> {
   const [paths, setPaths] = useState<ReadonlyMap<string, string | null> | null>(null);
   const requested = useRef(new Set<string>());
 

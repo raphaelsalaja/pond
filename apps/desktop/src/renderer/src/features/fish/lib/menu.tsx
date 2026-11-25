@@ -10,15 +10,16 @@ import {
   IconSection,
   IconTrash,
 } from "@pond/icons";
-import { Dialog, type MenuItemSpec } from "@pond/ui";
-import {
-  DEFAULT_FISH_ID,
-  type Fish,
-  type FishPatch,
-  type FishPlacement,
-  type FishRoutine,
-  type FishSection,
-  type FishSummary,
+import { Dialog } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
+import { DEFAULT_FISH_ID } from "@shared/fish-contracts";
+import type {
+  Fish,
+  FishPatch,
+  FishPlacement,
+  FishRoutine,
+  FishSection,
+  FishSummary,
 } from "@shared/fish-contracts";
 import { errorCopy } from "@/shared/lib/error-copy";
 import { notify } from "@/shared/lib/toast";
@@ -47,7 +48,7 @@ async function runFishAction(
   }
 }
 
-export function arrangeFish(placements: FishPlacement[]): void {
+export function arrangeFish(placements: Array<FishPlacement>): void {
   void runFishAction(() => fish.arrange(placements), "Couldn't move this fish");
 }
 
@@ -130,7 +131,7 @@ function deleteSection(section: FishSection): void {
   );
 }
 
-export function fishSectionItems(section: FishSection): MenuItemSpec[] {
+export function fishSectionItems(section: FishSection): Array<MenuItemSpec> {
   const sections = fish.sections();
   const index = sections.findIndex((entry) => entry.id === section.id);
   return [
@@ -184,14 +185,12 @@ function moveToItems(target: Fish): MenuItemSpec {
         disabled: shelf === LOOSE,
         onClick: () => move(LOOSE),
       },
-      ...sections.map(
-        (section): MenuItemSpec => ({
-          label: section.name,
-          icon: <IconSection />,
-          disabled: shelf === section.id,
-          onClick: () => move(section.id),
-        }),
-      ),
+      ...sections.map((section): MenuItemSpec => ({
+        label: section.name,
+        icon: <IconSection />,
+        disabled: shelf === section.id,
+        onClick: () => move(section.id),
+      })),
       { type: "separator" },
       {
         label: "New Section",
@@ -246,8 +245,8 @@ export function routineItems(
   target: FishSummary,
   routine: FishRoutine,
   onEdit?: (routine: FishRoutine) => void,
-): MenuItemSpec[] {
-  const items: MenuItemSpec[] = [
+): Array<MenuItemSpec> {
+  const items: Array<MenuItemSpec> = [
     {
       label: "Run Now",
       icon: <IconArrowRight />,
@@ -255,12 +254,13 @@ export function routineItems(
       onClick: () => runRoutine(target, routine),
     },
   ];
-  if (onEdit)
+  if (onEdit) {
     items.push({
       label: "Edit",
       icon: <IconPencil />,
       onClick: () => onEdit(routine),
     });
+  }
   items.push(
     { type: "separator" },
     {
@@ -283,7 +283,7 @@ function confirmDeleteFish(target: Fish): void {
   });
 }
 
-export function newItems(): MenuItemSpec[] {
+export function newItems(): Array<MenuItemSpec> {
   return [
     { label: "New Fish", icon: <IconPlus />, onClick: () => createFish() },
     {
@@ -294,7 +294,7 @@ export function newItems(): MenuItemSpec[] {
   ];
 }
 
-export function sectionItems(): MenuItemSpec[] {
+export function sectionItems(): Array<MenuItemSpec> {
   return [
     { label: "New Fish", icon: <IconPlus />, onClick: () => createFish() },
     {
@@ -311,8 +311,8 @@ export function sectionItems(): MenuItemSpec[] {
 }
 
 /** Actions for the fish whose conversation is open. */
-export function fishPaneItems(target: Fish): MenuItemSpec[] {
-  const items: MenuItemSpec[] = [
+export function fishPaneItems(target: Fish): Array<MenuItemSpec> {
+  const items: Array<MenuItemSpec> = [
     {
       label: "Edit Fish",
       icon: <IconPencil />,
@@ -327,7 +327,7 @@ export function fishPaneItems(target: Fish): MenuItemSpec[] {
     { type: "separator" },
     { label: "New Fish", icon: <IconPlus />, onClick: () => createFish() },
   ];
-  if (target.id !== DEFAULT_FISH_ID)
+  if (target.id !== DEFAULT_FISH_ID) {
     items.push(
       { type: "separator" },
       {
@@ -337,10 +337,11 @@ export function fishPaneItems(target: Fish): MenuItemSpec[] {
         onClick: () => confirmDeleteFish(target),
       },
     );
+  }
   return items;
 }
 
-export function fishItems(target: Fish): MenuItemSpec[] {
+export function fishItems(target: Fish): Array<MenuItemSpec> {
   return [
     {
       label: "Open Chat",

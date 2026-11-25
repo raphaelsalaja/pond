@@ -1,31 +1,42 @@
 import type { RowData } from "@tanstack/react-table";
 import { useEffect } from "react";
+import { isElement, isNode } from "../dom";
 import { useDataTable } from "./context";
 
 function eventFromEditable(event: KeyboardEvent): boolean {
   const nodes = [event.target, document.activeElement];
   return nodes.some((node) => {
-    if (!(node instanceof Element)) return false;
+    if (!isElement(node)) {
+      return false;
+    }
     return (
       node.closest(
         "input, textarea, select, [contenteditable]:not([contenteditable='false']), [role='textbox'], [role='searchbox']",
-      ) != null
+      ) !== null
     );
   });
 }
 
 function overlayOpen(): boolean {
   const active = document.activeElement;
-  if (!(active instanceof Element)) return false;
-  return active.closest('[role="dialog"], [role="menu"]') != null;
+  if (!isElement(active)) {
+    return false;
+  }
+  return active.closest('[role="dialog"], [role="menu"]') !== null;
 }
 
 function keepSelectionOnMouseDown(target: EventTarget | null): boolean {
-  if (!(target instanceof Element)) return false;
-  if (target.closest('[role="dialog"], [role="menu"]')) return true;
-  if (target.closest('[role="columnheader"]')) return true;
+  if (!isElement(target)) {
+    return false;
+  }
+  if (target.closest('[role="dialog"], [role="menu"]')) {
+    return true;
+  }
+  if (target.closest('[role="columnheader"]')) {
+    return true;
+  }
   const row = target.closest('[role="row"]');
-  return row != null && row.closest('[role="rowgroup"]') != null;
+  return row !== null && row.closest('[role="rowgroup"]') !== null;
 }
 
 export function DataTableHotkeys<T extends RowData>() {
@@ -37,13 +48,20 @@ export function DataTableHotkeys<T extends RowData>() {
     const onMouseDown = (event: MouseEvent) => {
       if (
         event.button !== 0 ||
-        !(event.target instanceof Node) ||
+        !isNode(event.target) ||
         !meta.gridRef.current?.contains(event.target)
-      )
+      ) {
         return;
-      if (event.metaKey || event.ctrlKey || event.shiftKey) return;
-      if (selectionStore.state.selectedIds.size === 0) return;
-      if (keepSelectionOnMouseDown(event.target)) return;
+      }
+      if (event.metaKey || event.ctrlKey || event.shiftKey) {
+        return;
+      }
+      if (selectionStore.state.selectedIds.size === 0) {
+        return;
+      }
+      if (keepSelectionOnMouseDown(event.target)) {
+        return;
+      }
       actions.clearSelection();
     };
 
@@ -101,8 +119,9 @@ export function DataTableHotkeys<T extends RowData>() {
         !["ArrowDown", "ArrowUp", "Home", "End", "PageDown", "PageUp"].includes(
           event.key,
         )
-      )
+      ) {
         return;
+      }
 
       const page = Math.max(
         1,

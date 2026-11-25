@@ -11,7 +11,7 @@ describe("deepLinkArg", () => {
   it("finds a Windows protocol launch argument", () => {
     expect(
       deepLinkArg([
-        "C:\\Program Files\\Pond\\Pond.exe",
+        String.raw`C:\Program Files\Pond\Pond.exe`,
         "pond://settings/general",
       ]),
     ).toBe("pond://settings/general");
@@ -61,10 +61,11 @@ describe("handleSecondInstance", () => {
 
   it("routes a link once and opens the window once", () => {
     const deps = {
-      handleDeepLink: vi.fn(() => "library" as const),
+      handleDeepLink: () => "library" as const,
       getMainWindow: () => null,
       openLibraryWindow: vi.fn(),
     };
+    vi.spyOn(deps, "handleDeepLink");
     handleSecondInstance(["Pond.exe", "pond://settings/general"], deps);
     expect(deps.handleDeepLink).toHaveBeenCalledTimes(1);
     expect(deps.handleDeepLink).toHaveBeenCalledWith(
@@ -76,7 +77,7 @@ describe("handleSecondInstance", () => {
 
   it("does not open a window for a link that was ignored", () => {
     const deps = {
-      handleDeepLink: vi.fn(() => undefined),
+      handleDeepLink: () => undefined,
       getMainWindow: () => null,
       openLibraryWindow: vi.fn(),
     };

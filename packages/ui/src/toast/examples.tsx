@@ -1,6 +1,6 @@
+import { Toast } from ".";
 import { Button } from "../button";
 import type { ComponentDocs } from "../shared/docs";
-import { Toast } from ".";
 
 function ToastList() {
   const { toasts } = Toast.useToastManager();

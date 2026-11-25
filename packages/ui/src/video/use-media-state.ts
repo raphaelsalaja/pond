@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { bufferedEnd, clamp, frameStepTime } from "./lib";
 
 interface MediaState {
@@ -59,6 +66,16 @@ const INITIAL: MediaState = {
   fullscreenSupported: false,
 };
 
+const subscribeNever = () => () => {};
+const readFullscreenEnabled = () => document.fullscreenEnabled;
+const readFullscreenUnsupported = () => false;
+
+/** A play cut short by a pause or refused by autoplay policy leaves the video paused, which the controls already show. */
+function keepPaused() {}
+
+/** A refused fullscreen change leaves the player where it was, which the controls already show. */
+function keepScreenMode() {}
+
 export interface MediaStateApi {
   state: MediaState;
   actions: MediaActions;
@@ -76,12 +93,23 @@ export function useMediaState(
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const fullscreenTargetRef = useRef(fullscreenTarget);
-  fullscreenTargetRef.current = fullscreenTarget;
+  useEffect(() => {
+    fullscreenTargetRef.current = fullscreenTarget;
+  }, [fullscreenTarget]);
   const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null);
-  const [state, setState] = useState<MediaState>(() => ({
+  const [mediaState, setState] = useState<MediaState>(() => ({
     ...INITIAL,
     muted: initialMuted,
   }));
+  const fullscreenSupported = useSyncExternalStore(
+    subscribeNever,
+    readFullscreenEnabled,
+    readFullscreenUnsupported,
+  );
+  const state = useMemo(
+    () => ({ ...mediaState, fullscreenSupported }),
+    [mediaState, fullscreenSupported],
+  );
 
   const registerVideo = useCallback((el: HTMLVideoElement | null) => {
     videoRef.current = el;
@@ -125,13 +153,6 @@ export function useMediaState(
   }, [videoEl]);
 
   useEffect(() => {
-    setState((s) => ({
-      ...s,
-      fullscreenSupported: document.fullscreenEnabled,
-    }));
-  }, []);
-
-  useEffect(() => {
     const onFullscreen = () => {
       const target = fullscreenTargetRef.current ?? rootRef.current;
       setState((s) => ({
@@ -163,11 +184,16 @@ export function useMediaState(
     () => ({
       togglePlay: () => {
         const v = videoRef.current;
-        if (!v) return;
-        if (v.paused) void v.play().catch(() => {});
-        else v.pause();
+        if (!v) {
+          return;
+        }
+        if (v.paused) {
+          void v.play().catch(keepPaused);
+        } else {
+          v.pause();
+        }
       },
-      play: () => void videoRef.current?.play().catch(() => {}),
+      play: () => void videoRef.current?.play().catch(keepPaused),
       pause: () => videoRef.current?.pause(),
       seek,
       seekBy: (delta: number) => {
@@ -187,9 +213,9 @@ export function useMediaState(
         const target = fullscreenTargetRef.current ?? rootRef.current;
         if (!target) return;
         if (document.fullscreenElement === target) {
-          void document.exitFullscreen().catch(() => {});
+          void document.exitFullscreen().catch(keepScreenMode);
         } else {
-          void target.requestFullscreen().catch(() => {});
+          void target.requestFullscreen().catch(keepScreenMode);
         }
       },
       stepFrame: (delta: number) => {

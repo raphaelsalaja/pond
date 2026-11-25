@@ -69,7 +69,7 @@ export type CaptureDraft = z.infer<typeof CaptureDraftSchema>;
 export type CaptureWebDraft = z.infer<typeof CaptureWebDraftSchema>;
 export type CaptureMetadata = z.infer<typeof CaptureMetadataSchema>;
 
-export function parseCaptureTags(value: string): string[] {
+export function parseCaptureTags(value: string): Array<string> {
   return value
     .split(",")
     .map((tag) => tag.trim())

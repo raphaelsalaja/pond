@@ -1,9 +1,8 @@
-import {
-  libraryChrome,
-  type SidebarPanel,
-} from "@/features/library/state/library-chrome";
-import { getAppRouter } from "@/shared/lib/app-router";
-import { type LibraryNav, pathForLibraryNav } from "@/shared/lib/library-nav";
+import { libraryChrome } from "@/features/library/state/library-chrome";
+import type { SidebarPanel } from "@/features/library/state/library-chrome";
+import { getAppHistory, getAppRouter } from "@/shared/lib/app-router";
+import { pathForLibraryNav } from "@/shared/lib/library-nav";
+import type { LibraryNav } from "@/shared/lib/library-nav";
 import { hrefWithSearch } from "@/shared/lib/route-search";
 
 /** Each collection opens unfiltered; All keeps the search, so a search can widen to every Save. */
@@ -15,7 +14,9 @@ export function selectLibraryNav(nav: LibraryNav): void {
     nav.kind === "all"
       ? (hrefWithSearch({ save: undefined, scope: undefined }, path) ?? path)
       : path;
-  if (href !== router.latestLocation.href) router.history.push(href);
+  if (href !== router.latestLocation.href) {
+    getAppHistory()?.push(href);
+  }
 }
 
 /** Rail pages are code-split, so a cold click would swap the sidebar before the page chunk arrives. */

@@ -16,14 +16,14 @@ export function parseJsonText(text: string): JsonValue | null {
 }
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return value instanceof Object && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function walkJson(
   root: JsonValue,
-  visit: (value: JsonObject, keys: string[]) => void,
+  visit: (value: JsonObject, keys: Array<string>) => void,
 ): void {
-  const stack: Array<{ value: JsonValue; keys: string[] }> = [
+  const stack: Array<{ value: JsonValue; keys: Array<string> }> = [
     { value: root, keys: [] },
   ];
   while (stack.length > 0) {
@@ -33,8 +33,9 @@ export function walkJson(
     if (Array.isArray(value)) {
       for (let index = value.length - 1; index >= 0; index -= 1) {
         const child = value[index];
-        if (child !== undefined)
+        if (child !== undefined) {
           stack.push({ value: child, keys: [...keys, String(index)] });
+        }
       }
       continue;
     }

@@ -31,7 +31,7 @@ export class InstagramPostExtractor implements Extractor {
     return name === "sessionid";
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     return segments[0] ?? null;
   }
 

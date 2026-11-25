@@ -12,7 +12,7 @@ const CUSTOM_PREVIEW =
 const GENERATED_PREVIEW = "https://opengraph.githubassets.com/1/vercel/next.js";
 
 function repoPage(
-  opts: { images?: string[]; repoMeta?: boolean } = {},
+  opts: { images?: Array<string>; repoMeta?: boolean } = {},
 ): string {
   const images = opts.images ?? [CUSTOM_PREVIEW];
   const imageTags = images

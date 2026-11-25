@@ -22,7 +22,7 @@ export interface BlankDocumentDef {
   matchApp: (name: string) => boolean;
 }
 
-export const BLANK_DOCUMENTS: readonly BlankDocumentDef[] = [
+export const BLANK_DOCUMENTS: ReadonlyArray<BlankDocumentDef> = [
   {
     kind: "photoshop",
     label: "Photoshop Document",

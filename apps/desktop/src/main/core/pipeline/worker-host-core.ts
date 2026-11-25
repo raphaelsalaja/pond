@@ -62,7 +62,7 @@ interface WorkerSlot {
 
 export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
   const slots = new Set<WorkerSlot>();
-  const queue: PendingJob[] = [];
+  const queue: Array<PendingJob> = [];
   const scheduleIdle = deps.scheduleIdle ?? scheduleTimer;
   let disposed = false;
 
@@ -116,8 +116,9 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
     slot.current = null;
     clearSlotTimeout(slot);
     detachAbort(current);
-    if (response.ok) current.resolve(response.result);
-    else {
+    if (response.ok) {
+      current.resolve(response.result);
+    } else {
       const error = new Error(response.error.message);
       error.name = response.error.name;
       current.reject(error);
@@ -152,14 +153,15 @@ export function createQueueWorkerHost(deps: QueueWorkerHostDependencies) {
         if (
           current.request.operation === "process_image" ||
           current.request.operation === "probe_image"
-        )
+        ) {
           current.resolve(null);
-        else
+        } else {
           current.reject(
             new Error(
               `Queue worker exited before completing its job (${code}).`,
             ),
           );
+        }
       }
       if (!disposed && queue.length > 0) {
         try {

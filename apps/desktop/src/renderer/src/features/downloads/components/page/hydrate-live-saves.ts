@@ -3,11 +3,13 @@ import { ensureSaves } from "@/features/saves/pool";
 const HYDRATION_BATCH_SIZE = 200;
 
 function yieldToRenderer(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+  return new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 }
 
 export async function hydrateLiveDownloadSaves(
-  ids: readonly string[],
+  ids: ReadonlyArray<string>,
   stopped: () => boolean,
 ): Promise<void> {
   for (let index = 0; index < ids.length; index += HYDRATION_BATCH_SIZE) {

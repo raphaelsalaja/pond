@@ -1,4 +1,5 @@
-import { at, type JsonValue, parseJsonValue } from "../../utils/json";
+import { at, parseJsonValue } from "../../utils/json";
+import type { JsonValue } from "../../utils/json";
 
 function decodeDataParam(encoded: string): JsonValue | null {
   let decoded = encoded;

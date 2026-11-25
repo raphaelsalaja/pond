@@ -16,7 +16,7 @@ exports.run = async (ctx) => {
   await untilSave(
     ctx,
     moss,
-    (save) => save.deletedAt != null,
+    (save) => save.deletedAt !== null && save.deletedAt !== undefined,
     "moved to Trash",
   );
   /** The index shows the Trash before main records its Undo step, and the toast's Undo appears only after. */
@@ -31,7 +31,7 @@ exports.run = async (ctx) => {
   await untilSave(
     ctx,
     moss,
-    (save) => save.deletedAt == null,
+    (save) => save.deletedAt === null || save.deletedAt === undefined,
     `came back after ${JSON.stringify(undone)}`,
   );
   await ctx.waitFor(card(moss));

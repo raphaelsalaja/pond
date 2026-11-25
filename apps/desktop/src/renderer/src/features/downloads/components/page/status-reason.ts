@@ -44,7 +44,7 @@ const NETWORK =
   /network|fetch failed|navigate failed|ECONN|ENOTFOUND|EAI_AGAIN|socket hang up/i;
 const SERVER = /\b5\d\d\b/;
 
-const EXPLANATIONS: readonly (readonly [RegExp, string])[] = [
+const EXPLANATIONS: ReadonlyArray<readonly [RegExp, string]> = [
   [/region/i, "This isn't available in your region."],
   [
     /\b(404|410)\b|page not found|no longer exists|was deleted|is gone/i,
@@ -85,10 +85,16 @@ function retryCause(raw: string | null | undefined): string | null {
 }
 
 function until(at: number | null | undefined, now: number): string | null {
-  if (at == null || at >= Number.MAX_SAFE_INTEGER) return null;
-  const seconds = Math.ceil((at - now) / 1_000);
-  if (seconds <= 0) return "shortly";
-  if (seconds < 60) return `in ${seconds}s`;
+  if (at === null || at === undefined || at >= Number.MAX_SAFE_INTEGER) {
+    return null;
+  }
+  const seconds = Math.ceil((at - now) / 1000);
+  if (seconds <= 0) {
+    return "shortly";
+  }
+  if (seconds < 60) {
+    return `in ${seconds}s`;
+  }
   const minutes = Math.ceil(seconds / 60);
   if (minutes < 60) return `in ${minutes} min`;
   const hours = Math.max(1, Math.round(minutes / 60));
@@ -112,7 +118,7 @@ function nextAttempt(row: DownloadRow): string | null {
   return `Attempt ${task.attempts + 1} of ${task.maxAttempts}.`;
 }
 
-function joined(...parts: (string | null)[]): string {
+function joined(...parts: Array<string | null>): string {
   return parts.filter(Boolean).join(" ");
 }
 

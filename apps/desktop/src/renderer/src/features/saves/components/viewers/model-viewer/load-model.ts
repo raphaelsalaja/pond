@@ -1,10 +1,5 @@
-import {
-  type AnimationClip,
-  type BufferGeometry,
-  Mesh,
-  MeshStandardMaterial,
-  type Object3D,
-} from "three";
+import { Mesh, MeshStandardMaterial } from "three";
+import type { AnimationClip, BufferGeometry, Object3D } from "three";
 
 export type ModelLoaderKind =
   | "gltf"
@@ -21,7 +16,7 @@ export type ModelLoaderKind =
 
 export interface LoadedModel {
   object: Object3D;
-  animations: AnimationClip[];
+  animations: Array<AnimationClip>;
 }
 
 const LOADER_BY_EXTENSION = new Map<string, ModelLoaderKind>([
@@ -55,7 +50,7 @@ export function modelLoaderKind(value: string): ModelLoaderKind | null {
 function meshForGeometry(geometry: BufferGeometry): Mesh {
   if (!geometry.hasAttribute("normal")) geometry.computeVertexNormals();
   const material = new MeshStandardMaterial({
-    color: 0x94a3b8,
+    color: 0x94_a3_b8,
     roughness: 0.72,
     metalness: 0.08,
     vertexColors: geometry.hasAttribute("color"),
@@ -103,9 +98,8 @@ export async function loadModel(
       };
     }
     case "3mf": {
-      const { ThreeMFLoader } = await import(
-        "three/addons/loaders/3MFLoader.js"
-      );
+      const { ThreeMFLoader } =
+        await import("three/addons/loaders/3MFLoader.js");
       return {
         object: await new ThreeMFLoader().loadAsync(url),
         animations: [],
@@ -119,9 +113,8 @@ export async function loadModel(
       };
     }
     case "dae": {
-      const { ColladaLoader } = await import(
-        "three/addons/loaders/ColladaLoader.js"
-      );
+      const { ColladaLoader } =
+        await import("three/addons/loaders/ColladaLoader.js");
       const result = await new ColladaLoader().loadAsync(url);
       if (!result) throw new Error(`Unable to parse ${path}`);
       return { object: result.scene, animations: result.scene.animations };

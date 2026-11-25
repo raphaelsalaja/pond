@@ -1,8 +1,10 @@
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Capture } from "@pond/schema/raw";
 import type { SearchCardData } from "@shared/search-card";
-import { buildTextCardData, type TextCardData } from "@shared/text-card";
-import { buildTweetCardData, type TweetCardData } from "@shared/tweet-card";
+import { buildTextCardData } from "@shared/text-card";
+import type { TextCardData } from "@shared/text-card";
+import { buildTweetCardData } from "@shared/tweet-card";
+import type { TweetCardData } from "@shared/tweet-card";
 import { BrowserWindow, nativeImage } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -33,9 +35,9 @@ const TWEET_RADIUS_CSS = 16;
 const READY_TIMEOUT_MS = 12_000;
 const LOAD_TIMEOUT_MS = 15_000;
 /** A hidden window that never commits a frame must cost seconds, not block the Save for half a minute. */
-const CAPTURE_TIMEOUT_MS = 6_000;
+const CAPTURE_TIMEOUT_MS = 6000;
 /** Offscreen frames arrive on the paint event; wait this long for one before retrying a capture. */
-const PAINT_WAIT_MS = 1_500;
+const PAINT_WAIT_MS = 1500;
 const RENDER_TIMEOUT_MS = 24_000;
 const IDLE_DISPOSE_MS = 60_000;
 
@@ -159,7 +161,7 @@ async function readCardRect(
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height };
   })()`;
-  const raw = await withTimeout(
+  const raw = await withTimeout<unknown>(
     target.webContents.executeJavaScript(expr, true),
     READY_TIMEOUT_MS + 2000,
     "card rect",
@@ -198,7 +200,7 @@ async function captureAtScale(
     scale: SCALE,
   };
   const shoot = async (): Promise<Electron.NativeImage | null> => {
-    const raw = await withTimeout(
+    const raw = await withTimeout<unknown>(
       dbg.sendCommand("Page.captureScreenshot", {
         format: "png",
         captureBeyondViewport: true,
@@ -216,9 +218,9 @@ async function captureAtScale(
   try {
     try {
       return await shoot();
-    } catch (err) {
+    } catch (error) {
       /** The first shot lands before the offscreen surface has a frame to read. */
-      log.debug("[pond render-card] first capture missed", err);
+      log.debug("[pond render-card] first capture missed", error);
     }
     await nextPaint(target);
     return await shoot();
@@ -226,7 +228,9 @@ async function captureAtScale(
     if (attached) {
       try {
         dbg.detach();
-      } catch {}
+      } catch {
+        /** The window may already be destroyed, which detaches the debugger. */
+      }
     }
   }
 }
@@ -333,8 +337,8 @@ async function enqueueRender(
         RENDER_TIMEOUT_MS,
         "render",
       );
-    } catch (err) {
-      log.warn("[pond render-card] render failed", kind, scheme, err);
+    } catch (error) {
+      log.warn("[pond render-card] render failed", kind, scheme, error);
       disposeRenderCardWindow();
       return null;
     } finally {

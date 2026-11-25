@@ -23,14 +23,16 @@ export class RedditPostExtractor implements Extractor {
       })()`;
 
   authCookies(name: string, value?: string): boolean {
-    if (name === "reddit_session")
+    if (name === "reddit_session") {
       return value === undefined || value.length > 0;
-    if (name === "token_v2")
+    }
+    if (name === "token_v2") {
       return value ? isLoggedInRedditToken(value) : false;
+    }
     return false;
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     if ((segments[0] === "user" || segments[0] === "u") && segments[1]) {
       return segments[1];
     }

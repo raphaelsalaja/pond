@@ -9,7 +9,7 @@ import type { Capture } from "@pond/schema/raw";
  */
 export function mediaFilesByUrl(
   capture: Capture,
-  files: readonly SaveFile[],
+  files: ReadonlyArray<SaveFile>,
 ): Map<string, SaveFile> {
   const out = new Map<string, SaveFile>();
   (capture.media ?? []).forEach((m, i) => {

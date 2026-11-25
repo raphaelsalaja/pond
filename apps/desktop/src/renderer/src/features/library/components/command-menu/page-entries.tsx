@@ -34,7 +34,10 @@ function same(a: string, b: string): boolean {
   return a.toLowerCase() === b.toLowerCase();
 }
 
-function useTagEntries(name: string | null, searching: boolean): MenuEntry[] {
+function useTagEntries(
+  name: string | null,
+  searching: boolean,
+): Array<MenuEntry> {
   const tags = useTags();
   const groups = useTagGroups();
   return useMemo(() => {
@@ -116,7 +119,7 @@ function useTagEntries(name: string | null, searching: boolean): MenuEntry[] {
 function useSavedViewEntries(
   enabled: boolean,
   searching: boolean,
-): MenuEntry[] {
+): Array<MenuEntry> {
   const activeViewId = useActiveViewId();
   const views = useSavedViews();
   const [presentations] = usePrefs("savedViewViews");
@@ -154,7 +157,10 @@ function useSavedViewEntries(
   }, [enabled, activeViewId, views, presentations, searching]);
 }
 
-function useCanvasEntries(pathname: string, searching: boolean): MenuEntry[] {
+function useCanvasEntries(
+  pathname: string,
+  searching: boolean,
+): Array<MenuEntry> {
   const canvas = useCanvas(canvasIdFromPath(pathname));
   return useMemo(() => {
     if (!canvas) return [];
@@ -170,7 +176,10 @@ function useCanvasEntries(pathname: string, searching: boolean): MenuEntry[] {
   }, [canvas, searching]);
 }
 
-function useFishEntries(pathname: string, searching: boolean): MenuEntry[] {
+function useFishEntries(
+  pathname: string,
+  searching: boolean,
+): Array<MenuEntry> {
   const target = useFish(fishIdFromPath(pathname));
   return useMemo(() => {
     if (!target) return [];
@@ -184,7 +193,7 @@ function useFishEntries(pathname: string, searching: boolean): MenuEntry[] {
   }, [target, searching]);
 }
 
-function useRegisteredEntries(searching: boolean): MenuEntry[] {
+function useRegisteredEntries(searching: boolean): Array<MenuEntry> {
   const contexts = useCommandContexts();
   return useMemo(
     () =>
@@ -204,7 +213,7 @@ function useRegisteredEntries(searching: boolean): MenuEntry[] {
 export function usePageEntries(
   pathname: string,
   searching: boolean,
-): MenuEntry[] {
+): Array<MenuEntry> {
   const nav = useLibraryNav();
   const onCollection = useOnCollection(pathname);
   const tag = useTagEntries(

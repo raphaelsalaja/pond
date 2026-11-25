@@ -96,7 +96,7 @@ export class TikTokVideoExtractor implements Extractor {
     return name === "sessionid" || name === "sid_tt";
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const first = segments[0];
     if (!first) return null;
     const handle = first.startsWith("@") ? first.slice(1) : first;

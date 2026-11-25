@@ -32,9 +32,9 @@
     scale: 1;
     transition:
       opacity var(--ds-duration-medium) var(--ds-easing-snap)
-      var(--ring-delay, 0ms),
+        var(--ring-delay, 0ms),
       scale var(--ds-duration-medium) var(--ds-easing-snap)
-      var(--ring-delay, 0ms),
+        var(--ring-delay, 0ms),
       visibility 0s var(--ring-delay, 0ms);
   }
 

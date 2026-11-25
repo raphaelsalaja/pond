@@ -2,13 +2,8 @@ import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
 import { mkdir, rm, stat } from "node:fs/promises";
 import { extname, join, resolve, sep } from "node:path";
-import {
-  type NewSave,
-  type Save,
-  type SaveFile,
-  saves,
-  syncActions,
-} from "@pond/schema/db";
+import { saves, syncActions } from "@pond/schema/db";
+import type { NewSave, Save, SaveFile } from "@pond/schema/db";
 import { eq } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
@@ -42,17 +37,17 @@ export type WriteFileArgs = WriteFileMetadata &
 
 interface ApplyPatchOptions {
   actorReason: string;
-  newFiles?: WriteFileArgs[];
-  replaceFilesWithKind?: SaveFile["kind"] | SaveFile["kind"][];
+  newFiles?: Array<WriteFileArgs>;
+  replaceFilesWithKind?: SaveFile["kind"] | Array<SaveFile["kind"]>;
 }
 
 export function mergeSaveFiles(
-  current: readonly SaveFile[],
-  written: readonly SaveFile[],
-  replaceKinds?: SaveFile["kind"] | readonly SaveFile["kind"][] | null,
-): SaveFile[] {
+  current: ReadonlyArray<SaveFile>,
+  written: ReadonlyArray<SaveFile>,
+  replaceKinds?: SaveFile["kind"] | ReadonlyArray<SaveFile["kind"]> | null,
+): Array<SaveFile> {
   const kinds =
-    replaceKinds == null
+    replaceKinds === null || replaceKinds === undefined
       ? null
       : new Set(Array.isArray(replaceKinds) ? replaceKinds : [replaceKinds]);
   const retained = kinds
@@ -75,14 +70,14 @@ export async function applySavePatch(
     }
 
     const replaceKinds =
-      opts.replaceFilesWithKind == null
+      opts.replaceFilesWithKind === undefined
         ? null
         : new Set<SaveFile["kind"]>(
             Array.isArray(opts.replaceFilesWithKind)
               ? opts.replaceFilesWithKind
               : [opts.replaceFilesWithKind],
           );
-    const written: SaveFile[] = [];
+    const written: Array<SaveFile> = [];
     if (opts.newFiles && opts.newFiles.length > 0) {
       const blocked = libraryWriteBlock(libraryRoot());
       if (blocked) throw userError(blocked);
@@ -129,8 +124,9 @@ export async function applySavePatch(
     const fullPatch: Partial<NewSave> = { ...patch };
     if (written.length > 0 || replaceKinds) fullPatch.files = nextFiles;
 
-    if (fullPatch.title !== undefined && hasUserTitle(saveId))
+    if (fullPatch.title !== undefined && hasUserTitle(saveId)) {
       delete fullPatch.title;
+    }
     db.update(saves)
       .set(withRawSlim(fullPatch))
       .where(eq(saves.id, saveId))
@@ -160,12 +156,19 @@ export async function applySavePatch(
       const retainedPaths = new Set((nextFiles ?? []).map((file) => file.path));
       const dir = resolve(saveDir(saveId));
       for (const file of current.files ?? []) {
-        if (!replaceKinds.has(file.kind) || retainedPaths.has(file.path))
+        if (!replaceKinds.has(file.kind) || retainedPaths.has(file.path)) {
           continue;
+        }
         const path = resolve(join(dir, file.path));
-        if (path === dir || !path.startsWith(`${dir}${sep}`)) continue;
-        await rm(path, { force: true }).catch((err) => {
-          log.warn("[pond pipeline] failed to remove replaced file", path, err);
+        if (path === dir || !path.startsWith(`${dir}${sep}`)) {
+          continue;
+        }
+        await rm(path, { force: true }).catch((cause: unknown) => {
+          log.warn(
+            "[pond pipeline] failed to remove replaced file",
+            path,
+            cause,
+          );
         });
       }
     }
@@ -192,8 +195,11 @@ export async function persistWriteFile(
     return null;
   }
   const hash = createHash("sha256");
-  for await (const chunk of createReadStream(file.sourcePath))
-    hash.update(chunk);
+  for await (const chunk of createReadStream(file.sourcePath)) {
+    if (Buffer.isBuffer(chunk)) {
+      hash.update(chunk);
+    }
+  }
   await copyLibraryMediaFile(file.sourcePath, targetPath);
   return { sha256: hash.digest("hex"), size };
 }

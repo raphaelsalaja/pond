@@ -5,9 +5,6 @@ import log from "electron-log/main.js";
 import { z } from "zod";
 import { markAtRisk, report } from "../../pipeline/rate-governor";
 import {
-  type BookmarksEntry,
-  type BookmarksHarvestArgs,
-  type BookmarksHarvestResult,
   buildBookmarkFolderApiExpression,
   buildBookmarksApiExpression,
   buildBookmarksExpression,
@@ -16,6 +13,11 @@ import {
   parseBookmarksResponses,
   TWITTER_BOOKMARKS_URL,
 } from "../harvest/twitter";
+import type {
+  BookmarksEntry,
+  BookmarksHarvestArgs,
+  BookmarksHarvestResult,
+} from "../harvest/twitter";
 import { NAV_TIMEOUT_MS } from "./constants";
 import {
   looksLikeAuthWall,
@@ -23,6 +25,9 @@ import {
   navigateWithTimeout,
 } from "./navigation";
 import { leaseWindow } from "./pool";
+
+/** A poll that lands mid-navigation fails; the next tick reads the stats again. */
+function ignoreMissedProgressPoll(): void {}
 
 interface BookmarksHarvestProgress {
   phase: "hydrate" | "scroll";
@@ -212,7 +217,7 @@ async function harvestTwitterTimeline(
       return { ok: false, reason: "auth_required" };
     }
     if (opts.openView) {
-      const opened = await lease.win.webContents.executeJavaScript(
+      const opened: unknown = await lease.win.webContents.executeJavaScript(
         opts.openView,
         true,
       );
@@ -252,7 +257,7 @@ async function harvestTwitterTimeline(
             scrolls: stats.scrolls,
           });
         })
-        .catch(() => {});
+        .catch(ignoreMissedProgressPoll);
     }, 1500);
 
     const runExpr = (expr: string): Promise<JsonValue> =>
@@ -324,7 +329,7 @@ async function harvestTwitterTimeline(
 
     const rich = parseBookmarksResponses(result.captures);
     const seenTweetIds = new Set<string>();
-    const merged: BookmarksEntry[] = [];
+    const merged: Array<BookmarksEntry> = [];
     for (const entry of result.entries) {
       if (seenTweetIds.has(entry.tweetId)) continue;
       seenTweetIds.add(entry.tweetId);
@@ -379,8 +384,8 @@ async function harvestTwitterTimeline(
       captures: result.captures,
       reachedEnd: result.reachedEnd,
     };
-  } catch (err) {
-    log.warn(`[pond ${logTag}] unexpected error`, err);
+  } catch (error) {
+    log.warn(`[pond ${logTag}] unexpected error`, error);
     return { ok: false, reason: "timeout" };
   } finally {
     lease.release();

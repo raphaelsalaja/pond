@@ -122,7 +122,7 @@ export function SplitPostsPage() {
                 </EmptyPreview.Column>
               </EmptyPreview.Root>
             </Empty.Media>
-            <Empty.Title>Couldn't Load Split Posts</Empty.Title>
+            <Empty.Title>Couldn&apos;t Load Split Posts</Empty.Title>
             <Empty.Description>Try again in a moment.</Empty.Description>
             <Empty.Action>
               <Button

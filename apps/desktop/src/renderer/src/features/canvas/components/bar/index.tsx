@@ -1,4 +1,5 @@
-import { Button, Keyboard, Menu, type MenuItemSpec, Tooltip } from "@pond/ui";
+import { Button, Keyboard, Menu, Tooltip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { CanvasColor } from "@shared/canvas-contracts";
 import { clsx as cn } from "clsx";
 import type { ComponentPropsWithoutRef, ReactElement } from "react";
@@ -23,7 +24,7 @@ function Root({ hidden, className, ...props }: RootProps) {
   );
 }
 
-interface GroupProps extends ComponentPropsWithoutRef<"fieldset"> {}
+type GroupProps = ComponentPropsWithoutRef<"fieldset">;
 
 function Group({ className, ...props }: GroupProps) {
   return <fieldset className={cn(styles.group, className)} {...props} />;
@@ -31,7 +32,7 @@ function Group({ className, ...props }: GroupProps) {
 
 interface ColorsProps {
   value: CanvasColor | null;
-  onChange(color: CanvasColor): void;
+  onChange: (color: CanvasColor) => void;
 }
 
 function Colors({ value, onChange }: ColorsProps) {
@@ -40,9 +41,9 @@ function Colors({ value, onChange }: ColorsProps) {
 
 interface ActionProps {
   label: string;
-  shortcut?: string[];
+  shortcut?: Array<string>;
   pressed?: boolean;
-  onClick(): void;
+  onClick: () => void;
   children: ReactElement;
 }
 
@@ -75,7 +76,7 @@ function Action({ label, shortcut, pressed, onClick, children }: ActionProps) {
 
 interface BarMenuProps {
   label: string;
-  buildItems: () => MenuItemSpec[];
+  buildItems: () => Array<MenuItemSpec>;
   children: ReactElement;
 }
 

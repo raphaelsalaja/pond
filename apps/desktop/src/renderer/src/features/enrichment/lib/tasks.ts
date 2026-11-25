@@ -39,9 +39,9 @@ export const TASK_ENABLED = {
     prefs?.ai?.enableSensitiveContent === true,
 } as const;
 
-export type TaskScope = readonly string[] | undefined;
+export type TaskScope = ReadonlyArray<string> | undefined;
 
-function targetSaves(ids: TaskScope): Save[] {
+function targetSaves(ids: TaskScope): Array<Save> {
   const live = pool.snapshot().filter((s) => !s.deletedAt);
   if (!ids || ids.length === 0) return live;
   const set = new Set(ids);
@@ -127,9 +127,13 @@ async function reprocessStamped(
   clear: (save: Save) => Save | null,
   ids: TaskScope,
 ): Promise<TaskResult> {
-  if (!enabled) return { ok: false, message: disabledHint };
-  if (ids?.length) await ensureSaves(ids);
-  const updated: Save[] = [];
+  if (!enabled) {
+    return { ok: false, message: disabledHint };
+  }
+  if (ids?.length) {
+    await ensureSaves(ids);
+  }
+  const updated: Array<Save> = [];
   for (const save of targetSaves(ids)) {
     const next = clear(save);
     if (next) updated.push(next);
@@ -150,7 +154,10 @@ export function recaption(ids?: TaskScope): Promise<TaskResult> {
   return reprocessStamped(
     TASK_ENABLED.caption(getPrefsSnapshot()),
     DISABLED_HINTS.caption,
-    (s) => (s.captionModel == null ? null : { ...s, captionModel: null }),
+    (s) =>
+      s.captionModel === null || s.captionModel === undefined
+        ? null
+        : { ...s, captionModel: null },
     ids,
   );
 }
@@ -159,7 +166,10 @@ export function reocr(ids?: TaskScope): Promise<TaskResult> {
   return reprocessStamped(
     TASK_ENABLED.ocr(getPrefsSnapshot()),
     DISABLED_HINTS.ocr,
-    (s) => (s.ocrModel == null ? null : { ...s, ocrModel: null }),
+    (s) =>
+      s.ocrModel === null || s.ocrModel === undefined
+        ? null
+        : { ...s, ocrModel: null },
     ids,
   );
 }
@@ -168,34 +178,48 @@ export function retranscribe(ids?: TaskScope): Promise<TaskResult> {
   return reprocessStamped(
     TASK_ENABLED.transcribe(getPrefsSnapshot()),
     DISABLED_HINTS.transcribe,
-    (s) => (s.transcriptModel == null ? null : { ...s, transcriptModel: null }),
+    (s) =>
+      s.transcriptModel === null || s.transcriptModel === undefined
+        ? null
+        : { ...s, transcriptModel: null },
     ids,
   );
 }
 
 export async function reembed(ids?: TaskScope): Promise<TaskResult> {
-  if (!TASK_ENABLED.reembed(getPrefsSnapshot()))
+  if (!TASK_ENABLED.reembed(getPrefsSnapshot())) {
     return { ok: false, message: DISABLED_HINTS.reembed };
-  if (ids?.length) await ensureSaves(ids);
+  }
+  if (ids?.length) {
+    await ensureSaves(ids);
+  }
   clearEmbeddings(ids && ids.length > 0 ? ids : undefined);
   return reprocessStamped(
     true,
     DISABLED_HINTS.reembed,
     (save) =>
-      save.embeddingModel == null ? null : { ...save, embeddingModel: null },
+      save.embeddingModel === null || save.embeddingModel === undefined
+        ? null
+        : { ...save, embeddingModel: null },
     ids,
   );
 }
 
 export async function rebuildVisualIndex(ids?: TaskScope): Promise<TaskResult> {
-  if (!TASK_ENABLED.clip(getPrefsSnapshot()))
+  if (!TASK_ENABLED.clip(getPrefsSnapshot())) {
     return { ok: false, message: DISABLED_HINTS.clip };
-  if (ids?.length) await ensureSaves(ids);
+  }
+  if (ids?.length) {
+    await ensureSaves(ids);
+  }
   clearMediaEmbeddings(ids && ids.length > 0 ? ids : undefined);
   return reprocessStamped(
     true,
     DISABLED_HINTS.clip,
-    (save) => (save.clipModel == null ? null : { ...save, clipModel: null }),
+    (save) =>
+      save.clipModel === null || save.clipModel === undefined
+        ? null
+        : { ...save, clipModel: null },
     ids,
   );
 }
@@ -207,7 +231,9 @@ export function reclassifySensitiveContent(
     TASK_ENABLED.sensitiveContent(getPrefsSnapshot()),
     DISABLED_HINTS.sensitiveContent,
     (save) =>
-      save.sensitiveModel == null ? null : { ...save, sensitiveModel: null },
+      save.sensitiveModel === null || save.sensitiveModel === undefined
+        ? null
+        : { ...save, sensitiveModel: null },
     ids,
   );
 }

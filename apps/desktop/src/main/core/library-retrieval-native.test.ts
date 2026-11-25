@@ -1,14 +1,13 @@
-import * as schema from "@pond/schema/db";
-import * as events from "@pond/schema/events";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { embeddingDimensions } from "../../shared/embeddings";
+import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
-import {
-  type LibraryRetrievalInput,
-  type LibraryRetrievalScope,
-  retrieveLibraryWithDb,
+import { retrieveLibraryWithDb } from "./library-retrieval";
+import type {
+  LibraryRetrievalInput,
+  LibraryRetrievalScope,
 } from "./library-retrieval";
 import { cosineSimilarity } from "./query-embeddings";
 import { upsertVec } from "./vec-index";
@@ -19,8 +18,9 @@ function nativeAvailable() {
     db.close();
     return true;
   } catch (error) {
-    if (process.versions.electron || process.env.POND_REQUIRE_NATIVE === "1")
+    if (process.versions.electron || process.env.POND_REQUIRE_NATIVE === "1") {
       throw error;
+    }
     return false;
   }
 }
@@ -82,7 +82,7 @@ describe.skipIf(!nativeAvailable())("native scoped retrieval adapter", () => {
         try {
           expect(initializePondSchema(sqlite)).toBe(true);
           const db = Object.assign(
-            drizzle(sqlite, { schema: { ...schema, ...events } }),
+            drizzle(sqlite, { schema: { ...libraryTables, ...eventTables } }),
             { $raw: sqlite },
           );
           const records = Array.from({ length: 40 }, (_, index) => ({
@@ -115,12 +115,13 @@ describe.skipIf(!nativeAvailable())("native scoped retrieval adapter", () => {
                 encoded,
                 record.model,
               );
-              if (record.index % 5 === 0)
+              if (record.index % 5 === 0) {
                 sqlite
                   .prepare(
                     "insert into save_folders(save_id,folder_id) values (?,'selective')",
                   )
                   .run(record.id);
+              }
             }
           })();
           // Most entries are missing; the one present is deliberately stale.
@@ -156,8 +157,9 @@ describe.skipIf(!nativeAvailable())("native scoped retrieval adapter", () => {
           );
           expect(result.hits.map((hit) => hit.id)).toEqual(expected);
           expect(result.saves.map((save) => save.id)).toEqual(expected);
-          for (const hit of result.hits)
+          for (const hit of result.hits) {
             expect(hit.channels).toEqual([channel]);
+          }
           const missingModel = await retrieveLibraryWithDb(
             db,
             {},

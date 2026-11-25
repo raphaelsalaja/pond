@@ -1,15 +1,20 @@
 import { Dialog } from "@pond/ui";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { bridge } from "@/shared/test/pond-bridge";
 import { ChatActions } from "./chat-actions";
 
 let host: HTMLDivElement;
 let root: Root;
-const query = vi.fn(async () => ({ ok: true }));
 beforeEach(() => {
-  vi.stubGlobal("pond", { query });
-  query.mockClear();
+  bridge.use({
+    query: {
+      "clipboard.writeText": () => ({ ok: true }),
+      "agent.exportChat": () => ({ ok: true }),
+    },
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -17,7 +22,6 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
-  vi.unstubAllGlobals();
 });
 async function render(disabled = false, chatId: string | null = "chat") {
   await act(async () =>
@@ -75,7 +79,7 @@ it("copies Markdown through the desktop clipboard operation", async () => {
   await render();
   await openMenu();
   await act(async () => menuItem("Copy Conversation")?.click());
-  expect(query).toHaveBeenCalledWith("clipboard.writeText", {
+  expect(window.pond.query).toHaveBeenCalledWith("clipboard.writeText", {
     text: "# Notes\n\n## You\n\n**Hello**\n\n",
   });
 });
@@ -88,8 +92,9 @@ it.each([true, false])(
       "Copy Conversation",
       "Export Markdown",
       "Clear Conversation",
-    ])
+    ]) {
       expect(menuItem(label)?.hasAttribute("data-disabled")).toBe(true);
+    }
   },
 );
 it("requires confirmation before deleting and supports cancellation", async () => {
@@ -99,7 +104,7 @@ it("requires confirmation before deleting and supports cancellation", async () =
   expect(document.querySelector('[role="alertdialog"]')?.textContent).toContain(
     "permanently deletes",
   );
-  expect(query).not.toHaveBeenCalled();
+  expect(window.pond.query).not.toHaveBeenCalled();
   await act(async () => item("Close")?.click());
-  expect(query).not.toHaveBeenCalled();
+  expect(window.pond.query).not.toHaveBeenCalled();
 });

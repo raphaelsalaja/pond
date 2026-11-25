@@ -255,40 +255,40 @@ describe("complete model discovery", () => {
     });
   });
 
-  it.each(["gemini", "anthropic"] as const)(
-    "collects every %s page",
-    async (provider) => {
-      const urls: string[] = [];
+  it.each([
+    {
+      provider: "gemini" as const,
+      page: (first: boolean) => ({
+        models: [{ name: first ? "first" : "second" }],
+        nextPageToken: first ? "next" : undefined,
+      }),
+      json: { models: [{ name: "first" }, { name: "second" }] },
+      cursor: "pageToken=next",
+    },
+    {
+      provider: "anthropic" as const,
+      page: (first: boolean) => ({
+        data: [{ id: first ? "first" : "second" }],
+        has_more: first,
+        last_id: first ? "next" : "second",
+      }),
+      json: { data: [{ id: "first" }, { id: "second" }] },
+      cursor: "after_id=next",
+    },
+  ])(
+    "collects every $provider page",
+    async ({ provider, page, json, cursor }) => {
+      const urls: Array<string> = [];
       const result = await fetchProviderModels(
         { provider, key: "test-key", ...bases },
         async (url) => {
           urls.push(String(url));
-          const first = urls.length === 1;
-          return Response.json(
-            provider === "gemini"
-              ? {
-                  models: [{ name: first ? "first" : "second" }],
-                  nextPageToken: first ? "next" : undefined,
-                }
-              : {
-                  data: [{ id: first ? "first" : "second" }],
-                  has_more: first,
-                  last_id: first ? "next" : "second",
-                },
-          );
+          return Response.json(page(urls.length === 1));
         },
       );
-      expect(result).toEqual({
-        ok: true,
-        json:
-          provider === "gemini"
-            ? { models: [{ name: "first" }, { name: "second" }] }
-            : { data: [{ id: "first" }, { id: "second" }] },
-      });
+      expect(result).toEqual({ ok: true, json });
       expect(urls).toHaveLength(2);
-      expect(urls[1]).toContain(
-        provider === "gemini" ? "pageToken=next" : "after_id=next",
-      );
+      expect(urls[1]).toContain(cursor);
     },
   );
 

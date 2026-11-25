@@ -1,17 +1,19 @@
 import {
-  type CollisionDetection,
   closestCenter,
   DndContext,
-  type DragEndEvent,
-  type DragOverEvent,
   DragOverlay,
   KeyboardSensor,
   PointerSensor,
   pointerWithin,
   rectIntersection,
-  type UniqueIdentifier,
   useSensor,
   useSensors,
+} from "@dnd-kit/core";
+import type {
+  CollisionDetection,
+  DragEndEvent,
+  DragOverEvent,
+  UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -35,7 +37,6 @@ import {
 } from "@/shared/lib/dnd-kit";
 import { usePrefs } from "@/shared/state/prefs";
 import {
-  type FishLayout,
   fishLayout,
   LOOSE,
   layoutPlacements,
@@ -45,6 +46,7 @@ import {
   shelfKeys,
   shelfOf,
 } from "../../lib/layout";
+import type { FishLayout } from "../../lib/layout";
 import { arrangeFish, newItems, sectionItems } from "../../lib/menu";
 import { useFishList, useFishSections, useHydrateFish } from "../../state/fish";
 import { FishRow } from "../row";
@@ -112,8 +114,10 @@ export function FishSection({ activeId }: { activeId: string | null }) {
           ),
         })[0]?.id ?? shelfHit.id;
     }
-    if (over != null) lastOver.current = over;
-    return lastOver.current != null ? [{ id: lastOver.current }] : [];
+    if (over !== null) {
+      lastOver.current = over;
+    }
+    return lastOver.current !== null ? [{ id: lastOver.current }] : [];
   };
 
   const onDragOver = ({ active, over }: DragOverEvent) => {
@@ -153,13 +157,14 @@ export function FishSection({ activeId }: { activeId: string | null }) {
     if (shelf && id !== overId && shelf === shelfOf(base, overId)) {
       const ids = base[shelf] ?? [];
       const to = ids.indexOf(overId);
-      if (to >= 0)
+      if (to >= 0) {
         next = { ...base, [shelf]: arrayMove(ids, ids.indexOf(id), to) };
+      }
     }
     if (!sameLayout(next, saved)) arrangeFish(layoutPlacements(next, sections));
   };
 
-  const rows = (ids: readonly string[]) =>
+  const rows = (ids: ReadonlyArray<string>) =>
     ids.map((id) => {
       const fish = byId.get(id);
       if (!fish) return null;

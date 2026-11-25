@@ -1,8 +1,5 @@
-import {
-  FILE_RING_ACTIONS,
-  type FileRingAction,
-  type FileRingItem,
-} from "@pond/schema/file-ring";
+import { FILE_RING_ACTIONS } from "@pond/schema/file-ring";
+import type { FileRingAction, FileRingItem } from "@pond/schema/file-ring";
 import { z } from "zod";
 import type { MenuActionId } from "./constants";
 import type { ShellHint } from "./shell-hint";
@@ -46,8 +43,8 @@ export interface FileRingOverlayFolder {
 
 export interface FileRingOverlaySnapshot {
   /** Null keeps the automatic ring, which the overlay fills from its own recent folders. */
-  items: FileRingItem[] | null;
-  folders: FileRingOverlayFolder[];
+  items: Array<FileRingItem> | null;
+  folders: Array<FileRingOverlayFolder>;
   counts: Record<string, number>;
   shell: ShellHint;
 }

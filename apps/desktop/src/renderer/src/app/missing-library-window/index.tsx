@@ -26,10 +26,11 @@ function useView(): MissingLibraryView | null {
     if (!api) return;
     let active = true;
     const apply = (next: MissingLibraryView) => {
-      if (active)
+      if (active) {
         setView((current) =>
           current && current.attempt >= next.attempt ? current : next,
         );
+      }
     };
     const stop = api.onView(apply);
     void api.ready().then(apply);
@@ -64,7 +65,7 @@ export function MissingLibraryWindow() {
           <Empty.Root className={styles.empty}>
             <Empty.Title>Library Not Found</Empty.Title>
             <Empty.Description aria-live="polite">
-              Pond can't find {view.name} at{" "}
+              Pond can&apos;t find {view.name} at{" "}
               <span className={styles.path}>{view.path}</span>. {view.detail}
             </Empty.Description>
             <Finder file={fileName(view.path)} />
@@ -85,7 +86,7 @@ export function MissingLibraryWindow() {
               </Button>
             </Empty.Action>
             <p className={styles.hint}>
-              Can't find it?{" "}
+              Can&apos;t find it?{" "}
               <Button
                 variant="link"
                 size="xs"

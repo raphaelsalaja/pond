@@ -12,7 +12,7 @@ import type { App } from "electron";
 import { afterEach, describe, expect, it } from "vitest";
 import { resolveLogFile } from "./logging";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(() => {
   for (const root of roots.splice(0)) {

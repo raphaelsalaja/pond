@@ -1,14 +1,12 @@
 import type { UndoStepOutcome, WireUndoStepState } from "@shared/wire";
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { ToastHost } from "@/shared/components/toast-host";
 import { toastManager } from "@/shared/lib/toast";
-import {
-  notifyUndoable,
-  reflectHistoryChange,
-  type UndoStepHistory,
-} from "@/shared/lib/undo-toast";
+import { notifyUndoable, reflectHistoryChange } from "@/shared/lib/undo-toast";
+import type { UndoStepHistory } from "@/shared/lib/undo-toast";
 
 let root: Root;
 let host: HTMLDivElement;
@@ -26,7 +24,7 @@ afterEach(async () => {
   host.remove();
 });
 
-function toasts(): HTMLElement[] {
+function toasts(): Array<HTMLElement> {
   return [
     ...document.body.querySelectorAll<HTMLElement>(
       "[data-slot='toasts'] [role='dialog']",
@@ -50,12 +48,13 @@ function state(outcome: UndoStepOutcome): WireUndoStepState {
 
 /** Records calls and lets each test settle them, so in-flight states are observable. */
 function controlledHistory() {
-  const calls: string[] = [];
-  let settle: (outcome: UndoStepOutcome) => void = () => {};
-  const pending = () =>
-    new Promise<WireUndoStepState>((resolve) => {
-      settle = (outcome) => resolve(state(outcome));
-    });
+  const calls: Array<string> = [];
+  let resolvePending: ((value: WireUndoStepState) => void) | null = null;
+  const pending = () => {
+    const { promise, resolve } = Promise.withResolvers<WireUndoStepState>();
+    resolvePending = resolve;
+    return promise;
+  };
   const history: UndoStepHistory = {
     undoStep: (step) => {
       calls.push(`undo:${step}`);
@@ -69,7 +68,7 @@ function controlledHistory() {
   return {
     history,
     calls,
-    settle: (outcome: UndoStepOutcome) => settle(outcome),
+    settle: (outcome: UndoStepOutcome) => resolvePending?.(state(outcome)),
   };
 }
 
@@ -195,20 +194,24 @@ it("keeps the live toast truthful when global Undo fails on its step", async () 
   expect(action("Undo").disabled).toBe(false);
 });
 
+function openToastText(): Array<string | null> {
+  return toasts()
+    .filter((toast) => !toast.hasAttribute("data-ending-style"))
+    .map((toast) => toast.textContent);
+}
+
 it("says when global history has nothing to reverse or fails", async () => {
-  const open = () =>
-    toasts()
-      .filter((toast) => !toast.hasAttribute("data-ending-style"))
-      .map((toast) => toast.textContent);
   await act(async () =>
     reflectHistoryChange("undo", { ok: false, step: null }),
   );
   await vi.waitFor(() =>
-    expect(open()).toEqual([expect.stringContaining("Nothing to undo")]),
+    expect(openToastText()).toEqual([
+      expect.stringContaining("Nothing to undo"),
+    ]),
   );
   await act(async () => reflectHistoryChange("redo", null));
   await vi.waitFor(() =>
-    expect(open()).toEqual([
+    expect(openToastText()).toEqual([
       expect.stringContaining("Couldn't redo the last change"),
     ]),
   );

@@ -1,4 +1,5 @@
-import { type SQL, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { z } from "zod";
 import { saves } from "../../db";
 import type { ComparatorId, Predicate, PredicateValue } from "../types";

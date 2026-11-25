@@ -1,3 +1,5 @@
+import { at, parseJsonValue } from "../../utils/json";
+
 const ALPHABET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
@@ -114,17 +116,15 @@ export function mediaIdFromLikeUrl(url: string): string | null {
 
 export function extractMediaIdFromBody(bodyStr: string | null): string | null {
   const variablesRaw = formParams(bodyStr)?.get("variables");
-  if (!variablesRaw) return null;
-  try {
-    const vars = JSON.parse(variablesRaw);
-    const candidate =
-      vars.input?.media_id ??
-      vars.media_id ??
-      vars.mediaId ??
-      vars.media?.id ??
-      null;
-    return candidate == null ? null : String(candidate);
-  } catch {
+  if (!variablesRaw) {
     return null;
   }
+  const vars = parseJsonValue(variablesRaw);
+  const candidate =
+    at(vars, "input", "media_id") ??
+    at(vars, "media_id") ??
+    at(vars, "mediaId") ??
+    at(vars, "media", "id") ??
+    null;
+  return candidate === null ? null : String(candidate);
 }

@@ -81,8 +81,11 @@ export async function openNotificationSettings(): Promise<boolean> {
 export function notificationSettingsUrl(
   platform: NodeJS.Platform,
 ): string | null {
-  if (platform === "darwin")
+  if (platform === "darwin") {
     return "x-apple.systempreferences:com.apple.Notifications-Settings.extension";
-  if (platform === "win32") return "ms-settings:notifications";
+  }
+  if (platform === "win32") {
+    return "ms-settings:notifications";
+  }
   return null;
 }

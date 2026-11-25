@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   dismissUpdateDialog,
   openUpdateOverlay,
@@ -6,9 +6,9 @@ import {
   readUpdateDialog,
   readUpdateNotice,
   requestUpdateCheck,
-  type UpdateCheckClient,
   updateNoticeStore,
 } from "./session";
+import type { UpdateCheckClient } from "./session";
 
 const current = { version: "1.0.0" };
 
@@ -22,6 +22,7 @@ function client(overrides: Partial<UpdateCheckClient> = {}): UpdateCheckClient {
 }
 
 afterEach(() => {
+  vi.useRealTimers();
   dismissUpdateDialog();
   updateNoticeStore.setState(() => null);
 });
@@ -33,11 +34,12 @@ describe("requestUpdateCheck", () => {
       open: true,
       view: { kind: "checking" },
     });
-    await viWait();
-    expect(readUpdateDialog()).toEqual({
-      open: true,
-      view: { kind: "current", version: "1.0.0" },
-    });
+    await vi.waitFor(() =>
+      expect(readUpdateDialog()).toEqual({
+        open: true,
+        view: { kind: "current", version: "1.0.0" },
+      }),
+    );
   });
 
   it("opens the update dialog immediately when a newer build is already downloading", async () => {
@@ -52,11 +54,12 @@ describe("requestUpdateCheck", () => {
         currentNotice: async () => notice,
       }),
     );
-    await viWait();
-    expect(readUpdateDialog()).toEqual({
-      open: true,
-      view: { kind: "update", notice },
-    });
+    await vi.waitFor(() =>
+      expect(readUpdateDialog()).toEqual({
+        open: true,
+        view: { kind: "update", notice },
+      }),
+    );
   });
 
   it("offers Restart when the update is already downloaded", async () => {
@@ -67,8 +70,9 @@ describe("requestUpdateCheck", () => {
         currentNotice: async () => notice,
       }),
     );
-    await viWait();
-    expect(readUpdateDialog().view).toEqual({ kind: "update", notice });
+    await vi.waitFor(() =>
+      expect(readUpdateDialog().view).toEqual({ kind: "update", notice }),
+    );
   });
 
   it("explains a development build without offering a retry", async () => {
@@ -77,12 +81,13 @@ describe("requestUpdateCheck", () => {
         checkNow: async () => ({ ok: false, reason: "dev_build" }),
       }),
     );
-    await viWait();
-    expect(readUpdateDialog().view).toEqual({
-      kind: "failed",
-      message: "Updates are only available in packaged builds.",
-      retry: false,
-    });
+    await vi.waitFor(() =>
+      expect(readUpdateDialog().view).toEqual({
+        kind: "failed",
+        message: "Updates are only available in packaged builds.",
+        retry: false,
+      }),
+    );
   });
 
   it("keeps a failed check retryable", async () => {
@@ -91,47 +96,44 @@ describe("requestUpdateCheck", () => {
         checkNow: async () => ({ ok: false, error: "Network unavailable" }),
       }),
     );
-    await viWait();
-    expect(readUpdateDialog().view).toEqual({
-      kind: "failed",
-      message: "Network unavailable",
-      retry: true,
-    });
+    await vi.waitFor(() =>
+      expect(readUpdateDialog().view).toEqual({
+        kind: "failed",
+        message: "Network unavailable",
+        retry: true,
+      }),
+    );
   });
 
   it("ignores a second check while the first is still running", async () => {
     let checks = 0;
-    let release: (value: { ok: true; version: string }) => void = () => {};
-    const pending = new Promise<{ ok: true; version: string }>((resolve) => {
-      release = resolve;
-    });
+    const pending = Promise.withResolvers<{ ok: true; version: string }>();
     const shared = client({
       checkNow: () => {
         checks += 1;
-        return pending;
+        return pending.promise;
       },
     });
     requestUpdateCheck(shared);
     requestUpdateCheck(shared);
     expect(checks).toBe(1);
     expect(readUpdateDialog().view).toEqual({ kind: "checking" });
-    release({ ok: true, version: "1.0.0" });
-    await viWait();
-    expect(readUpdateDialog().view).toEqual({
-      kind: "current",
-      version: "1.0.0",
-    });
+    pending.resolve({ ok: true, version: "1.0.0" });
+    await vi.waitFor(() =>
+      expect(readUpdateDialog().view).toEqual({
+        kind: "current",
+        version: "1.0.0",
+      }),
+    );
   });
 
   it("does not reopen after the check is dismissed", async () => {
-    let release: (value: { ok: true; version: string }) => void = () => {};
-    const pending = new Promise<{ ok: true; version: string }>((resolve) => {
-      release = resolve;
-    });
-    requestUpdateCheck(client({ checkNow: () => pending }));
+    vi.useFakeTimers();
+    const pending = Promise.withResolvers<{ ok: true; version: string }>();
+    requestUpdateCheck(client({ checkNow: () => pending.promise }));
     dismissUpdateDialog();
-    release({ ok: true, version: "9.0.0" });
-    await viWait();
+    pending.resolve({ ok: true, version: "9.0.0" });
+    await vi.runAllTimersAsync();
     expect(readUpdateDialog().open).toBe(false);
   });
 });
@@ -155,7 +157,12 @@ describe("presentUpdateNotice", () => {
         }),
       }),
     );
-    await viWait();
+    await vi.waitFor(() =>
+      expect(readUpdateDialog().view).toEqual({
+        kind: "update",
+        notice: { phase: "available", version: "2.0.0", downloading: true },
+      }),
+    );
     const progressing = {
       phase: "available" as const,
       version: "2.0.0",
@@ -201,7 +208,3 @@ describe("openUpdateOverlay", () => {
     expect(readUpdateDialog().view).toEqual({ kind: "checking" });
   });
 });
-
-function viWait(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 0));
-}

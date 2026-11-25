@@ -4,22 +4,25 @@ import {
   $insertNodeToNearestRoot,
   mergeRegister,
 } from "@lexical/utils";
+import { isHTMLTag } from "@pond/ui/dom";
 import {
   $applyNodeReplacement,
   $createParagraphNode,
   $getSelection,
   $isElementNode,
   $isRangeSelection,
-  type DOMConversionMap,
-  type DOMConversionOutput,
-  type EditorConfig,
   ElementNode,
-  type LexicalEditor,
-  type LexicalNode,
-  type NodeKey,
-  type RangeSelection,
-  type SerializedElementNode,
-  type Spread,
+} from "lexical";
+import type {
+  DOMConversionMap,
+  DOMConversionOutput,
+  EditorConfig,
+  LexicalEditor,
+  LexicalNode,
+  NodeKey,
+  RangeSelection,
+  SerializedElementNode,
+  Spread,
 } from "lexical";
 import { useEffect } from "react";
 import styles from "./styles.module.css";
@@ -84,8 +87,12 @@ export class CollapsibleContainerNode extends ElementNode {
   }
 
   updateDOM(prev: this, dom: HTMLElement): boolean {
-    if (!(dom instanceof HTMLDetailsElement)) return true;
-    if (prev.__open !== this.__open) dom.open = this.__open;
+    if (!isHTMLTag(dom, "details")) {
+      return true;
+    }
+    if (prev.__open !== this.__open) {
+      dom.open = this.__open;
+    }
     return false;
   }
 
@@ -94,7 +101,7 @@ export class CollapsibleContainerNode extends ElementNode {
   }
 
   collapseAtStart(): boolean {
-    const children: LexicalNode[] = [];
+    const children: Array<LexicalNode> = [];
     for (const child of this.getChildren()) {
       if ($isElementNode(child)) children.push(...child.getChildren());
     }
@@ -120,7 +127,9 @@ export class CollapsibleContainerNode extends ElementNode {
 }
 
 function $convertDetails(element: HTMLElement): DOMConversionOutput | null {
-  if (!(element instanceof HTMLDetailsElement)) return null;
+  if (!isHTMLTag(element, "details")) {
+    return null;
+  }
   return {
     node: $createCollapsibleContainerNode(element.open),
   };
@@ -135,7 +144,7 @@ export function $createCollapsibleContainerNode(
 export function $isCollapsibleContainerNode(
   node: LexicalNode | null | undefined,
 ): node is CollapsibleContainerNode {
-  return node instanceof CollapsibleContainerNode;
+  return node?.getType() === CollapsibleContainerNode.getType();
 }
 
 export class CollapsibleTitleNode extends ElementNode {
@@ -200,7 +209,7 @@ export function $createCollapsibleTitleNode(): CollapsibleTitleNode {
 export function $isCollapsibleTitleNode(
   node: LexicalNode | null | undefined,
 ): node is CollapsibleTitleNode {
-  return node instanceof CollapsibleTitleNode;
+  return node?.getType() === CollapsibleTitleNode.getType();
 }
 
 export class CollapsibleContentNode extends ElementNode {
@@ -234,7 +243,7 @@ export function $createCollapsibleContentNode(): CollapsibleContentNode {
 export function $isCollapsibleContentNode(
   node: LexicalNode | null | undefined,
 ): node is CollapsibleContentNode {
-  return node instanceof CollapsibleContentNode;
+  return node?.getType() === CollapsibleContentNode.getType();
 }
 
 export const COLLAPSE_NODES = [

@@ -1,7 +1,8 @@
 import { IconCircleWarning, IconTrash } from "@pond/icons";
 import { domainFromUrl } from "@pond/schema/domain";
 import { cssVars } from "@pond/ui";
-import { type NodeProps, NodeResizer } from "@xyflow/react";
+import { NodeResizer } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { useRef, useState } from "react";
 import { CardThumb } from "@/features/saves";
 import { useSave } from "@/features/saves/pool";

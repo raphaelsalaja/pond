@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { primarySelection, selection } from "@/features/saves/state/selection";
 import { followDeparture } from "./save-nav";
@@ -12,11 +12,7 @@ import {
 } from "./select";
 
 beforeEach(() => {
-  const memory = new Map<string, string>();
-  vi.stubGlobal("localStorage", {
-    getItem: (key: string) => memory.get(key) ?? null,
-    setItem: (key: string, value: string) => memory.set(key, value),
-  });
+  localStorage.clear();
   selection.clear();
   primarySelection.set(null);
 });
@@ -24,7 +20,6 @@ beforeEach(() => {
 afterEach(() => {
   selection.clear();
   primarySelection.set(null);
-  vi.unstubAllGlobals();
 });
 
 describe("clickSave", () => {

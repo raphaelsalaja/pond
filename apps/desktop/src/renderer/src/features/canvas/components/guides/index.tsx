@@ -4,7 +4,7 @@ import type { Guide } from "../../lib/snap";
 import styles from "./styles.module.css";
 
 interface GuidesProps {
-  guides: readonly Guide[];
+  guides: ReadonlyArray<Guide>;
 }
 
 export function Guides({ guides }: GuidesProps) {

@@ -15,8 +15,8 @@ import { glyph } from "./shared";
 import type { SaveMenuContext } from "./types";
 
 export interface AgentMenuItems {
-  agent: MenuItemSpec[];
-  maintenance: MenuItemSpec[];
+  agent: Array<MenuItemSpec>;
+  maintenance: Array<MenuItemSpec>;
 }
 
 export function buildAgentItems({
@@ -25,7 +25,7 @@ export function buildAgentItems({
   incomplete,
 }: SaveMenuContext): AgentMenuItems {
   const prefs = getPrefsSnapshot();
-  const agent: MenuItemSpec[] = [
+  const agent: Array<MenuItemSpec> = [
     {
       label: "Add to Chat",
       icon: glyph(IconChatBubble),
@@ -33,7 +33,7 @@ export function buildAgentItems({
       onClick: () => addSavesToChat(ids),
     },
   ];
-  const maintenance: MenuItemSpec[] = [];
+  const maintenance: Array<MenuItemSpec> = [];
   for (const task of selectableTasks()) {
     const items =
       task.id === "re-embed" || task.id === "rebuild-visual"
@@ -44,7 +44,7 @@ export function buildAgentItems({
       icon: glyph(IconMediaPlay),
       hidden: allTrashed,
       keywords: task.keywords.join(" "),
-      disabled: task.precondition?.(prefs) != null,
+      disabled: (task.precondition?.(prefs) ?? null) !== null,
       onClick: () => {
         void Promise.resolve(task.run(ids));
       },

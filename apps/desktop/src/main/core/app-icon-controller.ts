@@ -35,9 +35,9 @@ export function createAppIconController(
       if (source.kind === "builtin") ports.showBuiltin();
       else ports.showImage(source.path);
       applied = key;
-    } catch (err) {
+    } catch (error) {
       applied = null;
-      ports.onError(err instanceof Error ? err : new Error(String(err)));
+      ports.onError(error instanceof Error ? error : new Error(String(error)));
     }
   }
 

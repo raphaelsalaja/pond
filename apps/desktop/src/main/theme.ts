@@ -4,9 +4,8 @@ import { getPrefs } from "./core/prefs";
 
 export async function resolveTheme(): Promise<NormalizedTheme | null> {
   try {
-    const { resolveActiveTheme, normalizeTheme } = await import(
-      "@pond/schema/db"
-    );
+    const { resolveActiveTheme, normalizeTheme } =
+      await import("@pond/schema/db");
     const prefs = await getPrefs();
     return normalizeTheme(
       resolveActiveTheme(prefs, nativeTheme.shouldUseDarkColors),

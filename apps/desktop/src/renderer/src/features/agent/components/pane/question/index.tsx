@@ -13,7 +13,7 @@ export function KoiQuestion({
   onAnswer,
 }: {
   question: string;
-  options: readonly string[];
+  options: ReadonlyArray<string>;
   recommended?: number;
   answered?: string;
   disabled?: boolean;

@@ -1,5 +1,6 @@
 import type { DownloadRange } from "@shared/downloader-contracts";
-import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { KeyboardEvent, PointerEvent } from "react";
 import type { Clip } from "./clip";
 import { clampRange, formatClock, MIN_CLIP_SECONDS, shiftRange } from "./range";
 
@@ -11,12 +12,12 @@ interface Drag {
   edge: Edge;
   origin: number;
   range: DownloadRange;
-  targets: readonly number[];
+  targets: ReadonlyArray<number>;
 }
 
 interface Snap {
   enabled: boolean;
-  targets: readonly number[];
+  targets: ReadonlyArray<number>;
 }
 
 interface Snapped {
@@ -42,7 +43,7 @@ export function useRangeDrag(clip: Clip, snap?: Snap) {
 
   const snapTime = (
     time: number,
-    targets: readonly number[],
+    targets: ReadonlyArray<number>,
     free: boolean,
   ): Snapped => {
     if (!snap?.enabled || free) return { time, guide: null };
@@ -51,10 +52,14 @@ export function useRangeDrag(clip: Clip, snap?: Snap) {
     let best: number | null = null;
     for (const target of targets) {
       const distance = Math.abs(target - time);
-      if (distance > tolerance) continue;
-      if (best == null || distance < Math.abs(best - time)) best = target;
+      if (distance > tolerance) {
+        continue;
+      }
+      if (best === null || distance < Math.abs(best - time)) {
+        best = target;
+      }
     }
-    return best == null
+    return best === null
       ? { time: Math.round(time), guide: null }
       : { time: best, guide: best };
   };
@@ -66,8 +71,8 @@ export function useRangeDrag(clip: Clip, snap?: Snap) {
       const head = snapTime(start, current.targets, free);
       const tail = snapTime(start + length, current.targets, free);
       const useTail =
-        tail.guide != null &&
-        (head.guide == null ||
+        tail.guide !== null &&
+        (head.guide === null ||
           Math.abs(tail.guide - (start + length)) <
             Math.abs(head.guide - start));
       const next = useTail ? tail.time - length : head.time;

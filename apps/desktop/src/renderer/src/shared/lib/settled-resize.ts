@@ -1,3 +1,5 @@
+import { isHTMLElement } from "@pond/ui/dom";
+
 const SETTLE_MS = 64;
 const PANE_PROPERTIES = new Set([
   "--window-left-width",
@@ -32,27 +34,46 @@ function isDiscreteLayoutTransition(node: Element): boolean {
   );
 }
 
-function isPaneWidthTransition(event: Event): boolean {
-  if (!(event instanceof TransitionEvent)) return false;
+function isPaneWidthTransition(event: TransitionEvent): boolean {
   if (PANE_PROPERTIES.has(event.propertyName)) {
     return true;
   }
-  if (event.propertyName !== "width") return false;
-  const slot =
-    event.target instanceof HTMLElement ? event.target.dataset.slot : undefined;
+  if (event.propertyName !== "width") {
+    return false;
+  }
+  const slot = isHTMLElement(event.target)
+    ? event.target.dataset.slot
+    : undefined;
   return slot === "left" || slot === "right";
 }
+
+export type SettledSizeHost = {
+  observe: (element: HTMLElement, onResize: () => void) => () => void;
+  requestFrame: (callback: () => void) => number;
+  cancelFrame: (id: number) => void;
+};
+
+const browserHost: SettledSizeHost = {
+  observe: (element, onResize) => {
+    const observer = new ResizeObserver(onResize);
+    observer.observe(element);
+    return () => observer.disconnect();
+  },
+  requestFrame: (callback) => requestAnimationFrame(callback),
+  cancelFrame: (id) => cancelAnimationFrame(id),
+};
 
 export function observeSettledSize(
   element: HTMLElement,
   onSize: () => void,
   options: { continuous?: boolean } = {},
+  host: SettledSizeHost = browserHost,
 ): () => void {
   let frame = 0;
   let timer = 0;
   const cancelScheduled = () => {
     if (frame) {
-      cancelAnimationFrame(frame);
+      host.cancelFrame(frame);
       frame = 0;
     }
     if (timer) {
@@ -78,35 +99,44 @@ export function observeSettledSize(
         clearTimeout(timer);
         timer = 0;
       }
-      if (frame) return;
-      frame = requestAnimationFrame(apply);
+      if (frame) {
+        return;
+      }
+      frame = host.requestFrame(apply);
       return;
     }
     if (frame) {
-      cancelAnimationFrame(frame);
+      host.cancelFrame(frame);
       frame = 0;
     }
     if (timer) clearTimeout(timer);
     timer = window.setTimeout(apply, SETTLE_MS);
   };
-  const onTransitionEnd = (event: Event) => {
-    if (!isPaneWidthTransition(event)) return;
-    if (isAnimatingPane(element)) return;
+  const onTransitionEnd = (event: TransitionEvent) => {
+    if (!isPaneWidthTransition(event)) {
+      return;
+    }
+    if (isAnimatingPane(element)) {
+      return;
+    }
     apply();
   };
 
   apply();
-  const observer = new ResizeObserver(schedule);
-  observer.observe(element);
-  const root = element.closest("[data-slot=window]");
+  const stopObserving = host.observe(element, schedule);
+  const root = element.closest<HTMLElement>("[data-slot=window]");
   root?.addEventListener("transitionend", onTransitionEnd);
   root?.addEventListener("transitioncancel", onTransitionEnd);
 
   return () => {
-    observer.disconnect();
+    stopObserving();
     root?.removeEventListener("transitionend", onTransitionEnd);
     root?.removeEventListener("transitioncancel", onTransitionEnd);
-    if (frame) cancelAnimationFrame(frame);
-    if (timer) clearTimeout(timer);
+    if (frame) {
+      host.cancelFrame(frame);
+    }
+    if (timer) {
+      clearTimeout(timer);
+    }
   };
 }

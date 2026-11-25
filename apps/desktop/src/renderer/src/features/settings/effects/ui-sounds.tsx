@@ -1,3 +1,4 @@
+import { isElement, isHTMLTag, isNode } from "@pond/ui/dom";
 import { useEffect } from "react";
 import {
   playUiSoft,
@@ -35,8 +36,10 @@ const TEXT_FIELD_SELECTOR = "input, textarea, select, [contenteditable]";
 const SOFT_VARIANTS = new Set(["ghost", "tertiary", "link"]);
 
 function asElement(target: EventTarget | null): Element | null {
-  if (!(target instanceof Node)) return null;
-  return target instanceof Element ? target : target.parentElement;
+  if (!isNode(target)) {
+    return null;
+  }
+  return isElement(target) ? target : target.parentElement;
 }
 
 function closestControl(el: Element | null): Element | null {
@@ -56,11 +59,11 @@ function shouldSkip(control: Element, from: Element): boolean {
     return true;
   }
   if (
-    control instanceof HTMLButtonElement ||
-    control instanceof HTMLInputElement ||
-    control instanceof HTMLSelectElement ||
-    control instanceof HTMLTextAreaElement ||
-    control instanceof HTMLOptionElement
+    isHTMLTag(control, "button") ||
+    isHTMLTag(control, "input") ||
+    isHTMLTag(control, "select") ||
+    isHTMLTag(control, "textarea") ||
+    isHTMLTag(control, "option")
   ) {
     if (control.disabled) return true;
   }
@@ -82,7 +85,7 @@ function isToggle(control: Element): boolean {
  * afterwards, so a capture listener still reads the value the control is leaving.
  */
 export function toggleTurnsOn(control: Element): boolean {
-  if (control instanceof HTMLInputElement && control.type === "checkbox") {
+  if (isHTMLTag(control, "input") && control.type === "checkbox") {
     return control.checked;
   }
   const pressed = control.getAttribute("aria-pressed");

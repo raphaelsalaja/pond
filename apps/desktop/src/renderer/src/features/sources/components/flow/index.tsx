@@ -1,5 +1,6 @@
 import { Dialog } from "@pond/ui";
-import { type CSSProperties, type JSX, useState } from "react";
+import { useState } from "react";
+import type { CSSProperties, JSX } from "react";
 import { ConnectGlow } from "@/features/sources/components/flow/connect/glow";
 import { MymindConnectPage } from "@/features/sources/components/flow/connect/mymind";
 import {
@@ -21,11 +22,11 @@ import {
   useMymindConnectSession,
 } from "@/features/sources/state/mymind-connect-flow";
 import {
-  type SourceFlowPage,
   sourceFlow,
   useSourceFlowDepth,
   useSourceFlowPage,
 } from "@/features/sources/state/source-flow";
+import type { SourceFlowPage } from "@/features/sources/state/source-flow";
 import { useWatchSource, watchFlow } from "@/features/sources/state/watch-flow";
 
 const PAGES = {
@@ -70,7 +71,7 @@ export function SourceFlowHost() {
   const mymindSession = useMymindConnectSession();
   const activePage = useSourceFlowPage();
   const activeDepth = useSourceFlowDepth();
-  const open = activePage != null;
+  const open = activePage !== null;
   const [presentation, setPresentation] = useState({
     page: activePage,
     depth: activeDepth,

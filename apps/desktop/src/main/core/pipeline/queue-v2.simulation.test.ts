@@ -42,7 +42,7 @@ describe.skipIf(!nativeSqliteAvailable())("Queue V2 simulations", () => {
           next_run_at, created_at, updated_at
         ) VALUES (?, ?, 'twitter', 'harvest_metadata', 'dead', 5, 5, 0, 0, 0)`,
       );
-      for (let index = 0; index < 8_000; index++) {
+      for (let index = 0; index < 8000; index++) {
         const id = `save-${index}`;
         save.run(
           id,
@@ -82,7 +82,7 @@ describe.skipIf(!nativeSqliteAvailable())("Queue V2 simulations", () => {
         )
         .get(),
     );
-    expect(result).toEqual({ queued: 8_000, active: 0 });
+    expect(result).toEqual({ queued: 8000, active: 0 });
   });
 
   it("parks Twitter while admitting runnable Web work", () => {
@@ -233,7 +233,7 @@ describe.skipIf(!nativeSqliteAvailable())("Queue V2 simulations", () => {
           'main:1', 'lease', ?, ?
         )`,
       )
-      .run(suspendedAt + 10, suspendedAt - 1_000);
+      .run(suspendedAt + 10, suspendedAt - 1000);
 
     expect(extendOwnedLeasesSync(sqlite, "main:1", suspendedAt, false)).toBe(1);
     expect(
@@ -244,7 +244,7 @@ describe.skipIf(!nativeSqliteAvailable())("Queue V2 simulations", () => {
         .get(),
     ).toEqual({
       leaseExpiresAt: suspendedAt + TASK_LEASE_MS,
-      heartbeatAt: suspendedAt - 1_000,
+      heartbeatAt: suspendedAt - 1000,
     });
 
     const resumedAt = suspendedAt + 30_000;

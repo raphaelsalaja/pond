@@ -14,8 +14,8 @@ export const EMBEDDING_TOKENIZER_OPTIONS = {
 export type EmbeddingTokenizerOptions = typeof EMBEDDING_TOKENIZER_OPTIONS;
 
 export function tokenizeEmbeddingTexts<T>(
-  tokenizer: (texts: string[], options: EmbeddingTokenizerOptions) => T,
-  texts: string[],
+  tokenizer: (texts: Array<string>, options: EmbeddingTokenizerOptions) => T,
+  texts: Array<string>,
 ): T {
   return tokenizer(texts, EMBEDDING_TOKENIZER_OPTIONS);
 }
@@ -49,7 +49,7 @@ export function clipEmbeddingVersion(): string {
 }
 
 function cleanEmbeddingText(text: string): string {
-  return text.replace(/\s+/g, " ").trim();
+  return text.replaceAll(/\s+/g, " ").trim();
 }
 
 export function embeddingSearchQuery(text: string): string {
@@ -81,7 +81,9 @@ export function embeddingClusterText(text: string): string {
   return `task: clustering | query: ${cleanEmbeddingText(text)}`;
 }
 
-export function normalizedEmbeddingVector(vector: ArrayLike<number>): number[] {
+export function normalizedEmbeddingVector(
+  vector: ArrayLike<number>,
+): Array<number> {
   if (vector.length !== EMBEDDING_DIMENSIONS) {
     throw new Error(
       `[embedding-gemma] expected ${EMBEDDING_DIMENSIONS} dimensions, received ${vector.length}`,

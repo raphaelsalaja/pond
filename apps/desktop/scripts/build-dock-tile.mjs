@@ -5,9 +5,8 @@ import { spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const root = resolve(import.meta.dirname, "..");
 const source = resolve(root, "dock-tile/main.swift");
 const plugin = resolve(root, "resources/DockTile/PondDockTile.docktileplugin");
 const binary = join(plugin, "Contents/MacOS/PondDockTile");

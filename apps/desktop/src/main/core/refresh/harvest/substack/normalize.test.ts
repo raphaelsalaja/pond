@@ -3,7 +3,7 @@ import { captureFromPost, feedItems, htmlToText, postEntry } from "./normalize";
 
 const PUB = { id: 7, name: "Lenny's Newsletter", subdomain: "Lenny" };
 const POST = {
-  id: 151234567,
+  id: 151_234_567,
   slug: "how-to-price",
   title: "How to price",
   subtitle: "A guide",

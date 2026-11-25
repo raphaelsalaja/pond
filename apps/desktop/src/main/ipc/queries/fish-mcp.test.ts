@@ -2,10 +2,8 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import {
-  createFishMcpManager,
-  type McpConnection,
-} from "../../core/agent/fish-mcp/client";
+import { createFishMcpManager } from "../../core/agent/fish-mcp/client";
+import type { McpConnection } from "../../core/agent/fish-mcp/client";
 import { createFishMcpStore } from "../../core/agent/fish-mcp/store";
 import { createFishMcpQueries } from "./fish-mcp";
 
@@ -36,11 +34,12 @@ async function setup() {
     callTool: async () => ({ content: [] }),
     close: async () => {},
   };
-  const connect = vi.fn(async () => client);
+  const transport = { connect: async () => client };
+  const connect = vi.spyOn(transport, "connect");
   const manager = createFishMcpManager({
     list: () => store.list(),
     secrets: (id) => store.secrets(id),
-    connect,
+    connect: transport.connect,
     now: () => 0,
   });
   return {

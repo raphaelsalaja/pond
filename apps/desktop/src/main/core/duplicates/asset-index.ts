@@ -129,12 +129,13 @@ export function classifyPendingAssets(
     "UPDATE save_assets SET media = ? WHERE save_id = ? AND path = ?",
   );
   sqlite.transaction(() => {
-    for (const row of rows)
+    for (const row of rows) {
       update.run(
         mediaForFile(row.path, row.mime_type) ?? "other",
         row.save_id,
         row.path,
       );
+    }
   })();
   return rows.length;
 }
@@ -157,10 +158,10 @@ export interface IndexedAsset extends AssetRef {
 /** Saves holding any of these original files, live ones first, so importing a file again offers back a Save in Trash instead of a new copy. */
 export function findAssetsBySha256(
   sqlite: Database.Database,
-  hashes: readonly string[],
-): Map<string, IndexedAsset[]> {
+  hashes: ReadonlyArray<string>,
+): Map<string, Array<IndexedAsset>> {
   const wanted = [...new Set(hashes.map((hash) => hash.toLowerCase()))];
-  const found = new Map<string, IndexedAsset[]>();
+  const found = new Map<string, Array<IndexedAsset>>();
   const select = sqlite.prepare(`
     SELECT a.save_id, a.path, a.kind, a.size, a.sha256, s.title,
       s.deleted_at IS NOT NULL AS in_trash

@@ -130,7 +130,7 @@ export async function fetchFile(
     await response.body?.cancel();
     throw new FileTooLargeError();
   }
-  const chunks: Uint8Array[] = [];
+  const chunks: Array<Uint8Array> = [];
   let total = 0;
   for await (const chunk of response.body ?? []) {
     total += chunk.byteLength;

@@ -10,7 +10,7 @@ import { sourceIdFromUrl } from "./url";
 export interface EnqueueItem {
   url: string;
   seed?: EnqueueSeed;
-  listKinds?: ListKind[];
+  listKinds?: Array<ListKind>;
 }
 
 export interface EnqueueOptions {
@@ -21,8 +21,8 @@ export interface EnqueueOptions {
   /** Keep the current account owner when false. The default is true. */
   adoptOrphaned?: boolean;
   generationId?: string | null;
-  cookies?: ImportableCookie[];
-  listKinds?: ListKind[];
+  cookies?: Array<ImportableCookie>;
+  listKinds?: Array<ListKind>;
 }
 
 export interface EnqueueCandidate {
@@ -30,11 +30,11 @@ export interface EnqueueCandidate {
   source: Source;
   sourceId: string;
   seed?: EnqueueSeed;
-  listKinds: ListKind[];
+  listKinds: Array<ListKind>;
 }
 
 export interface NormalizedEnqueueItems {
-  candidates: EnqueueCandidate[];
+  candidates: Array<EnqueueCandidate>;
   failed: number;
 }
 
@@ -74,10 +74,10 @@ export function enqueueCandidateKey(
 }
 
 export function normalizeEnqueueItems(
-  items: readonly EnqueueItem[],
+  items: ReadonlyArray<EnqueueItem>,
   trigger: string | undefined,
 ): NormalizedEnqueueItems {
-  const candidates: EnqueueCandidate[] = [];
+  const candidates: Array<EnqueueCandidate> = [];
   const byKey = new Map<string, EnqueueCandidate>();
   let failed = 0;
 

@@ -40,7 +40,9 @@ export function writeViewPref(key: ViewPrefKey, value: string): void {
   if (!globalThis.window) return;
   try {
     window.localStorage.setItem(STORAGE_KEYS[key], value);
-  } catch {}
+  } catch {
+    /** Storage can be full or blocked; the in-memory state still applies. */
+  }
 }
 
 export type LayoutValue = "waterfall" | "grid" | "justified" | "list";

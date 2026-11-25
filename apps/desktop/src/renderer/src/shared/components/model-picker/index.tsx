@@ -13,11 +13,14 @@ import {
   reasoningLabel,
   supportsNativeFast,
 } from "@shared/agent-model-options";
-import { ASSISTANT_MODELS, type AssistantProvider } from "@shared/assistant";
-import { displayName, type ProviderModel } from "@shared/provider-models";
+import { ASSISTANT_MODELS } from "@shared/assistant";
+import type { AssistantProvider } from "@shared/assistant";
+import { displayName } from "@shared/provider-models";
+import type { ProviderModel } from "@shared/provider-models";
 import type { QueryResult } from "@shared/query-contracts";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
 import { useMenuFilterQuery } from "@/shared/hooks/use-menu-filter-query";
 import { openSettings } from "@/shared/lib/open-settings";
 import styles from "./styles.module.css";
@@ -33,8 +36,8 @@ type PickerModel = ProviderModel & {
 
 function liveItems(
   providers: QueryResult<"agent.listAvailableModels">["providers"],
-): PickerModel[] {
-  const items: PickerModel[] = [];
+): Array<PickerModel> {
+  const items: Array<PickerModel> = [];
   for (const row of providers) {
     const catalog = ASSISTANT_MODELS.find((model) => model.id === row.provider);
     if (!catalog || !row.ok || !row.models.length) continue;
@@ -173,7 +176,7 @@ export function ModelPicker({
   const activateModel = (model: PickerModel, target: HTMLElement) => {
     const popup = target.closest<HTMLElement>(`.${styles.models}`);
     setActiveKey(model.key);
-    if (popup)
+    if (popup) {
       setActiveTop(
         Math.max(
           0,
@@ -181,6 +184,7 @@ export function ModelPicker({
             popup.getBoundingClientRect().top,
         ),
       );
+    }
   };
 
   const contextSubmenu = (

@@ -15,7 +15,7 @@ it("keeps evidence readable, bounded, and without record IDs", () => {
       title: "Film",
       source: "arena",
       url: "https://example.com",
-      description: "A film.\\nShow transcript",
+      description: String.raw`A film.\nShow transcript`,
     },
   ]);
   expect(context).toContain("[1] Film");
@@ -26,8 +26,9 @@ it("does not confuse normal prose, code, or a JSON tutorial with Save records", 
     "The id is useful.",
     '```json\n{"id":"example","name":"A"}\n```',
     "The source uses light well.",
-  ])
+  ]) {
     expect(answerProblem(text)).toBeNull();
+  }
   expect(
     answerProblem(
       '{"id":"a","url":"https://example.com"}',
@@ -36,7 +37,7 @@ it("does not confuse normal prose, code, or a JSON tutorial with Save records", 
   ).toBeNull();
 });
 it("rejects escaped whitespace soup and internal envelopes", () => {
-  expect(answerProblem("A\\nB\\nC\\nD")).toBeTruthy();
+  expect(answerProblem(String.raw`A\nB\nC\nD`)).toBeTruthy();
   expect(answerProblem('{"answer":"Hello","changes":[]}')).toBeTruthy();
 });
 

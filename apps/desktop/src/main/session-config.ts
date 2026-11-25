@@ -19,8 +19,8 @@ const PROD_CSP = [
 
 export function productionResponseHeaders(
   url: string,
-  responseHeaders: Record<string, string[]> | undefined,
-): Record<string, string[]> | undefined {
+  responseHeaders: Record<string, Array<string>> | undefined,
+): Record<string, Array<string>> | undefined {
   /** pond:// serves the archive viewer and wabac's service worker; injecting the app CSP/COEP there breaks replay. The app document itself loads from file://, so its CSP is unaffected. */
   if (url.startsWith("pond://")) return responseHeaders;
   const headers = { ...responseHeaders };
@@ -52,37 +52,40 @@ export function grantsPermission(input: {
   return input.permission === "fullscreen" && input.isMainFrame && fromRenderer;
 }
 
+type PermissionHandler = Parameters<
+  Electron.Session["setPermissionRequestHandler"]
+>[0];
+
+const denyAll: PermissionHandler = (_wc, _permission, callback) =>
+  callback(false);
+
+const grantAppFullscreen: PermissionHandler = (
+  wc,
+  permission,
+  callback,
+  details,
+) => {
+  const window = BrowserWindow.fromWebContents(wc);
+  const granted =
+    window?.webContents === wc &&
+    grantsPermission({
+      permission,
+      isMainFrame: "isMainFrame" in details && details.isMainFrame,
+      requestingUrl: details.requestingUrl ?? "",
+      rendererUrl: process.env.ELECTRON_RENDERER_URL,
+    });
+  callback(granted);
+};
+
 export function configureSessionDefaults(): void {
-  type PermissionHandler = Parameters<
-    Electron.Session["setPermissionRequestHandler"]
-  >[0];
-  const denyAll: PermissionHandler = (_wc, _permission, callback) =>
-    callback(false);
-  const grantAppFullscreen: PermissionHandler = (
-    wc,
-    permission,
-    callback,
-    details,
-  ) => {
-    const window = BrowserWindow.fromWebContents(wc);
-    const granted =
-      window?.webContents === wc &&
-      grantsPermission({
-        permission,
-        isMainFrame: "isMainFrame" in details && details.isMainFrame,
-        requestingUrl: details.requestingUrl ?? "",
-        rendererUrl: process.env.ELECTRON_RENDERER_URL,
-      });
-    callback(granted);
-  };
   session.defaultSession.setPermissionRequestHandler(grantAppFullscreen);
   session.defaultSession.setPermissionCheckHandler(() => false);
   try {
     session
       .fromPartition("persist:pond-scrapers")
       .setPermissionRequestHandler(denyAll);
-  } catch (err) {
-    log.warn("[pond] scrapers session permission handler failed", err);
+  } catch (error) {
+    log.warn("[pond] scrapers session permission handler failed", error);
   }
 
   if (app.isPackaged) {

@@ -5,17 +5,16 @@ import JSZip from "jszip";
 function redact(value: string): string {
   return value
     .replaceAll(homedir(), "~")
-    .replace(
+    .replaceAll(
       /\b(?:token|key|secret|password)=([^&\s]+)/gi,
       (_match, _value) => "credential=[redacted]",
     )
-    .replace(/https?:\/\/[^\s"']+/gi, "[redacted-url]");
+    .replaceAll(/https?:\/\/[^\s"']+/gi, "[redacted-url]");
 }
 
 async function libraryHealth() {
-  const { debugReportHealth, libraryHealthService } = await import(
-    "./library-health"
-  );
+  const { debugReportHealth, libraryHealthService } =
+    await import("./library-health");
   const { readQueueSummary } = await import("./pipeline/queue-summary");
   const [overview, queue] = await Promise.all([
     libraryHealthService.overview(),

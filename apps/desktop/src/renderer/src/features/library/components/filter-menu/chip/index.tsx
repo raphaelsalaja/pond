@@ -28,7 +28,7 @@ export function FilterIcons({
   className,
   ...props
 }: Omit<ComponentProps<"span">, "children"> & {
-  icons: readonly { key: string; icon: ReactNode }[];
+  icons: ReadonlyArray<{ key: string; icon: ReactNode }>;
 }) {
   return (
     <span className={cn(styles.icons, className)} {...props}>

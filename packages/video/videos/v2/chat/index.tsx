@@ -1,9 +1,11 @@
 import { IconArrowUp } from "@pond/icons";
 import { Button } from "@pond/ui/button";
+import { isHTMLElement } from "@pond/ui/dom";
 import { Message } from "@pond/ui/message";
 import { Prompt } from "@pond/ui/prompt";
 import { App, ease, keyed, mix, Pointer, progress } from "@pond/video";
-import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { CONSULTED, media } from "../data";
 import { CUES } from "../timeline";
 import styles from "./styles.module.css";
@@ -41,7 +43,7 @@ function reveal(text: string, k: number) {
   const shown = k * words.length;
   return words.map((word, index) => (
     <span
-      // biome-ignore lint/suspicious/noArrayIndexKey: words never reorder, so position is their identity.
+      // oxlint-disable-next-line react/no-array-index-key -- words never reorder, so position is their identity
       key={index}
       style={{ opacity: Math.max(0, Math.min(1, shown - index)) }}
     >
@@ -84,8 +86,8 @@ function offsetWithin(element: HTMLElement | null, root: HTMLElement | null) {
   while (node && node !== root) {
     x += node.offsetLeft;
     y += node.offsetTop;
-    /** SAFETY: in an HTML document an element's `offsetParent` is an `HTMLElement` or null. */
-    node = node.offsetParent as HTMLElement | null;
+    const parent = node.offsetParent;
+    node = isHTMLElement(parent) ? parent : null;
   }
   return { x, y };
 }
@@ -119,8 +121,10 @@ export function Chat({ t }: { t: number }) {
         y: button.y + (apply.current?.offsetHeight ?? 0) / 2,
       },
     };
-    if (JSON.stringify(next) !== JSON.stringify(layout)) setLayout(next);
-  });
+    if (JSON.stringify(next) !== JSON.stringify(layout)) {
+      setLayout(next);
+    }
+  }, [t, layout]);
 
   const rise = ease.outQuint(progress(t, CUES.chatRise, 1000));
   const away = ease.inOut(progress(t, CUES.chatAway, 550));

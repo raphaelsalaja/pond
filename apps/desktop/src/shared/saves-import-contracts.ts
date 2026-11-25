@@ -24,11 +24,11 @@ export type ManualSaveResult = OkResult<{
   /** The skipped match is in Trash. */
   trashed?: boolean;
 }> & {
-  failedFiles?: ImportFileFailure[];
+  failedFiles?: Array<ImportFileFailure>;
 };
 
-export type SavesImportFilesResult = OkResult<{ ids: string[] }> & {
-  failedPaths?: string[];
+export type SavesImportFilesResult = OkResult<{ ids: Array<string> }> & {
+  failedPaths?: Array<string>;
 };
 
 export interface DuplicateImportCandidate {
@@ -46,9 +46,9 @@ export type DuplicateImportChoice = "use-existing" | "keep-both";
 export type DuplicateImportDecision = DuplicateImportChoice | "restore";
 
 export interface DataExportImportCounts extends SavesImportCounts {
-  platforms: string[];
+  platforms: Array<string>;
   /** Sources in the export with no connected Account; their Saves capture once you connect one. */
-  connect: Source[];
+  connect: Array<Source>;
 }
 
 export interface EagleImportProgress {
@@ -66,20 +66,20 @@ export interface SavesImportQueryInputs {
   "saves.pickImportPaths": { kind: "files" | "folders" };
   "saves.classifyUrl": { url: string };
   "saves.importFiles": {
-    paths: string[];
-    tags?: string[];
-    folderIds?: string[];
+    paths: Array<string>;
+    tags?: Array<string>;
+    folderIds?: Array<string>;
     duplicatePolicy?: DuplicateImportChoice;
     duplicateDecisions?: Record<string, DuplicateImportDecision>;
     origin?: "files" | "clipboard";
   };
-  "saves.reviewImportDuplicates": { paths: string[] };
+  "saves.reviewImportDuplicates": { paths: Array<string> };
   "saves.createManual": {
     title?: string | null;
     url?: string | null;
     note?: string | null;
-    tags?: string[];
-    filePaths?: string[];
+    tags?: Array<string>;
+    filePaths?: Array<string>;
     sourceId?: string | null;
     mediaType?: MediaType | null;
     width?: number;
@@ -91,7 +91,7 @@ export interface SavesImportQueryInputs {
     folderId?: string | null;
   };
   "saves.combineImages": {
-    ids: string[];
+    ids: Array<string>;
     folderId?: string | null;
     options?: Partial<CombineImagesOptions>;
   };
@@ -104,7 +104,7 @@ export interface SavesImportQueryInputs {
   "saves.pickEagleLibrary": EmptyInput;
   "saves.importClipboard": { folderId?: string | null };
   "saves.stageClipboard": EmptyInput;
-  "saves.discardStagedClipboard": { paths: string[] };
+  "saves.discardStagedClipboard": { paths: Array<string> };
   "saves.importBookmarks": EmptyInput;
   "saves.importMymind": EmptyInput;
   "saves.importDataExport": EmptyInput;
@@ -112,13 +112,13 @@ export interface SavesImportQueryInputs {
   "saves.quickAdd": {
     url?: string;
     note?: string | null;
-    tags?: string[];
+    tags?: Array<string>;
     folderId?: string | null;
   };
   "saves.startDrag": {
     id?: string;
     path?: string;
-    ids?: string[];
+    ids?: Array<string>;
     fileIndex?: number | null;
     /** Per-save file index; a save missing here uses `fileIndex`. */
     fileIndexes?: Record<string, number>;
@@ -135,15 +135,15 @@ export interface SavesImportQueryResults {
     imported?: number;
     skipped?: number;
   }>;
-  "saves.pickImportPaths": { paths: string[] };
+  "saves.pickImportPaths": { paths: Array<string> };
   "saves.classifyUrl": { source: Source | null };
   "saves.importFiles": SavesImportFilesResult;
   "saves.reviewImportDuplicates": {
-    candidates: DuplicateImportCandidate[];
+    candidates: Array<DuplicateImportCandidate>;
   };
   "saves.createManual": ManualSaveResult;
   "saves.listBlankDocuments": {
-    kinds: BlankDocumentKind[];
+    kinds: Array<BlankDocumentKind>;
     icons: BlankDocumentIcons;
   };
   "saves.createBlankDocument": OkResult<{ id: string }>;
@@ -155,13 +155,13 @@ export interface SavesImportQueryResults {
   "saves.importEagleLibrary": SavesImportResult & {
     failed: number;
     deletedSkipped: number;
-    lockedFolders: {
+    lockedFolders: Array<{
       id: string;
       name: string;
       reason: "password" | "parent_locked";
-    }[];
-    droppedFields: string[];
-    approximatedRules: string[];
+    }>;
+    droppedFields: Array<string>;
+    approximatedRules: Array<string>;
     shortcuts: {
       status:
         | "available"
@@ -176,7 +176,7 @@ export interface SavesImportQueryResults {
   "saves.pickEagleLibrary": ReasonResult<"cancelled", { path: string }>;
   "saves.importClipboard": SavesImportFilesResult;
   "saves.stageClipboard":
-    | { ok: true; paths: string[] }
+    | { ok: true; paths: Array<string> }
     | { ok: false; error: string };
   "saves.discardStagedClipboard": { ok: true };
   "saves.importBookmarks": CancellableResult<SavesImportCounts>;

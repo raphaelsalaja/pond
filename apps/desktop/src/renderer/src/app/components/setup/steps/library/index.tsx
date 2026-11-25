@@ -66,11 +66,12 @@ export function Library(props: StepProps) {
           value={[choices.moveLibrary ? "move" : "keep"]}
           onValueChange={(value) => {
             const next = value[0];
-            if (next)
+            if (next) {
               update({
                 moveLibrary: next === "move",
                 libraryLocation: library.parent,
               });
+            }
           }}
         >
           <Toggle type="button" size="sm" value="keep">

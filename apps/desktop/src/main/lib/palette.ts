@@ -19,7 +19,7 @@ interface Swatch {
 export async function extractPalette(
   input: string | Buffer,
   count = 5,
-): Promise<string[]> {
+): Promise<Array<string>> {
   try {
     const size = 64;
     const read = (source: string | Buffer) =>
@@ -46,7 +46,7 @@ export async function extractPalette(
       buckets.set(key, entry);
     }
 
-    const swatches: Swatch[] = Array.from(buckets.values()).map((e) => {
+    const swatches: Array<Swatch> = Array.from(buckets.values()).map((e) => {
       const r = Math.round(e.r / e.count);
       const g = Math.round(e.g / e.count);
       const b = Math.round(e.b / e.count);
@@ -60,7 +60,7 @@ export async function extractPalette(
       .filter((sw) => sw.saturation >= 0.15 && isMidtone(sw))
       .sort((a, b) => b.score - a.score);
 
-    const chosen: Swatch[] = [];
+    const chosen: Array<Swatch> = [];
     const pushUnique = (sw: Swatch) => {
       if (chosen.length >= count) return;
       if (chosen.some((c) => distance(c, sw) < 48)) return;
@@ -107,7 +107,11 @@ function toHsl(r: number, g: number, b: number): Hsl {
   return { s, l };
 }
 
+function hexByte(n: number): string {
+  return n.toString(16).padStart(2, "0");
+}
+
 function toHex(r: number, g: number, b: number): string {
-  const h = (n: number) => n.toString(16).padStart(2, "0");
+  const h = hexByte;
   return `#${h(r)}${h(g)}${h(b)}`;
 }

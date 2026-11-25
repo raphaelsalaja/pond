@@ -1,5 +1,5 @@
-import type { ComponentDocs } from "../shared/docs";
 import { NumberField } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 export const docs: ComponentDocs = {
   slug: "number-field",

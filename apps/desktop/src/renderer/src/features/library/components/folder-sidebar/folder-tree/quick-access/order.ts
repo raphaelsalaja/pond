@@ -10,9 +10,9 @@ interface QuickAccessRow {
 }
 
 export function quickAccessRows<Row extends QuickAccessRow>(
-  rows: readonly Row[],
+  rows: ReadonlyArray<Row>,
   presentations: Partial<Record<string, QuickAccessPresentation>>,
-): Row[] {
+): Array<Row> {
   return rows
     .filter((row) => presentations[row.id]?.quickAccess)
     .toSorted(

@@ -4,7 +4,8 @@ import { and, asc, eq, isNull, or } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { GLOBAL_POOL_CAP } from "./harvest-window";
-import { type RefreshOutcome, refreshSave } from "./index";
+import { refreshSave } from "./index";
+import type { RefreshOutcome } from "./index";
 
 export interface RefreshBackfillOptions {
   source?: Source | null;
@@ -18,7 +19,7 @@ interface RefreshBackfillStatus {
   current: number;
   succeeded: number;
   failed: number;
-  authRequired: Source[];
+  authRequired: Array<Source>;
   startedAt: string | null;
   finishedAt: string | null;
   options: RefreshBackfillOptions;
@@ -98,7 +99,7 @@ export function cancelRefreshBackfill(): void {
 }
 
 async function runWorker(
-  ids: string[],
+  ids: Array<string>,
   signal: AbortSignal,
   opts: RefreshBackfillOptions,
 ): Promise<void> {
@@ -114,8 +115,8 @@ async function runWorker(
       batch.map(async (id): Promise<RefreshOutcome> => {
         try {
           return await refreshSave(id, { overwrite: opts.overwrite });
-        } catch (err) {
-          log.warn("[pond refresh-backfill] refreshSave threw", id, err);
+        } catch (error) {
+          log.warn("[pond refresh-backfill] refreshSave threw", id, error);
           return { ok: false, reason: "internal_error" };
         }
       }),
@@ -194,9 +195,13 @@ function messageForFinish(
   const head = cancelled
     ? `Cancelled at ${current}.`
     : `Refreshed ${current} save${current === 1 ? "" : "s"}.`;
-  const tail: string[] = [];
-  if (ok > 0) tail.push(`${ok} updated`);
-  if (fail > 0) tail.push(`${fail} failed`);
+  const tail: Array<string> = [];
+  if (ok > 0) {
+    tail.push(`${ok} updated`);
+  }
+  if (fail > 0) {
+    tail.push(`${fail} failed`);
+  }
   if (auth.size > 0) {
     const list = [...auth].sort().join(", ");
     tail.push(`needs sign-in: ${list}`);
@@ -206,7 +211,7 @@ function messageForFinish(
 
 async function pickIdsForBackfill(
   opts: RefreshBackfillOptions,
-): Promise<string[]> {
+): Promise<Array<string>> {
   const db = await getDb();
   const conds = [isNull(saves.deletedAt)];
   if (opts.source) {

@@ -3,11 +3,11 @@ import type { Save } from "@/features/saves/types";
 import type { AccountRef } from "@/features/search/query";
 import {
   collectIdentityRows,
-  type DetailRow,
   groupDetailRows,
   isSameTitleAndContent,
   pickAuthorProfileUrl,
 } from "./detail";
+import type { DetailRow } from "./detail";
 
 function row(id: string, label = id): DetailRow {
   return { id, label, value: id, kind: "text" };

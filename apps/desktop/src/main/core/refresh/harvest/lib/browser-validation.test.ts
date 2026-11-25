@@ -123,7 +123,7 @@ describe("standalone harvest validation", () => {
       {},
     );
     expect(result.createTime).toBe(1_564_234_358);
-    expect(result.stats).toEqual({ diggCount: 35200, collectCount: 648 });
+    expect(result.stats).toEqual({ diggCount: 35_200, collectCount: 648 });
   });
 
   it("rejects invalid scalars and arrays at object boundaries", () => {

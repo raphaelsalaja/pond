@@ -16,11 +16,11 @@ import {
 import type { CanvasOutline } from "@shared/canvas-contracts";
 import type { ComponentType } from "react";
 
-export const OUTLINES: readonly {
+export const OUTLINES: ReadonlyArray<{
   outline: CanvasOutline;
   label: string;
   Icon: ComponentType<{ size?: number }>;
-}[] = [
+}> = [
   { outline: "rectangle", label: "Rectangle", Icon: IconSquare },
   { outline: "rounded", label: "Rounded Rectangle", Icon: IconSquareRounded },
   { outline: "ellipse", label: "Ellipse", Icon: IconCircle },

@@ -4,7 +4,7 @@ import { formatPlural } from "@/shared/lib/format";
 import { notify } from "@/shared/lib/toast";
 import styles from "./styles.module.css";
 
-export function ExtensionField({ ids }: { ids: string[] }) {
+export function ExtensionField({ ids }: { ids: Array<string> }) {
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
 

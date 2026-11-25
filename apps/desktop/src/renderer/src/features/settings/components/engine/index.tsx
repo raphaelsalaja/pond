@@ -41,9 +41,10 @@ export function SettingsSectionView({
     const Custom = config.component;
     return <Custom />;
   }
-  if (config.useBinding)
+  if (config.useBinding) {
     return <BoundSection config={config} sectionId={sectionId} />;
-  if (config.prefsKey)
+  }
+  if (config.prefsKey) {
     return (
       <PrefsSection
         config={config}
@@ -51,6 +52,7 @@ export function SettingsSectionView({
         sectionId={sectionId}
       />
     );
+  }
   return (
     <SectionBody
       config={config}
@@ -129,9 +131,10 @@ function GroupRouter({
   sectionBinding: Binding;
   sectionId?: string;
 }) {
-  if (group.useBinding)
+  if (group.useBinding) {
     return <UseBindingGroup group={group} sectionId={sectionId} />;
-  if (group.prefsKey)
+  }
+  if (group.prefsKey) {
     return (
       <PrefsGroup
         group={group}
@@ -139,6 +142,7 @@ function GroupRouter({
         sectionId={sectionId}
       />
     );
+  }
   return <Group group={group} binding={sectionBinding} sectionId={sectionId} />;
 }
 
@@ -212,12 +216,12 @@ function GroupItems({
   binding,
   sectionId,
 }: {
-  items: Item[];
+  items: Array<Item>;
   binding: Binding;
   sectionId?: string;
 }) {
-  const content: ReactNode[] = [];
-  let rows: Item[] = [];
+  const content: Array<ReactNode> = [];
+  let rows: Array<Item> = [];
 
   const flushRows = () => {
     if (rows.length === 0) return;
@@ -266,7 +270,7 @@ function StandaloneItem({
   groupBinding: Binding;
   sectionId?: string;
 }) {
-  if (item.prefsKey)
+  if (item.prefsKey) {
     return (
       <StandaloneItemWithBinding
         item={item}
@@ -274,6 +278,7 @@ function StandaloneItem({
         sectionId={sectionId}
       />
     );
+  }
   return (
     <StandaloneItemShell
       item={item}
@@ -324,7 +329,7 @@ function ItemRow({
   groupBinding: Binding;
   sectionId?: string;
 }) {
-  if (item.prefsKey)
+  if (item.prefsKey) {
     return (
       <OverriddenItemRow
         item={item}
@@ -332,6 +337,7 @@ function ItemRow({
         sectionId={sectionId}
       />
     );
+  }
   return <ItemShell item={item} binding={groupBinding} sectionId={sectionId} />;
 }
 

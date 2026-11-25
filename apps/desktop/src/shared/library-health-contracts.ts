@@ -111,9 +111,9 @@ export interface MediaWarmFailure {
 
 export interface MediaWarmSnapshot extends MediaIndexStatus {
   pendingPosters: number;
-  activeSaveIds: string[];
+  activeSaveIds: Array<string>;
   discovering: boolean;
-  failures: MediaWarmFailure[];
+  failures: Array<MediaWarmFailure>;
 }
 
 export interface LibraryHealthOverview {

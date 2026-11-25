@@ -1,14 +1,14 @@
 import { IconFolder } from "@pond/icons";
 import { useMemo, useState } from "react";
-import type { ComponentDocs } from "../shared/docs";
 import { PickerPanel, usePickerCursor } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 interface Folder {
   id: string;
   name: string;
 }
 
-const FOLDERS: readonly Folder[] = [
+const FOLDERS: ReadonlyArray<Folder> = [
   { id: "inbox", name: "Inbox" },
   { id: "design", name: "Design" },
   { id: "recipes", name: "Recipes" },
@@ -20,7 +20,7 @@ const folderId = (folder: Folder) => folder.id;
 
 function FolderList() {
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<readonly string[]>(["design"]);
+  const [selected, setSelected] = useState<ReadonlyArray<string>>(["design"]);
   const folders = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return needle

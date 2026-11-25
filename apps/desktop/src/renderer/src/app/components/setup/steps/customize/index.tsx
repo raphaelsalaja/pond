@@ -3,13 +3,14 @@ import { IS_MAC } from "@/shared/lib/platform";
 import type { StepProps } from "../../model";
 import { CaptionedPhoto, ScannedText, SimilarPhotos } from "./image";
 import { SearchPalette, TitlesPalette } from "./results";
-import styles from "./styles.module.css";
 import { LoginDock, MenuBarStatus, SoundToast } from "./system";
 import { SuggestedTags } from "./tags";
-import { Tile, type TileSpec } from "./tile";
+import { Tile } from "./tile";
+import type { TileSpec } from "./tile";
 import { TranscriptPlayer } from "./transcript";
+import styles from "./styles.module.css";
 
-const TILES: readonly TileSpec[] = [
+const TILES: ReadonlyArray<TileSpec> = [
   {
     id: "semanticSearch",
     title: "Semantic Search",

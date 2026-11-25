@@ -8,7 +8,7 @@ export const DUPLICATE_RELATIONS = [
   "near",
   "overlap",
   "related",
-] as const satisfies readonly DuplicateRelation[];
+] as const satisfies ReadonlyArray<DuplicateRelation>;
 
 export function relationRank(relation: DuplicateRelation): number {
   return DUPLICATE_RELATIONS.indexOf(relation);
@@ -70,16 +70,16 @@ export interface DuplicateCoverage {
 export interface DuplicatePair {
   ids: [string, string];
   relation: DuplicateRelation;
-  saveEvidence: SaveEvidence[];
-  assetEvidence: AssetEvidence[];
+  saveEvidence: Array<SaveEvidence>;
+  assetEvidence: Array<AssetEvidence>;
   coverage: DuplicateCoverage;
 }
 
 export interface DuplicateGroup {
   relation: DuplicateRelation;
-  ids: string[];
+  ids: Array<string>;
   /** Positions in `DuplicateScan.pairs` for the pairs among this group's Saves. */
-  pairs: number[];
+  pairs: Array<number>;
 }
 
 export interface DuplicateIndexStatus {
@@ -90,8 +90,8 @@ export interface DuplicateIndexStatus {
 }
 
 export interface DuplicateScan {
-  pairs: DuplicatePair[];
-  groups: DuplicateGroup[];
+  pairs: Array<DuplicatePair>;
+  groups: Array<DuplicateGroup>;
   index: DuplicateIndexStatus;
 }
 
@@ -114,15 +114,23 @@ function sharedFiles(count: number): string {
 export function describeDuplicate(pair: DuplicatePair): string {
   const matchers = new Set(pair.saveEvidence.map((item) => item.matcher));
   if (pair.relation === "exact") {
-    if (matchers.has("manifest"))
+    if (matchers.has("manifest")) {
       return pair.coverage.leftTotal === 1 ? "Same File" : "Same Files";
-    if (matchers.has("source")) return "Same Post";
-    if (matchers.has("url")) return "Same Link";
+    }
+    if (matchers.has("source")) {
+      return "Same Post";
+    }
+    if (matchers.has("url")) {
+      return "Same Link";
+    }
     return "Same Files";
   }
-  if (pair.relation === "overlap")
+  if (pair.relation === "overlap") {
     return sharedFiles(Math.min(pair.coverage.left, pair.coverage.right));
-  if (pair.relation === "related") return "Similar Content";
+  }
+  if (pair.relation === "related") {
+    return "Similar Content";
+  }
   const kinds = new Set(
     pair.assetEvidence.flatMap((item) =>
       item.matcher === "sha256" ? [] : [item.matcher],
@@ -139,7 +147,7 @@ export function describeDuplicate(pair: DuplicatePair): string {
 
 export function describeDuplicateGroup(
   group: DuplicateGroup,
-  pairs: readonly DuplicatePair[],
+  pairs: ReadonlyArray<DuplicatePair>,
 ): string {
   const lines = new Set(
     group.pairs.flatMap((index) => {

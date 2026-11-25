@@ -56,7 +56,7 @@ export function EditableText({
     element.setSelectionRange(element.value.length, element.value.length);
   }, [editing]);
 
-  if (editing && rich)
+  if (editing && rich) {
     return (
       <RichNote
         id={id}
@@ -66,7 +66,8 @@ export function EditableText({
         style={style}
       />
     );
-  if (editing)
+  }
+  if (editing) {
     return (
       <Input.Textarea
         ref={field}
@@ -99,6 +100,7 @@ export function EditableText({
         }}
       />
     );
+  }
   return (
     <div
       className={styles.body}
@@ -169,7 +171,6 @@ function RichNote({
           </Button>
         ))}
       </div>
-      {/* biome-ignore lint/a11y/useSemanticElements: notes store inline HTML, which a textarea cannot hold. */}
       <div
         ref={field}
         className={styles.field}

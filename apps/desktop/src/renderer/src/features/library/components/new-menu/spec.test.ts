@@ -9,7 +9,7 @@ import {
 } from "@/shared/test/menu-labels";
 import { buildNewMenuItems } from "./spec";
 
-function rows(items: MenuItemSpec[]): string[] {
+function rows(items: Array<MenuItemSpec>): Array<string> {
   return items.map((item) =>
     "label" in item
       ? [...("breadcrumb" in item ? (item.breadcrumb ?? []) : []), item.label]

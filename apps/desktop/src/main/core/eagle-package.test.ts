@@ -12,17 +12,16 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import JSZip from "jszip";
 import sharp from "sharp";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { isWindowsSymlinkPrivilegeError } from "../test/symlink";
-import {
-  type EaglePackageExportInput,
-  type EaglePackageImportRuntime,
-  exportEaglePackage,
-  importEaglePackage,
+import { exportEaglePackage, importEaglePackage } from "./eagle-package";
+import type {
+  EaglePackageExportInput,
+  EaglePackageImportRuntime,
 } from "./eagle-package";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
@@ -97,16 +96,16 @@ async function exportFixture() {
 
 interface ImportedItem {
   eagleId: string;
-  media: string[];
+  media: Array<string>;
   thumbnail: Buffer | null;
-  folderIds: string[];
-  tags: string[];
+  folderIds: Array<string>;
+  tags: Array<string>;
 }
 
 function fakeRuntime(options: { failId?: string } = {}) {
   const imported = new Map<string, ImportedItem>();
-  const rolledBack: string[][] = [];
-  const folders: string[][] = [];
+  const rolledBack: Array<Array<string>> = [];
+  const folders: Array<Array<string>> = [];
   const runtime: EaglePackageImportRuntime = {
     async folders(nodes) {
       folders.push(nodes.map((node) => node.name));
@@ -119,8 +118,9 @@ function fakeRuntime(options: { failId?: string } = {}) {
       return imported.has(eagleId) ? `imported-${eagleId}` : null;
     },
     async importItem(item, folderIds) {
-      if (item.metadata.id === options.failId)
+      if (item.metadata.id === options.failId) {
         return { ok: false, error: "synthetic failure" };
+      }
       imported.set(item.metadata.id, {
         eagleId: item.metadata.id,
         media: await Promise.all(
@@ -180,15 +180,25 @@ async function directoryFixture(items = ["one"]) {
   return { root, packageRoot };
 }
 
-describe("Eagle package transfer", () => {
-  it("round trips archive metadata, tags, folders, originals and thumbnails", async () => {
+describe("Eagle package round trip", () => {
+  let destination = "";
+  let exported: Awaited<ReturnType<typeof exportEaglePackage>> | null = null;
+  let archive: JSZip | null = null;
+
+  /** The first sharp encode and zip pass are a cold start, so the export runs once here. */
+  beforeAll(async () => {
     const fixture = await exportFixture();
-    const destination = join(fixture.root, "Selection.eaglepack");
-    const exported = await exportEaglePackage(fixture.input, destination);
+    destination = join(fixture.root, "Selection.eaglepack");
+    exported = await exportEaglePackage(fixture.input, destination);
+    archive = await JSZip.loadAsync(await readFile(destination));
+  }, 30_000);
+
+  it("round trips archive metadata, tags, folders, originals and thumbnails", async () => {
     expect(exported).toEqual({ path: destination, exported: 2 });
-    const archive = await JSZip.loadAsync(await readFile(destination));
-    const packFile = archive.file("pack.json");
-    if (!packFile) throw new Error("Missing pack.json");
+    const packFile = archive?.file("pack.json");
+    if (!packFile) {
+      throw new Error("Missing pack.json");
+    }
     const pack = z
       .object({
         folder: z.object({ id: z.string(), name: z.string() }).optional(),
@@ -196,8 +206,10 @@ describe("Eagle package transfer", () => {
       })
       .passthrough()
       .parse(JSON.parse(await packFile.async("string")));
-    const thumbnailFile = archive.file("save-1.info/photo.jpg_thumbnail.png");
-    if (!thumbnailFile) throw new Error("Missing exported thumbnail");
+    const thumbnailFile = archive?.file("save-1.info/photo.jpg_thumbnail.png");
+    if (!thumbnailFile) {
+      throw new Error("Missing exported thumbnail");
+    }
     expect(
       (await sharp(await thumbnailFile.async("nodebuffer")).metadata()).format,
     ).toBe("png");
@@ -221,8 +233,10 @@ describe("Eagle package transfer", () => {
     await expect(
       importEaglePackage(destination, target.runtime),
     ).resolves.toEqual({ imported: 0, skipped: 1 });
-  }, 30_000);
+  });
+});
 
+describe("Eagle package transfer", () => {
   it("imports a synthetic Eagle directory and preserves nested mappings", async () => {
     const fixture = await directoryFixture();
     const target = fakeRuntime();
@@ -268,8 +282,9 @@ describe("Eagle package transfer", () => {
         join(directory, "metadata.json"),
         JSON.stringify({ ...metadata, name }),
       );
-      for (const [file, body] of Object.entries(files))
+      for (const [file, body] of Object.entries(files)) {
         await writeFile(join(directory, file), body);
+      }
     };
     await writeItem("png-parent", "Poster", {
       "Poster.jpg": "body-png-parent",
@@ -337,7 +352,7 @@ describe("Eagle package transfer", () => {
 
     const symlinkPath = join(root, "symlink.eaglepack");
     const linked = new JSZip();
-    linked.file("linked", "outside", { unixPermissions: 0o120777 });
+    linked.file("linked", "outside", { unixPermissions: 0o12_0777 });
     await writeFile(
       symlinkPath,
       await linked.generateAsync({ type: "nodebuffer", platform: "UNIX" }),

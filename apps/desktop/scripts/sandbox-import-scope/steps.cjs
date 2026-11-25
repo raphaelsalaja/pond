@@ -23,9 +23,10 @@ const SIGN_IN = {
 };
 
 const scopeOf = (e) => e.account?.scope ?? {};
+const byCodeUnit = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 const sameList = (actual, expected) =>
-  JSON.stringify([...(actual ?? [])].sort()) ===
-  JSON.stringify([...expected].sort());
+  JSON.stringify([...(actual ?? [])].sort(byCodeUnit)) ===
+  JSON.stringify([...expected].sort(byCodeUnit));
 const hasSaves = (e) => ({
   label: "Saves arrived from the sync",
   ok: e.saves.total > 0,

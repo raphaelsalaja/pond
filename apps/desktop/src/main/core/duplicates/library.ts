@@ -32,9 +32,10 @@ const AssetRowSchema = z.object({
 function clipVector(
   row: z.infer<typeof SaveRowSchema>,
   model: string | null,
-): number[] | null {
-  if (!model || row.status !== "complete" || row.clip_model !== model)
+): Array<number> | null {
+  if (!model || row.status !== "complete" || row.clip_model !== model) {
     return null;
+  }
   const vector = parseJsonVector(row.clip_embedding);
   if (!vector) return null;
   try {
@@ -46,9 +47,12 @@ function clipVector(
 }
 
 function assetMedia(row: z.infer<typeof AssetRowSchema>): AssetMedia | null {
-  if (row.media === "image" || row.media === "video" || row.media === "audio")
+  if (row.media === "image" || row.media === "video" || row.media === "audio") {
     return row.media;
-  if (row.media === "other") return null;
+  }
+  if (row.media === "other") {
+    return null;
+  }
   return mediaForFile(row.path, row.mime_type);
 }
 
@@ -56,7 +60,7 @@ function assetMedia(row: z.infer<typeof AssetRowSchema>): AssetMedia | null {
 export function loadLibrarySaves(
   sqlite: Database.Database,
   clipModel: string | null,
-): LibrarySave[] {
+): Array<LibrarySave> {
   const saves = new Map<string, LibrarySave>();
   const rows = z.array(SaveRowSchema).parse(
     sqlite
@@ -68,7 +72,7 @@ export function loadLibrarySaves(
       )
       .all(),
   );
-  for (const row of rows)
+  for (const row of rows) {
     saves.set(row.id, {
       id: row.id,
       source: row.source,
@@ -79,6 +83,7 @@ export function loadLibrarySaves(
       assets: [],
       clip: clipVector(row, clipModel),
     });
+  }
 
   const assets = z.array(AssetRowSchema).parse(
     sqlite

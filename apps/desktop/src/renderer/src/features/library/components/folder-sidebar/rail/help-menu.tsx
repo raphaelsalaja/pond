@@ -11,7 +11,8 @@ import {
   IconWindowDownload,
 } from "@pond/icons";
 import { IconGithub, IconXTwitterGlyph } from "@pond/icons/social-media";
-import { Logo, Menu, type MenuItemSpec, Tooltip } from "@pond/ui";
+import { Logo, Menu, Tooltip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
 import {
   exportDebugReport,
@@ -38,7 +39,7 @@ export function buildHelpMenuItems({
 }: {
   onBrowserExtension: () => void;
   onCheckForUpdates: () => void;
-}): MenuItemSpec[] {
+}): Array<MenuItemSpec> {
   return [
     {
       label: "Settings",

@@ -35,7 +35,7 @@ function RoutineEvent({ event }: { event: AssistantRoutineEvent }) {
 export function RoutineEvents({
   events,
 }: {
-  events: readonly AssistantRoutineEvent[];
+  events: ReadonlyArray<AssistantRoutineEvent>;
 }) {
   return events.map((event, index) => (
     <RoutineEvent key={`${event.routineId}:${String(index)}`} event={event} />

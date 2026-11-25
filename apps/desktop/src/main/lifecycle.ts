@@ -56,6 +56,6 @@ export function resolveLaunchHidden(input: {
  * The log console transport prints to stdout and must be off from the first
  * log line, not only once the server starts.
  */
-export function consoleLoggingEnabled(argv: readonly string[]): boolean {
+export function consoleLoggingEnabled(argv: ReadonlyArray<string>): boolean {
   return !argv.includes("--mcp");
 }

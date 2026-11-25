@@ -1,4 +1,4 @@
-import type { JsonValue } from "@pond/schema/json";
+import type { JsonObject, JsonValue } from "@pond/schema/json";
 import type { ImportCollectionOption } from "@shared/import-scope";
 import { z } from "zod";
 
@@ -56,8 +56,8 @@ const GridPlaylistSchema = z
 /** Reads your playlists from the playlists feed, with Watch Later first since it's the list Pond walks by default. */
 export function parseYoutubePlaylists(
   data: JsonValue,
-): ImportCollectionOption[] {
-  const out: ImportCollectionOption[] = [
+): Array<ImportCollectionOption> {
+  const out: Array<ImportCollectionOption> = [
     { id: YOUTUBE_WATCH_LATER_ID, name: "Watch Later", itemCount: null },
   ];
   const seen = new Set([YOUTUBE_WATCH_LATER_ID, LIKED_PLAYLIST_ID]);
@@ -105,7 +105,7 @@ function videoCount(lockup: JsonValue): number | null {
 }
 
 function parseCount(text: string): number | null {
-  const digits = /(\d[\d,.]*)/.exec(text)?.[1]?.replace(/[,.]/g, "");
+  const digits = /(\d[\d,.]*)/.exec(text)?.[1]?.replaceAll(/[,.]/g, "");
   return digits ? Number(digits) : null;
 }
 
@@ -117,9 +117,15 @@ function walk(
     for (const item of value) walk(item, visit);
     return;
   }
-  if (!(value instanceof Object)) return;
+  if (!isJsonObject(value)) {
+    return;
+  }
   for (const [key, child] of Object.entries(value)) {
     visit(key, child);
     walk(child, visit);
   }
+}
+
+function isJsonObject(value: JsonValue): value is JsonObject {
+  return Object(value) === value;
 }

@@ -32,8 +32,9 @@ interface SnapshotTarget {
 
 function inside(root: string, path: string): string {
   const rel = relative(resolve(root), resolve(path));
-  if (!rel || isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`))
+  if (!rel || isAbsolute(rel) || rel === ".." || rel.startsWith(`..${sep}`)) {
     throw new Error("A transaction path is outside the library.");
+  }
   return rel;
 }
 async function exists(path: string): Promise<boolean> {
@@ -41,8 +42,9 @@ async function exists(path: string): Promise<boolean> {
     await lstat(path);
     return true;
   } catch (error) {
-    if (error instanceof Error && "code" in error && error.code === "ENOENT")
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return false;
+    }
     throw error;
   }
 }
@@ -51,32 +53,39 @@ async function rejectSymlinks(root: string, path: string): Promise<void> {
   let current = resolve(root);
   for (const part of rel.split(sep)) {
     current = join(current, part);
-    if (!(await exists(current))) return;
-    if ((await lstat(current)).isSymbolicLink())
+    if (!(await exists(current))) {
+      return;
+    }
+    if ((await lstat(current)).isSymbolicLink()) {
       throw new Error("Transaction paths cannot contain symbolic links.");
+    }
   }
 }
 function targetsFor(
   root: string,
-  transactions: readonly Transaction[],
-): SnapshotTarget[] {
+  transactions: ReadonlyArray<Transaction>,
+): Array<SnapshotTarget> {
   const targets = new Map<string, SnapshotTarget>();
   const add = (path: string, kind: SnapshotTarget["kind"]) => {
     inside(root, path);
     targets.set(path, { path, kind });
   };
   for (const tx of transactions) {
-    if (tx.model === "folder" || tx.model === "saved_view")
+    if (tx.model === "folder" || tx.model === "saved_view") {
       add(join(root, "organization.json"), "file");
-    if (tx.model !== "save" && tx.model !== "save_folder") continue;
+    }
+    if (tx.model !== "save" && tx.model !== "save_folder") {
+      continue;
+    }
     if (
       !tx.id ||
       tx.id.includes("/") ||
       tx.id.includes("\\") ||
       tx.id === "." ||
       tx.id === ".."
-    )
+    ) {
       throw new Error("Invalid Save ID.");
+    }
     const directory = saveDirIn(root, tx.id);
     if (tx.kind === "delete" || tx.kind === "purge") {
       add(directory, "directory");
@@ -84,21 +93,24 @@ function targetsFor(
     } else {
       add(join(directory, "info.json"), "file");
       add(join(directory, "source.json"), "file");
-      if ("titleLock" in tx && tx.titleLock)
+      if ("titleLock" in tx && tx.titleLock) {
         add(join(directory, "user-title.json"), "file");
-      if ("files" in tx)
+      }
+      if ("files" in tx) {
         for (const file of tx.files ?? []) {
           const path = join(directory, file.filename);
           inside(directory, path);
           add(path, "file");
         }
-      if ("fileMoves" in tx)
+      }
+      if ("fileMoves" in tx) {
         for (const file of tx.fileMoves ?? []) {
           const path = join(directory, file.filename);
           inside(directory, path);
           add(path, "file");
         }
-      if ("fileRenames" in tx)
+      }
+      if ("fileRenames" in tx) {
         for (const file of tx.fileRenames ?? []) {
           const source = join(directory, file.from);
           const destination = join(directory, file.to);
@@ -107,6 +119,7 @@ function targetsFor(
           add(source, "file");
           add(destination, "file");
         }
+      }
     }
   }
   return [...targets.values()].filter(
@@ -151,15 +164,15 @@ async function restoreJournal(
 export async function prepareBatchJournal(
   root: string,
   batchId: string,
-  transactions: readonly Transaction[],
+  transactions: ReadonlyArray<Transaction>,
 ) {
   const directory = join(root, ".transactions", batchId);
   inside(join(root, ".transactions"), directory);
   let targets = targetsFor(root, transactions);
   for (const id of new Set(
-    transactions
-      .filter((tx) => tx.model === "save" || tx.model === "save_folder")
-      .map((tx) => tx.id),
+    transactions.flatMap((tx) =>
+      tx.model === "save" || tx.model === "save_folder" ? [tx.id] : [],
+    ),
   )) {
     const itemDirectory = saveDirIn(root, id);
     if (!(await exists(itemDirectory))) {
@@ -184,11 +197,12 @@ export async function prepareBatchJournal(
         existed,
       };
       const backup = join(directory, "before", String(snapshots.length));
-      if (existed)
+      if (existed) {
         await cp(target.path, backup, {
           recursive: target.kind === "directory",
           mode: constants.COPYFILE_FICLONE,
         });
+      }
       snapshots.push(snapshot);
     }
     const journal: Journal = { batchId, snapshots };
@@ -220,25 +234,28 @@ export async function recoverBatchJournal(
   if (!(await exists(parent))) return;
   await rejectSymlinks(root, parent);
   for (const entry of await readdir(parent, { withFileTypes: true })) {
-    if (!entry.isDirectory())
+    if (!entry.isDirectory()) {
       throw new Error("Invalid transaction journal entry.");
+    }
     const directory = join(parent, entry.name);
     const manifest = join(directory, "journal.json");
     if (await exists(manifest)) {
       const journal = JournalSchema.parse(
         JSON.parse(await readFile(manifest, "utf8")),
       );
-      if (journal.batchId !== entry.name)
+      if (journal.batchId !== entry.name) {
         throw new Error("Transaction journal ID does not match its directory.");
-      if (!committed(journal.batchId))
+      }
+      if (!committed(journal.batchId)) {
         await restoreJournal(root, directory, journal);
+      }
     }
     await rm(directory, { recursive: true, force: true });
   }
 }
 
 export class BatchRecoveryError extends AggregateError {
-  constructor(errors: readonly Error[]) {
+  constructor(errors: ReadonlyArray<Error>) {
     super(
       errors,
       "The operation failed and recovery could not finish. The recovery journal was retained; reopen the library to retry recovery.",
@@ -249,7 +266,7 @@ export class BatchRecoveryError extends AggregateError {
 export async function runRecoverableBatch<T>(input: {
   root: string;
   batchId: string;
-  transactions: readonly Transaction[];
+  transactions: ReadonlyArray<Transaction>;
   applyDisk(transaction: Transaction): Promise<void>;
   commitIndex(): T;
   onCleanupError(error: Error): void;
@@ -262,8 +279,9 @@ export async function runRecoverableBatch<T>(input: {
   );
   let result: T;
   try {
-    for (const transaction of input.transactions)
+    for (const transaction of input.transactions) {
       await input.applyDisk(transaction);
+    }
     result = input.commitIndex();
   } catch (error) {
     try {

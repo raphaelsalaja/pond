@@ -9,19 +9,17 @@ export interface ChipChange {
 }
 
 export function chipDiff(
-  before: readonly string[],
-  after: readonly string[],
-): ChipChange[] {
+  before: ReadonlyArray<string>,
+  after: ReadonlyArray<string>,
+): Array<ChipChange> {
   return [
-    ...after.map(
-      (value): ChipChange => ({
-        value,
-        tone: before.includes(value) ? "tag" : "added",
-      }),
+    ...after.map((value): ChipChange => ({
+      value,
+      tone: before.includes(value) ? "tag" : "added",
+    })),
+    ...before.flatMap((value): Array<ChipChange> =>
+      after.includes(value) ? [] : [{ value, tone: "removed" }],
     ),
-    ...before
-      .filter((value) => !after.includes(value))
-      .map((value): ChipChange => ({ value, tone: "removed" })),
   ];
 }
 
@@ -40,8 +38,8 @@ export function shortTitle(title: string, limit = SHORT_TITLE): string {
 export function reviewTitle(title: string): string {
   return (
     title
-      .replace(/https?:\/\/\S+/gi, "")
-      .replace(/\s+/g, " ")
+      .replaceAll(/https?:\/\/\S+/gi, "")
+      .replaceAll(/\s+/g, " ")
       .trim() || "Untitled"
   );
 }
@@ -51,17 +49,20 @@ export interface SummaryPart {
   tone: "added" | "removed" | "neutral";
 }
 
+function neutral(text: string): Array<SummaryPart> {
+  return [{ text, tone: "neutral" }];
+}
+
 export function summaryParts(
   change: AssistantChange,
   folderName: (id: string) => string = String,
-): SummaryPart[] {
-  const neutral = (text: string): SummaryPart[] => [{ text, tone: "neutral" }];
+): Array<SummaryPart> {
   switch (change.field) {
     case "tags":
     case "folders": {
       const name = change.field === "folders" ? folderName : String;
       return chipDiff(change.before, change.after).flatMap(
-        (chip): SummaryPart[] =>
+        (chip): Array<SummaryPart> =>
           chip.tone === "tag"
             ? []
             : [
@@ -127,7 +128,7 @@ function summaryVerb(change: AssistantChange): string {
   }
 }
 
-export function reviewSummary(changes: readonly AssistantChange[]): string {
+export function reviewSummary(changes: ReadonlyArray<AssistantChange>): string {
   const groups = new Map<string, number>();
   for (const change of changes) {
     const verb = summaryVerb(change);
@@ -150,7 +151,7 @@ export interface ReviewOutcome {
 }
 
 export function reviewOutcome(
-  changes: readonly AssistantChange[],
+  changes: ReadonlyArray<AssistantChange>,
 ): ReviewOutcome {
   const tally = { applied: 0, dismissed: 0, undone: 0 };
   for (const change of changes) {
@@ -178,8 +179,8 @@ export function reviewOutcome(
 export interface ChangeGroup {
   key: string;
   /** What every change in the group does, such as `+Clock` or `Move to Trash`. */
-  parts: SummaryPart[];
-  changes: AssistantChange[];
+  parts: Array<SummaryPart>;
+  changes: Array<AssistantChange>;
 }
 
 /** Renames and notes differ per Save, so they group by kind; other changes group by their exact effect. */
@@ -204,9 +205,9 @@ function groupKey(
 
 /** One group per distinct change, in the order the fish proposed them. */
 export function groupChanges(
-  changes: readonly AssistantChange[],
+  changes: ReadonlyArray<AssistantChange>,
   folderName: (id: string) => string = String,
-): ChangeGroup[] {
+): Array<ChangeGroup> {
   const groups = new Map<string, ChangeGroup>();
   for (const change of changes) {
     const { key, parts } = groupKey(change, folderName);
@@ -227,16 +228,16 @@ export interface ProposalPlace {
 export type ProposalSegment =
   | { kind: "text"; text: string }
   | { kind: "value"; text: string }
-  | { kind: "places"; place: "tag" | "folder"; items: ProposalPlace[] }
-  | { kind: "saves"; changes: AssistantChange[] };
+  | { kind: "places"; place: "tag" | "folder"; items: Array<ProposalPlace> }
+  | { kind: "saves"; changes: Array<AssistantChange> };
 
-export type ProposalClause = ProposalSegment[];
+export type ProposalClause = Array<ProposalSegment>;
 
 const text = (value: string): ProposalSegment => ({
   kind: "text",
   text: value,
 });
-const value = (names: readonly string[]): ProposalSegment => ({
+const value = (names: ReadonlyArray<string>): ProposalSegment => ({
   kind: "value",
   text: names.join(" and "),
 });
@@ -286,7 +287,7 @@ function chipClause(
 function groupClauses(
   group: ChangeGroup,
   folderName: (id: string) => string,
-): ProposalClause[] {
+): Array<ProposalClause> {
   const [first] = group.changes;
   if (!first) return [];
   const saves: ProposalSegment = { kind: "saves", changes: group.changes };
@@ -346,9 +347,9 @@ const SHARED_LEADS = new Map([
 ]);
 
 /** When every clause opens with the same verb, say it once in the lead and keep the rest as items. */
-export function proposalList(clauses: readonly ProposalClause[]): {
+export function proposalList(clauses: ReadonlyArray<ProposalClause>): {
   lead: string;
-  items: ProposalClause[];
+  items: Array<ProposalClause>;
 } {
   const [first] = clauses.map((clause) => clause[0]);
   const verb = first?.kind === "text" ? first.text : undefined;
@@ -365,9 +366,9 @@ export function proposalList(clauses: readonly ProposalClause[]): {
 
 /** The proposal as clauses a fish can say in one sentence, one per distinct change. */
 export function proposalClauses(
-  changes: readonly AssistantChange[],
+  changes: ReadonlyArray<AssistantChange>,
   folderName: (id: string) => string = String,
-): ProposalClause[] {
+): Array<ProposalClause> {
   return groupChanges(changes, folderName).flatMap((group) =>
     groupClauses(group, folderName),
   );

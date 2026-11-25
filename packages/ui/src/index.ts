@@ -58,7 +58,7 @@ export { Swap } from "./swap";
 export { Switch } from "./switch";
 export { Table } from "./table";
 export { type TabProps as TabsTabProps, Tabs } from "./tabs";
-export { useTextReveal } from "./text-reveal";
+export { type TextRevealFrames, useTextReveal } from "./text-reveal";
 export { TitleBar } from "./title-bar";
 export { Toast } from "./toast";
 export { Toggle, type ToggleProps } from "./toggle";

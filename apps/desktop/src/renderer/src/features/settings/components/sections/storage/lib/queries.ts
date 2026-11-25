@@ -1,4 +1,5 @@
-import { type QueryClient, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 
 const STORAGE_SNAPSHOT_KEY = ["storage-snapshot"] as const;
 

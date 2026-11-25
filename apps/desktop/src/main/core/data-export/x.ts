@@ -19,8 +19,10 @@ export const xParser: ExportParser = {
     if (start < 0) return [];
     const json = parseJsonText(text.slice(start + 1));
     const rows = LikeFile.safeParse(json);
-    if (!rows.success) return [];
-    return rows.data.flatMap(({ like }): ExportEntry[] =>
+    if (!rows.success) {
+      return [];
+    }
+    return rows.data.flatMap(({ like }): Array<ExportEntry> =>
       like.tweetId && TWEET_ID.test(like.tweetId)
         ? [
             {

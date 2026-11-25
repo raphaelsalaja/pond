@@ -21,7 +21,7 @@ export function visionEnabled(
 }
 
 export async function imagesForSaves(
-  ids: string[],
+  ids: Array<string>,
 ): Promise<Array<{ mimeType: string; data: string }>> {
   const limit = pLimit(4);
   const images = await Promise.all(

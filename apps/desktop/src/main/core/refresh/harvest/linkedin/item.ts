@@ -1,9 +1,11 @@
 /// <reference lib="dom" />
 
 import type { JsonValue } from "@pond/schema/json";
-import { captureFromPageDom, type HarvestAdaptCtx } from "../from-page";
+import { captureFromPageDom } from "../from-page";
+import type { HarvestAdaptCtx } from "../from-page";
 import { buildItemExpression } from "../lib/expression";
-import { inPageLinkedInNormalize, type LinkedInPostPage } from "./normalize";
+import { inPageLinkedInNormalize } from "./normalize";
+import type { LinkedInPostPage } from "./normalize";
 
 export function buildExpression(postId: string): string {
   return buildItemExpression(
@@ -25,9 +27,15 @@ async function inPageLinkedInHarvest(
   if (BLOCKED.test(location.pathname)) return null;
 
   for (let attempt = 0; attempt < 48; attempt++) {
-    if (document.querySelector(ANY_UPDATE)) break;
-    if (BLOCKED.test(location.pathname)) return null;
-    await new Promise((resolve) => setTimeout(resolve, 250));
+    if (document.querySelector(ANY_UPDATE)) {
+      break;
+    }
+    if (BLOCKED.test(location.pathname)) {
+      return null;
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 250);
+    });
   }
   const root =
     document.querySelector(byId) ?? document.querySelector(ANY_UPDATE);

@@ -5,13 +5,13 @@ import { cleanTags } from "../lib/urls";
 
 type Input = {
   /** Save IDs from Search Saves, all from the same library. */
-  ids: string[];
+  ids: Array<string>;
   /** Library ID returned with the saves. */
   libraryId: string;
   /** Tags to add. */
-  add?: string[];
+  add?: Array<string>;
   /** Tags to remove. */
-  remove?: string[];
+  remove?: Array<string>;
 };
 
 export default async function tool(input: Input) {

@@ -59,26 +59,38 @@ const UNSIGNED_STEPS = [
 export function BrowserExtensionDialog({
   open,
   onOpenChange,
+  mac = IS_MAC,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mac?: boolean;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [safari, setSafari] = useState<SafariExtensionStatus | null>(null);
   const [needsUnsigned, setNeedsUnsigned] = useState(false);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setSafari(null);
+      setNeedsUnsigned(false);
+    }
+  }
 
   const refreshSafari = useCallback(() => {
-    if (!IS_MAC) return;
+    if (!mac) {
+      return;
+    }
     void window.pond
       .query("extension.safariStatus", {})
       .then(setSafari)
       .catch(() => setSafari(null));
-  }, []);
+  }, [mac]);
 
   useEffect(() => {
-    if (!open) return;
-    setSafari(null);
-    setNeedsUnsigned(false);
+    if (!open) {
+      return;
+    }
     refreshSafari();
     /** Enabling happens in Safari; re-read on return so the row updates without a reopen. */
     window.addEventListener("focus", refreshSafari);
@@ -145,7 +157,7 @@ export function BrowserExtensionDialog({
                   </Button>
                 </li>
               ))}
-              {IS_MAC ? (
+              {mac ? (
                 <li className={styles.store}>
                   <div className={styles.text}>
                     <span className={styles.name}>

@@ -70,7 +70,7 @@ export function LinkStatus({ busy = false, error }: LinkStatusProps) {
           </span>
         </div>
       </Reveal>
-      <Reveal visible={!busy && error != null} initial={false}>
+      <Reveal visible={!busy && error !== null} initial={false}>
         <div className={styles.failure}>
           <p className={styles.error}>{error?.message}</p>
           {error?.action ? (

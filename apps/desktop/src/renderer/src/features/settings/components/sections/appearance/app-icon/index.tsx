@@ -1,7 +1,8 @@
 import { DEFAULT_PREFS } from "@pond/schema/db";
 import { Button } from "@pond/ui";
 import { useQuery } from "@tanstack/react-query";
-import { type CSSProperties, useEffect } from "react";
+import { useEffect } from "react";
+import type { CSSProperties } from "react";
 import { z } from "zod";
 import type { Binding } from "@/features/settings/components/engine";
 import {

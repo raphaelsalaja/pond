@@ -23,7 +23,9 @@ export function resolveLogFile(
       }
       app.setAppLogsPath(root);
       return file;
-    } catch {}
+    } catch {
+      /** An unwritable directory falls through to the next candidate. */
+    }
   }
   return null;
 }

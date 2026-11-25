@@ -1,4 +1,5 @@
 import { cssVars } from "@pond/ui";
+import log from "electron-log/renderer";
 import { useEffect, useMemo } from "react";
 import {
   layoutAspectFor,
@@ -14,7 +15,7 @@ import styles from "./styles.module.css";
 const COUNT = 8;
 const THUMB_PX = 80;
 
-function useRecentIds(row: SourceTableRow): string[] {
+function useRecentIds(row: SourceTableRow): Array<string> {
   const overview = useSourceOverview(row.id);
   const ids = useMemo(
     () => (overview.data?.recent ?? []).slice(0, COUNT),
@@ -22,7 +23,11 @@ function useRecentIds(row: SourceTableRow): string[] {
   );
   const key = ids.join(",");
   useEffect(() => {
-    if (key) void ensureSaves(key.split(",")).catch(() => undefined);
+    if (key) {
+      void ensureSaves(key.split(",")).catch((cause: unknown) => {
+        log.warn("[pond sources] recent saves load failed", cause);
+      });
+    }
   }, [key]);
   useRetainedSaves(ids);
   return ids;

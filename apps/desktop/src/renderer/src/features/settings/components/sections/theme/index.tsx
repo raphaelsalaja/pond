@@ -1,10 +1,12 @@
-import { CUSTOM_PRESET_ID, type ThemeDef } from "@pond/schema/db";
-import { Select, type SelectItemSpec } from "@pond/ui";
+import { CUSTOM_PRESET_ID } from "@pond/schema/db";
+import type { ThemeDef } from "@pond/schema/db";
+import { Select } from "@pond/ui";
+import type { SelectItemSpec } from "@pond/ui";
 import { ThemeChip } from "./chip";
 import styles from "./styles.module.css";
 
 interface PresetSelectProps {
-  presets: { id: string; name: string; def: ThemeDef }[];
+  presets: Array<{ id: string; name: string; def: ThemeDef }>;
   value: string;
   /** Omitted to hide the Custom option. */
   customDef?: ThemeDef;
@@ -21,12 +23,10 @@ export function PresetSelect({
   "aria-label": ariaLabel,
   onChange,
 }: PresetSelectProps) {
-  const items = presets.map(
-    (preset): SelectItemSpec<string> => ({
-      value: preset.id,
-      label: <ThemeOption def={preset.def} label={preset.name} />,
-    }),
-  );
+  const items = presets.map((preset): SelectItemSpec<string> => ({
+    value: preset.id,
+    label: <ThemeOption def={preset.def} label={preset.name} />,
+  }));
   if (customDef) {
     items.push(
       { type: "separator" },

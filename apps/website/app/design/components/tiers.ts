@@ -1,22 +1,21 @@
-import {
-  COMPONENT_DOCS,
-  type ComponentDocs,
-  type ComponentTier,
-  TIER_LABELS,
-} from "@pond/ui/docs";
+import { COMPONENT_DOCS, TIER_LABELS } from "@pond/ui/docs";
+import type { ComponentDocs, ComponentTier } from "@pond/ui/docs";
 
-/** SAFETY: `TIER_LABELS` satisfies `Record<ComponentTier, string>`, so its keys are exactly the tiers. */
-const TIERS = Object.keys(TIER_LABELS) as ComponentTier[];
+function isTier(key: string): key is ComponentTier {
+  return key in TIER_LABELS;
+}
+
+const TIERS = Object.keys(TIER_LABELS).filter(isTier);
 
 export interface TierGroup {
   tier: ComponentTier;
   label: string;
-  docs: readonly ComponentDocs[];
+  docs: ReadonlyArray<ComponentDocs>;
 }
 
 export function groupByTier(
-  docs: readonly ComponentDocs[] = COMPONENT_DOCS,
-): TierGroup[] {
+  docs: ReadonlyArray<ComponentDocs> = COMPONENT_DOCS,
+): Array<TierGroup> {
   return TIERS.map((tier) => ({
     tier,
     label: TIER_LABELS[tier],

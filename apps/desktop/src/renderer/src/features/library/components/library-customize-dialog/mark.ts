@@ -1,3 +1,4 @@
+import { isElement } from "@pond/ui/dom";
 import { DEFAULT_APP_ICON } from "@shared/app-icons";
 import type { LibraryIconId } from "./icons";
 
@@ -87,13 +88,23 @@ function resolveColor(host: HTMLElement, property: string): string {
   return color;
 }
 
+function isSvgRoot(node: Node): node is SVGSVGElement {
+  return (
+    isElement(node) &&
+    node.namespaceURI === "http://www.w3.org/2000/svg" &&
+    node.localName === "svg"
+  );
+}
+
 async function svgImage(
   svg: SVGSVGElement,
   size: number,
   color: string,
 ): Promise<HTMLImageElement> {
-  /** SAFETY: a deep clone of an `<svg>` element is an `<svg>` element. */
-  const clone = svg.cloneNode(true) as SVGSVGElement;
+  const clone = svg.cloneNode(true);
+  if (!isSvgRoot(clone)) {
+    throw new Error("Couldn't copy the logo");
+  }
   clone.setAttribute("width", String(size));
   clone.setAttribute("height", String(size));
   clone.style.color = color;

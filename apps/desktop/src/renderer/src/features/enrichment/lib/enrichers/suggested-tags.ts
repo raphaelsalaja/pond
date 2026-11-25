@@ -34,12 +34,12 @@ type TagRows = z.infer<typeof TagRowsSchema>;
 
 export interface SuggestedTagsDependencies {
   listTags(): Promise<TagRows>;
-  embedSearchQueries(texts: string[]): Promise<Float32Array[]>;
+  embedSearchQueries(texts: Array<string>): Promise<Array<Float32Array>>;
   embeddingFor(id: string): Promise<{ vec: Float32Array } | undefined>;
   now(): number;
 }
 
-function vocabNames(rows: TagRows): string[] {
+function vocabNames(rows: TagRows): Array<string> {
   return rows
     .map((r) => r.name)
     .filter(
@@ -48,18 +48,18 @@ function vocabNames(rows: TagRows): string[] {
     );
 }
 
-function vocabKey(names: string[]): string {
+function vocabKey(names: Array<string>): string {
   return `${embedModelVersion()}\0${names.join("\0")}`;
 }
 
 export function createSuggestedTagsEnricher(
   deps: SuggestedTagsDependencies,
 ): Enricher {
-  let cached: { key: string; entries: VocabEntry[] } | null = null;
+  let cached: { key: string; entries: Array<VocabEntry> } | null = null;
   let failed: { key: string; at: number; error: Error } | null = null;
-  let inFlight: Promise<VocabEntry[]> | null = null;
+  let inFlight: Promise<Array<VocabEntry>> | null = null;
 
-  async function getVocab(): Promise<VocabEntry[]> {
+  async function getVocab(): Promise<Array<VocabEntry>> {
     const names = vocabNames(await deps.listTags());
     const key = vocabKey(names);
     if (cached?.key === key) return cached.entries;
@@ -79,8 +79,10 @@ export function createSuggestedTagsEnricher(
     }
 
     const pending = (async () => {
-      if (names.length === 0) return [];
-      const vecs: Float32Array[] = [];
+      if (names.length === 0) {
+        return [];
+      }
+      const vecs: Array<Float32Array> = [];
       for (let i = 0; i < names.length; i += VOCAB_BATCH_SIZE) {
         vecs.push(
           ...(await deps.embedSearchQueries(
@@ -120,8 +122,12 @@ export function createSuggestedTagsEnricher(
       prefs?.ai?.enableSuggestedTags === true &&
       prefs?.ai?.semanticSearch === true,
     eligible(save: Save) {
-      if (save.status !== "complete" || save.deletedAt != null) return false;
-      if (save.suggestedTagsModel === suggestedTagsModelVersion()) return false;
+      if (save.status !== "complete" || save.deletedAt !== null) {
+        return false;
+      }
+      if (save.suggestedTagsModel === suggestedTagsModelVersion()) {
+        return false;
+      }
       return save.embeddingModel === embedModelVersion();
     },
     async run(save: Save) {

@@ -4,11 +4,9 @@ import {
   randomUUID,
   timingSafeEqual,
 } from "node:crypto";
-import {
-  type ApiTokenInfo,
-  ApiTokenInfoSchema,
-  type ApiTokenScope,
-} from "@pond/schema/api";
+import { ApiTokenInfoSchema } from "@pond/schema/api";
+import type { ApiTokenInfo, ApiTokenScope } from "@pond/schema/api";
+import log from "electron-log/main.js";
 import { z } from "zod";
 import { KEYCHAIN_API_TOKENS } from "../../shared/constants";
 import { getSecret, setSecret } from "../keychain";
@@ -32,8 +30,10 @@ function publicInfo({ hash: _hash, ...info }: StoredToken): ApiTokenInfo {
   return info;
 }
 
-function parseStored(raw: string | null): StoredToken[] {
-  if (!raw) return [];
+function parseStored(raw: string | null): Array<StoredToken> {
+  if (!raw) {
+    return [];
+  }
   try {
     const parsed = z.array(StoredTokenSchema).safeParse(JSON.parse(raw));
     return parsed.success ? parsed.data : [];
@@ -42,39 +42,53 @@ function parseStored(raw: string | null): StoredToken[] {
   }
 }
 
+function isStale(token: StoredToken, usedAt: number): boolean {
+  return (
+    token.lastUsedAt === null ||
+    usedAt - token.lastUsedAt > LAST_USED_RESOLUTION_MS
+  );
+}
+
 /** Only a SHA-256 digest is kept, so a token is shown once, at creation. */
 export function createApiTokenStore(
   storage: ApiTokenStorage,
   now: () => number = Date.now,
 ) {
-  let cache: StoredToken[] | null = null;
+  let cache: Array<StoredToken> | null = null;
   let queue: Promise<unknown> = Promise.resolve();
 
-  async function load(): Promise<StoredToken[]> {
+  async function load(): Promise<Array<StoredToken>> {
     cache ??= parseStored(await storage.read());
     return cache;
   }
 
   function mutate<T>(
-    change: (tokens: StoredToken[]) => { tokens: StoredToken[]; result: T },
+    change: (tokens: Array<StoredToken>) => {
+      tokens: Array<StoredToken>;
+      result: T;
+    },
   ): Promise<T> {
     const next = queue.then(async () => {
-      const { tokens, result } = change(await load());
-      await storage.write(JSON.stringify(tokens));
-      cache = tokens;
+      const current = await load();
+      const { tokens, result } = change(current);
+      /** A change that keeps the same list has nothing to write. */
+      if (tokens !== current) {
+        await storage.write(JSON.stringify(tokens));
+        cache = tokens;
+      }
       return result;
     });
     queue = next.catch(() => {});
     return next;
   }
 
-  async function list(): Promise<ApiTokenInfo[]> {
+  async function list(): Promise<Array<ApiTokenInfo>> {
     return (await load()).map(publicInfo);
   }
 
   function create(
     name: string,
-    scopes: readonly ApiTokenScope[],
+    scopes: ReadonlyArray<ApiTokenScope>,
   ): Promise<{ token: string; info: ApiTokenInfo }> {
     const token = `${TOKEN_PREFIX}${randomBytes(24).toString("hex")}`;
     const stored: StoredToken = {
@@ -110,16 +124,20 @@ export function createApiTokenStore(
     });
     if (!match) return null;
     const usedAt = now();
-    if (
-      match.lastUsedAt === null ||
-      usedAt - match.lastUsedAt > LAST_USED_RESOLUTION_MS
-    ) {
+    if (isStale(match, usedAt)) {
+      /** Decided again inside the queue, so uses that arrive before the first write lands record once. */
       void mutate((tokens) => ({
-        tokens: tokens.map((entry) =>
-          entry.id === match.id ? { ...entry, lastUsedAt: usedAt } : entry,
-        ),
+        tokens: tokens.some(
+          (entry) => entry.id === match.id && isStale(entry, usedAt),
+        )
+          ? tokens.map((entry) =>
+              entry.id === match.id ? { ...entry, lastUsedAt: usedAt } : entry,
+            )
+          : tokens,
         result: undefined,
-      })).catch(() => {});
+      })).catch((cause: unknown) =>
+        log.warn("[pond api] token last-used update failed", cause),
+      );
     }
     return publicInfo(match);
   }

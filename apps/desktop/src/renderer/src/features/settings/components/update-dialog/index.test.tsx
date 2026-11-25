@@ -1,11 +1,17 @@
+import type { UpdateNotice } from "@shared/update-notice";
 import { describe, expect, it, vi } from "vitest";
 import { runUpdateAction, subscribeToUpdateNotices } from ".";
 
 describe("runUpdateAction", () => {
   it("resolves null when the action succeeds", async () => {
-    const run = vi.fn(async () => ({ ok: true as const }));
-    await expect(runUpdateAction("updates.download", run)).resolves.toBeNull();
-    expect(run).toHaveBeenCalledWith("updates.download");
+    const ran: Array<string> = [];
+    await expect(
+      runUpdateAction("updates.download", async (name) => {
+        ran.push(name);
+        return { ok: true };
+      }),
+    ).resolves.toBeNull();
+    expect(ran).toEqual(["updates.download"]);
   });
 
   it("surfaces the main-process error", async () => {
@@ -41,14 +47,14 @@ describe("subscribeToUpdateNotices", () => {
       phase: "downloaded" as const,
       version: "1.0.2",
     };
-    const present = vi.fn();
-    const stop = subscribeToUpdateNotices(present, {
+    const presented = Promise.withResolvers<UpdateNotice>();
+    const stop = subscribeToUpdateNotices(presented.resolve, {
       current: async () => notice,
       subscribe: () => vi.fn(),
       warn: vi.fn(),
     });
 
-    await vi.waitFor(() => expect(present).toHaveBeenCalledWith(notice));
+    expect(await presented.promise).toEqual(notice);
     stop();
   });
 
@@ -60,8 +66,9 @@ describe("subscribeToUpdateNotices", () => {
     let listener: ((value: typeof notice) => void) | undefined;
     const present = vi.fn();
     const unsubscribe = vi.fn();
+    const current = Promise.withResolvers<UpdateNotice | null>();
     const stop = subscribeToUpdateNotices(present, {
-      current: async () => notice,
+      current: () => current.promise,
       subscribe: (next) => {
         listener = next;
         return unsubscribe;
@@ -70,7 +77,9 @@ describe("subscribeToUpdateNotices", () => {
     });
 
     listener?.(notice);
-    await vi.waitFor(() => expect(present).toHaveBeenCalledTimes(1));
+    current.resolve(notice);
+    await current.promise;
+    expect(present).toHaveBeenCalledTimes(1);
     stop();
     expect(unsubscribe).toHaveBeenCalledOnce();
   });

@@ -65,7 +65,7 @@ interface ThreadsMediaVersion {
 }
 
 interface ThreadsImageVersions {
-  candidates?: ThreadsMediaVersion[];
+  candidates?: Array<ThreadsMediaVersion>;
 }
 
 interface PickedVersion {
@@ -129,8 +129,8 @@ export interface ThreadsMediaNode {
   user?: ThreadsUser;
   owner?: ThreadsUser;
   image_versions2?: ThreadsImageVersions;
-  video_versions?: ThreadsMediaVersion[];
-  carousel_media?: ThreadsMediaNode[];
+  video_versions?: Array<ThreadsMediaVersion>;
+  carousel_media?: Array<ThreadsMediaNode>;
   text_post_app_info?: ThreadsPostInfo;
 }
 
@@ -158,7 +158,7 @@ interface HarvestedQuote {
   authorName?: string;
   authorAvatar?: string;
   text?: string;
-  media?: HarvestedMedia[];
+  media?: Array<HarvestedMedia>;
 }
 
 interface HarvestedCard {
@@ -177,7 +177,7 @@ export interface HarvestedMeta {
   publishedAt?: string;
   lang?: string;
   metrics?: HarvestedMetrics;
-  media?: HarvestedMedia[];
+  media?: Array<HarvestedMedia>;
   quotedTweet?: HarvestedQuote;
   card?: HarvestedCard;
   isReply?: boolean;
@@ -190,7 +190,7 @@ export interface HarvestedPost {
   description?: string;
   lang?: string;
   mediaUrl?: string;
-  mediaUrls?: HarvestedMedia[];
+  mediaUrls?: Array<HarvestedMedia>;
   mediaType?: "image" | "video";
   meta?: HarvestedMeta;
 }
@@ -256,7 +256,7 @@ export function inPageThreadsNormalize() {
   }
 
   function pickBestVideo(
-    versions: ThreadsMediaVersion[] | null,
+    versions: Array<ThreadsMediaVersion> | null,
   ): PickedVersion | null {
     if (!Array.isArray(versions)) return null;
     for (const v of versions) {
@@ -287,15 +287,23 @@ export function inPageThreadsNormalize() {
     return value !== undefined && Number.isFinite(value) ? value : undefined;
   }
 
+  function isCaptionObject(
+    caption: ThreadsCaption | string,
+  ): caption is ThreadsCaption {
+    return Object(caption) === caption;
+  }
+
   function captionText(
     caption: ThreadsCaption | string | null | undefined,
   ): string | undefined {
-    if (!caption) return undefined;
-    return (caption instanceof Object ? caption.text : caption) || undefined;
+    if (!caption) {
+      return undefined;
+    }
+    return (isCaptionObject(caption) ? caption.text : caption) || undefined;
   }
 
-  function collectNodeMedia(node: ThreadsMediaNode): HarvestedMedia[] {
-    const media: HarvestedMedia[] = [];
+  function collectNodeMedia(node: ThreadsMediaNode): Array<HarvestedMedia> {
+    const media: Array<HarvestedMedia> = [];
     const seen = new Set<string>();
     const push = (entry: HarvestedMedia | null) => {
       const url = entry?.url;
@@ -426,7 +434,9 @@ export function inPageThreadsNormalize() {
     if (url) {
       try {
         domain = new URL(url).hostname.replace(/^www\./, "");
-      } catch {}
+      } catch {
+        /** An unparseable link keeps the display URL as its domain. */
+      }
     }
     if (domain) domain = domain.replace(/^www\./, "").split("/")[0];
     const card: HarvestedCard = {};

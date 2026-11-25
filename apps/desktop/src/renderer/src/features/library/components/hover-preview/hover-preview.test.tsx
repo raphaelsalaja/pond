@@ -1,12 +1,14 @@
 import { PrefsSchema } from "@pond/schema";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import { normalise } from "@/features/saves";
 import { resultNavigation, selection } from "@/features/saves/navigation";
 import { pool } from "@/features/saves/pool";
 import { requestQuickPreview } from "@/features/saves/state/quick-preview";
+import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { HoverPreview } from "./";
 
 it("hydrates and previews the next logical save beyond loaded grid rows", async () => {
@@ -20,23 +22,21 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
   });
   if (!first) throw new Error("Invalid fixture");
   pool.upsert(first);
-  const query = vi.fn(async (name: string) =>
-    name === "settings.getPrefs"
-      ? PrefsSchema.parse({})
-      : [
-          {
-            id: "quick-next",
-            source: "web",
-            sourceId: "next",
-            url: "https://fixture.test/two",
-            title: "Next reference",
-            files: [],
-          },
-        ],
-  );
-  vi.stubGlobal("pond", {
-    query,
-    onPreviewNeighborRequested: () => () => {},
+  const next = [
+    wireSave({
+      id: "quick-next",
+      source: "web",
+      sourceId: "next",
+      url: "https://fixture.test/two",
+      title: "Next reference",
+      files: [],
+    }),
+  ];
+  bridge.use({
+    query: {
+      "settings.getPrefs": () => PrefsSchema.parse({}),
+      "saves.getMany": () => next,
+    },
   });
   selection.setAnchor("range-start");
   selection.setCursor(first.id);
@@ -78,7 +78,7 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
       ),
     );
     expect(selection.getAnchor()).toBe("quick-next");
-    expect(query).toHaveBeenCalledWith("saves.getMany", {
+    expect(window.pond.query).toHaveBeenCalledWith("saves.getMany", {
       ids: ["quick-next"],
     });
     expect(document.body.textContent).toContain("Next reference");
@@ -100,7 +100,6 @@ it("hydrates and previews the next logical save beyond loaded grid rows", async 
     resultNavigation.setSource({ ids: [] });
     selection.clear();
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
@@ -115,9 +114,8 @@ it("dims the grid for a peek and closes on a click outside", async () => {
   });
   if (!save) throw new Error("Invalid fixture");
   pool.upsert(save);
-  vi.stubGlobal("pond", {
-    query: vi.fn(async () => PrefsSchema.parse({})),
-    onPreviewNeighborRequested: () => () => {},
+  bridge.use({
+    query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
   });
   const host = document.createElement("div");
   document.body.append(host);
@@ -151,7 +149,6 @@ it("dims the grid for a peek and closes on a click outside", async () => {
     await act(async () => root.unmount());
     selection.clear();
     host.remove();
-    vi.unstubAllGlobals();
   }
 });
 
@@ -166,9 +163,8 @@ it("opens the save details from the expand button and closes the preview", async
   });
   if (!save) throw new Error("Invalid fixture");
   pool.upsert(save);
-  vi.stubGlobal("pond", {
-    query: vi.fn(async () => PrefsSchema.parse({})),
-    onPreviewNeighborRequested: () => () => {},
+  bridge.use({
+    query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
   });
   const router = await openLibraryAt("/");
   selection.setAnchor(save.id);
@@ -207,6 +203,5 @@ it("opens the save details from the expand button and closes the preview", async
     resultNavigation.setSource({ ids: [] });
     selection.clear();
     host.remove();
-    vi.unstubAllGlobals();
   }
 });

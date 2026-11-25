@@ -7,7 +7,11 @@ interface Piece {
   start: number;
 }
 
-function locate(pieces: Piece[], offset: number): [Text, number] | null {
+function isText(node: Node): node is Text {
+  return node.nodeType === Node.TEXT_NODE;
+}
+
+function locate(pieces: Array<Piece>, offset: number): [Text, number] | null {
   for (const piece of pieces) {
     if (offset <= piece.start + piece.node.length) {
       return [piece.node, offset - piece.start];
@@ -19,8 +23,10 @@ function locate(pieces: Piece[], offset: number): [Text, number] | null {
 /** The run of text a citation closes: from the last sentence end or earlier citation in its block, up to the citation. */
 export function citedSentence(citation: Element): Range | null {
   const block = citation.closest(BLOCK);
-  if (!block) return null;
-  const pieces: Piece[] = [];
+  if (!block) {
+    return null;
+  }
+  const pieces: Array<Piece> = [];
   let text = "";
   let afterCitation = 0;
   const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
@@ -38,10 +44,11 @@ export function citedSentence(citation: Element): Range | null {
       if (text.slice(afterCitation).trim()) afterCitation = text.length;
       continue;
     }
-    /** SAFETY: the walker only visits nodes `SHOW_TEXT` lets through, which are all Text. */
-    const textNode = node as Text;
-    pieces.push({ node: textNode, start: text.length });
-    text += textNode.data;
+    if (!isText(node)) {
+      continue;
+    }
+    pieces.push({ node, start: text.length });
+    text += node.data;
   }
   const end = text.trimEnd().length;
   const base = text.slice(afterCitation, end).trim() ? afterCitation : 0;

@@ -1,20 +1,23 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 import { resolveWatchTarget } from "./resolve";
+import type { FetchWatchPage } from "./types";
 
-afterEach(() => vi.unstubAllGlobals());
+const unavailable: FetchWatchPage = async () =>
+  new Response(null, { status: 503 });
 
 it("does not guess an Are.na kind when the lookup is unavailable", async () => {
-  vi.stubGlobal("fetch", async () => new Response(null, { status: 503 }));
-  await expect(resolveWatchTarget("arena", "example")).rejects.toThrow();
+  await expect(
+    resolveWatchTarget("arena", "example", unavailable),
+  ).rejects.toThrow();
 });
 
 it("resolves an Are.na account after ruling out a channel", async () => {
-  const paths: string[] = [];
-  vi.stubGlobal("fetch", async (url: string) => {
+  const paths: Array<string> = [];
+  const fetchPage: FetchWatchPage = async (url) => {
     paths.push(new URL(url).pathname);
     return new Response(null, { status: url.includes("/users/") ? 200 : 404 });
-  });
-  expect(await resolveWatchTarget("arena", "example")).toEqual({
+  };
+  expect(await resolveWatchTarget("arena", "example", fetchPage)).toEqual({
     kind: "user",
     handle: "example",
     display: "example",

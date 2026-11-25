@@ -46,7 +46,7 @@ export async function readBlueskyBookmarks(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   let cursor = args.resumeCursor;
   let knownStreak = 0;

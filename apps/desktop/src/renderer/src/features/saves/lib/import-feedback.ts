@@ -21,10 +21,10 @@ interface ImportShowAction {
 const SHOW_ACTION_TIMEOUT_MS = 5000;
 
 /** The only types a drag from another app exposes before drop; its data stays unreadable until then. */
-const IMPORTABLE_TYPES = ["Files", "text/uri-list", "text/plain"];
+const IMPORTABLE_TYPES = new Set(["Files", "text/uri-list", "text/plain"]);
 
 export function canImportDrop(types: Iterable<string>): boolean {
-  return [...types].some((type) => IMPORTABLE_TYPES.includes(type));
+  return [...types].some((type) => IMPORTABLE_TYPES.has(type));
 }
 
 function successTitle({ kind, imported, folderName }: ImportOutcome): string {
@@ -65,8 +65,8 @@ export function importToast(outcome: ImportOutcome): ImportToast | null {
 }
 
 export function showImportedAction(
-  ids: readonly string[],
-  show: (ids: readonly string[]) => void,
+  ids: ReadonlyArray<string>,
+  show: (ids: ReadonlyArray<string>) => void,
 ): ImportShowAction {
   if (ids.length === 0) return {};
   return {

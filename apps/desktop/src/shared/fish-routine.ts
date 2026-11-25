@@ -5,7 +5,10 @@ const DAY = 24 * HOUR;
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const WEEKENDS = [0, 6];
 
-function sameDays(days: readonly number[], expected: readonly number[]) {
+function sameDays(
+  days: ReadonlyArray<number>,
+  expected: ReadonlyArray<number>,
+) {
   return (
     days.length === expected.length && expected.every((d) => days.includes(d))
   );
@@ -25,8 +28,10 @@ function dayName(day: number, width: "long" | "short"): string {
   });
 }
 
-function listed(parts: readonly string[]): string {
-  if (parts.length < 3) return parts.join(" and ");
+function listed(parts: ReadonlyArray<string>): string {
+  if (parts.length < 3) {
+    return parts.join(" and ");
+  }
   return `${parts.slice(0, -1).join(", ")}, and ${parts.at(-1)}`;
 }
 
@@ -41,7 +46,7 @@ export function describeWhen(when: FishWhen): string {
     if (when.hours % 24 === 0) return `Every ${when.hours / 24} days`;
     return `Every ${when.hours} hours`;
   }
-  const days = [...new Set(when.days)].sort();
+  const days = [...new Set(when.days)].sort((a, b) => a - b);
   const at = `around ${clockTime(when.time)}`;
   if (days.length === 7) return `Every day ${at}`;
   if (sameDays(days, WEEKDAYS)) return `Weekdays ${at}`;
@@ -59,8 +64,9 @@ function previousSlot(
   for (let back = 0; back <= 7; back += 1) {
     const slot = new Date(now - back * DAY);
     slot.setHours(hours, minutes, 0, 0);
-    if (slot.getTime() <= now && when.days.includes(slot.getDay()))
+    if (slot.getTime() <= now && when.days.includes(slot.getDay())) {
       return slot.getTime();
+    }
   }
   return null;
 }
@@ -69,8 +75,9 @@ function previousSlot(
 export function isRoutineDue(routine: FishRoutine, now: number): boolean {
   if (routine.paused) return false;
   const since = routine.lastRun?.at ?? routine.createdAt;
-  if (routine.when.kind === "every")
+  if (routine.when.kind === "every") {
     return now - since >= routine.when.hours * HOUR;
+  }
   if (routine.when.kind === "daily") {
     const slot = previousSlot(routine.when, now);
     return slot !== null && slot > since;
@@ -88,8 +95,9 @@ function nextSlot(
     const slot = new Date(now);
     slot.setDate(slot.getDate() + ahead);
     slot.setHours(hours, minutes, 0, 0);
-    if (slot.getTime() > now && when.days.includes(slot.getDay()))
+    if (slot.getTime() > now && when.days.includes(slot.getDay())) {
       return slot.getTime();
+    }
   }
   return null;
 }

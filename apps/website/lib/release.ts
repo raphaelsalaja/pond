@@ -5,7 +5,38 @@ const RELEASES_PAGE = `https://github.com/${REPO}/releases`;
 
 export interface Release {
   tag: string;
-  assets: string[];
+  assets: Array<string>;
+}
+
+interface GitHubAsset {
+  name: string;
+}
+
+interface GitHubRelease {
+  tag_name: string;
+  assets: Array<GitHubAsset>;
+}
+
+function isGitHubAsset(asset: unknown): asset is GitHubAsset {
+  return (
+    typeof asset === "object" &&
+    asset !== null &&
+    "name" in asset &&
+    typeof asset.name === "string"
+  );
+}
+
+/** Checked by hand because zod would land in this client bundle. */
+function isGitHubRelease(body: unknown): body is GitHubRelease {
+  return (
+    typeof body === "object" &&
+    body !== null &&
+    "tag_name" in body &&
+    typeof body.tag_name === "string" &&
+    "assets" in body &&
+    Array.isArray(body.assets) &&
+    body.assets.every(isGitHubAsset)
+  );
 }
 
 /** GitHub's latest release skips drafts and prereleases, so links never point at a build that isn't out yet. */
@@ -18,12 +49,13 @@ export async function getLatestRelease(): Promise<Release | null> {
         next: { revalidate: 300 },
       },
     );
-    if (!response.ok) return null;
-    /** SAFETY: a 2xx from GitHub's release endpoint always carries `tag_name` and `assets[].name`. */
-    const body = (await response.json()) as {
-      tag_name: string;
-      assets: { name: string }[];
-    };
+    if (!response.ok) {
+      return null;
+    }
+    const body: unknown = await response.json();
+    if (!isGitHubRelease(body)) {
+      return null;
+    }
     return {
       tag: body.tag_name,
       assets: body.assets.map((asset) => asset.name),
@@ -103,14 +135,14 @@ const SECONDARY = {
     ["Linux (ARM)", "linuxArm"],
     ["Debian package (ARM)", "debArm"],
   ],
-} satisfies Record<Platform, [string, Build][]>;
+} satisfies Record<Platform, Array<[string, Build]>>;
 
 /** Every other build the release ships, listed as secondary links. */
 export function otherDownloads(
   platform: Platform,
   release: Release | null,
-): Download[] {
-  const builds: [string, Build][] = SECONDARY[platform];
+): Array<Download> {
+  const builds: Array<[string, Build]> = SECONDARY[platform];
   return builds.flatMap(([label, build]) => {
     const href = buildUrl(release, build);
     return href ? [{ label, href }] : [];

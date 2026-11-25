@@ -39,9 +39,7 @@
   --ds-focus-offset: 0px;
   position: absolute;
   inset-inline-start: calc(
-    var(--entry-depth) *
-    var(--folder-indent) +
-    var(--ds-space-sm)
+    var(--entry-depth) * var(--folder-indent) + var(--ds-space-sm)
   );
   top: 6px;
   z-index: 2;

@@ -3,7 +3,7 @@ import { newMenuDialog } from "./state/new-menu-dialog";
 
 export function openLibraryRepair(
   kind: LibraryRepairKind,
-  options: { saveIds?: readonly string[]; onClosed?: () => void } = {},
+  options: { saveIds?: ReadonlyArray<string>; onClosed?: () => void } = {},
 ): void {
   newMenuDialog.open({ kind: "repair", repair: kind, ...options });
 }

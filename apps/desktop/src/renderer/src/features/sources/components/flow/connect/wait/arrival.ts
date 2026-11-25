@@ -7,7 +7,7 @@ export interface ConnectArrivalAccount {
 }
 
 export function findArrivedAccount<T extends ConnectArrivalAccount>(
-  list: readonly T[],
+  list: ReadonlyArray<T>,
   source: Source,
   connectedBefore: ReadonlySet<string>,
   importedAccountId?: string | null,

@@ -13,7 +13,7 @@ export function FilterSelect<Value extends string>({
 }: {
   label: string;
   value: Value;
-  options: FilterOption<Value>[];
+  options: Array<FilterOption<Value>>;
   onChange: (value: Value) => void;
 }) {
   return (

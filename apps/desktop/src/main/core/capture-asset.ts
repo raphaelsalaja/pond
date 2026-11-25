@@ -27,9 +27,12 @@ export function referrerFor(
   } catch {
     return undefined;
   }
-  if (origin.origin === target.origin) return originUrl;
-  if (origin.protocol === "https:" && target.protocol === "http:")
+  if (origin.origin === target.origin) {
+    return originUrl;
+  }
+  if (origin.protocol === "https:" && target.protocol === "http:") {
     return undefined;
+  }
   return origin.origin;
 }
 
@@ -38,7 +41,7 @@ export async function captureAsset(input: {
   title?: string;
   originUrl?: string;
   metadata: CaptureMetadata;
-  cookies?: ExtensionCookie[];
+  cookies?: Array<ExtensionCookie>;
 }): Promise<{ id: string; duplicate: boolean }> {
   const sourceId = `asset:${createHash("sha256").update(input.url).digest("hex")}`;
   const db = await getDb();
@@ -52,19 +55,24 @@ export async function captureAsset(input: {
     .from(saves)
     .where(and(eq(saves.source, "web"), eq(saves.sourceId, sourceId)))
     .get();
-  const restored = existing?.deletedAt != null;
-  if (existing && restored) await restoreSave(existing.id, "capture:restore");
+  const restored =
+    existing?.deletedAt !== null && existing?.deletedAt !== undefined;
+  if (existing && restored) {
+    await restoreSave(existing.id, "capture:restore");
+  }
   if (
     existing &&
     (await importedFilesComplete(existing, saveDir(existing.id), 1))
-  )
+  ) {
     return { id: existing.id, duplicate: !restored };
+  }
   const directory = await mkdtemp(join(tmpdir(), "pond-asset-"));
   const partition = `pond-asset-${crypto.randomUUID()}`;
   const isolated = session.fromPartition(partition, { cache: false });
   try {
-    if (input.cookies?.length)
+    if (input.cookies?.length) {
       await writePartitionCookies({ partition, cookies: input.cookies });
+    }
     const referrer = input.originUrl
       ? referrerFor(input.originUrl, input.url)
       : undefined;
@@ -72,19 +80,21 @@ export async function captureAsset(input: {
       signal: AbortSignal.timeout(60_000),
       headers: referrer ? { Referer: referrer } : undefined,
     });
-    if (!response.ok)
+    if (!response.ok) {
       throw new Error(
         `The image server returned ${response.status}. Open the page and try again.`,
       );
+    }
     const type = response.headers.get("content-type")?.split(";")[0] ?? "";
-    if (!type.startsWith("image/"))
+    if (!type.startsWith("image/")) {
       throw new Error(
         "This image link no longer returns an image. Open the page and select it again.",
       );
+    }
     const extension = mime.extension(type) || "image";
     const name =
       basename(new URL(input.url).pathname)
-        .replace(/[^a-zA-Z0-9_.-]/g, "_")
+        .replaceAll(/[^a-zA-Z0-9_.-]/g, "_")
         .slice(0, 120) || `image.${extension}`;
     const file = join(
       directory,
@@ -100,10 +110,11 @@ export async function captureAsset(input: {
           const next = await reader.read();
           if (next.done) break;
           total += next.value.byteLength;
-          if (total > 128 * 1024 * 1024)
+          if (total > 128 * 1024 * 1024) {
             throw new Error(
               "This image exceeds the 128 MB capture limit. Download and import the file instead.",
             );
+          }
           await handle.writeFile(next.value);
         }
       } finally {

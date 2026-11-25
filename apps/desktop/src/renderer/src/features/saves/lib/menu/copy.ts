@@ -42,8 +42,8 @@ export function buildCopyItems({
   hasUrl,
   hasTags,
   allTrashed,
-}: SaveMenuContext): MenuItemSpec[] {
-  const more: MenuItemSpec[] = [
+}: SaveMenuContext): Array<MenuItemSpec> {
+  const more: Array<MenuItemSpec> = [
     {
       label: "Copy Thumbnail",
       icon: glyph(IconImage),
@@ -152,8 +152,11 @@ export function buildCopyItems({
       hidden: !hasTags,
       shortcut: shortcutGlyphs("save.copy-tags"),
       onClick: () => {
-        if (batch) copyTagsForSelection(ids);
-        else copyTags(save);
+        if (batch) {
+          void copyTagsForSelection(ids);
+        } else {
+          copyTags(save);
+        }
       },
     },
   ];

@@ -3,8 +3,8 @@ import styles from "./styles.module.css";
 
 const ENTITY = /(https?:\/\/[^\s]+|www\.[^\s]+|[@#$][\w]+)/g;
 
-function renderTokens(text: string): ReactNode[] {
-  const out: ReactNode[] = [];
+function renderTokens(text: string): Array<ReactNode> {
+  const out: Array<ReactNode> = [];
   let last = 0;
   let key = 0;
   for (const match of text.matchAll(ENTITY)) {

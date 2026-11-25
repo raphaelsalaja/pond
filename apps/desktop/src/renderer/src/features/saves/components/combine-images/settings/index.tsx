@@ -22,18 +22,18 @@ import {
 } from "@pond/ui";
 import type { CombineImagesOptions } from "@shared/combine-images-contracts";
 import type { CombineLayout } from "@shared/combine-images-layout";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
+import type { ReactNode } from "react";
 import { clamp } from "@/shared/lib/math";
 import {
-  type Highlight,
   LIMITS,
   QUALITIES,
-  type SizeKey,
   sizeKeys,
   supportsTransparency,
   withDirection,
   withSize,
 } from "../options";
+import type { Highlight, SizeKey } from "../options";
 import styles from "./styles.module.css";
 
 const OUTPUTS = [
@@ -302,7 +302,7 @@ function IconToggles<const Value extends string>({
   onChange,
 }: {
   label: string;
-  items: readonly { value: Value; label: string; icon: ReactNode }[];
+  items: ReadonlyArray<{ value: Value; label: string; icon: ReactNode }>;
   value: Value;
   onChange: (value: Value) => void;
 }) {
@@ -362,8 +362,9 @@ function PixelField({
         onValueChange={(next) => {
           setDraft(next);
           const parsed = Number(next);
-          if (next.trim() !== "" && Number.isFinite(parsed))
+          if (next.trim() !== "" && Number.isFinite(parsed)) {
             onCommit(clamp(Math.round(parsed), ...limits));
+          }
         }}
       />
       <Input.Suffix>px</Input.Suffix>
@@ -378,7 +379,7 @@ function ValueSelect<const Value extends string | number>({
   onChange,
 }: {
   label: string;
-  items: readonly { value: Value; label: string }[];
+  items: ReadonlyArray<{ value: Value; label: string }>;
   value: Value;
   onChange: (value: Value) => void;
 }) {

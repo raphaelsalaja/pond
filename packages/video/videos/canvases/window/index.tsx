@@ -3,19 +3,18 @@ import {
   App,
   anchor,
   boardToApp,
-  type End,
   ease,
   keyed,
   libraryPlaces,
   mix,
   PANEL,
-  type Point,
   Pointer,
   progress,
   swatchCenter,
   toolCenter,
   toolIndex,
 } from "@pond/video";
+import type { End, Point } from "@pond/video";
 import type { CSSProperties } from "react";
 import { LOOKS, LOOP, media, NOTE, NOTE_TEXT, VIEW } from "../data";
 import { CUES } from "../timeline";
@@ -74,7 +73,7 @@ const CLICKS = [
   CUES.markerTool,
   CUES.pickRed,
 ];
-const HOLDS: [number, number][] = [
+const HOLDS: Array<[number, number]> = [
   [CUES.drawStart, CUES.drawEnd],
   [CUES.linkPress, CUES.linkDrop],
   [CUES.relinkPress, CUES.relinkDrop],

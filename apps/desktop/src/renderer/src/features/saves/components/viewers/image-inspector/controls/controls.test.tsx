@@ -1,5 +1,6 @@
 import { act } from "react";
-import { createRoot, type Root } from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { resultNavigation } from "@/features/saves/state/result-navigation";
 import { ImageControls } from ".";
@@ -19,6 +20,9 @@ describe("image inspector toolbar", () => {
     await act(async () => root.unmount());
     host.remove();
   });
+
+  const labeled = (label: string) =>
+    host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
 
   it("shows the compact image action sequence at the small size", async () => {
     const noop = vi.fn();
@@ -46,9 +50,10 @@ describe("image inspector toolbar", () => {
       ),
     );
 
-    const labels = [...host.querySelectorAll("button")]
-      .map((button) => button.getAttribute("aria-label"))
-      .filter((label): label is string => label !== null);
+    const labels = [...host.querySelectorAll("button")].flatMap((button) => {
+      const label = button.getAttribute("aria-label");
+      return label === null ? [] : [label];
+    });
     expect(labels).toEqual([
       "Previous Save",
       "Next Save",
@@ -141,8 +146,6 @@ describe("image inspector toolbar", () => {
       ),
     );
 
-    const labeled = (label: string) =>
-      host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`);
     expect(labeled("Actual Size")).not.toBeNull();
     expect(labeled("Fit to Window")).not.toBeNull();
     expect(labeled("Flip")).toBeNull();

@@ -1,6 +1,7 @@
 import { IconImage, IconVideo } from "@pond/icons";
 import JSZip from "jszip";
-import { type ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ReactNode } from "react";
 import { ViewerHud } from "@/features/saves/components/viewers/hud";
 import { ChromePortal } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
@@ -32,7 +33,7 @@ export function LivePhotoViewer({
 
   useEffect(() => {
     let active = true;
-    const urls: string[] = [];
+    const urls: Array<string> = [];
     void fetch(url)
       .then((response) => response.arrayBuffer())
       .then((buffer) => JSZip.loadAsync(buffer))
@@ -87,7 +88,7 @@ export function LivePhotoViewer({
   }, [onUnavailable, url]);
 
   const video = media.video ? (
-    // biome-ignore lint/a11y/useMediaCaption: imported Live Photo clips may lack captions; only a real archived WebVTT track is rendered when supplied.
+    // oxlint-disable-next-line jsx-a11y/media-has-caption -- imported Live Photo clips may lack captions; only a real archived WebVTT track is rendered when supplied
     <video
       className={styles.media}
       src={media.video}

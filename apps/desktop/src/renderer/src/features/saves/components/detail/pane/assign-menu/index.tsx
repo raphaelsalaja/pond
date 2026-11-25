@@ -15,10 +15,10 @@ export interface AssignOption {
 
 interface AssignMenuProps {
   noun: "Tag" | "Folder";
-  options: readonly AssignOption[];
+  options: ReadonlyArray<AssignOption>;
   suggested?: ReadonlySet<string>;
-  onToggle(option: AssignOption): void;
-  onCreate?(name: string): void;
+  onToggle: (option: AssignOption) => void;
+  onCreate?: (name: string) => void;
 }
 
 function sortKey(option: AssignOption): string {
@@ -51,8 +51,8 @@ export function AssignMenu({
     : matches;
   const creatable = Boolean(
     onCreate &&
-      needle &&
-      !options.some((option) => option.label.toLowerCase() === needle),
+    needle &&
+    !options.some((option) => option.label.toLowerCase() === needle),
   );
   const entries = placeCreateOptionLast(
     rest.map((option) => ({ kind: "option" as const, option })),

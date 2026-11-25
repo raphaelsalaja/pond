@@ -13,11 +13,13 @@ export function offerEntries({
 }: {
   group: string;
   key: string;
-  entries: readonly MenuEntry[];
+  entries: ReadonlyArray<MenuEntry>;
   suggested?: ReadonlySet<string>;
   searching: boolean;
-}): MenuEntry[] {
-  if (searching) return [...entries];
+}): Array<MenuEntry> {
+  if (searching) {
+    return [...entries];
+  }
   const picked = suggested
     ? entries.filter((entry) => suggested.has(entry.label))
     : entries.slice(0, FALLBACK_COUNT);

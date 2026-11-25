@@ -1,12 +1,8 @@
 import { existsSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 import type { Prefs } from "@pond/schema/db";
-import {
-  app,
-  type NativeImage,
-  nativeImage,
-  systemPreferences,
-} from "electron";
+import { app, nativeImage, systemPreferences } from "electron";
+import type { NativeImage } from "electron";
 import log from "electron-log/main.js";
 import {
   DEFAULT_APP_ICON,
@@ -25,7 +21,8 @@ import {
   hasCustomBundleIcon,
   setBundleIcon,
 } from "./bundle-icon";
-import { type IconStyleWatch, macosMajor, watchIconStyle } from "./icon-style";
+import { macosMajor, watchIconStyle } from "./icon-style";
+import type { IconStyleWatch } from "./icon-style";
 import { readLibraryIdentity } from "./library-identity";
 import { getPrefs } from "./prefs";
 
@@ -77,18 +74,19 @@ function styledIconFile(
     macosMajor(process.platform, process.getSystemVersion()),
   );
   const candidates = [join(tint, file)];
-  if (generation !== null)
+  if (generation !== null) {
     candidates.unshift(join(tint, `macos-${generation}`, file));
+  }
   return candidates.find((path) => existsSync(path)) ?? null;
 }
 
-function availableIds(): string[] {
+function availableIds(): Array<string> {
   const root = tintsRoot();
   if (!existsSync(root)) {
     log.warn("[pond] app icon tints missing", root);
     return [];
   }
-  const ids: string[] = [];
+  const ids: Array<string> = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
     if (appIconFile(entry.name)) ids.push(entry.name);
@@ -170,8 +168,10 @@ let latestSwitch = 0;
 
 export async function applyAppIcon(id?: string): Promise<void> {
   const ticket = ++latestSwitch;
-  const prefs = id == null ? await getPrefs().catch(() => null) : null;
-  if (ticket !== latestSwitch) return;
+  const prefs = id === undefined ? await getPrefs().catch(() => null) : null;
+  if (ticket !== latestSwitch) {
+    return;
+  }
   const resolved = resolveAppIconId(
     id ?? prefs?.window.appIcon ?? DEFAULT_APP_ICON,
     new Set(availableIds()),
@@ -212,14 +212,17 @@ async function openLibraryLogo() {
   }
 }
 
+/** Electron's macOS Dock.setIcon passes null through as a nil NSApplication icon, which restores the bundle icon; its typings list only images. */
+interface ResettableDock {
+  setIcon(image: NativeImage | string | null): void;
+}
+
 function restoreBuiltinDockIcon(): void {
-  const dock = app.dock;
-  if (!dock) return;
-  /** SAFETY: Electron's macOS Dock.setIcon passes null through as a nil NSApplication icon, which restores the bundle icon; its typings list only images. */
-  const setIcon = dock.setIcon.bind(dock) as (
-    image: NativeImage | null,
-  ) => void;
-  setIcon(null);
+  const dock: ResettableDock | undefined = app.dock;
+  if (!dock) {
+    return;
+  }
+  dock.setIcon(null);
 }
 
 /**
@@ -235,9 +238,11 @@ async function clearLegacyBundleIcon(): Promise<void> {
     packaged: app.isPackaged,
     exePath: app.getPath("exe"),
   });
-  if (!bundle || !hasCustomBundleIcon(bundle)) return;
-  await setBundleIcon(bundle, null).catch((err) =>
-    log.warn("[pond] reset bundle icon failed", err),
+  if (!bundle || !hasCustomBundleIcon(bundle)) {
+    return;
+  }
+  await setBundleIcon(bundle, null).catch((cause: unknown) =>
+    log.warn("[pond] reset bundle icon failed", cause),
   );
 }
 
@@ -256,13 +261,15 @@ function publishDockTile(id: string): void {
     [DOCK_TILE_LIGHT_KEY, light],
     [DOCK_TILE_DARK_KEY, dark ?? light],
   ] as const) {
-    if (path)
+    if (path) {
       systemPreferences.setUserDefault(
         key,
         "string",
         relative(process.resourcesPath, path),
       );
-    else systemPreferences.removeUserDefault(key);
+    } else {
+      systemPreferences.removeUserDefault(key);
+    }
   }
   systemPreferences.postNotification(DOCK_TILE_CHANGED, {}, true);
 }

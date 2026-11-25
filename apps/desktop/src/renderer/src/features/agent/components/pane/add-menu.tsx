@@ -7,7 +7,7 @@ import { notify } from "@/shared/lib/toast";
 
 interface AddMenuProps {
   disabled?: boolean;
-  onAttach: (files: AssistantFileAttachment[]) => void | Promise<void>;
+  onAttach: (files: Array<AssistantFileAttachment>) => void | Promise<void>;
   onAddSaves: () => void;
 }
 

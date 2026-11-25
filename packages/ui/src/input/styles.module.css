@@ -60,14 +60,11 @@
     --input-radius: var(--ds-radius-full);
     --input-icon-inset: round(
       down,
-      (var(--input-min-height) - var(--input-icon-size)) /
-      2,
+      (var(--input-min-height) - var(--input-icon-size)) / 2,
       2px
     );
     --input-icon-padding-start: calc(
-      var(--input-icon-inset) *
-      2 +
-      var(--input-icon-size)
+      var(--input-icon-inset) * 2 + var(--input-icon-size)
     );
   }
 
@@ -275,12 +272,12 @@
   border: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:is(
-      :hover,
-      :focus-visible,
-      :focus-within,
-      [data-demo-state="hover"],
-      [data-demo-state="focus"]
-    ) {
+    :hover,
+    :focus-visible,
+    :focus-within,
+    [data-demo-state="hover"],
+    [data-demo-state="focus"]
+  ) {
     background: var(--ds-surface-secondary);
   }
 
@@ -314,11 +311,11 @@
     border-color var(--ds-duration-snap) var(--ds-easing-standard);
 
   &:is(
-      :hover,
-      :focus-within,
-      [data-demo-state="hover"],
-      [data-demo-state="focus"]
-    ) {
+    :hover,
+    :focus-within,
+    [data-demo-state="hover"],
+    [data-demo-state="focus"]
+  ) {
     transition-duration: 0s;
   }
 }
@@ -336,10 +333,10 @@
   }
 
   &:is(
-      :has(> .field:focus-visible),
-      :has(> .editor:focus-within),
-      [data-demo-state="focus"]
-    ) {
+    :has(> .field:focus-visible),
+    :has(> .editor:focus-within),
+    [data-demo-state="focus"]
+  ) {
     box-shadow: var(--input-edge-focus);
   }
 }
@@ -357,10 +354,10 @@
   }
 
   &:is(
-      :has(> .field:focus-visible),
-      :has(> .editor:focus-within),
-      [data-demo-state="focus"]
-    ) {
+    :has(> .field:focus-visible),
+    :has(> .editor:focus-within),
+    [data-demo-state="focus"]
+  ) {
     box-shadow: var(--input-edge-focus), var(--ds-shadow-raised);
   }
 }
@@ -370,11 +367,11 @@
   border: var(--ds-border-width) solid var(--ds-border-subtle);
 
   &:is(
-      :hover,
-      :focus-within,
-      [data-demo-state="hover"],
-      [data-demo-state="focus"]
-    ) {
+    :hover,
+    :focus-within,
+    [data-demo-state="hover"],
+    [data-demo-state="focus"]
+  ) {
     background: var(--ds-surface-secondary);
   }
 
@@ -383,10 +380,10 @@
   }
 
   &:is(
-      :has(> .field:focus-visible),
-      :has(> .editor:focus-within),
-      [data-demo-state="focus"]
-    ) {
+    :has(> .field:focus-visible),
+    :has(> .editor:focus-within),
+    [data-demo-state="focus"]
+  ) {
     border-color: var(--ds-accent);
     box-shadow: inset 0 0 0 var(--ds-border-width) var(--ds-accent);
   }

@@ -1,15 +1,11 @@
 import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { useSaves } from "@/features/saves/pool";
-import {
-  type TagGroupRow,
-  useTagGroups,
-} from "@/features/tags/state/tag-groups";
-import { type TagRow, useTags } from "@/features/tags/state/tags";
-import {
-  EMPTY_STATS,
-  type GroupStats,
-  type TagsRowData,
-} from "../components/manager/lib/types";
+import { useTagGroups } from "@/features/tags/state/tag-groups";
+import type { TagGroupRow } from "@/features/tags/state/tag-groups";
+import { useTags } from "@/features/tags/state/tags";
+import type { TagRow } from "@/features/tags/state/tags";
+import { EMPTY_STATS } from "../components/manager/lib/types";
+import type { GroupStats, TagsRowData } from "../components/manager/lib/types";
 
 export function useTagsData() {
   const tags = useTags();
@@ -74,8 +70,8 @@ export function useTagsData() {
   const starredTotal = tags.filter((tag) => tag.starred).length;
   const needle = deferredQ.trim().toLowerCase();
 
-  const data = useMemo<TagsRowData[]>(() => {
-    const groupRows: TagsRowData[] = groups
+  const data = useMemo<Array<TagsRowData>>(() => {
+    const groupRows: Array<TagsRowData> = groups
       .map((group) => {
         const stats = groupStats.get(group.id) ?? EMPTY_STATS;
         const children = stats.members
@@ -117,7 +113,7 @@ export function useTagsData() {
           : 0,
       );
 
-    const tagRows: TagsRowData[] = tags
+    const tagRows: Array<TagsRowData> = tags
       .filter((t) => !taggedIds.has(t.id))
       .filter((t) => (needle ? t.name.toLowerCase().includes(needle) : true))
       .map((tag) => ({
@@ -142,8 +138,10 @@ export function useTagsData() {
     [toggles],
   );
 
-  const expandedIds = useMemo<string[]>(() => {
-    if (needle) return groups.map((g) => g.id);
+  const expandedIds = useMemo<Array<string>>(() => {
+    if (needle) {
+      return groups.map((g) => g.id);
+    }
     return groups.filter((g) => isExpanded(g)).map((g) => g.id);
   }, [needle, groups, isExpanded]);
 
@@ -172,7 +170,7 @@ export function useTagsData() {
   }, [data]);
 
   const namesFromIds = useCallback(
-    (ids: string[]) => {
+    (ids: Array<string>) => {
       const set = new Set<string>();
       for (const id of ids) {
         const name = tagNameById.get(id);

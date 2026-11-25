@@ -1,18 +1,16 @@
+import { isHTMLTag } from "@pond/ui/dom";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import { ViewerChrome } from "@/features/saves/components/viewers/media-viewer/chrome";
-import {
-  type MediaSlide,
-  Slide,
-} from "@/features/saves/components/viewers/media-viewer/slide";
+import { Slide } from "@/features/saves/components/viewers/media-viewer/slide";
+import type { MediaSlide } from "@/features/saves/components/viewers/media-viewer/slide";
 import {
   copyVideoFrame,
   saveVideoFrame,
 } from "@/features/saves/lib/media/capture-frame";
-import {
-  type ChapterCue,
-  chaptersForSave,
-} from "@/features/saves/lib/media/chapters-vtt";
+import { chaptersForSave } from "@/features/saves/lib/media/chapters-vtt";
+import type { ChapterCue } from "@/features/saves/lib/media/chapters-vtt";
 import { buildMediaUnits } from "@/features/saves/lib/media/units";
 import { openSave } from "@/features/saves/lib/save-nav";
 import type { Save } from "@/features/saves/types";
@@ -62,13 +60,16 @@ export function MediaViewer({
   showControls = true,
 }: MediaViewerProps) {
   const theme = useResolvedTheme();
-  const chapters = useMemo<ChapterCue[]>(() => chaptersForSave(save), [save]);
+  const chapters = useMemo<Array<ChapterCue>>(
+    () => chaptersForSave(save),
+    [save],
+  );
   const singleVideo = useMemo(
     () =>
       buildMediaUnits(save, { theme }).filter((u) => u.isVideo).length === 1,
     [save, theme],
   );
-  const allSlides = useMemo<MediaSlide[]>(
+  const allSlides = useMemo<Array<MediaSlide>>(
     () =>
       buildMediaUnits(save, { theme }).flatMap((u) => {
         const fileIndex = save.files.findIndex((f) => f.path === u.key);
@@ -174,7 +175,7 @@ export function MediaViewerFrame({
     const video = root?.querySelector("[data-blossom-slide]")
       ? root.querySelector("[data-blossom-slide][data-active] video")
       : root?.querySelector("video");
-    return video instanceof HTMLVideoElement && video.videoWidth ? video : null;
+    return isHTMLTag(video, "video") && video.videoWidth ? video : null;
   };
 
   useHotkey(
@@ -227,8 +228,8 @@ function Carousel({
 }: {
   save: Save;
   onNavigate: (id: string) => void;
-  slides: MediaSlide[];
-  chapters?: ChapterCue[];
+  slides: Array<MediaSlide>;
+  chapters?: Array<ChapterCue>;
   onActiveFileIndexChange?: (fileIndex: number | null) => void;
   onPositionChange?: (position: ViewerPosition | null) => void;
   navRef?: RefObject<ViewerNav | null>;

@@ -44,8 +44,8 @@ function root(): string {
 
 function fileName(save: ApiSave, extension: string): string {
   const base = saveTitle(save)
-    .replace(/[/\\:*?"<>|\n\r\t]/g, " ")
-    .replace(/\s+/g, " ")
+    .replaceAll(/[/\\:*?"<>|\n\r\t]/g, " ")
+    .replaceAll(/\s+/g, " ")
     .trim()
     .slice(0, 60);
   return `${base || "Pond Save"}.${extension}`;

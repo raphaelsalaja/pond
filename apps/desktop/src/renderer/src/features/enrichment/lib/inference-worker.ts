@@ -32,7 +32,7 @@ function toRawImage(s: SerializedImage): RawImage {
 
 async function handle(
   req: InferenceRequest,
-): Promise<{ result: InferenceResult; transfer: Transferable[] }> {
+): Promise<{ result: InferenceResult; transfer: Array<Transferable> }> {
   switch (req.op) {
     case "dispose":
       await disposeInferenceModels();
@@ -94,11 +94,11 @@ self.onmessage = (event: MessageEvent<InferenceRequest>) => {
       const { result, transfer } = await handle(req);
       const response: InferenceResponse = { id: req.id, ok: true, result };
       self.postMessage(response, transfer);
-    } catch (err) {
+    } catch (error) {
       const response: InferenceResponse = {
         id: req.id,
         ok: false,
-        error: err instanceof Error ? err.message : String(err),
+        error: error instanceof Error ? error.message : String(error),
       };
       self.postMessage(response);
     }

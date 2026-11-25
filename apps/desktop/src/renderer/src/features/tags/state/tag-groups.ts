@@ -11,8 +11,8 @@ export interface TagGroupRow {
   color: string | null;
   sortOrder: number;
   collapsed: boolean;
-  tagIds: string[];
-  tagNames: string[];
+  tagIds: Array<string>;
+  tagNames: Array<string>;
 }
 
 interface TagGroupsState {
@@ -43,7 +43,7 @@ const TagGroupPatchSchema = TagGroupRowSchema.partial().nullish().catch(null);
 let inflight: Promise<ReadonlyArray<TagGroupRow>> | null = null;
 let subscribed = false;
 
-function sortGroups(rows: ReadonlyArray<TagGroupRow>): TagGroupRow[] {
+function sortGroups(rows: ReadonlyArray<TagGroupRow>): Array<TagGroupRow> {
   return rows.slice().sort(bySortOrderThenName);
 }
 
@@ -103,13 +103,15 @@ function ensureSubscribed(): void {
       const row = inserted.data;
       const idx = cache.findIndex((r) => r.id === row.id);
       const next = cache.slice();
-      if (idx >= 0)
+      if (idx >= 0) {
         next[idx] = {
           ...row,
           tagIds: cache[idx]?.tagIds ?? [],
           tagNames: cache[idx]?.tagNames ?? [],
         };
-      else next.push(row);
+      } else {
+        next.push(row);
+      }
       setRows(next);
       return;
     }

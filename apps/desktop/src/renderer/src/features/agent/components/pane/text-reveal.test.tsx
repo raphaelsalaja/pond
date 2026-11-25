@@ -1,25 +1,28 @@
 import { useTextReveal } from "@pond/ui";
+import type { TextRevealFrames } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it } from "vitest";
 
-const cleanups: (() => Promise<void>)[] = [];
+const cleanups: Array<() => Promise<void>> = [];
 afterEach(async () => {
-  for (const cleanup of cleanups.splice(0)) await cleanup();
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
+  for (const cleanup of cleanups.splice(0)) {
+    await cleanup();
+  }
 });
 
 function Probe({
   content,
   animate,
   finish,
+  clock,
 }: {
   content: string;
   animate: boolean;
   finish: boolean;
+  clock: TextRevealFrames;
 }) {
-  const { text, pending } = useTextReveal(content, animate, finish);
+  const { text, pending } = useTextReveal(content, animate, finish, clock);
   return <output data-pending={pending}>{text}</output>;
 }
 
@@ -27,12 +30,16 @@ function createReveal() {
   const frames = new Map<number, FrameRequestCallback>();
   let nextId = 0;
   let now = 0;
-  vi.spyOn(performance, "now").mockImplementation(() => now);
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    frames.set(++nextId, callback);
-    return nextId;
-  });
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+  const clock: TextRevealFrames = {
+    now: () => now,
+    request: (callback) => {
+      frames.set(++nextId, callback);
+      return nextId;
+    },
+    cancel: (id) => {
+      frames.delete(id);
+    },
+  };
   const host = document.createElement("div");
   const root = createRoot(host);
   let mounted = true;
@@ -55,7 +62,12 @@ function createReveal() {
     async render(content: string, animate: boolean, finish = false) {
       await act(async () =>
         root.render(
-          <Probe content={content} animate={animate} finish={finish} />,
+          <Probe
+            content={content}
+            animate={animate}
+            finish={finish}
+            clock={clock}
+          />,
         ),
       );
     },
@@ -108,8 +120,9 @@ it("drains the final received text after the model completes without jumping to 
   await reveal.advance();
   expect(reveal.text.length).toBeGreaterThan(first.length);
   expect(reveal.text).not.toBe("A short answer with saved references.");
-  for (let frame = 0; frame < 40 && reveal.pending; frame++)
+  for (let frame = 0; frame < 40 && reveal.pending; frame++) {
     await reveal.advance();
+  }
   expect(reveal.text).toBe("A short answer with saved references.");
   expect(reveal.pending).toBe(false);
 });
@@ -123,8 +136,9 @@ it("replaces unrelated content without concatenating a stale revealed prefix", a
   expect(reveal.text).toBe("Replacement");
   await reveal.advance();
   await reveal.render("Replacement continued", true);
-  for (let frame = 0; frame < 30 && reveal.pending; frame++)
+  for (let frame = 0; frame < 30 && reveal.pending; frame++) {
     await reveal.advance();
+  }
   expect(reveal.text).toBe("Replacement continued");
   expect(reveal.pending).toBe(false);
 });

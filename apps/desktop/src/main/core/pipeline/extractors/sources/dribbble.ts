@@ -45,7 +45,7 @@ export class DribbbleShotExtractor implements Extractor {
     );
   }
 
-  handleFromPath(segments: string[]): string | null {
+  handleFromPath(segments: Array<string>): string | null {
     const [first] = segments;
     if (segments.length !== 1 || !first) return null;
     if (DRIBBBLE_RESERVED.has(first.toLowerCase())) return null;

@@ -47,8 +47,9 @@ export function localDayPredicate(
   day: Date,
   now = new Date(),
 ): Predicate {
-  if (formatLocalDay(day) === formatLocalDay(now))
+  if (formatLocalDay(day) === formatLocalDay(now)) {
     return { field, operator: "gte", value: startOfLocalDay(now) };
+  }
   return {
     field,
     operator: "between",

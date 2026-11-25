@@ -7,20 +7,19 @@ import { persistSave } from "../../persist-save";
 import {
   screenshotThreadsDual,
   screenshotTweetDual,
-  type TweetScreenshotResult,
 } from "../../refresh/harvest-window";
+import type { TweetScreenshotResult } from "../../refresh/harvest-window";
 import {
-  type RenderedCard,
   renderBlueskyCardPng,
   renderThreadsCardPng,
   renderTweetCardPng,
 } from "../../render-card";
+import type { RenderedCard } from "../../render-card";
 import { CaptureIncompleteError, TransientError } from "../extractors/errors";
-import { readSave, type WriteFileArgs } from "./apply";
-import {
-  type InlinedAvatars,
-  inlineCaptureAvatars,
-} from "./inline-card-avatars";
+import { readSave } from "./apply";
+import type { WriteFileArgs } from "./apply";
+import { inlineCaptureAvatars } from "./inline-card-avatars";
+import type { InlinedAvatars } from "./inline-card-avatars";
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
@@ -62,8 +61,8 @@ export interface CaptureTweetSave {
 
 interface PersistSaveOptions {
   actorReason: string;
-  newFiles?: WriteFileArgs[];
-  replaceFilesWithKind?: WriteFileArgs["kind"] | WriteFileArgs["kind"][];
+  newFiles?: Array<WriteFileArgs>;
+  replaceFilesWithKind?: WriteFileArgs["kind"] | Array<WriteFileArgs["kind"]>;
 }
 
 export interface CaptureTweetPorts<SaveRow extends CaptureTweetSave> {
@@ -213,7 +212,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
 
   let captured = 0;
   let authWall = false;
-  const harvested: CaptureMedia[] = [];
+  const harvested: Array<CaptureMedia> = [];
 
   const mainArgs: CaptureVariantsArgs = {
     url: save.url,
@@ -352,9 +351,12 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
       filename: inlined.avatarFile.filename,
       bytes: Buffer.from(inlined.avatarFile.bytes),
     };
-    if (inlined.avatarFile.mimeType)
+    if (inlined.avatarFile.mimeType) {
       avatar.mimeType = inlined.avatarFile.mimeType;
-    if (inlined.avatarSourceUrl) avatar.sourceUrl = inlined.avatarSourceUrl;
+    }
+    if (inlined.avatarSourceUrl) {
+      avatar.sourceUrl = inlined.avatarSourceUrl;
+    }
     try {
       await ports.persistSave(
         saveId,
@@ -364,11 +366,11 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
           newFiles: [avatar],
         },
       );
-    } catch (err) {
+    } catch (error) {
       log.warn(
         "[pond pipeline:capture-tweet] avatar persist failed",
         saveId,
-        err,
+        error,
       );
     }
   }
@@ -421,7 +423,7 @@ interface CaptureVariantsResult {
   complete: boolean;
   authWall: boolean;
   quotedUrl?: string;
-  media?: CaptureMedia[];
+  media?: Array<CaptureMedia>;
   page?: Capture;
   failureReason?: TweetScreenshotResult["reason"];
 }
@@ -548,7 +550,7 @@ async function writeScreenshot(
 async function finalizeRawJson<SaveRow extends CaptureTweetSave>(
   saveId: string,
   stored: RawJson | null,
-  harvested: CaptureMedia[],
+  harvested: Array<CaptureMedia>,
   opts: { stampVersion: boolean },
   ports: CaptureTweetPorts<SaveRow>,
 ): Promise<boolean> {

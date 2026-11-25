@@ -1,5 +1,6 @@
 import { Button, Loader } from "@pond/ui";
-import { type KeyboardEvent, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
+import type { KeyboardEvent } from "react";
 import { openSettings } from "@/shared/lib/open-settings";
 import type { InboxProgress } from "../../state/progress";
 import { ignoresKey, navigationKey } from "./keys";

@@ -1,10 +1,7 @@
 import { Button } from "@pond/ui";
 import type { AssistantChange } from "@shared/assistant";
-import {
-  type ReviewPerform,
-  review,
-  useReview,
-} from "@/features/agent/state/review";
+import { review, useReview } from "@/features/agent/state/review";
+import type { ReviewPerform } from "@/features/agent/state/review";
 import { useFolders } from "@/features/library";
 import { cardKeys } from "../card-keys";
 import { QuestionCard } from "../question-card";
@@ -26,7 +23,7 @@ function useFolderName() {
     folders.find((folder) => folder.id === id)?.name ?? "Deleted Folder";
 }
 
-function useChangeCovers(changes: readonly AssistantChange[]) {
+function useChangeCovers(changes: ReadonlyArray<AssistantChange>) {
   useSourceCovers(changes.flatMap((change) => change.saveId || []));
 }
 
@@ -37,7 +34,7 @@ export function ChangeReview({
   perform,
 }: {
   messageId: string;
-  changes: AssistantChange[];
+  changes: Array<AssistantChange>;
   disabled?: boolean;
   perform?: ReviewPerform;
 }) {
@@ -82,7 +79,7 @@ function LibraryReview({
   perform,
 }: {
   messageId: string;
-  changes: AssistantChange[];
+  changes: Array<AssistantChange>;
   busy: boolean;
   perform?: ReviewPerform;
 }) {
@@ -155,7 +152,7 @@ function TrashPrompt({
       ? { submit: () => act("apply"), cancel: () => act("dismiss") }
       : {},
   );
-  if (!pending)
+  if (!pending) {
     return (
       <QuestionCard.Summary
         label={emptied ? "Emptied Trash" : "Kept Trash"}
@@ -165,6 +162,7 @@ function TrashPrompt({
         muted={!emptied}
       />
     );
+  }
   return (
     <QuestionCard.Root aria-label="Empty Trash?" onKeyDown={onKeyDown}>
       <QuestionCard.Header

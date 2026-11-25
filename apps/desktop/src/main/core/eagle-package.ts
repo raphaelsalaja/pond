@@ -47,7 +47,8 @@ import {
   setSaveFolders,
 } from "./folders";
 import { runLibraryTransfer } from "./library-transfers";
-import { createManualSave, type ManualSaveInput } from "./manual-import";
+import { createManualSave } from "./manual-import";
+import type { ManualSaveInput } from "./manual-import";
 import {
   exportLibraryMedia,
   readLibraryMedia,
@@ -63,7 +64,7 @@ const DEFAULT_LIMITS = {
   files: 10_000,
   fileBytes: 512 * 1024 * 1024,
   totalBytes: 8 * 1024 * 1024 * 1024,
-  compressionRatio: 1_000,
+  compressionRatio: 1000,
   jsonBytes: 4 * 1024 * 1024,
 } satisfies EaglePackageLimits;
 
@@ -95,15 +96,15 @@ type EagleExportSave = Pick<
 export interface EaglePackageExportItem {
   save: EagleExportSave;
   directory: string;
-  folderIds: string[];
+  folderIds: Array<string>;
 }
 
 type EaglePackageFolder = Pick<Folder, "id" | "name" | "parentId"> &
   Partial<Pick<Folder, "color" | "sortOrder">>;
 
 export interface EaglePackageExportInput {
-  items: readonly EaglePackageExportItem[];
-  folders?: readonly EaglePackageFolder[];
+  items: ReadonlyArray<EaglePackageExportItem>;
+  folders?: ReadonlyArray<EaglePackageFolder>;
 }
 
 interface EagleFolder {
@@ -112,7 +113,7 @@ interface EagleFolder {
   parentId?: string | null;
   color?: string | null;
   iconColor?: string | null;
-  children?: EagleFolder[];
+  children?: Array<EagleFolder>;
 }
 
 const EagleFolderSchema: z.ZodType<EagleFolder> = z.lazy(() =>
@@ -168,13 +169,13 @@ export interface EaglePackageFolderNode {
 
 export interface EaglePackageImportItem {
   metadata: EagleItem;
-  mediaPaths: string[];
+  mediaPaths: Array<string>;
   thumbnailPath: string | null;
 }
 
 interface EaglePackageFolderImport {
   mapped: Map<string, string>;
-  createdIds: string[];
+  createdIds: Array<string>;
 }
 
 interface EaglePackageItemImportResult {
@@ -186,14 +187,14 @@ interface EaglePackageItemImportResult {
 
 export interface EaglePackageImportRuntime {
   folders: (
-    nodes: EaglePackageFolderNode[],
+    nodes: Array<EaglePackageFolderNode>,
   ) => Promise<EaglePackageFolderImport>;
   existing: (eagleId: string) => Promise<string | null>;
   importItem: (
     item: EaglePackageImportItem,
-    folderIds: string[],
+    folderIds: Array<string>,
   ) => Promise<EaglePackageItemImportResult>;
-  rollback: (saveIds: string[], folderIds: string[]) => Promise<void>;
+  rollback: (saveIds: Array<string>, folderIds: Array<string>) => Promise<void>;
 }
 
 interface PackageFile {
@@ -264,12 +265,13 @@ const runtime: EaglePackageImportRuntime = {
     const result = await createManualSave(input);
     if (result.ok && result.id && folderIds.length > 0) {
       const assigned = await setSaveFolders(result.id, folderIds);
-      if (!assigned.ok)
+      if (!assigned.ok) {
         return {
           ok: false,
           id: result.id,
           error: "Could not assign imported folders.",
         };
+      }
     }
     return result;
   },
@@ -311,9 +313,9 @@ function safeSegment(value: string): string {
     character.charCodeAt(0) < 32 ? "_" : character,
   )
     .join("")
-    .replace(/[/\\?%*:|"<>]/g, "_")
+    .replaceAll(/[/\\?%*:|"<>]/g, "_")
     .trim()
-    .replace(/^\.+$|[. ]+$/g, "")
+    .replaceAll(/^\.+$|[. ]+$/g, "")
     .slice(0, 120);
   return cleaned || "Untitled";
 }
@@ -352,8 +354,9 @@ function resolvedLimits(
 ): EaglePackageLimits {
   const resolved = { ...DEFAULT_LIMITS, ...limits };
   for (const value of Object.values(resolved)) {
-    if (!Number.isSafeInteger(value) || value <= 0)
+    if (!Number.isSafeInteger(value) || value <= 0) {
       throw new Error("Eagle package limits must be positive integers.");
+    }
   }
   return resolved;
 }
@@ -361,16 +364,20 @@ function resolvedLimits(
 async function scanDirectory(
   directory: string,
   limits: EaglePackageLimits,
-): Promise<PackageFile[]> {
+): Promise<Array<PackageFile>> {
   const rootMetadata = await lstat(directory);
-  if (rootMetadata.isSymbolicLink() || !rootMetadata.isDirectory())
+  if (rootMetadata.isSymbolicLink() || !rootMetadata.isDirectory()) {
     throw new Error("An Eagle package directory must be a real directory.");
+  }
   const root = await realpath(directory);
-  const files: PackageFile[] = [];
+  const files: Array<PackageFile> = [];
   const names = new Set<string>();
   let totalBytes = 0;
 
-  async function visit(current: string, segments: string[]): Promise<void> {
+  async function visit(
+    current: string,
+    segments: Array<string>,
+  ): Promise<void> {
     const entries = await readdir(current, { withFileTypes: true });
     entries.sort((left, right) => left.name.localeCompare(right.name));
     for (const entry of entries) {
@@ -380,31 +387,38 @@ async function scanDirectory(
       assertPortablePath(portablePath);
       const absolutePath = targetFor(root, portablePath);
       const metadata = await lstat(absolutePath);
-      if (metadata.isSymbolicLink())
+      if (metadata.isSymbolicLink()) {
         throw new Error("Eagle packages cannot contain symbolic links.");
+      }
       if (metadata.isDirectory()) {
         await visit(absolutePath, nextSegments);
         continue;
       }
-      if (!metadata.isFile())
+      if (!metadata.isFile()) {
         throw new Error("Eagle packages may contain only regular files.");
+      }
       const actual = await realpath(absolutePath);
-      if (actual !== absolutePath)
+      if (actual !== absolutePath) {
         throw new Error("An Eagle package file resolves outside its package.");
+      }
       const portableName = portablePath.toLocaleLowerCase("en-US");
-      if (names.has(portableName))
+      if (names.has(portableName)) {
         throw new Error(
           "Eagle package paths must be unique across portable filesystems.",
         );
+      }
       names.add(portableName);
-      if (metadata.size > limits.fileBytes)
+      if (metadata.size > limits.fileBytes) {
         throw new Error("An Eagle package file exceeds the extraction limit.");
+      }
       totalBytes += metadata.size;
-      if (totalBytes > limits.totalBytes)
+      if (totalBytes > limits.totalBytes) {
         throw new Error("The Eagle package exceeds the extraction limit.");
+      }
       files.push({ path: portablePath, absolutePath, size: metadata.size });
-      if (files.length > limits.files)
+      if (files.length > limits.files) {
         throw new Error("The Eagle package contains too many files.");
+      }
     }
   }
 
@@ -424,8 +438,9 @@ async function copyDirectoryPackage(
     const target = targetFor(staging, file.path);
     await mkdir(dirname(target), { recursive: true });
     await copyFile(file.absolutePath, target, constants.COPYFILE_EXCL);
-    if ((await stat(target)).size !== file.size)
+    if ((await stat(target)).size !== file.size) {
       throw new Error("An Eagle package file changed while it was staged.");
+    }
     await transferProgress(file.path, file.size);
   }
 }
@@ -460,36 +475,44 @@ async function extractArchive(
   limits: EaglePackageLimits,
 ): Promise<void> {
   const metadata = await lstat(source);
-  if (metadata.isSymbolicLink() || !metadata.isFile())
+  if (metadata.isSymbolicLink() || !metadata.isFile()) {
     throw new Error("An Eagle package archive must be a regular file.");
-  if (metadata.size > limits.archiveBytes)
+  }
+  if (metadata.size > limits.archiveBytes) {
     throw new Error("The Eagle package archive exceeds the read limit.");
+  }
   const { default: JSZip } = await import("jszip");
   const zip = await JSZip.loadAsync(await readFile(source), {
     checkCRC32: true,
     createFolders: false,
   });
   /** SAFETY: JSZip exposes these stable entry fields at runtime; its public declaration omits only compressed-size metadata. */
-  const entries = Object.values(zip.files) as BoundedZipObject[];
+  const entries = Object.values(zip.files) as Array<BoundedZipObject>;
   const files = entries.filter((entry) => !entry.dir);
-  if (files.length > limits.files)
+  if (files.length > limits.files) {
     throw new Error("The Eagle package contains too many files.");
+  }
   const names = new Set<string>();
   let totalBytes = 0;
   for (const entry of entries) {
     const original = entry.unsafeOriginalName ?? entry.name;
-    if (original !== entry.name)
+    if (original !== entry.name) {
       throw new Error("The Eagle package contains an unsafe archive path.");
+    }
     assertPortablePath(original.replace(/\/$/, ""));
     const mode = zipMode(entry.unixPermissions);
-    if (mode !== null && (mode & 0o170000) === 0o120000)
+    if (mode !== null && (mode & 0o17_0000) === 0o12_0000) {
       throw new Error("Eagle packages cannot contain symbolic links.");
-    if (entry.dir) continue;
+    }
+    if (entry.dir) {
+      continue;
+    }
     const key = entry.name.toLocaleLowerCase("en-US");
-    if (names.has(key))
+    if (names.has(key)) {
       throw new Error(
         "Eagle package paths must be unique across portable filesystems.",
       );
+    }
     names.add(key);
     const compressed = entry._data?.compressedSize;
     const uncompressed = entry._data?.uncompressedSize;
@@ -505,15 +528,17 @@ async function extractArchive(
       throw new Error("An Eagle package entry exceeds the extraction limit.");
     }
     totalBytes += uncompressed;
-    if (totalBytes > limits.totalBytes)
+    if (totalBytes > limits.totalBytes) {
       throw new Error("The Eagle package exceeds the extraction limit.");
+    }
   }
   await transferPhase("Extracting Eagle package", files.length);
   for (const entry of files) {
     checkTransferCancellation();
     const bytes = await entry.async("nodebuffer");
-    if (bytes.byteLength !== entry._data?.uncompressedSize)
+    if (bytes.byteLength !== entry._data?.uncompressedSize) {
       throw new Error("An Eagle package entry changed during extraction.");
+    }
     const target = targetFor(staging, entry.name);
     await mkdir(dirname(target), { recursive: true });
     await writeFile(target, bytes, { flag: "wx", mode: 0o600 });
@@ -528,11 +553,14 @@ async function preparePackage(
   const metadata = await lstat(source);
   const staging = await mkdtemp(join(tmpdir(), "pond-eagle-package-"));
   try {
-    if (metadata.isSymbolicLink())
+    if (metadata.isSymbolicLink()) {
       throw new Error("Eagle package sources cannot be symbolic links.");
-    if (metadata.isDirectory())
+    }
+    if (metadata.isDirectory()) {
       await copyDirectoryPackage(source, staging, limits);
-    else await extractArchive(source, staging, limits);
+    } else {
+      await extractArchive(source, staging, limits);
+    }
     return {
       root: staging,
       cleanup: () => rm(staging, { recursive: true, force: true }),
@@ -548,46 +576,54 @@ async function readPackageJson<T>(
   schema: z.ZodType<T>,
   limits: EaglePackageLimits,
 ): Promise<T> {
-  if (file.size > limits.jsonBytes)
+  if (file.size > limits.jsonBytes) {
     throw new Error("An Eagle package metadata file is too large.");
+  }
   try {
     return schema.parse(JSON.parse(await readFile(file.absolutePath, "utf8")));
   } catch (error) {
-    if (error instanceof Error && error.message.includes("too large"))
+    if (error instanceof Error && error.message.includes("too large")) {
       throw error;
-    throw new Error(`The Eagle package metadata is invalid: ${file.path}`);
+    }
+    throw new Error(`The Eagle package metadata is invalid: ${file.path}`, {
+      cause: error,
+    });
   }
 }
 
 function flattenFolders(
-  folders: readonly EagleFolder[],
+  folders: ReadonlyArray<EagleFolder>,
   parentId: string | null = null,
-): EaglePackageFolderNode[] {
-  const nodes: EaglePackageFolderNode[] = [];
+): Array<EaglePackageFolderNode> {
+  const nodes: Array<EaglePackageFolderNode> = [];
   for (const [sortOrder, folder] of folders.entries()) {
     const resolvedParent = folder.parentId ?? parentId;
-    nodes.push({
-      id: folder.id,
-      name: folder.name?.trim() || folder.id,
-      parentId: resolvedParent,
-      color: folder.color ?? folder.iconColor ?? null,
-      sortOrder,
-    });
-    nodes.push(...flattenFolders(folder.children ?? [], folder.id));
+    nodes.push(
+      {
+        id: folder.id,
+        name: folder.name?.trim() || folder.id,
+        parentId: resolvedParent,
+        color: folder.color ?? folder.iconColor ?? null,
+        sortOrder,
+      },
+      ...flattenFolders(folder.children ?? [], folder.id),
+    );
   }
   return nodes;
 }
 
-function validateFolders(nodes: readonly EaglePackageFolderNode[]): void {
+function validateFolders(nodes: ReadonlyArray<EaglePackageFolderNode>): void {
   const byId = new Map(nodes.map((node) => [node.id, node]));
-  if (byId.size !== nodes.length)
+  if (byId.size !== nodes.length) {
     throw new Error("The Eagle package contains duplicate folder identities.");
+  }
   for (const node of nodes) {
     const seen = new Set([node.id]);
     let parentId = node.parentId;
     while (parentId) {
-      if (seen.has(parentId) || !byId.has(parentId))
+      if (seen.has(parentId) || !byId.has(parentId)) {
         throw new Error("The Eagle package folder hierarchy is invalid.");
+      }
       seen.add(parentId);
       parentId = byId.get(parentId)?.parentId ?? null;
     }
@@ -603,13 +639,14 @@ async function parsePackage(
   root: string,
   limits: EaglePackageLimits,
 ): Promise<{
-  folders: EaglePackageFolderNode[];
-  items: EaglePackageImportItem[];
+  folders: Array<EaglePackageFolderNode>;
+  items: Array<EaglePackageImportItem>;
 }> {
   const files = await scanDirectory(root, limits);
   const packFiles = files.filter((file) => basename(file.path) === "pack.json");
-  if (packFiles.length > 1)
+  if (packFiles.length > 1) {
     throw new Error("The Eagle package contains multiple pack manifests.");
+  }
   const pack = packFiles[0]
     ? await readPackageJson(packFiles[0], EaglePackSchema, limits)
     : null;
@@ -624,8 +661,9 @@ async function parsePackage(
   >();
   for (const file of itemMetadataFiles) {
     const metadata = await readPackageJson(file, EagleItemSchema, limits);
-    if (metadataById.has(metadata.id))
+    if (metadataById.has(metadata.id)) {
       throw new Error("The Eagle package contains duplicate Save identities.");
+    }
     metadataById.set(metadata.id, {
       metadata,
       directory: dirname(file.path),
@@ -639,15 +677,18 @@ async function parsePackage(
         .filter((file) => dirname(file.path).endsWith(suffix))
         .map((file) => dirname(file.path)),
     );
-    if (directories.size !== 1)
+    if (directories.size !== 1) {
       throw new Error(`The Eagle package item ${metadata.id} is missing.`);
+    }
     const [directory] = directories;
-    if (!directory)
+    if (!directory) {
       throw new Error(`The Eagle package item ${metadata.id} is missing.`);
+    }
     metadataById.set(metadata.id, { metadata, directory });
   }
-  if (metadataById.size === 0)
+  if (metadataById.size === 0) {
     throw new Error("The selected source is not an Eagle package.");
+  }
 
   let folderNodes = flattenFolders(pack?.folder ? [pack.folder] : []);
   if (folderNodes.length === 0) {
@@ -676,7 +717,7 @@ async function parsePackage(
   }
   validateFolders(folderNodes);
 
-  const items: EaglePackageImportItem[] = [];
+  const items: Array<EaglePackageImportItem> = [];
   for (const { metadata, directory } of metadataById.values()) {
     if (metadata.isDeleted) continue;
     const prefix = `${directory}/`;
@@ -692,21 +733,27 @@ async function parsePackage(
     const pngThumbnails = sidecars.filter((file) =>
       basename(file.path).toLowerCase().endsWith("_thumbnail.png"),
     );
-    if (pngThumbnails.length > 1 || sidecars.length - pngThumbnails.length > 1)
+    if (
+      pngThumbnails.length > 1 ||
+      sidecars.length - pngThumbnails.length > 1
+    ) {
       throw new Error(
         `The Eagle package item ${metadata.id} has multiple thumbnails.`,
       );
+    }
     const thumbnail = pngThumbnails[0] ?? sidecars[0] ?? null;
     const media = siblings.filter((file) => !sidecars.includes(file));
-    if (media.length === 0 && !metadata.url?.trim() && !thumbnail)
+    if (media.length === 0 && !metadata.url?.trim() && !thumbnail) {
       throw new Error(`The Eagle package item ${metadata.id} has no content.`);
+    }
     /** Eagle exports each preview again as an item named `<parent>_thumbnail` with nothing of its own. */
     if (
       media.length === 0 &&
       thumbnail &&
       (metadata.name ?? "").trim().toLowerCase().endsWith("_thumbnail")
-    )
+    ) {
       continue;
+    }
     items.push({
       metadata,
       mediaPaths: media.map((file) => file.absolutePath),
@@ -729,7 +776,7 @@ async function importPackage(
       try {
         const parsed = await parsePackage(prepared.root, limits);
         const folders = await dependencies.folders(parsed.folders);
-        const importedIds: string[] = [];
+        const importedIds: Array<string> = [];
         let imported = 0;
         let skipped = 0;
         try {
@@ -752,8 +799,9 @@ async function importPackage(
                 result.error || "An Eagle package Save could not be imported.",
               );
             }
-            if (result.skipped) skipped += 1;
-            else {
+            if (result.skipped) {
+              skipped += 1;
+            } else {
               imported += 1;
               importedIds.push(result.id);
             }
@@ -783,12 +831,12 @@ async function importPackage(
 }
 
 interface NestedEagleFolder extends Omit<EagleFolder, "children"> {
-  children: NestedEagleFolder[];
+  children: Array<NestedEagleFolder>;
 }
 
 function nestedFolders(
-  folders: readonly EaglePackageFolder[],
-): NestedEagleFolder[] {
+  folders: ReadonlyArray<EaglePackageFolder>,
+): Array<NestedEagleFolder> {
   const included = new Map(
     folders.map((folder): [string, NestedEagleFolder] => [
       folder.id,
@@ -800,7 +848,7 @@ function nestedFolders(
       },
     ]),
   );
-  const roots: NestedEagleFolder[] = [];
+  const roots: Array<NestedEagleFolder> = [];
   for (const folder of [...folders].sort(
     (left, right) =>
       (left.sortOrder ?? 0) - (right.sortOrder ?? 0) ||
@@ -812,7 +860,9 @@ function nestedFolders(
     if (parent) {
       parent.children ??= [];
       parent.children.push(node);
-    } else roots.push(node);
+    } else {
+      roots.push(node);
+    }
   }
   return roots;
 }
@@ -857,19 +907,22 @@ async function exportDirectory(
   const folders = input.folders ?? [];
   const folderIds = new Set(folders.map((folder) => folder.id));
   const roots = nestedFolders(folders);
-  if (roots.length > 1)
+  if (roots.length > 1) {
     throw new Error("An Eagle package can contain only one root folder.");
+  }
   const ids = new Set<string>();
-  const metadata: EagleItem[] = [];
+  const metadata: Array<EagleItem> = [];
   let exported = 0;
   await transferPhase("Exporting Eagle package", input.items.length);
   for (const item of input.items) {
     checkTransferCancellation();
-    if (ids.has(item.save.id))
+    if (ids.has(item.save.id)) {
       throw new Error("The Eagle package selection contains duplicate Saves.");
+    }
     ids.add(item.save.id);
-    if (item.folderIds.some((id) => !folderIds.has(id)))
+    if (item.folderIds.some((id) => !folderIds.has(id))) {
       throw new Error("The Eagle package references a missing folder.");
+    }
     const sourceRoot = await realpath(item.directory);
     const directory = targetFor(root, `${safeSegment(item.save.id)}.info`);
     await mkdir(directory, { recursive: false });
@@ -879,8 +932,9 @@ async function exportDirectory(
     );
     for (const file of originals) {
       const source = await realpath(resolve(sourceRoot, file.path));
-      if (!source.startsWith(`${sourceRoot}${sep}`))
+      if (!source.startsWith(`${sourceRoot}${sep}`)) {
         throw new Error("An Eagle package original resolves outside its Save.");
+      }
       const filename = uniqueName(basename(file.path), used);
       await exportLibraryMedia(source, join(directory, filename));
       exported += 1;
@@ -890,10 +944,11 @@ async function exportDirectory(
     );
     if (thumbnail) {
       const source = await realpath(resolve(sourceRoot, thumbnail.path));
-      if (!source.startsWith(`${sourceRoot}${sep}`))
+      if (!source.startsWith(`${sourceRoot}${sep}`)) {
         throw new Error(
           "An Eagle package thumbnail resolves outside its Save.",
         );
+      }
       const primaryName = originals[0]
         ? basename(originals[0].path)
         : safeSegment(item.save.id);
@@ -947,13 +1002,14 @@ async function zipDirectory(
   const { default: JSZip } = await import("jszip");
   const zip = new JSZip();
   const files = await scanDirectory(directory, DEFAULT_LIMITS);
-  for (const file of files)
+  for (const file of files) {
     zip.file(file.path, createReadStream(file.absolutePath), {
       compression: "DEFLATE",
       compressionOptions: { level: 6 },
       createFolders: true,
-      unixPermissions: 0o100600,
+      unixPermissions: 0o10_0600,
     });
+  }
   await pipeline(
     zip.generateNodeStream({
       type: "nodebuffer",

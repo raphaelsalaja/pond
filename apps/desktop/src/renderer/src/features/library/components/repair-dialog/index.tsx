@@ -36,7 +36,7 @@ export function LibraryRepairDialog({
   onClose,
 }: {
   kind: LibraryRepairKind;
-  saveIds?: readonly string[];
+  saveIds?: ReadonlyArray<string>;
   open: boolean;
   onClose: () => void;
 }) {
@@ -67,11 +67,12 @@ export function LibraryRepairDialog({
         setJob(next);
         return track(next.id);
       })
-      .catch((cause) => {
-        if (active)
+      .catch((cause: unknown) => {
+        if (active) {
           setError(
             errorCopy(cause, "Pond couldn't check your library. Try again."),
           );
+        }
       });
     return () => {
       active = false;
@@ -88,9 +89,9 @@ export function LibraryRepairDialog({
       });
       setJob(next);
       await poll(next.id);
-    } catch (cause) {
+    } catch (error_) {
       setError(
-        errorCopy(cause, "Pond couldn't repair your library. Try again."),
+        errorCopy(error_, "Pond couldn't repair your library. Try again."),
       );
     }
   }

@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "vitest-browser-react";
-import { DataTable, type TableColumn } from ".";
+import { userEvent } from "vitest/browser";
+import { DataTable } from ".";
+import type { TableColumn } from ".";
+import { isHTMLElement } from "../dom";
 
 interface Save {
   id: string;
@@ -10,13 +12,13 @@ interface Save {
   saved: string;
 }
 
-const saves: Save[] = [
+const saves: Array<Save> = [
   { id: "one", title: "Grid Systems", source: "Are.na", saved: "Mar 2" },
   { id: "two", title: "Type Scale", source: "X", saved: "Mar 4" },
   { id: "three", title: "Motion Notes", source: "YouTube", saved: "Mar 9" },
 ];
 
-const columns: TableColumn<Save>[] = [
+const columns: Array<TableColumn<Save>> = [
   {
     id: "title",
     header: "Title",
@@ -65,7 +67,9 @@ describe("DataTable column reorder", () => {
     const { screen, headers, headerOrder } = await renderTable();
     const title = screen.getByRole("button", { name: "Sort by Title" });
     const node = title.element();
-    if (!(node instanceof HTMLElement)) throw new Error("Missing sort button");
+    if (!isHTMLElement(node)) {
+      throw new Error("Missing sort button");
+    }
     node.focus();
 
     await userEvent.keyboard("{Alt>}{ArrowRight}{/Alt}");

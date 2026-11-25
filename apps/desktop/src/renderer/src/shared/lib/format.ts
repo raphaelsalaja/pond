@@ -19,7 +19,14 @@ export function formatNumber(n: number): string {
 }
 
 export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || !Number.isFinite(bytes) || bytes < 0) return "-";
+  if (
+    bytes === null ||
+    bytes === undefined ||
+    !Number.isFinite(bytes) ||
+    bytes < 0
+  ) {
+    return "-";
+  }
   return prettyBytes(bytes, { binary: true });
 }
 

@@ -7,17 +7,13 @@ import type {
 } from "@shared/fish-contracts";
 import { clsx as cn } from "clsx";
 import { useEffect, useId, useRef, useState } from "react";
-import { SPECIES_ART, type SpeciesArt } from "./art";
-import {
-  type Avatar,
-  createAvatar,
-  faceFor,
-  type Pose,
-  restingEyes,
-  type Task,
-} from "./face";
+import { SPECIES_ART } from "./art";
+import type { SpeciesArt } from "./art";
+import { createAvatar, faceFor, restingEyes } from "./face";
+import type { Avatar, Pose, Task } from "./face";
+import { animate, reducedMotion } from "./ticker";
+import type { Rig } from "./ticker";
 import styles from "./styles.module.css";
-import { animate, type Rig, reducedMotion } from "./ticker";
 
 export { SPECIES_LABELS } from "./art";
 
@@ -70,7 +66,7 @@ function partTransform(
 
 function Stage({ art, task }: { art: SpeciesArt; task: Task | null }) {
   const id = useId();
-  const clipId = `fish-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+  const clipId = `fish-${id.replaceAll(/[^a-zA-Z0-9_-]/g, "")}`;
   const [rest] = useState(() => restingEyes(art.head, faceFor(task)));
   const svgRef = useRef<SVGSVGElement>(null);
   const bodyRef = useRef<SVGGElement>(null);

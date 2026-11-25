@@ -10,15 +10,15 @@ import { parseTagBatch, partitionPickerTags } from "./lib";
 import type { CreateInfo, TagPickerRow, TagSection } from "./types";
 
 interface TagMenuOptions {
-  tags: readonly TagRow[];
-  groups: readonly TagGroupRow[];
+  tags: ReadonlyArray<TagRow>;
+  groups: ReadonlyArray<TagGroupRow>;
   appliedKeys: ReadonlySet<string> | undefined;
   onToggle: (
     name: string,
     options?: { created?: boolean },
   ) => void | Promise<void>;
   allowCreate: boolean;
-  recommendedNames: readonly string[];
+  recommendedNames: ReadonlyArray<string>;
   layout: "list" | "grid";
   gridSize: "sm" | "md" | "lg";
   showStarred: boolean;
@@ -70,10 +70,12 @@ export function useTagMenu({
     return map;
   }, [tags]);
   const groupNamesByTag = useMemo(() => {
-    const map = new Map<string, string[]>();
-    for (const group of groups)
-      for (const tagId of group.tagIds)
+    const map = new Map<string, Array<string>>();
+    for (const group of groups) {
+      for (const tagId of group.tagIds) {
         map.set(tagId, [...(map.get(tagId) ?? []), group.name]);
+      }
+    }
     return map;
   }, [groups]);
   const matching = useMemo(
@@ -110,7 +112,7 @@ export function useTagMenu({
     showRecently ? partitioned.recent : [],
     partitioned.others,
   ].filter((items) => items.length > 0).length;
-  const sections = useMemo<TagSection[]>(
+  const sections = useMemo<Array<TagSection>>(
     () => [
       {
         id: "starred",
@@ -161,8 +163,9 @@ export function useTagMenu({
     const raw = query.trim();
     if (!raw) return null;
     const batch = parseTagBatch(raw).map(normalizeLabelName).filter(Boolean);
-    if (batch.length > 1)
+    if (batch.length > 1) {
       return { kind: "batch", labels: batch, label: batch.join(", ") };
+    }
     const slash = raw.indexOf("/");
     if (slash >= 0) {
       const group = normalizeLabelName(raw.slice(0, slash));
@@ -176,7 +179,7 @@ export function useTagMenu({
   }, [allowCreate, query, tagsByLower]);
 
   const showTree = list && !needle;
-  const recommendedRows = useMemo<TagPickerRow[]>(
+  const recommendedRows = useMemo<Array<TagPickerRow>>(
     () =>
       showTree && showRecommended
         ? partitioned.recommended.map((tag) => ({
@@ -188,8 +191,10 @@ export function useTagMenu({
         : [],
     [partitioned.recommended, showRecommended, showTree],
   );
-  const listRows = useMemo<TagPickerRow[]>(() => {
-    if (!list) return [];
+  const listRows = useMemo<Array<TagPickerRow>>(() => {
+    if (!list) {
+      return [];
+    }
     if (needle) {
       const starts = (tag: TagRow) =>
         Number(tag.name.toLowerCase().startsWith(needle));
@@ -199,7 +204,7 @@ export function useTagMenu({
     }
     const tagsById = new Map(tags.map((tag) => [tag.id, tag]));
     const grouped = new Set<string>();
-    const result: TagPickerRow[] = [];
+    const result: Array<TagPickerRow> = [];
     const sortedGroups = groups.toSorted(
       (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
     );
@@ -210,24 +215,28 @@ export function useTagMenu({
       if (!members.length) continue;
       for (const tag of members) grouped.add(tag.id);
       result.push({ id: `group-${group.id}`, kind: "group", group });
-      if (collapsedGroups.has(group.id)) continue;
-      for (const tag of members)
+      if (collapsedGroups.has(group.id)) {
+        continue;
+      }
+      for (const tag of members) {
         result.push({
           id: `tag-${group.id}-${tag.id}`,
           kind: "tag",
           tag,
           depth: 1,
         });
+      }
     }
     for (const tag of tags
       .filter((tag) => !grouped.has(tag.id))
-      .toSorted(byName))
+      .toSorted(byName)) {
       result.push({ id: `tag-${tag.id}`, kind: "tag", tag, depth: 0 });
+    }
     return result;
   }, [collapsedGroups, groups, list, matching, needle, tags]);
 
-  const rows = useMemo<readonly TagPickerRow[]>(() => {
-    const tagRows: readonly TagPickerRow[] = list
+  const rows = useMemo<ReadonlyArray<TagPickerRow>>(() => {
+    const tagRows: ReadonlyArray<TagPickerRow> = list
       ? [...recommendedRows, ...listRows]
       : sections.flatMap((section) =>
           section.open
@@ -262,9 +271,12 @@ export function useTagMenu({
         for (const item of info.labels) {
           const lower = item.toLowerCase();
           const existed = tagsByLower.has(lower);
-          if (!existed) await tagOperations.create("tag", item);
-          if (!appliedKeys?.has(lower))
+          if (!existed) {
+            await tagOperations.create("tag", item);
+          }
+          if (!appliedKeys?.has(lower)) {
             await onToggle(item, { created: !existed });
+          }
         }
         setQuery("");
         return;
@@ -281,8 +293,8 @@ export function useTagMenu({
       }
       await onToggle(label, { created: !existed });
       setQuery("");
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't create the tag. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't create the tag. Try again."));
     } finally {
       setCreating(false);
     }
@@ -292,8 +304,8 @@ export function useTagMenu({
     setError(null);
     try {
       await onToggle(name);
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't update the tag. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't update the tag. Try again."));
     }
   }
 

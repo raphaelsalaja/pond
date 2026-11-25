@@ -8,18 +8,21 @@ export interface TagNavItem {
 }
 
 interface RecentPartition<T> {
-  recent: T[];
-  others: T[];
+  recent: Array<T>;
+  others: Array<T>;
 }
 
 export function partitionRecent<
   T extends { lastUsedAt: number | null; name: string },
->(tags: readonly T[]): RecentPartition<T> {
-  const recent: T[] = [];
-  const others: T[] = [];
+>(tags: ReadonlyArray<T>): RecentPartition<T> {
+  const recent: Array<T> = [];
+  const others: Array<T> = [];
   for (const tag of tags) {
-    if (tag.lastUsedAt != null) recent.push(tag);
-    else others.push(tag);
+    if (tag.lastUsedAt !== null) {
+      recent.push(tag);
+    } else {
+      others.push(tag);
+    }
   }
   recent.sort(
     (a, b) =>
@@ -30,12 +33,14 @@ export function partitionRecent<
 }
 
 export function filterByNav<T extends { id: string }>(
-  tags: readonly T[],
+  tags: ReadonlyArray<T>,
   navId: TagNavId,
   groupedIds: ReadonlySet<string>,
   groupTagIds: ReadonlyMap<string, ReadonlySet<string>>,
-): T[] {
-  if (navId === "all") return tags.slice();
+): Array<T> {
+  if (navId === "all") {
+    return tags.slice();
+  }
   if (navId === "uncategorized") {
     return tags.filter((tag) => !groupedIds.has(tag.id));
   }
@@ -52,8 +57,8 @@ export function buildTagNav(
     count: number;
   }>,
   uncategorizedCount: number,
-): TagNavItem[] {
-  const items: TagNavItem[] = [
+): Array<TagNavItem> {
+  const items: Array<TagNavItem> = [
     { id: "all", kind: "all", label: "All", count: allCount },
   ];
   for (const group of groups) {
@@ -77,7 +82,7 @@ export function buildTagNav(
 
 export function partitionPickerTags<
   T extends { starred: boolean; lastUsedAt: number | null; name: string },
->(tags: readonly T[], recommendedNames: ReadonlySet<string> = new Set()) {
+>(tags: ReadonlyArray<T>, recommendedNames: ReadonlySet<string> = new Set()) {
   const starred = tags
     .filter((tag) => tag.starred)
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -99,8 +104,8 @@ export function partitionPickerTags<
   };
 }
 
-export function parseTagBatch(input: string): string[] {
-  const tags: string[] = [];
+export function parseTagBatch(input: string): Array<string> {
+  const tags: Array<string> = [];
   let value = "";
   let quoted = false;
   const push = () => {
@@ -109,8 +114,9 @@ export function parseTagBatch(input: string): string[] {
     if (
       cleaned &&
       !tags.some((tag) => tag.toLowerCase() === cleaned.toLowerCase())
-    )
+    ) {
       tags.push(cleaned);
+    }
   };
   for (const character of input) {
     if (character === '"') {

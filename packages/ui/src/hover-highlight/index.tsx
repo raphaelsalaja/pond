@@ -1,6 +1,7 @@
 import { useRender } from "@base-ui/react/use-render";
 import { clsx as cn } from "clsx";
 import { useEffect, useRef } from "react";
+import { isElement } from "../dom";
 import styles from "./styles.module.css";
 
 const ROW =
@@ -52,7 +53,7 @@ export function HoverHighlight({
     const move = (event: PointerEvent) => {
       if (event.pointerType === "touch") return;
       pointer = { x: event.clientX, y: event.clientY };
-      place(event.target instanceof Element ? event.target : null, false);
+      place(isElement(event.target) ? event.target : null, false);
     };
     const leave = () => {
       pointer = null;

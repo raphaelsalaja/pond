@@ -15,7 +15,7 @@ import {
 
 describe("shortcut registry", () => {
   it("leaves Tab available for keyboard focus navigation", () => {
-    const shortcuts: readonly ShortcutDef[] = Object.values(SHORTCUTS);
+    const shortcuts: ReadonlyArray<ShortcutDef> = Object.values(SHORTCUTS);
     const tabShortcuts = shortcuts.filter(
       (shortcut) => shortcut.keys === "Tab",
     );

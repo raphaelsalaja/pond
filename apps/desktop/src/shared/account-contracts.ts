@@ -39,7 +39,7 @@ export interface AccountQueryInputs {
   };
   "sources.setIncoming": SourceTargetInput & {
     folderId: string | null;
-    tags: string[];
+    tags: Array<string>;
   };
   "sources.overview": { id: string };
   "sources.extensionLastSeen": EmptyInput;
@@ -49,18 +49,20 @@ export interface SourceOverview {
   saves: number;
   bytes: number;
   /** Newest first. */
-  recent: string[];
+  recent: Array<string>;
 }
 
 export interface AccountQueryResults {
   "accounts.list": {
-    accounts: (ConnectedAccount & { connected: boolean; syncing: boolean })[];
+    accounts: Array<
+      ConnectedAccount & { connected: boolean; syncing: boolean }
+    >;
   };
   "accounts.setHandle": OkResult<{ account: ConnectedAccount }>;
   "accounts.setLabel": OkResult<{ account: ConnectedAccount }>;
   /** `collections` is null when the Source can only import everything on that list. */
   "accounts.importOptions": OkResult<{
-    collections: ImportCollectionOption[] | null;
+    collections: Array<ImportCollectionOption> | null;
   }>;
   "accounts.setImportScope": OkResult;
   "accounts.disconnect": OkResult;

@@ -1,13 +1,7 @@
 import { Button, Tooltip, Tray } from "@pond/ui";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentProps,
-  createContext,
-  type HTMLAttributes,
-  type ReactNode,
-  use,
-  useState,
-} from "react";
+import { createContext, use, useState } from "react";
+import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import styles from "./styles.module.css";
 

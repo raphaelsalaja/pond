@@ -47,12 +47,13 @@ export async function selectResults(mode: "all" | "invert"): Promise<void> {
       timeout: 2500,
     });
   } catch {
-    if (request === token)
+    if (request === token) {
       updateNotification({
         id: notificationId,
         title: "Couldn't select Saves",
         description: "Try again.",
         timeout: 2500,
       });
+    }
   }
 }

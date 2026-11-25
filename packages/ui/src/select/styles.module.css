@@ -200,7 +200,7 @@
   transform-origin: var(--transform-origin);
   transition:
     opacity var(--ds-duration-menu-open-opacity)
-    var(--ds-easing-menu-open-opacity),
+      var(--ds-easing-menu-open-opacity),
     scale var(--ds-duration-menu-open) var(--ds-easing-menu-open);
   -webkit-app-region: no-drag;
 

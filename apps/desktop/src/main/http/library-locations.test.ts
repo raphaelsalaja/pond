@@ -27,7 +27,7 @@ it("lists recent Libraries", async () => {
 });
 
 it("switches to a validated recent Library path", async () => {
-  const switched: string[] = [];
+  const switched: Array<string> = [];
   const routes = libraryLocationRoutes({
     recent: async () => [library],
     switchTo: async (path) => {

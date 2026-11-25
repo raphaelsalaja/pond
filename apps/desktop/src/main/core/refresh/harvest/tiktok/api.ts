@@ -22,8 +22,8 @@ export async function probeTiktokHandle(
         "user-agent": CHROME_UA,
       },
     });
-  } catch (err) {
-    log.warn("[pond tiktok-api] homepage fetch threw", err);
+  } catch (error) {
+    log.warn("[pond tiktok-api] homepage fetch threw", error);
     return null;
   }
   const html = await res.text();

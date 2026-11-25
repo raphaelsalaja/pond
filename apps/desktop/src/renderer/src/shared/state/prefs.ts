@@ -1,4 +1,5 @@
-import { DEFAULT_PREFS, type Prefs, PrefsSchema } from "@pond/schema";
+import { DEFAULT_PREFS, PrefsSchema } from "@pond/schema";
+import type { Prefs } from "@pond/schema";
 import type { WirePrefsPatch } from "@shared/wire";
 import { useSelector } from "@tanstack/react-store";
 import { Store } from "@tanstack/store";
@@ -11,22 +12,31 @@ interface PrefsState {
 
 const prefsStore = new Store<PrefsState>({ value: null });
 
+function isSection(prefs: Prefs, key: string): key is keyof Prefs {
+  return Object.hasOwn(prefs, key);
+}
+
 function keepSection<K extends keyof Prefs>(
   next: Prefs,
   previous: Prefs,
   key: K,
 ): void {
-  if (JSON.stringify(next[key]) === JSON.stringify(previous[key]))
+  if (JSON.stringify(next[key]) === JSON.stringify(previous[key])) {
     next[key] = previous[key];
+  }
 }
 
 /** Keeps unchanged sections by reference so writing one section, like recents on every open, only re-renders its own readers. */
 function share(next: Prefs): PrefsState {
   const previous = prefsStore.state.value;
-  if (!previous) return { value: next };
-  /** SAFETY: `next` came out of `PrefsSchema.parse`, so its own keys are exactly the Prefs sections. */
-  for (const key of Object.keys(next) as (keyof Prefs)[])
-    keepSection(next, previous, key);
+  if (!previous) {
+    return { value: next };
+  }
+  for (const key of Object.keys(next)) {
+    if (isSection(next, key)) {
+      keepSection(next, previous, key);
+    }
+  }
   return { value: next };
 }
 
@@ -123,8 +133,9 @@ export function savePrefsSection<K extends keyof Prefs>(
     const message: WirePrefsPatch = { [section]: delta };
     const revision = prefsRevision;
     const result = await window.pond.query("settings.setPrefs", message);
-    if (revision === prefsRevision)
+    if (revision === prefsRevision) {
       prefsStore.setState(() => share(PrefsSchema.parse(result.prefs)));
+    }
   });
   saveQueue = operation.catch(() => {});
   return operation;

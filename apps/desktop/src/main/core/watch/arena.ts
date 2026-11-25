@@ -42,14 +42,14 @@ async function fetchContents(url: string, attempt = 0): Promise<FetchResult> {
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-  } catch (err) {
-    log.warn("[pond watch:arena] fetch failed", url, err);
+  } catch (error) {
+    log.warn("[pond watch:arena] fetch failed", url, error);
     return { ok: false, status: 0 };
   }
   if (res.status === 429 && attempt === 0) {
     const retryAfter = Number(res.headers.get("retry-after") ?? "1");
     await delay(
-      Number.isFinite(retryAfter) ? Math.max(1_000, retryAfter * 1_000) : 1_000,
+      Number.isFinite(retryAfter) ? Math.max(1000, retryAfter * 1000) : 1000,
     );
     return fetchContents(url, attempt + 1);
   }
@@ -61,11 +61,14 @@ async function fetchContents(url: string, attempt = 0): Promise<FetchResult> {
   }
 }
 
-function entriesFromContents(value: ArenaContentsResponse): WatchEntry[] {
+function entriesFromContents(value: ArenaContentsResponse): Array<WatchEntry> {
   const withTime: Array<{ entry: WatchEntry; at: number }> = [];
   for (const item of value.data ?? []) {
-    const id = item?.id != null ? String(item.id) : null;
-    if (!id) continue;
+    const rawId = item?.id;
+    const id = rawId !== null && rawId !== undefined ? String(rawId) : null;
+    if (!id) {
+      continue;
+    }
     const cls = (item.base_type ?? item.type ?? "").toLowerCase();
     if (cls === "channel") continue;
     const stamp = item.connection?.connected_at ?? item.created_at ?? null;

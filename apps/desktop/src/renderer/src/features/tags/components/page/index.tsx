@@ -8,6 +8,7 @@ import {
   Tooltip,
 } from "@pond/ui";
 import { DataTable } from "@pond/ui/data-table";
+import { isElement, isNode } from "@pond/ui/dom";
 import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TagsIntro } from "@/features/tags/components/intro";
@@ -38,13 +39,13 @@ type TagData = Extract<TagsRowData, { kind: "tag" }>;
 
 interface AlphabetGroup {
   letter: string;
-  rows: TagData[];
+  rows: Array<TagData>;
 }
 
 function alphabetKey(name: string): string {
   const first = name
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replaceAll(/[\u0300-\u036f]/g, "")
     .trim()
     .charAt(0)
     .toUpperCase();
@@ -52,10 +53,10 @@ function alphabetKey(name: string): string {
 }
 
 function groupAlphabetically(
-  rows: TagData[],
+  rows: Array<TagData>,
   direction: "asc" | "desc",
-): AlphabetGroup[] {
-  const grouped = new Map<string, TagData[]>();
+): Array<AlphabetGroup> {
+  const grouped = new Map<string, Array<TagData>>();
   for (const row of rows) {
     const key = alphabetKey(row.tag.name);
     const group = grouped.get(key);
@@ -78,7 +79,7 @@ function groupAlphabetically(
 
 type IndexLine =
   | { kind: "header"; key: string; letter: string; count: number }
-  | { kind: "tags"; key: string; rows: TagData[]; groupEnd: boolean };
+  | { kind: "tags"; key: string; rows: Array<TagData>; groupEnd: boolean };
 
 /** Must match the .grid breakpoints in styles.module.css. */
 function readColumns(): number {
@@ -103,11 +104,11 @@ function useGridColumns(): number {
 }
 
 function chunkTags(
-  rows: TagData[],
+  rows: Array<TagData>,
   columns: number,
   closesGroup: boolean,
-): IndexLine[] {
-  const lines: IndexLine[] = [];
+): Array<IndexLine> {
+  const lines: Array<IndexLine> = [];
   for (let start = 0; start < rows.length; start += columns) {
     const chunk = rows.slice(start, start + columns);
     lines.push({
@@ -124,7 +125,7 @@ function chunkTags(
  * Every TagItem carries two menus, so mounting thousands at once stalls the page; the focused line stays mounted to keep a rename draft.
  * @remarks The scroller comes from the list, since a ref on the parent <main> is unattached at the first measure.
  */
-function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
+function VirtualTagIndex({ lines }: { lines: Array<IndexLine> }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const pinned =
@@ -135,20 +136,17 @@ function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
     const list = listRef.current;
     if (!list) return;
     const onFocusIn = (event: FocusEvent) => {
-      const item =
-        event.target instanceof Element
-          ? event.target.closest(`.${styles.item}`)
-          : null;
+      const item = isElement(event.target)
+        ? event.target.closest(`.${styles.item}`)
+        : null;
       setFocusedKey(
         lines[Number(item?.getAttribute("data-index"))]?.key ?? null,
       );
     };
     const onFocusOut = (event: FocusEvent) => {
-      if (
-        !(event.relatedTarget instanceof Node) ||
-        !list.contains(event.relatedTarget)
-      )
+      if (!isNode(event.relatedTarget) || !list.contains(event.relatedTarget)) {
         setFocusedKey(null);
+      }
     };
     list.addEventListener("focusin", onFocusIn);
     list.addEventListener("focusout", onFocusOut);
@@ -158,16 +156,7 @@ function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
     };
   }, [lines]);
   const [scrollMargin, setScrollMargin] = useState(0);
-  useLayoutEffect(() => {
-    const list = listRef.current;
-    const scroller = findScrollParent(list);
-    if (!list || !scroller) return;
-    const next =
-      list.getBoundingClientRect().top -
-      scroller.getBoundingClientRect().top +
-      scroller.scrollTop;
-    setScrollMargin((prev) => (prev === next ? prev : next));
-  });
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns unstable methods by design; the compiler skips memoizing this component.
   const virtual = useVirtualizer({
     count: lines.length,
     getScrollElement: () => findScrollParent(listRef.current),
@@ -181,13 +170,23 @@ function VirtualTagIndex({ lines }: { lines: IndexLine[] }) {
       return [...indexes, pinned].sort((a, b) => a - b);
     },
   });
+  const { scrollOffset } = virtual;
+  const totalSize = virtual.getTotalSize();
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    const scroller = findScrollParent(list);
+    if (!list || !scroller) {
+      return;
+    }
+    const next =
+      list.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top +
+      scroller.scrollTop;
+    setScrollMargin((prev) => (prev === next ? prev : next));
+  }, [lines, scrollOffset, totalSize]);
 
   return (
-    <div
-      ref={listRef}
-      className={styles.virtual}
-      style={{ height: virtual.getTotalSize() }}
-    >
+    <div ref={listRef} className={styles.virtual} style={{ height: totalSize }}>
       {virtual.getVirtualItems().map((item) => {
         const line = lines[item.index];
         if (!line) return null;
@@ -233,10 +232,9 @@ export function TagsPage() {
   const tagsLoaded = useTagsLoaded();
   const [allTags, patchAllTags] = usePrefs("allTags");
   const scope = useTagsScope();
-  const setScope = tagsScope.set;
   const { creating, startCreate, cancelCreate, saveCreate } = useTagCreation();
   const creationRequest = useTagCreationRequest();
-  const [creationGroup, setCreationGroup] = useState<string | null>(null);
+  const creationGroupRef = useRef<string | null>(null);
   const [descriptionDraft, setDescriptionDraft] = useState("");
   const cancelDescriptionRef = useRef(false);
   const clearRef = useRef<() => void>(() => {});
@@ -247,8 +245,11 @@ export function TagsPage() {
     const request = tagCreation.takeRequest();
     if (!request) return;
     const group = groupSummaries.find((candidate) => candidate.id === scope);
-    setScope(request.kind === "group" ? "all" : group ? scope : "ungrouped");
-    setCreationGroup(request.kind === "tag" ? (group?.name ?? null) : null);
+    tagsScope.set(
+      request.kind === "group" ? "all" : group ? scope : "ungrouped",
+    );
+    creationGroupRef.current =
+      request.kind === "tag" ? (group?.name ?? null) : null;
     startCreate(request.kind);
   }, [creationRequest, groupSummaries, scope, startCreate]);
   const contextValue = useMemo(
@@ -276,7 +277,7 @@ export function TagsPage() {
       scope !== "starred" &&
       !groupSummaries.some((group) => group.id === scope)
     ) {
-      setScope("all");
+      tagsScope.set("all");
     }
   }, [scope, groupSummaries]);
 
@@ -311,16 +312,18 @@ export function TagsPage() {
   const orderedRows = useMemo(() => {
     const direction = allTags.sortDirection === "asc" ? 1 : -1;
     return visibleRows.toSorted((a, b) => {
-      if (allTags.sort === "count")
+      if (allTags.sort === "count") {
         return (
           (a.saves - b.saves) * direction ||
           a.tag.name.localeCompare(b.tag.name)
         );
-      if (allTags.sort === "recent")
+      }
+      if (allTags.sort === "recent") {
         return (
           ((a.tag.lastUsedAt ?? 0) - (b.tag.lastUsedAt ?? 0)) * direction ||
           a.tag.name.localeCompare(b.tag.name)
         );
+      }
       return (
         a.tag.name.localeCompare(b.tag.name, undefined, {
           sensitivity: "base",
@@ -338,7 +341,7 @@ export function TagsPage() {
   );
   const indexLines = useMemo(
     () =>
-      alphabet.flatMap((group): IndexLine[] => [
+      alphabet.flatMap((group): Array<IndexLine> => [
         {
           kind: "header",
           key: `letter:${group.letter}`,
@@ -350,10 +353,14 @@ export function TagsPage() {
     [alphabet, columns],
   );
 
-  useEffect(() => {
-    cancelDescriptionRef.current = false;
-    setDescriptionDraft(activeGroupRow?.group.description ?? "");
-  }, [activeGroupRow?.group.description]);
+  const groupDescription = activeGroupRow?.group.description;
+  const [syncedDescription, setSyncedDescription] = useState<
+    string | null | undefined
+  >(undefined);
+  if (syncedDescription !== groupDescription) {
+    setSyncedDescription(groupDescription);
+    setDescriptionDraft(groupDescription ?? "");
+  }
 
   const scopeLabel =
     scope === "all"
@@ -366,17 +373,17 @@ export function TagsPage() {
             "All Tags");
 
   function beginCreate(kind: "tag" | "group") {
-    setCreationGroup(null);
+    creationGroupRef.current = null;
     startCreate(kind);
   }
 
   async function commitCreate(name: string) {
-    const groupName = creationGroup;
+    const groupName = creationGroupRef.current;
     try {
       await saveCreate(name);
       if (groupName) await tagOperations.addToGroup(name, groupName);
     } finally {
-      setCreationGroup(null);
+      creationGroupRef.current = null;
     }
   }
 
@@ -491,8 +498,9 @@ export function TagsPage() {
                         if (
                           event.key === "Enter" &&
                           !event.nativeEvent.isComposing
-                        )
+                        ) {
                           event.currentTarget.blur();
+                        }
                         if (event.key === "Escape") {
                           cancelDescriptionRef.current = true;
                           setDescriptionDraft(
@@ -619,7 +627,7 @@ export function TagsPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => setScope("all")}
+                        onClick={() => tagsScope.set("all")}
                       >
                         View All Tags
                       </Button>

@@ -1,5 +1,6 @@
 import { getStroke } from "perfect-freehand";
-import { type CanvasColor, INK } from "../board/colors";
+import { INK } from "../board/colors";
+import type { CanvasColor } from "../board/colors";
 import styles from "./styles.module.css";
 
 export type StrokePoint = [x: number, y: number, pressure: number];
@@ -7,7 +8,7 @@ export type StrokePoint = [x: number, y: number, pressure: number];
 const format = (value: number) => value.toFixed(2);
 
 /** The marker's filled outline, with the board's perfect-freehand settings for a mouse. */
-function strokePath(points: readonly StrokePoint[], size: number) {
+function strokePath(points: ReadonlyArray<StrokePoint>, size: number) {
   const outline = getStroke(
     points.map((point) => [...point]),
     {
@@ -28,7 +29,7 @@ function strokePath(points: readonly StrokePoint[], size: number) {
 }
 
 interface StrokeProps {
-  points: readonly StrokePoint[];
+  points: ReadonlyArray<StrokePoint>;
   /** How much of the stroke has been drawn, 0 to 1. */
   progress?: number;
   color: CanvasColor;

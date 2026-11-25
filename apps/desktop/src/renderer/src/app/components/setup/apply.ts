@@ -4,12 +4,8 @@ import { addedProvidersWith } from "@/features/settings/components/sections/agen
 import { keyRowsSchema } from "@/features/settings/components/sections/agent/types";
 import { loadPrefs, savePrefsSection } from "@/shared/state/prefs";
 import type { SetupProfile } from "@/shared/state/setup";
-import {
-  AI_OPTION_IDS,
-  type LibraryFacts,
-  SETUP_VERSION,
-  type SetupChoices,
-} from "./model";
+import { AI_OPTION_IDS, SETUP_VERSION } from "./model";
+import type { LibraryFacts, SetupChoices } from "./model";
 
 function failure(cause: unknown, fallback: string): string {
   return cause instanceof Error && cause.message ? cause.message : fallback;
@@ -33,12 +29,15 @@ export async function connectAssistant(choices: SetupChoices): Promise<string> {
     const connected = keys.some(
       (row) => row.provider === provider && row.hasKey,
     );
-    if (group === "cloud" && !key && !connected)
+    if (group === "cloud" && !key && !connected) {
       return "Enter an API key to connect, or choose Not Now.";
-    if (group === "local" && provider !== "apple" && !choices.endpoint.trim())
+    }
+    if (group === "local" && provider !== "apple" && !choices.endpoint.trim()) {
       return "Enter the address of your model server.";
-    if (group === "local")
+    }
+    if (group === "local") {
       await savePrefsSection("agent", endpointPatch(choices));
+    }
     if (!(connected && !key)) {
       const result = await window.pond.query("agent.saveKey", {
         provider,
@@ -53,8 +52,8 @@ export async function connectAssistant(choices: SetupChoices): Promise<string> {
     if (!agent.languageModel) agentPatch.languageModel = provider;
     await savePrefsSection("agent", agentPatch);
     return "";
-  } catch (cause) {
-    return failure(cause, "Couldn't connect. Check the details and try again.");
+  } catch (error) {
+    return failure(error, "Couldn't connect. Check the details and try again.");
   }
 }
 
@@ -180,8 +179,8 @@ export async function openExistingLibrary(): Promise<string | null> {
     return (
       result.error ?? "Couldn't open that Library. Choose a .pond Library."
     );
-  } catch (cause) {
-    return failure(cause, "Couldn't open that Library. Try again.");
+  } catch (error) {
+    return failure(error, "Couldn't open that Library. Try again.");
   }
 }
 
@@ -195,14 +194,14 @@ export async function finishSetup(
   try {
     await savePreferences(choices, initial);
     await savePrefsSection("setup", { version: SETUP_VERSION });
-  } catch (cause) {
-    return failure(cause, "Couldn't save your choices. Try again.");
+  } catch (error) {
+    return failure(error, "Couldn't save your choices. Try again.");
   }
   try {
     return await saveLibrary(choices, library, profile);
-  } catch (cause) {
+  } catch (error) {
     return failure(
-      cause,
+      error,
       "Couldn't update the library. Try again from Settings.",
     );
   }

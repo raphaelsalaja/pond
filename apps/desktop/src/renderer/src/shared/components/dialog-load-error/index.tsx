@@ -23,7 +23,7 @@ export function DialogLoadError({
           </Dialog.Header>
           <Dialog.Content>
             <Dialog.Description role="alert">
-              This window couldn't load. Reload Pond to try again.
+              This window couldn&apos;t load. Reload Pond to try again.
             </Dialog.Description>
           </Dialog.Content>
           <Dialog.Footer>

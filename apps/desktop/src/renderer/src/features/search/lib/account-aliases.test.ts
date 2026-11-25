@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  type AccountRef,
   accountChipLabel,
   accountDisplayName,
   displayAccountToken,
   resolveAccountToken,
 } from "./account-aliases";
+import type { AccountRef } from "./account-aliases";
 
 const twitter: AccountRef = {
   id: "01ARZ3NDEKTSV4RRFFQ69G5FAV",

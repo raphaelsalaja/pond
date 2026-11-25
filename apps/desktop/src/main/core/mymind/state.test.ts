@@ -9,7 +9,7 @@ import {
   writeMymindSyncState,
 } from "./state";
 
-const roots: string[] = [];
+const roots: Array<string> = [];
 async function fixture(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "pond-mymind-state-"));
   roots.push(root);

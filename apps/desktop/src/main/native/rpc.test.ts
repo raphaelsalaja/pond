@@ -1,14 +1,31 @@
 import { ExtensionSettingsSchema } from "@pond/schema/browser-extension";
+import type { CaptureReceipt } from "@pond/schema/capture";
 import { nativeRequestSchema } from "@pond/schema/native";
 import { describe, expect, it, vi } from "vitest";
 import { UnsupportedError } from "../core/pipeline/extractors/errors";
-import { dispatchNative, type NativePorts } from "./rpc";
+import type { LibraryInfo } from "../ops/library";
+import { dispatchNative } from "./rpc";
+import type { EnqueueResult, NativePorts } from "./rpc";
+
+const receipt: CaptureReceipt = {
+  id: "draft-1",
+  library: "/library",
+  state: "complete",
+  completed: 1,
+  total: 1,
+  saveIds: ["save-1"],
+  duplicateCount: 0,
+};
+
+async function enqueueUnsupported(): Promise<EnqueueResult> {
+  throw new UnsupportedError("no extractor matches url");
+}
 
 function ports(overrides: Partial<NativePorts> = {}): NativePorts {
   return {
     enqueue: vi.fn(),
     libraryInfo: vi.fn(),
-    sessionPending: vi.fn(() => null),
+    sessionPending: () => null,
     sessionImport: vi.fn(),
     appVersion: () => "0.0.1",
     ...overrides,
@@ -63,14 +80,15 @@ describe("dispatchNative", () => {
   });
 
   it("enqueues through the injected port", async () => {
-    const enqueue = vi.fn().mockResolvedValue({ id: "01", created: true });
+    const p = ports({ enqueue: async () => ({ id: "01", created: true }) });
+    const enqueue = vi.spyOn(p, "enqueue");
     const result = await dispatchNative(
       {
         type: "enqueue",
         url: "https://x.com/i/web/status/1",
         trigger: "toolbar",
       },
-      ports({ enqueue }),
+      p,
     );
     expect(result).toEqual({ ok: true, data: { id: "01", created: true } });
     expect(enqueue).toHaveBeenCalledWith("https://x.com/i/web/status/1", {
@@ -79,37 +97,48 @@ describe("dispatchNative", () => {
   });
 
   it("maps UnsupportedError to unsupported_url", async () => {
-    const enqueue = vi
-      .fn()
-      .mockRejectedValue(new UnsupportedError("no extractor matches url"));
     await expect(
       dispatchNative(
         { type: "enqueue", url: "https://example.invalid/x" },
-        ports({ enqueue }),
+        ports({ enqueue: enqueueUnsupported }),
       ),
     ).resolves.toEqual({ ok: false, error: "unsupported_url" });
   });
 
   it("returns library.info from the injected port", async () => {
-    const libraryInfo = vi.fn().mockResolvedValue({ name: "Library" });
+    const info: LibraryInfo = {
+      libraryId: "lib-1",
+      path: "/library",
+      name: "Library",
+      counts: { active: 0, trashed: 0, ingesting: 0, failed: 0 },
+      queue: { pending: 0, running: 0 },
+      theme: null,
+    };
     await expect(
-      dispatchNative({ type: "library.info" }, ports({ libraryInfo })),
-    ).resolves.toEqual({ ok: true, data: { name: "Library" } });
+      dispatchNative(
+        { type: "library.info" },
+        ports({ libraryInfo: async () => info }),
+      ),
+    ).resolves.toEqual({ ok: true, data: info });
   });
 
   it("returns folders.list from the injected port", async () => {
     const folder = { id: "refs", name: "Refs", parentId: null, color: null };
-    const foldersList = vi.fn().mockResolvedValue([folder]);
     await expect(
-      dispatchNative({ type: "folders.list" }, ports({ foldersList })),
+      dispatchNative(
+        { type: "folders.list" },
+        ports({ foldersList: async () => [folder] }),
+      ),
     ).resolves.toEqual({ ok: true, data: [folder] });
   });
 
   it("returns tags.list from the injected port", async () => {
     const tag = { name: "pond", starred: true, usageCount: 3, lastUsedAt: 1 };
-    const tagsList = vi.fn().mockResolvedValue([tag]);
     await expect(
-      dispatchNative({ type: "tags.list" }, ports({ tagsList })),
+      dispatchNative(
+        { type: "tags.list" },
+        ports({ tagsList: async () => [tag] }),
+      ),
     ).resolves.toEqual({ ok: true, data: [tag] });
   });
 
@@ -120,9 +149,11 @@ describe("dispatchNative", () => {
   });
 
   it("returns fish.list from the injected port", async () => {
-    const fishList = vi.fn().mockResolvedValue([{ id: "koi", name: "Koi" }]);
     await expect(
-      dispatchNative({ type: "fish.list" }, ports({ fishList })),
+      dispatchNative(
+        { type: "fish.list" },
+        ports({ fishList: async () => [{ id: "koi", name: "Koi" }] }),
+      ),
     ).resolves.toEqual({ ok: true, data: [{ id: "koi", name: "Koi" }] });
   });
 
@@ -133,15 +164,13 @@ describe("dispatchNative", () => {
   });
 
   it("passes the chosen fish along with a capture", async () => {
-    const capture = vi.fn().mockResolvedValue({ id: "draft-1" });
+    const p = ports({ capture: async () => receipt });
+    const capture = vi.spyOn(p, "capture");
     const draft = {
       id: "draft-1",
       items: [{ kind: "url", url: "https://example.com" }],
     };
-    await dispatchNative(
-      { type: "capture.accept", draft, fishId: "koi" },
-      ports({ capture }),
-    );
+    await dispatchNative({ type: "capture.accept", draft, fishId: "koi" }, p);
     expect(capture).toHaveBeenCalledWith(
       expect.objectContaining({ id: "draft-1" }),
       undefined,
@@ -169,11 +198,10 @@ describe("dispatchNative", () => {
 
   it("returns the browser extension settings from the injected port", async () => {
     const settings = ExtensionSettingsSchema.parse({ altClick: false });
-    const extensionSettings = vi.fn().mockResolvedValue(settings);
     await expect(
       dispatchNative(
         { type: "extension.settings" },
-        ports({ extensionSettings }),
+        ports({ extensionSettings: async () => settings }),
       ),
     ).resolves.toEqual({ ok: true, data: settings });
   });
@@ -185,21 +213,10 @@ describe("dispatchNative", () => {
   });
 
   it("reads a capture receipt by draft id", async () => {
-    const receipt = {
-      id: "draft-1",
-      library: "/library",
-      state: "complete" as const,
-      completed: 1,
-      total: 1,
-      saveIds: ["save-1"],
-      duplicateCount: 0,
-    };
-    const captureStatus = vi.fn().mockResolvedValue(receipt);
+    const p = ports({ captureStatus: async () => receipt });
+    const captureStatus = vi.spyOn(p, "captureStatus");
     await expect(
-      dispatchNative(
-        { type: "capture.status", id: "draft-1" },
-        ports({ captureStatus }),
-      ),
+      dispatchNative({ type: "capture.status", id: "draft-1" }, p),
     ).resolves.toEqual({ ok: true, data: receipt });
     expect(captureStatus).toHaveBeenCalledWith("draft-1");
   });
@@ -217,25 +234,26 @@ describe("dispatchNative", () => {
       connected: false,
       reason: "no_cookies_for_source_domain",
     };
-    const sessionImport = vi.fn().mockResolvedValue(rejected);
+    const p = ports({ sessionImport: async () => rejected });
+    const sessionImport = vi.spyOn(p, "sessionImport");
     await expect(
       dispatchNative(
         { type: "session.import", source: "arena", cookies: [] },
-        ports({ sessionImport }),
+        p,
       ),
     ).resolves.toEqual({ ok: true, data: rejected });
     expect(sessionImport).toHaveBeenCalledWith("arena", []);
   });
 
   it("forwards a rotated session to the refresh port", async () => {
-    const sessionRefresh = vi.fn(async () => ({
-      tracked: true,
-      refreshed: true,
-    }));
+    const p = ports({
+      sessionRefresh: async () => ({ tracked: true, refreshed: true }),
+    });
+    const sessionRefresh = vi.spyOn(p, "sessionRefresh");
     await expect(
       dispatchNative(
         { type: "session.refresh", source: "youtube", cookies: [] },
-        ports({ sessionRefresh }),
+        p,
       ),
     ).resolves.toEqual({ ok: true, data: { tracked: true, refreshed: true } });
     expect(sessionRefresh).toHaveBeenCalledWith("youtube", []);
@@ -244,10 +262,11 @@ describe("dispatchNative", () => {
 
 describe("files.import", () => {
   it("hands paths to the share inbox port", async () => {
-    const importSharedFiles = vi.fn(async () => ({ ids: ["s1"] }));
+    const p = ports({ importSharedFiles: async () => ({ ids: ["s1"] }) });
+    const importSharedFiles = vi.spyOn(p, "importSharedFiles");
     const response = await dispatchNative(
       { type: "files.import", paths: ["/inbox/a/b.png"] },
-      ports({ importSharedFiles }),
+      p,
     );
     expect(importSharedFiles).toHaveBeenCalledWith(["/inbox/a/b.png"]);
     expect(response).toEqual({ ok: true, data: { ids: ["s1"] } });
@@ -265,9 +284,9 @@ describe("files.import", () => {
     const response = await dispatchNative(
       { type: "files.import", paths: ["/etc/hosts"] },
       ports({
-        importSharedFiles: vi.fn(async () => {
+        importSharedFiles: async () => {
           throw new Error("no_files");
-        }),
+        },
       }),
     );
     expect(response).toEqual({ ok: false, error: "no_files" });

@@ -237,12 +237,14 @@ export function classifyLibraryFile(
   }
 
   const directImage = DIRECT_IMAGES.get(extension);
-  if (directImage)
+  if (directImage) {
     return format(extension, "image", directImage, "direct-image");
+  }
 
   const nativeImage = NATIVE_IMAGES.get(extension);
-  if (nativeImage)
+  if (nativeImage) {
     return format(extension, "image", nativeImage, "native-image");
+  }
 
   const video = VIDEOS.get(extension);
   if (video) return format(extension, "video", video, "video");
@@ -354,7 +356,7 @@ export function libraryFilename(path: string, fallback = "file.bin"): string {
     return code <= 31 || code === 127 ? "_" : character;
   }).join("");
   const cleaned = withoutControls
-    .replace(/[<>:"/\\|?*]/g, "_")
+    .replaceAll(/[<>:"/\\|?*]/g, "_")
     .replace(/^\.+/, "")
     .replace(/[. ]+$/, "")
     .trim();

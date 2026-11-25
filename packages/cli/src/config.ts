@@ -24,14 +24,17 @@ export function configPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): string {
-  if (env.POND_CONFIG) return env.POND_CONFIG;
-  if (platform === "win32")
+  if (env.POND_CONFIG) {
+    return env.POND_CONFIG;
+  }
+  if (platform === "win32") {
     return join(
       env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
       "Pond",
       "cli.json",
     );
-  if (platform === "darwin")
+  }
+  if (platform === "darwin") {
     return join(
       homedir(),
       "Library",
@@ -39,6 +42,7 @@ export function configPath(
       "Pond",
       "cli.json",
     );
+  }
   return xdgConfigPath(env);
 }
 
@@ -46,7 +50,7 @@ export function configPath(
 export function configReadPaths(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
-): string[] {
+): Array<string> {
   const current = configPath(env, platform);
   return platform === "win32" && !env.POND_CONFIG
     ? [current, xdgConfigPath(env)]
@@ -64,8 +68,9 @@ export async function readConfig(
     } catch (error) {
       if (
         !(error instanceof Error && "code" in error && error.code === "ENOENT")
-      )
+      ) {
         throw error;
+      }
     }
   }
   return {};

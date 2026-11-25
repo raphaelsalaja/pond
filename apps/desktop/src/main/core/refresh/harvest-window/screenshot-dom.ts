@@ -45,8 +45,12 @@ async function inPageCaptureMediaSettled(
         ),
     );
   while (pending()) {
-    if (Date.now() >= deadline) return false;
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    if (Date.now() >= deadline) {
+      return false;
+    }
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
   }
   return true;
 }

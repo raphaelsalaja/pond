@@ -35,7 +35,10 @@ async function inPageTiktokList(
     return { ok: false, reason: "auth_required" };
   }
 
-  const findTab = (selectors: string, labels: string[]): HTMLElement | null => {
+  const findTab = (
+    selectors: string,
+    labels: Array<string>,
+  ): HTMLElement | null => {
     const direct = document.querySelector<HTMLElement>(selectors);
     if (direct) return direct;
     const tabs = Array.from(
@@ -53,18 +56,24 @@ async function inPageTiktokList(
 
   async function clickTab(
     selectors: string,
-    labels: string[],
+    labels: Array<string>,
   ): Promise<boolean> {
-    const deadline = Date.now() + 8_000;
+    const deadline = Date.now() + 8000;
     let tab: HTMLElement | null = null;
     while (Date.now() < deadline) {
       tab = findTab(selectors, labels);
-      if (tab) break;
-      await new Promise((r) => setTimeout(r, 250));
+      if (tab) {
+        break;
+      }
+      await new Promise((r) => {
+        setTimeout(r, 250);
+      });
     }
     if (!tab) return false;
     tab.click();
-    await new Promise((r) => setTimeout(r, 1_500));
+    await new Promise((r) => {
+      setTimeout(r, 1500);
+    });
     return true;
   }
 
@@ -90,7 +99,9 @@ async function inPageTiktokList(
       let pathname = "";
       try {
         pathname = new URL(a.href, location.origin).pathname;
-      } catch {}
+      } catch {
+        /** An unparseable href leaves the card without a handle. */
+      }
 
       const card =
         a.closest(
@@ -131,14 +142,14 @@ async function inPageTiktokList(
   type Kind = "liked" | "saved";
   type Entry = ReturnType<typeof collectFn>[number];
 
-  function withListKind(entries: Entry[], kind: Kind): Entry[] {
+  function withListKind(entries: Array<Entry>, kind: Kind): Array<Entry> {
     return entries.map((e) => ({
       ...e,
       listKinds: Array.from(new Set([...(e.listKinds ?? []), kind])),
     }));
   }
 
-  function unionList(primary: Entry[], extra: Entry[]): Entry[] {
+  function unionList(primary: Array<Entry>, extra: Array<Entry>): Array<Entry> {
     const map = new Map<string, Entry>();
     for (const e of [...primary, ...extra]) {
       const prev = map.get(e.sourceId);
@@ -157,7 +168,7 @@ async function inPageTiktokList(
   }
 
   const kinds = args.listKinds ?? ["saved", "liked"];
-  let favoriteEntries: Entry[] = [];
+  let favoriteEntries: Array<Entry> = [];
   let favoritesEnd = true;
   if (kinds.includes("saved")) {
     await clickTab('[data-e2e="favorites-tab"], [data-e2e="favorite-tab"]', [

@@ -1,4 +1,5 @@
 import { clsx as cn } from "clsx";
+import { cssVars } from "../../css-vars";
 import styles from "./styles.module.css";
 
 type Kind = "row" | "tile" | "chip" | "panel" | "field" | "board";
@@ -53,13 +54,13 @@ function Root({
   );
 }
 
-interface RowProps extends React.ComponentPropsWithoutRef<"span"> {}
+type RowProps = React.ComponentPropsWithoutRef<"span">;
 
 function Row({ className, ...props }: RowProps) {
   return <span className={cn(styles.row, className)} {...props} />;
 }
 
-interface ColumnProps extends React.ComponentPropsWithoutRef<"span"> {}
+type ColumnProps = React.ComponentPropsWithoutRef<"span">;
 
 function Column({ className, ...props }: ColumnProps) {
   return <span className={cn(styles.column, className)} {...props} />;
@@ -84,7 +85,7 @@ function Line({ width, tone, className, style, ...props }: LineProps) {
   );
 }
 
-interface LinesProps extends React.ComponentPropsWithoutRef<"span"> {}
+type LinesProps = React.ComponentPropsWithoutRef<"span">;
 
 function Lines({ className, ...props }: LinesProps) {
   return <span className={cn(styles.lines, className)} {...props} />;
@@ -130,14 +131,14 @@ function Block({ height, className, style, ...props }: BlockProps) {
   );
 }
 
-interface IconProps extends React.ComponentPropsWithoutRef<"span"> {}
+type IconProps = React.ComponentPropsWithoutRef<"span">;
 
 function Icon({ className, ...props }: IconProps) {
   return <span className={cn(styles.icon, className)} {...props} />;
 }
 
 interface ChipsProps extends React.ComponentPropsWithoutRef<"span"> {
-  widths: number[];
+  widths: Array<number>;
 }
 
 function Chips({ widths, className, ...props }: ChipsProps) {
@@ -151,10 +152,7 @@ function Chips({ widths, className, ...props }: ChipsProps) {
           <i
             key={`${width}-${repeat}`}
             className={styles.chip}
-            style={
-              /** SAFETY: React forwards custom properties, but `CSSProperties` has no `--*` keys. */
-              { "--preview-width": `${width}px` } as React.CSSProperties
-            }
+            style={cssVars({ "--preview-width": `${width}px` })}
           />
         );
       })}

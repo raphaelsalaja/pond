@@ -1,16 +1,7 @@
-import {
-  capture,
-  installInterceptor,
-  type RequestLens,
-} from "@/utils/intercept";
-import {
-  asText,
-  at,
-  isRecord,
-  type JsonRecord,
-  type JsonValue,
-  parseJsonValue,
-} from "@/utils/json";
+import { capture, installInterceptor } from "@/utils/intercept";
+import type { RequestLens } from "@/utils/intercept";
+import { asText, at, isRecord, parseJsonValue } from "@/utils/json";
+import type { JsonRecord, JsonValue } from "@/utils/json";
 
 const GRAPHQL_RE = /\/graphql(?:\?|$)/i;
 const CONN_RE = /\/v2\/channels\/[^/]+\/connections(?:\?|$|\/)/;
@@ -24,12 +15,14 @@ const SAVE_OPERATIONS = new Set([
   "CreateBlockMutation",
 ]);
 
-function asOperations(json: JsonValue | null): JsonRecord[] {
-  if (Array.isArray(json)) return json.filter(isRecord);
+function asOperations(json: JsonValue | null): Array<JsonRecord> {
+  if (Array.isArray(json)) {
+    return json.filter(isRecord);
+  }
   return isRecord(json) ? [json] : [];
 }
 
-function pickSaveOpFromRequest(ops: JsonRecord[]): JsonRecord | null {
+function pickSaveOpFromRequest(ops: Array<JsonRecord>): JsonRecord | null {
   for (const op of ops) {
     const operation = asText(op.operationName);
     if (operation && SAVE_OPERATIONS.has(operation)) return op;
@@ -38,11 +31,15 @@ function pickSaveOpFromRequest(ops: JsonRecord[]): JsonRecord | null {
   return null;
 }
 
-function pickSaveOpFromResponse(ops: JsonRecord[]): JsonRecord | null {
+function pickSaveOpFromResponse(ops: Array<JsonRecord>): JsonRecord | null {
   for (const op of ops) {
     if (at(op, "data", "create_connection", "connectable", "id")) return op;
   }
   return null;
+}
+
+function isInteresting(url: string): boolean {
+  return GRAPHQL_RE.test(url) || CONN_RE.test(url) || BLOCK_RE.test(url);
 }
 
 export function inject(): void {
@@ -52,10 +49,6 @@ export function inject(): void {
     if (!blockId || emitted.has(blockId)) return;
     emitted.add(blockId);
     capture(`https://www.are.na/block/${blockId}`, "arena:save");
-  }
-
-  function isInteresting(url: string): boolean {
-    return GRAPHQL_RE.test(url) || CONN_RE.test(url) || BLOCK_RE.test(url);
   }
 
   installInterceptor({

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import {
-  createEmbeddingProfileCache,
-  type EmbeddingProfile,
-  type LoadedEmbeddingProfile,
+import { createEmbeddingProfileCache } from "./embedding-profile";
+import type {
+  EmbeddingProfile,
+  LoadedEmbeddingProfile,
 } from "./embedding-profile";
 
 interface TestProfile extends LoadedEmbeddingProfile {
@@ -10,8 +10,8 @@ interface TestProfile extends LoadedEmbeddingProfile {
 }
 
 function testLoader(options?: { failOnce?: EmbeddingProfile }) {
-  const loaded: EmbeddingProfile[] = [];
-  const disposed: number[] = [];
+  const loaded: Array<EmbeddingProfile> = [];
+  const disposed: Array<number> = [];
   let instance = 0;
   let failed = false;
 
@@ -95,15 +95,11 @@ describe("embedding profile cache", () => {
   });
 
   it("serializes image and audio inference without replacing the model", async () => {
-    const events: string[] = [];
-    let releaseImage = () => {};
-    const imageGate = new Promise<void>((resolve) => {
-      releaseImage = resolve;
-    });
-    let markImageStarted = () => {};
-    const imageStarted = new Promise<void>((resolve) => {
-      markImageStarted = resolve;
-    });
+    const events: Array<string> = [];
+    const { promise: imageGate, resolve: releaseImage } =
+      Promise.withResolvers<void>();
+    const { promise: imageStarted, resolve: markImageStarted } =
+      Promise.withResolvers<void>();
     const cache = createEmbeddingProfileCache(async (profile) => {
       events.push(`load:${profile}`);
       return {

@@ -1,7 +1,5 @@
-import {
-  type DecodedImageHold,
-  shouldReleaseDecodedImages,
-} from "@shared/decoded-image-release";
+import { shouldReleaseDecodedImages } from "@shared/decoded-image-release";
+import type { DecodedImageHold } from "@shared/decoded-image-release";
 import { useEffect } from "react";
 import { openSaveId } from "@/features/saves/lib/save-nav";
 import { getAppRouter } from "@/shared/lib/app-router";

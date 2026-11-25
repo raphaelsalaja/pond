@@ -1,12 +1,9 @@
-import * as schema from "@pond/schema/db";
-import * as eventsSchema from "@pond/schema/events";
 import Database from "better-sqlite3";
-import {
-  type BetterSQLite3Database,
-  drizzle,
-} from "drizzle-orm/better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
+import { eventTables, libraryTables } from "./tables";
 
-const combinedSchema = { ...schema, ...eventsSchema };
+const combinedSchema = { ...libraryTables, ...eventTables };
 
 export type Db = BetterSQLite3Database<typeof combinedSchema> & {
   $raw: Database.Database;
@@ -14,7 +11,7 @@ export type Db = BetterSQLite3Database<typeof combinedSchema> & {
 
 /** Page cache per connection; reads mostly come through mmap, so a large cache only holds memory at idle. */
 const LIBRARY_CACHE_KIB = 16_384;
-export const GLOBAL_CACHE_KIB = 2_048;
+export const GLOBAL_CACHE_KIB = 2048;
 
 export function openSqlite(
   file: string,

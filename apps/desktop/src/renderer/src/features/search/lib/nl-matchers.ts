@@ -26,8 +26,8 @@ interface Candidate {
   value: string;
 }
 
-export function buildCandidates(facets: NlFacets): Candidate[] {
-  const out: Candidate[] = [];
+export function buildCandidates(facets: NlFacets): Array<Candidate> {
+  const out: Array<Candidate> = [];
   const push = (phrase: string, field: Predicate["field"], value: string) => {
     const p = phrase.trim().toLowerCase();
     if (p) out.push({ phrase: p, field, value });
@@ -77,7 +77,7 @@ interface Accumulator {
   aspects: Set<string>;
   tags: Set<string>;
   creators: Set<string>;
-  colors: string[];
+  colors: Array<string>;
   negSources: Set<string>;
   negTypes: Set<string>;
   negLists: Set<string>;
@@ -142,8 +142,8 @@ export function accumulate(
   }
 }
 
-export function toPredicates(acc: Accumulator): Predicate[] {
-  const out: Predicate[] = [];
+export function toPredicates(acc: Accumulator): Array<Predicate> {
+  const out: Array<Predicate> = [];
 
   const enumPred = (
     field: "source" | "type" | "shape" | "aspect",
@@ -232,7 +232,7 @@ function parseQuantity(word: string): number | null {
 }
 
 function parseDurationAt(
-  words: string[],
+  words: Array<string>,
   i: number,
 ): { seconds: number; len: number } | null {
   const w0 = (words[i] ?? "").toLowerCase();
@@ -253,7 +253,7 @@ function parseDurationAt(
 }
 
 export function matchDurationIntent(
-  words: string[],
+  words: Array<string>,
   i: number,
 ): { pred: Predicate; len: number } | null {
   const at = (k: number) => words[i + k] ?? "";
@@ -280,7 +280,7 @@ export function matchDurationIntent(
 }
 
 export function matchCountIntent(
-  words: string[],
+  words: Array<string>,
   i: number,
 ): { pred: Predicate; len: number } | null {
   const at = (k: number) => words[i + k] ?? "";
@@ -307,7 +307,7 @@ export function matchCountIntent(
 }
 
 export function matchSortLimit(
-  words: string[],
+  words: Array<string>,
   i: number,
 ): { sort?: AskSort; limit?: number; len: number } | null {
   const at = (k: number) => (words[i + k] ?? "").toLowerCase();
@@ -342,7 +342,7 @@ function optionalFieldForNoun(noun: string): FieldId | null {
 
 /** Handles its own negation, so it must run before the generic negator step which would otherwise eat "no"/"without". */
 export function matchIntent(
-  words: string[],
+  words: Array<string>,
   i: number,
 ): { pred: Predicate; len: number } | null {
   const at = (k: number) => words[i + k] ?? "";
@@ -395,9 +395,9 @@ export function matchIntent(
 }
 
 export function matchCandidate(
-  words: string[],
+  words: Array<string>,
   i: number,
-  candidates: Candidate[],
+  candidates: Array<Candidate>,
 ): { candidate: Candidate; len: number } | null {
   for (const candidate of candidates) {
     const parts = candidate.phrase.split(/\s+/);

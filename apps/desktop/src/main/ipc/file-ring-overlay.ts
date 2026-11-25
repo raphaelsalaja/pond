@@ -2,9 +2,9 @@ import {
   FILE_RING_OVERLAY_IPC,
   FileRingOverlayActivateSchema,
   FileRingOverlayDropSchema,
-  type FileRingOverlaySnapshot,
   overlayMenuAction,
 } from "../../shared/file-ring-overlay-contracts";
+import type { FileRingOverlaySnapshot } from "../../shared/file-ring-overlay-contracts";
 import {
   closeFileRingOverlay,
   fileRingOverlayOwnsSender,
@@ -13,10 +13,8 @@ import {
   openFileRingOverlay,
   presentFileRingOverlay,
 } from "../core/file-ring-overlay";
-import {
-  dropIntoFolder,
-  type OverlayDropDeps,
-} from "../core/file-ring-overlay/drop";
+import { dropIntoFolder } from "../core/file-ring-overlay/drop";
+import type { OverlayDropDeps } from "../core/file-ring-overlay/drop";
 import { addSavesToFolder, listFolders } from "../core/folders";
 import { importFiles } from "../core/import-files";
 import { getPrefs } from "../core/prefs";
@@ -106,8 +104,9 @@ export function registerFileRingOverlayIpc(): void {
     closeFileRingOverlay();
     if (target.kind === "folder") {
       const link = `pond://folder/${encodeURIComponent(target.folderId)}`;
-      if (handleDeepLink(link, getMainWindow()) === "library")
+      if (handleDeepLink(link, getMainWindow()) === "library") {
         await openLibraryWindow();
+      }
       return;
     }
     const id = overlayMenuAction(target.action);

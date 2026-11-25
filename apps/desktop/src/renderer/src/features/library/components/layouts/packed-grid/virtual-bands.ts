@@ -6,11 +6,16 @@ export function buildVirtualBands(
   items: ReadonlyArray<PackedItem>,
   totalHeight: number,
   bandSize = PACKED_GRID_BAND_PX,
-): number[][] {
-  if (totalHeight <= 0 || bandSize <= 0) return [];
+): Array<Array<number>> {
+  if (totalHeight <= 0 || bandSize <= 0) {
+    return [];
+  }
 
   const bandCount = Math.ceil(totalHeight / bandSize);
-  const bands: number[][] = Array.from({ length: bandCount }, () => []);
+  const bands: Array<Array<number>> = Array.from(
+    { length: bandCount },
+    () => [],
+  );
 
   for (let index = 0; index < items.length; index += 1) {
     const item = items[index];
@@ -33,7 +38,7 @@ export function buildVirtualBands(
 export function indicesForVirtualBands(
   bands: ReadonlyArray<ReadonlyArray<number>>,
   bandIndexes: ReadonlyArray<number>,
-): number[] {
+): Array<number> {
   const indices = new Set<number>();
   for (const bandIndex of bandIndexes) {
     const band = bands[bandIndex];

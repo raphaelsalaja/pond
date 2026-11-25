@@ -3,10 +3,8 @@ import { createRoot } from "react-dom/client";
 import type { PondPreviewApi } from "../../preload/preview";
 import type { PreviewWindowState } from "../../shared/preview-window-contracts";
 import "./app/boot-shell";
-import {
-  type PreviewControlActions,
-  PreviewControls,
-} from "./preview-controls";
+import { PreviewControls } from "./preview-controls";
+import type { PreviewControlActions } from "./preview-controls";
 import { createPreviewMedia } from "./preview-media";
 import "./preview.css";
 
@@ -22,8 +20,9 @@ const video = document.querySelector<HTMLVideoElement>("#video");
 const error = document.querySelector<HTMLElement>("#media-error");
 const retry = document.querySelector<HTMLButtonElement>("#retry");
 const previewUi = document.querySelector<HTMLElement>("#preview-ui");
-if (!image || !preview || !video || !error || !retry || !previewUi)
+if (!image || !preview || !video || !error || !retry || !previewUi) {
   throw new Error("Preview surface is missing.");
+}
 
 const uiRoot = createRoot(previewUi);
 

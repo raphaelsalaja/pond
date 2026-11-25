@@ -20,7 +20,8 @@ import type { LibraryMarkSource } from "@shared/library-mark";
 import type { LogoSource } from "@shared/logo-crop";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type ReactNode, type RefObject, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { listAppIconPreviews } from "@/features/settings";
 import defaultAppIcon from "@/generated/app-icon-previews/aqua.png";
 import { LogoCropDialog } from "@/shared/components/logo-crop-dialog";
@@ -33,16 +34,16 @@ import {
   LIBRARY_ICONS,
   LIBRARY_SWATCHES,
   LibraryIcon,
-  type LibrarySwatch,
 } from "./icons";
+import type { LibrarySwatch } from "./icons";
 import {
   isDefaultMark,
-  type LibraryMark,
   markKey,
   markToLogo,
   PREVIEW_EMOJI,
   PREVIEW_GLYPH,
 } from "./mark";
+import type { LibraryMark } from "./mark";
 import styles from "./styles.module.css";
 
 type Picker = "pond" | "emoji" | "icon";
@@ -167,12 +168,13 @@ export function LibraryCustomizeDialog({
     setError(null);
     try {
       const result = await window.pond.query("library.identity.pickIcon", {});
-      if (result.ok) setCropSource(result.image);
-      else if (result.reason !== "cancelled") {
+      if (result.ok) {
+        setCropSource(result.image);
+      } else if (result.reason !== "cancelled") {
         setError("Choose a supported image.");
       }
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't choose the image. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't choose the image. Try again."));
     }
   }
 
@@ -206,8 +208,8 @@ export function LibraryCustomizeDialog({
         client.invalidateQueries({ queryKey: ["recent-libraries"] }),
       ]);
       onClose();
-    } catch (cause) {
-      setError(errorCopy(cause, "Couldn't save the library. Try again."));
+    } catch (error_) {
+      setError(errorCopy(error_, "Couldn't save the library. Try again."));
     } finally {
       setBusy(false);
     }
@@ -522,7 +524,7 @@ interface PickerOption {
   next: LibraryMark;
 }
 
-function pickerOptions(picker: Picker, mark: LibraryMark): PickerOption[] {
+function pickerOptions(picker: Picker, mark: LibraryMark): Array<PickerOption> {
   if (picker === "pond") {
     return POND_LOGOS.map((entry) => ({
       key: entry.id,

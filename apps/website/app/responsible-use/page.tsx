@@ -17,15 +17,18 @@ export default function ResponsibleUse() {
       <Policy.Header>
         <Policy.Title>Responsible Use</Policy.Title>
         <p>
-          Pond is a personal archive. Use it to keep what you've already saved,
-          liked, or bookmarked. It isn't a scraper for other people's content,
-          and it isn't a way around a platform's rules.
+          Pond is a personal archive. Use it to keep what you&apos;ve already
+          saved, liked, or bookmarked. It isn&apos;t a scraper for other
+          people&apos;s content, and it isn&apos;t a way around a
+          platform&apos;s rules.
         </p>
         <Policy.Updated>November 23, 2026</Policy.Updated>
       </Policy.Header>
 
       <Policy.Section>
-        <Policy.Heading>You're responsible for how you use it</Policy.Heading>
+        <Policy.Heading>
+          You&apos;re responsible for how you use it
+        </Policy.Heading>
         <p>
           Pond runs on your computer and acts as you. Every request a source
           makes comes from your account, through your own browser session. That
@@ -34,7 +37,7 @@ export default function ResponsibleUse() {
         <Policy.List>
           <li>
             Follow the terms of service of every platform you connect. Pond
-            can't agree to them for you, and some platforms limit automated
+            can&apos;t agree to them for you, and some platforms limit automated
             access.
           </li>
           <li>Connect only accounts you own.</li>
@@ -43,8 +46,8 @@ export default function ResponsibleUse() {
             their work, so ask before you republish or share it.
           </li>
           <li>
-            Keep watched public accounts for your own reference. Don't use Pond
-            to monitor or harass people.
+            Keep watched public accounts for your own reference. Don&apos;t use
+            Pond to monitor or harass people.
           </li>
         </Policy.List>
       </Policy.Section>
@@ -92,7 +95,7 @@ export default function ResponsibleUse() {
           so it can be fixed.
         </p>
         <p>
-          If you're writing a source adapter, read{" "}
+          If you&apos;re writing a source adapter, read{" "}
           <Policy.Link href={ADD_A_SOURCE} target="_blank" rel="noreferrer">
             Add a Source
           </Policy.Link>{" "}

@@ -7,16 +7,16 @@ export interface QuickCaptureFolderOption {
 
 /** Folders in sidebar order, each under its parent. */
 export function folderOptions(
-  folders: readonly QuickCaptureFolder[],
-): QuickCaptureFolderOption[] {
+  folders: ReadonlyArray<QuickCaptureFolder>,
+): Array<QuickCaptureFolderOption> {
   const ids = new Set(folders.map((folder) => folder.id));
-  const children = new Map<string | null, QuickCaptureFolder[]>();
+  const children = new Map<string | null, Array<QuickCaptureFolder>>();
   for (const folder of folders) {
     const parent =
       folder.parentId && ids.has(folder.parentId) ? folder.parentId : null;
     children.set(parent, [...(children.get(parent) ?? []), folder]);
   }
-  const out: QuickCaptureFolderOption[] = [];
+  const out: Array<QuickCaptureFolderOption> = [];
   const seen = new Set<string>();
   const visit = (parent: string | null, depth: number) => {
     const rows = [...(children.get(parent) ?? [])].sort(

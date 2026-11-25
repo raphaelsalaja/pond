@@ -24,22 +24,17 @@ import {
   IconTrash,
 } from "@pond/icons";
 import { Button, Keyboard, Menu, Popover, Toolbar, Tooltip } from "@pond/ui";
+import { isHTMLTag } from "@pond/ui/dom";
 import {
   $getSelection,
   $isRangeSelection,
   COMMAND_PRIORITY_LOW,
   FORMAT_TEXT_COMMAND,
   SELECTION_CHANGE_COMMAND,
-  type TextFormatType,
 } from "lexical";
-import {
-  type ComponentType,
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import type { TextFormatType } from "lexical";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { platformGlyphs } from "@/shared/lib/shortcuts";
 import { $inCollapsible } from "../collapsible";
 import {
@@ -47,9 +42,9 @@ import {
   $linkHref,
   $restoreRange,
   applyNoteBlock,
-  type NoteBlock,
   OPEN_NOTE_LINK_COMMAND,
 } from "../commands";
+import type { NoteBlock } from "../commands";
 import styles from "./styles.module.css";
 
 interface Formats {
@@ -100,12 +95,12 @@ function httpHref(value: string): string | null {
   return null;
 }
 
-const STYLES: {
+const STYLES: Array<{
   block: NoteBlock;
   label: string;
-  shortcut: string[];
+  shortcut: Array<string>;
   Icon?: ComponentType;
-}[] = [
+}> = [
   { block: "paragraph", label: "Regular Text", shortcut: ["⌘", "⌥", "0"] },
   {
     block: "h1",
@@ -144,12 +139,12 @@ function ListGlyph({ block }: { block: NoteBlock }) {
   return <IconBulletList />;
 }
 
-const LISTS: {
+const LISTS: Array<{
   block: NoteBlock;
   label: string;
-  shortcut: string[];
+  shortcut: Array<string>;
   icon: ReactNode;
-}[] = [
+}> = [
   {
     block: "bullet",
     label: "Bulleted List",
@@ -306,7 +301,9 @@ export function FormatToolbar() {
             initialFocus={false}
             finalFocus={false}
             onMouseDown={(event) => {
-              if (event.target instanceof HTMLInputElement) return;
+              if (isHTMLTag(event.target, "input")) {
+                return;
+              }
               event.preventDefault();
             }}
           >
@@ -573,7 +570,7 @@ function FormatButton({
   children,
 }: {
   label: string;
-  shortcut?: string[];
+  shortcut?: Array<string>;
   pressed?: boolean;
   onClick: () => void;
   children: ReactNode;

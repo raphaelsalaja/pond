@@ -1,11 +1,9 @@
-import {
-  DataTable,
-  type RenderRowArgs,
-  useDataTable,
-} from "@pond/ui/data-table";
+import { DataTable, useDataTable } from "@pond/ui/data-table";
+import type { RenderRowArgs } from "@pond/ui/data-table";
 import type { DownloadActivity } from "@shared/download-activity";
 import type { QueueSourceGate } from "@shared/queue-contracts";
-import { type ReactNode, useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import type { ReactNode } from "react";
 import { DOWNLOAD_COLUMN_CATALOG } from "../../../lib/download-columns";
 import { downloadActivityForSave } from "../../../lib/download-progress";
 import type { DownloadRow } from "../../../lib/status-feed";
@@ -15,11 +13,8 @@ import {
   useDownloadsColumnLayout,
 } from "../../../state/downloads-columns";
 import { downloadsSelection } from "../../../state/downloads-selection";
-import {
-  DownloadQueueRow,
-  type DownloadViewRow,
-  downloadsColumns,
-} from "../columns";
+import { DownloadQueueRow, downloadsColumns } from "../columns";
+import type { DownloadViewRow } from "../columns";
 import { openDownloadSave } from "../context-menu";
 import { revealTransfer } from "../transfer-menu";
 import styles from "./styles.module.css";
@@ -48,14 +43,14 @@ export function DownloadTable({
   height,
   extra,
 }: {
-  rows: DownloadRow[];
+  rows: Array<DownloadRow>;
   paused: boolean;
-  activities: readonly DownloadActivity[];
-  gates: readonly QueueSourceGate[];
+  activities: ReadonlyArray<DownloadActivity>;
+  gates: ReadonlyArray<QueueSourceGate>;
   height?: number;
   extra?: ReactNode;
 }) {
-  const viewRows = useMemo<DownloadViewRow[]>(() => {
+  const viewRows = useMemo<Array<DownloadViewRow>>(() => {
     const gateBySource = new Map(gates.map((gate) => [gate.source, gate]));
     return rows.map((row) => ({
       ...row,
@@ -110,8 +105,9 @@ export function DownloadTable({
       onRowClick={(row, event) => {
         if (event && event.detail < 2) return;
         if (row.transfer) {
-          if (transferRevealable(row.transfer))
+          if (transferRevealable(row.transfer)) {
             void revealTransfer(row.transfer);
+          }
           return;
         }
         const current = rowsById.get(row.id);

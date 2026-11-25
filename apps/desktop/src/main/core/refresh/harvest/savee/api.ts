@@ -97,8 +97,8 @@ async function saveeGraphql<T>(
   let res: Response;
   try {
     res = await post(JSON.stringify({ query, variables }));
-  } catch (err) {
-    log.warn("[pond savee-api] fetch threw", err);
+  } catch (error) {
+    log.warn("[pond savee-api] fetch threw", error);
     return { ok: false, status: 0 };
   }
   if (res.status === 429) return { ok: false, status: 429 };
@@ -152,7 +152,7 @@ export async function readSaveeItems(
   const known = new Set(args.knownIds);
   const earlyStop = args.earlyStop !== false && known.size > 0;
   const since = args.savedSince ? Date.parse(args.savedSince) : Number.NaN;
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   let cursor = args.resumeCursor;
   let knownPageStreak = 0;
 
@@ -210,7 +210,7 @@ export async function readSaveeItems(
 }
 
 function partial(
-  entries: ListEntry[],
+  entries: Array<ListEntry>,
   cursor: string | undefined,
 ): ListHarvestResult {
   const result: ListHarvestResult = {

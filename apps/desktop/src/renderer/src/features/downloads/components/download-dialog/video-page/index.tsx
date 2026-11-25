@@ -7,7 +7,8 @@ import { Columns } from "../columns";
 import { Editor, useEditor } from "../editor";
 import type { ExportSettings } from "../export-options/settings";
 import { clipOf } from "../lib/clip";
-import { type LinkError, LinkField, LinkStatus } from "../link-page";
+import { LinkField, LinkStatus } from "../link-page";
+import type { LinkError } from "../link-page";
 import { Panel } from "../panel";
 
 const FRAME_COUNT = 12;
@@ -34,7 +35,7 @@ export function VideoPage({
   initialSettings,
 }: VideoPageProps) {
   const duration = probe.duration;
-  const trimmable = duration != null && duration >= 2 && !probe.isLive;
+  const trimmable = duration !== null && duration >= 2 && !probe.isLive;
 
   const frames = useQuery({
     queryKey: ["downloader.frames", probe.url],

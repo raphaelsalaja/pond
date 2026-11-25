@@ -2,7 +2,9 @@ import { createElement } from "react";
 import { BrandTile, getSourceDefForIdentity } from "@/features/sources";
 import type { FilterOption } from "./options";
 
-export function sourceOptions(values: readonly string[]): FilterOption[] {
+export function sourceOptions(
+  values: ReadonlyArray<string>,
+): Array<FilterOption> {
   return values.map((value) => {
     const source = getSourceDefForIdentity(value);
     return {

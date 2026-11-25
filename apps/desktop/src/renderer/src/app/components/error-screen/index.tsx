@@ -30,7 +30,7 @@ export function ErrorScreen({
   return (
     <div className={styles.root} role="alert">
       <div className={styles.card}>
-        <h1 className={styles.title}>Couldn't load this view</h1>
+        <h1 className={styles.title}>Couldn&apos;t load this view</h1>
         <p className={styles.message}>{message}</p>
 
         {hasDetails ? (

@@ -13,11 +13,13 @@ export interface BoardImage {
 interface RenderOptions {
   surface: HTMLElement;
   bounds: Rect;
-  setViewport(viewport: Viewport): void;
+  setViewport: (viewport: Viewport) => void;
 }
 
 function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
 }
 
 async function settled(surface: HTMLElement): Promise<void> {
@@ -28,7 +30,9 @@ async function settled(surface: HTMLElement): Promise<void> {
   );
   await Promise.race([
     Promise.all(images),
-    new Promise((resolve) => setTimeout(resolve, IMAGE_WAIT_MS)),
+    new Promise((resolve) => {
+      setTimeout(resolve, IMAGE_WAIT_MS);
+    }),
   ]);
   await nextFrame();
 }
@@ -88,10 +92,14 @@ export async function renderBoard({
     }
   }
   const output = canvas;
-  if (!output) throw new Error("There's nothing to export.");
-  const blob = await new Promise<Blob | null>((resolve) =>
-    output.toBlob(resolve, "image/png"),
-  );
-  if (!blob) throw new Error("Couldn't encode the canvas image.");
+  if (!output) {
+    throw new Error("There's nothing to export.");
+  }
+  const blob = await new Promise<Blob | null>((resolve) => {
+    output.toBlob(resolve, "image/png");
+  });
+  if (!blob) {
+    throw new Error("Couldn't encode the canvas image.");
+  }
   return { png: new Uint8Array(await blob.arrayBuffer()), width, height };
 }

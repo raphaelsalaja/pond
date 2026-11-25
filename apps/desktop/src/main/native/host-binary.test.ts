@@ -51,7 +51,7 @@ describe("prepareNativeHostBinary", () => {
   it("copies the host out of an AppImage to a stable XDG data path", async () => {
     const run = recordingCopy();
     const modes: Array<[string, number]> = [];
-    const directories: string[] = [];
+    const directories: Array<string> = [];
 
     await expect(
       prepareNativeHostBinary({

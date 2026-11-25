@@ -1,6 +1,5 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
-  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -9,14 +8,13 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  type GridLayout,
-  LibraryGrid,
-} from "@/features/library/components/layouts/grid";
-import {
-  type CardLayoutItem,
-  type CardLayoutResult,
-  stackSections,
+import type { ReactNode } from "react";
+import { LibraryGrid } from "@/features/library/components/layouts/grid";
+import type { GridLayout } from "@/features/library/components/layouts/grid";
+import { stackSections } from "@/features/library/components/layouts/packing";
+import type {
+  CardLayoutItem,
+  CardLayoutResult,
 } from "@/features/library/components/layouts/packing";
 import { useLibrarySaveRadius } from "@/features/library/components/layouts/save-radius";
 import { useLibraryLayoutTransition } from "@/features/library/hooks/use-library-layout-transition";
@@ -32,9 +30,9 @@ import {
   recallScrollAnchor,
   rememberScroll,
   rememberScrollAnchor,
-  type ScrollAnchor,
   ScrollRestorationContext,
 } from "@/shared/hooks/use-scroll-restoration";
+import type { ScrollAnchor } from "@/shared/hooks/use-scroll-restoration";
 import { findScrollParent } from "@/shared/lib/dom";
 import {
   buildVirtualBands,
@@ -58,7 +56,7 @@ const MISSING_ANCHOR_TIMEOUT_MS = 5000;
 const ANCHOR_RESTORE_TOLERANCE_PX = 2;
 
 function fallbackCursorId(
-  itemsByTop: readonly PackedItem[],
+  itemsByTop: ReadonlyArray<PackedItem>,
   parent: HTMLElement | null,
   scrollMargin: number,
 ): string | undefined {
@@ -95,23 +93,27 @@ export function findScrollAnchor(
 
 interface PackedGridProps {
   layout: GridLayout;
-  items: PackedItem[];
+  items: Array<PackedItem>;
   totalHeight: number;
   onEndReached?: () => void;
   renderItem: (item: PackedItem) => ReactNode;
-  onRunwayChange?: (itemIndexes: readonly number[]) => void;
+  onRunwayChange?: (itemIndexes: ReadonlyArray<number>) => void;
 }
 
 export function surroundingBandIndexes(
-  mounted: readonly number[],
+  mounted: ReadonlyArray<number>,
   count: number,
   runway = RUNWAY_BANDS,
-): number[] {
-  if (mounted.length === 0 || count <= 0 || runway <= 0) return [];
+): Array<number> {
+  if (mounted.length === 0 || count <= 0 || runway <= 0) {
+    return [];
+  }
   const first = Math.min(...mounted);
   const last = Math.max(...mounted);
-  const result: number[] = [];
-  for (let i = Math.max(0, first - runway); i < first; i += 1) result.push(i);
+  const result: Array<number> = [];
+  for (let i = Math.max(0, first - runway); i < first; i += 1) {
+    result.push(i);
+  }
   for (let i = last + 1; i <= Math.min(count - 1, last + runway); i += 1) {
     result.push(i);
   }
@@ -293,16 +295,20 @@ export function PackedGrid({
         if (!item || !parent) return;
         const top = scrollMargin + item.top;
         const bottom = top + item.height;
-        if (top < parent.scrollTop) parent.scrollTop = top;
-        else if (bottom > parent.scrollTop + parent.clientHeight)
+        if (top < parent.scrollTop) {
+          parent.scrollTop = top;
+        } else if (bottom > parent.scrollTop + parent.clientHeight) {
           parent.scrollTop = Math.max(0, bottom - parent.clientHeight);
-        if (resultNavigation.shouldFocus())
+        }
+        if (resultNavigation.shouldFocus()) {
           ref.current?.focus({ preventScroll: true });
+        }
         resultNavigation.didReveal(id);
       }),
     [getScrollElement, itemById, scrollMargin],
   );
 
+  // oxlint-disable-next-line react/incompatible-library -- TanStack Virtual returns unstable methods by design; the compiler skips memoizing this component.
   const virtualizer = useVirtualizer({
     count: bands.length,
     getScrollElement,
@@ -325,8 +331,12 @@ export function PackedGrid({
         : anchoredTop;
     },
     onChange: (instance, sync) => {
-      if (!sync || !restoration || instance.scrollOffset == null) return;
-      if (activeRestoration.current?.key === restoration.key) return;
+      if (!sync || !restoration || instance.scrollOffset === null) {
+        return;
+      }
+      if (activeRestoration.current?.key === restoration.key) {
+        return;
+      }
       const parent = getScrollElement();
       if (!parent || "restoringScroll" in parent.dataset) return;
       const top = instance.scrollOffset;
@@ -392,6 +402,7 @@ export function PackedGrid({
       style={style}
       role="listbox"
       aria-label="Saves"
+      // oxlint-disable-next-line jsx-a11y/role-supports-aria-props -- aria-description is a global ARIA 1.3 attribute
       aria-description="Arrow keys select Saves. Shift extends the selection. Option or Alt with arrows moves focus without changing selection; Shift+Space toggles the focused Save. Enter opens; Space previews."
       aria-multiselectable="true"
       aria-activedescendant={activeId ? `save-option-${activeId}` : undefined}
@@ -424,8 +435,9 @@ export function PackedGrid({
         if (
           event.key !== "ContextMenu" &&
           !(event.shiftKey && event.key === "F10")
-        )
+        ) {
           return;
+        }
         const option = activeId
           ? document.getElementById(`save-option-${activeId}`)
           : null;
@@ -448,7 +460,7 @@ export function PackedGrid({
 
 interface SavePackedGridProps {
   layout: GridLayout;
-  items: PackedItem[];
+  items: Array<PackedItem>;
   totalHeight: number;
   onEndReached?: () => void;
   lead?: CardLayoutResult;
@@ -465,7 +477,7 @@ export function SavePackedGrid({
 }: SavePackedGridProps) {
   const dividerRef = useRef<HTMLDivElement>(null);
   const [dividerHeight, setDividerHeight] = useState(0);
-  const hasDivider = divider != null;
+  const hasDivider = divider !== null && divider !== undefined;
   useLayoutEffect(() => {
     const node = dividerRef.current;
     if (!hasDivider || !node) return;

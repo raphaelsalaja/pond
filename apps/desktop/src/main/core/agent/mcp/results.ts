@@ -12,11 +12,8 @@ import { readLibraryPointer } from "../../../lib/library-pointer";
 import { invalidatePaths, resolvePaths } from "../../../paths";
 import { invalidatePrefs } from "../../prefs";
 import type { ToolResult } from "../complete";
-import {
-  MCP_ACCESS_OFF,
-  type McpAccessGroup,
-  mcpToolAllowed,
-} from "../mcp-access";
+import { MCP_ACCESS_OFF, mcpToolAllowed } from "../mcp-access";
+import type { McpAccessGroup } from "../mcp-access";
 import type { listSavedViews } from "./library";
 
 export type McpToolBody =

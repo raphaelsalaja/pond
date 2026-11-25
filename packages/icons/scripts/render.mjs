@@ -37,8 +37,9 @@ const scripts = readdirSync(at("src"))
   .map((f) => f.slice(0, -4));
 
 const missing = scripts.filter((name) => !manifest[name]);
-if (missing.length)
+if (missing.length) {
   throw new Error(`No manifest entry for src/${missing.join(", src/")}.mjs`);
+}
 
 for (const name of scripts) {
   const mod = await load(at("src", `${name}.mjs`));
@@ -63,9 +64,12 @@ for (const name of scripts) {
 
 /** Marks without a script (the X and Threads post controls) keep their drawings but lose Duo. */
 for (const [name, entry] of Object.entries(manifest)) {
-  if (scripts.includes(name)) continue;
-  for (const variant of entry.variants.filter((v) => v.style === "duo"))
+  if (scripts.includes(name)) {
+    continue;
+  }
+  for (const variant of entry.variants.filter((v) => v.style === "duo")) {
     rmSync(at("svg", variant.file), { force: true });
+  }
   entry.variants = entry.variants.filter((v) => v.style !== "duo");
 }
 writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
@@ -82,12 +86,14 @@ const registered = {
   sparkle: (await load(at("src/sparkle.mjs"))).default,
 };
 const { glyphs } = await load(at("src/parts/badge.mjs"));
-for (const name of Object.keys(glyphs))
+for (const name of Object.keys(glyphs)) {
   registered[`badge-${name}`] = () => glyphs[name]();
+}
 
 for (const [name, script] of Object.entries(registered)) {
-  if (existsSync(at("parts", `${name}.svg`)))
+  if (existsSync(at("parts", `${name}.svg`))) {
     writeFileSync(at("parts", `${name}.svg`), `${draw(script, style)}\n`);
+  }
 }
 
 console.log(

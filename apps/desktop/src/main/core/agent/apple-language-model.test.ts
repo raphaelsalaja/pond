@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { createAppleLanguageModel, renderPrompt } from "./apple-language-model";
-import type { runAppleHelper } from "./apple-runtime";
+import type { AppleReply, AppleRequest, runAppleHelper } from "./apple-runtime";
 
 type CallOptions = Parameters<
   ReturnType<typeof createAppleLanguageModel>["doGenerate"]
@@ -18,6 +18,22 @@ const tools: CallOptions["tools"] = [
     },
   },
 ];
+
+interface RecordingHelper {
+  run: typeof runAppleHelper;
+  requests: Array<AppleRequest>;
+}
+
+function helper(reply: AppleReply): RecordingHelper {
+  const requests: Array<AppleRequest> = [];
+  return {
+    requests,
+    run: async (request) => {
+      requests.push(request);
+      return reply;
+    },
+  };
+}
 
 describe("renderPrompt", () => {
   it("splits system text from the transcript and labels turns", () => {
@@ -77,13 +93,13 @@ describe("renderPrompt", () => {
 
 describe("createAppleLanguageModel", () => {
   it("returns a tool call", async () => {
-    const run = vi.fn<typeof runAppleHelper>(async () => ({
+    const { run, requests } = helper({
       ok: true,
       content: {
         text: "",
         call: { tool: "searchLibrary", arguments: { query: "posters" } },
       },
-    }));
+    });
     const model = createAppleLanguageModel({ run });
     const result = await model.doGenerate({
       prompt: [{ role: "user", content: [{ type: "text", text: "posters?" }] }],
@@ -97,17 +113,17 @@ describe("createAppleLanguageModel", () => {
         input: '{"query":"posters"}',
       }),
     ]);
-    expect(run.mock.calls[0]?.[0]).toMatchObject({
+    expect(requests[0]).toMatchObject({
       command: "generate",
       prompt: "User: posters?",
     });
   });
 
   it("returns text", async () => {
-    const run = vi.fn<typeof runAppleHelper>(async () => ({
+    const { run } = helper({
       ok: true,
       content: { text: "You have 3 posters." },
-    }));
+    });
     const result = await createAppleLanguageModel({ run }).doGenerate({
       prompt: [],
       tools,
@@ -119,10 +135,10 @@ describe("createAppleLanguageModel", () => {
   });
 
   it("streams the same reply", async () => {
-    const run = vi.fn<typeof runAppleHelper>(async () => ({
+    const { run } = helper({
       ok: true,
       content: { text: "Hi." },
-    }));
+    });
     const { stream } = await createAppleLanguageModel({ run }).doStream({
       prompt: [],
       tools,
@@ -139,22 +155,22 @@ describe("createAppleLanguageModel", () => {
   });
 
   it("refuses an unknown tool or an empty reply", async () => {
-    const unknownTool = vi.fn<typeof runAppleHelper>(async () => ({
+    const unknownTool = helper({
       ok: true,
       content: { text: "", call: { tool: "shell", arguments: {} } },
-    }));
+    });
     await expect(
-      createAppleLanguageModel({ run: unknownTool }).doGenerate({
+      createAppleLanguageModel({ run: unknownTool.run }).doGenerate({
         prompt: [],
         tools,
       }),
     ).rejects.toThrow("Apple Intelligence couldn't reply. Try again.");
-    const empty = vi.fn<typeof runAppleHelper>(async () => ({
+    const empty = helper({
       ok: true,
       content: { text: " " },
-    }));
+    });
     await expect(
-      createAppleLanguageModel({ run: empty }).doGenerate({
+      createAppleLanguageModel({ run: empty.run }).doGenerate({
         prompt: [],
         tools,
       }),
@@ -162,17 +178,17 @@ describe("createAppleLanguageModel", () => {
   });
 
   it("maps helper errors to user copy", async () => {
-    const run = vi.fn<typeof runAppleHelper>(async () => ({
+    const { run } = helper({
       ok: false,
       error: "contextSizeExceeded",
-    }));
+    });
     await expect(
       createAppleLanguageModel({ run }).doGenerate({ prompt: [], tools }),
     ).rejects.toThrow("This chat is too long for Apple Intelligence.");
   });
 
   it("refuses file attachments", async () => {
-    const run = vi.fn<typeof runAppleHelper>();
+    const { run, requests } = helper({ ok: false, error: "failed" });
     await expect(
       createAppleLanguageModel({ run }).doGenerate({
         prompt: [
@@ -192,6 +208,6 @@ describe("createAppleLanguageModel", () => {
     ).rejects.toThrow(
       "Apple Intelligence reads text only. Choose a vision model for attachments.",
     );
-    expect(run).not.toHaveBeenCalled();
+    expect(requests).toEqual([]);
   });
 });

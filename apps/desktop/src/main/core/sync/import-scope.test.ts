@@ -304,9 +304,10 @@ describe("collectionCheckDue", () => {
   });
 });
 
+const iso = (ms: number) => new Date(ms).toISOString();
+
 describe("subscriptionCheck", () => {
   const now = Date.parse("2026-10-18T12:00:00Z");
-  const iso = (ms: number) => new Date(ms).toISOString();
 
   it("reaches back a week the first time", () => {
     expect(subscriptionCheck({}, now)).toEqual({

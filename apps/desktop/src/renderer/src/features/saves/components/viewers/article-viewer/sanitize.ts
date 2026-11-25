@@ -388,9 +388,14 @@ function firstImage(body: HTMLElement): string | undefined {
   return body.querySelector("img")?.getAttribute("src") ?? undefined;
 }
 
+function imageFileName(url: string): string {
+  return decodeURIComponent(url).split("/").pop() ?? url;
+}
+
 /** Substack's CDN wraps the stored image URL, so compare the underlying file name. */
 function sameImage(a: string, b: string | undefined): boolean {
-  if (!b) return false;
-  const name = (url: string) => decodeURIComponent(url).split("/").pop() ?? url;
-  return name(a) === name(b);
+  if (!b) {
+    return false;
+  }
+  return imageFileName(a) === imageFileName(b);
 }

@@ -18,8 +18,8 @@ import { commitLibraryPointer } from "./recent-libraries";
 import { recordForUndo } from "./undo";
 
 interface IntegrityReport {
-  orphans: string[];
-  missing: string[];
+  orphans: Array<string>;
+  missing: Array<string>;
   errors: Record<string, string>;
   totalIndexed: number;
   totalOnDisk: number;
@@ -36,7 +36,7 @@ export async function verifyLibraryIntegrity(): Promise<IntegrityReport> {
   const onDiskIds = await listSaveFolderIds(paths.savesDir);
   const onDiskSet = new Set(onDiskIds);
 
-  const orphans: string[] = [];
+  const orphans: Array<string> = [];
   const errors: Record<string, string> = {};
   for (const id of onDiskIds) {
     if (!indexedSet.has(id)) {
@@ -125,7 +125,7 @@ export async function relocateLibrary(
   readOrCreateLibraryId(destResolved);
 
   const globalDb = await getGlobalDb();
-  await globalDb
+  globalDb
     .insert(settingsTable)
     .values({ id: "singleton", libraryRoot: destResolved })
     .onConflictDoUpdate({
@@ -155,7 +155,7 @@ export async function syncLibraryRootMetadata(): Promise<void> {
   const stored = rows[0]?.libraryRoot ?? "";
   if (isSamePath(stored, pointer)) return;
 
-  await globalDb
+  globalDb
     .insert(settingsTable)
     .values({ id: "singleton", libraryRoot: pointer })
     .onConflictDoUpdate({
@@ -176,8 +176,10 @@ export async function emptyTrashOlderThan(days: number): Promise<number> {
   const targets = cutoff
     ? all.filter((r) => r.deletedAt && r.deletedAt.getTime() <= cutoff)
     : all;
-  if (targets.length === 0) return 0;
-  const txs: Transaction[] = targets.map((r) => ({
+  if (targets.length === 0) {
+    return 0;
+  }
+  const txs: Array<Transaction> = targets.map((r) => ({
     kind: "purge",
     model: "save",
     id: r.id,

@@ -16,7 +16,7 @@ export function ModelCatalogTable({
   onSave,
   onOpenProviders = () => openSettings("models"),
 }: {
-  models: CatalogModel[];
+  models: Array<CatalogModel>;
   visibleByProvider: VisibleModelIds;
   onSave: (visibleModelIds: VisibleModelIds) => Promise<void>;
   onOpenProviders?: () => void;
@@ -33,12 +33,13 @@ export function ModelCatalogTable({
   );
   const groups = new Map<
     AssistantProvider,
-    { name: string; models: CatalogModel[] }
+    { name: string; models: Array<CatalogModel> }
   >();
   for (const model of filtered) {
     const group = groups.get(model.provider);
-    if (group) group.models.push(model);
-    else {
+    if (group) {
+      group.models.push(model);
+    } else {
       groups.set(model.provider, {
         name: model.providerName,
         models: [model],
@@ -75,7 +76,7 @@ export function ModelCatalogTable({
 
   function allVisible() {
     const next = { ...visibleByProvider };
-    const byProvider = new Map<AssistantProvider, string[]>();
+    const byProvider = new Map<AssistantProvider, Array<string>>();
     for (const model of selectable) {
       const ids = byProvider.get(model.provider) ?? [];
       ids.push(model.id);

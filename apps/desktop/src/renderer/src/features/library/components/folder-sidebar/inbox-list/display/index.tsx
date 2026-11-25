@@ -1,12 +1,11 @@
 import { IconSliders } from "@pond/icons";
 import { INBOX_GROUPINGS, INBOX_ORDERINGS } from "@pond/schema";
 import { Button, Popover, Select, Switch, Tooltip } from "@pond/ui";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
+import type { ReactNode } from "react";
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
-import {
-  type InboxScope,
-  inboxPicker,
-} from "@/features/library/state/inbox-review";
+import { inboxPicker } from "@/features/library/state/inbox-review";
+import type { InboxScope } from "@/features/library/state/inbox-review";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -64,7 +63,7 @@ function SelectRow<T extends string>({
   onValueChange,
 }: {
   label: string;
-  items: readonly { value: T; label: string }[];
+  items: ReadonlyArray<{ value: T; label: string }>;
   value: T;
   onValueChange: (value: T) => void;
 }) {

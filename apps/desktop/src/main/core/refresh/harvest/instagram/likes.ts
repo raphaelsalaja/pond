@@ -16,7 +16,7 @@ interface LikesRequest {
 }
 
 declare global {
-  var __pondIgBloksCaptures: string[] | undefined;
+  var __pondIgBloksCaptures: Array<string> | undefined;
   var __pondIgLikesRequest: LikesRequest | undefined;
   var __pondHarvestPartial:
     | Array<{ sourceId: string; url: string }>
@@ -80,13 +80,16 @@ async function inPageInstagramLikes(
     element_id: string;
   }
 
-  const entries: ListEntry[] = [];
+  const entries: Array<ListEntry> = [];
   const seen = new Set<string>();
   const known = new Set(args.knownIds.map(String));
   const earlyStopEnabled = args.earlyStop ?? known.size > 0;
   let knownPageStreak = 0;
 
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  const sleep = (ms: number) =>
+    new Promise((r) => {
+      setTimeout(r, ms);
+    });
 
   function collect(text: string) {
     let added = 0;
@@ -188,8 +191,9 @@ async function inPageInstagramLikes(
 
   const deadline = Date.now() + args.deadlineMs;
   for (let attempt = 0; attempt < args.maxPages; attempt++) {
-    if (Date.now() > deadline || globalThis.__pondHarvestAbort)
+    if (Date.now() > deadline || globalThis.__pondHarvestAbort) {
       return done(false);
+    }
     const init = pageRequest(template, next);
     if (!init) break;
     await sleep(args.pageDelayMs);

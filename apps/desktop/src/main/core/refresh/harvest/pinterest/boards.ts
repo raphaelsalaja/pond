@@ -12,7 +12,7 @@ export interface PinterestBoard extends ImportCollection {
 }
 
 export interface ResourcePage<T> {
-  items: T[];
+  items: Array<T>;
   bookmark: string | null;
 }
 
@@ -30,13 +30,13 @@ interface BoardsOptions {
   field_set_key: "profile_grid_item";
   filter_stories: boolean;
   include_archived: boolean;
-  bookmarks?: string[];
+  bookmarks?: Array<string>;
 }
 
 interface BoardFeedOptions {
   board_id: string;
   page_size: number;
-  bookmarks?: string[];
+  bookmarks?: Array<string>;
 }
 
 const PAGE_SIZE = 50;
@@ -123,7 +123,7 @@ export function resourceFailure(response: {
 /** Pinterest marks the last page with `-end-`, or with a base64 `cbNone;` bookmark on some feeds. */
 function nextBookmark(
   responseBookmark: string | undefined,
-  optionBookmarks: string[] | undefined,
+  optionBookmarks: Array<string> | undefined,
 ): string | null {
   const bookmark = responseBookmark ?? optionBookmarks?.[0];
   if (!bookmark || bookmark === "-end-" || bookmark.startsWith("Y2JOb25lO")) {
@@ -135,7 +135,7 @@ function nextBookmark(
 export function boardsPage(
   response: z.infer<typeof BoardsResponseSchema>,
 ): ResourcePage<PinterestBoard> {
-  const items: PinterestBoard[] = [];
+  const items: Array<PinterestBoard> = [];
   for (const board of response.resource_response.data) {
     if (!board?.id || !board.name) continue;
     if (board.type && board.type !== "board") continue;
@@ -159,7 +159,7 @@ export function boardPinsPage(
 ): ResourcePage<ListEntry> {
   const data = response.resource_response.data;
   const pins = Array.isArray(data) ? data : data.results;
-  const items: ListEntry[] = [];
+  const items: Array<ListEntry> = [];
   for (const pin of pins) {
     if (!pin?.id || !/^\d+$/.test(pin.id)) continue;
     if (pin.type && pin.type !== "pin") continue;
@@ -214,7 +214,7 @@ function resourceUrl(
 }
 
 export type BoardListResult =
-  | { ok: true; boards: PinterestBoard[] }
+  | { ok: true; boards: Array<PinterestBoard> }
   | { ok: false; reason: ResourceFailure };
 
 export async function collectBoards(
@@ -238,7 +238,7 @@ export async function collectBoards(
 }
 
 export async function walkBoards(
-  boards: readonly ImportCollection[],
+  boards: ReadonlyArray<ImportCollection>,
   args: ListHarvestArgs,
   fetchPage: (
     boardId: string,

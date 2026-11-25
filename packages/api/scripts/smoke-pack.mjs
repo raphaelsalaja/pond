@@ -7,10 +7,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join, resolve } from "node:path";
 
-const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const packageRoot = resolve(import.meta.dirname, "..");
 const manifest = JSON.parse(
   readFileSync(join(packageRoot, "package.json"), "utf8"),
 );
@@ -28,8 +27,10 @@ function run(command, args, cwd, env = process.env) {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
-  if (result.error) throw result.error;
-  if (result.status !== 0)
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
     throw new Error(
       [
         `${command} ${args.join(" ")} exited with code ${result.status}.`,
@@ -39,6 +40,7 @@ function run(command, args, cwd, env = process.env) {
         .filter(Boolean)
         .join("\n"),
     );
+  }
   return result.stdout;
 }
 
@@ -120,10 +122,12 @@ try {
       "utf8",
     ),
   );
-  if (JSON.stringify(installed).includes("workspace:"))
+  if (JSON.stringify(installed).includes("workspace:")) {
     throw new Error("The packed manifest still has workspace: dependencies.");
-  if (installed.exports["."].import !== "./dist/index.js")
+  }
+  if (installed.exports["."].import !== "./dist/index.js") {
     throw new Error("The packed manifest doesn't point at dist.");
+  }
 
   run(tsc, ["-p", "tsconfig.json"], project, env);
   const version = run(process.execPath, ["consumer.mjs"], project, env).trim();

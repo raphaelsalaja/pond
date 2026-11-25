@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import type { ComponentDocs } from "../shared/docs";
 import { Changelog } from ".";
+import type { ComponentDocs } from "../shared/docs";
 
 function Column({ children }: { children: ReactNode }) {
   return <div style={{ width: 480 }}>{children}</div>;
@@ -160,8 +160,8 @@ export const docs: ComponentDocs = {
                   Clearer downloads and a Canvas minimap
                 </Changelog.Title>
                 <Changelog.Summary>
-                  Downloads explain what they're waiting for, and Canvas boards
-                  get a minimap.
+                  Downloads explain what they&apos;re waiting for, and Canvas
+                  boards get a minimap.
                 </Changelog.Summary>
               </Changelog.Body>
             </Changelog.Entry>

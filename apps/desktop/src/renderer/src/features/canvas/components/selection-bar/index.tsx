@@ -6,7 +6,8 @@ import {
   IconImage,
   IconTrash,
 } from "@pond/icons";
-import { Button, type MenuItemSpec } from "@pond/ui";
+import { Button } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { CanvasColor } from "@shared/canvas-contracts";
 import { NodeToolbar, Position } from "@xyflow/react";
 import type { ReactElement } from "react";
@@ -19,16 +20,16 @@ export type SelectionControl =
       kind: "menu";
       label: string;
       icon: ReactElement;
-      buildItems: () => MenuItemSpec[];
+      buildItems: () => Array<MenuItemSpec>;
     }
   | { kind: "custom"; label: string; element: ReactElement }
   | {
       kind: "action";
       label: string;
       icon: ReactElement;
-      shortcut?: string[];
+      shortcut?: Array<string>;
       pressed?: boolean;
-      onClick(): void;
+      onClick: () => void;
     };
 
 interface ControlProps {
@@ -36,13 +37,16 @@ interface ControlProps {
 }
 
 function Control({ control }: ControlProps) {
-  if (control.kind === "custom") return control.element;
-  if (control.kind === "menu")
+  if (control.kind === "custom") {
+    return control.element;
+  }
+  if (control.kind === "menu") {
     return (
       <Bar.Menu label={control.label} buildItems={control.buildItems}>
         {control.icon}
       </Bar.Menu>
     );
+  }
   return (
     <Bar.Action
       label={control.label}
@@ -56,27 +60,27 @@ function Control({ control }: ControlProps) {
 }
 
 interface SelectionBarProps {
-  nodes: readonly CanvasNode[];
+  nodes: ReadonlyArray<CanvasNode>;
   hidden: boolean;
   canOpen: boolean;
   canCrop: boolean;
   onCanvas: ReadonlySet<string>;
-  arrange: (() => MenuItemSpec[]) | null;
+  arrange: (() => Array<MenuItemSpec>) | null;
   /** Item kind controls that share a group with Color, like Shape. */
-  lead: readonly SelectionControl[];
+  lead: ReadonlyArray<SelectionControl>;
   /** Style controls after Color, like Font and Bold. */
-  style: readonly SelectionControl[];
+  style: ReadonlyArray<SelectionControl>;
   /** Selection actions before Duplicate, like Group and Lock. */
-  extras: readonly SelectionControl[];
-  onColor(color: CanvasColor): void;
-  onOpen(): void;
-  onCrop(): void;
-  onReplace(saveIds: string[]): void;
-  onDuplicate(): void;
-  onDelete(): void;
+  extras: ReadonlyArray<SelectionControl>;
+  onColor: (color: CanvasColor) => void;
+  onOpen: () => void;
+  onCrop: () => void;
+  onReplace: (saveIds: Array<string>) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
 }
 
-function shared<Value>(values: readonly Value[]): Value | null {
+function shared<Value>(values: ReadonlyArray<Value>): Value | null {
   const unique = new Set(values);
   const [only] = unique;
   return unique.size === 1 && only !== undefined ? only : null;

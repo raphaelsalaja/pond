@@ -14,7 +14,7 @@ export function Strip({
   onReorder,
   onRemove,
 }: {
-  images: readonly CombineImage[];
+  images: ReadonlyArray<CombineImage>;
   onReorder: (from: number, to: number) => void;
   onRemove: (id: string) => void;
 }) {
@@ -91,7 +91,6 @@ export function Strip({
                 }}
                 onDragEnd={reset}
               >
-                {/* biome-ignore lint/a11y/useSemanticElements: a sortable handle with no click action, matching dnd-kit's role="button" attributes. */}
                 <div
                   ref={(node) => {
                     if (node) items.current.set(save.id, node);

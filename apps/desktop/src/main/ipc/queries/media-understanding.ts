@@ -7,9 +7,11 @@ import { connectionFor } from "../../core/agent/provider-models";
 import { visionEnabled } from "../../core/agent/vision";
 import {
   createMediaUnderstanding,
-  type MediaUnderstanding,
   MediaUnderstandingError,
-  type MediaUnderstandingFailureReason,
+} from "../../core/media-understanding";
+import type {
+  MediaUnderstanding,
+  MediaUnderstandingFailureReason,
 } from "../../core/media-understanding";
 import { getPrefs } from "../../core/prefs";
 import {
@@ -17,7 +19,8 @@ import {
   readLibraryMedia,
 } from "../../core/storage/library-media-storage";
 import { resolveSaveFilePath } from "../helpers";
-import { type QueryHandlerMap, query } from "./params";
+import { query } from "./params";
+import type { QueryHandlerMap } from "./params";
 
 const MAX_IMAGE_BYTES = 25 * 1024 * 1024;
 const IMAGE_MIME = new Map([
@@ -125,14 +128,16 @@ export function createMediaUnderstandingQueries(
         if (!target.ok) return target;
 
         const mimeType = IMAGE_MIME.get(extname(target.path).toLowerCase());
-        if (!mimeType)
+        if (!mimeType) {
           return { ok: false as const, reason: "unsupported_media" as const };
+        }
 
         let bytes: Buffer;
         try {
           const metadata = await resolved.libraryMediaMetadata(target.path);
-          if (metadata.originalSize > MAX_IMAGE_BYTES)
+          if (metadata.originalSize > MAX_IMAGE_BYTES) {
             return { ok: false as const, reason: "too_large" as const };
+          }
           bytes = await resolved.readLibraryMedia(target.path);
         } catch (error) {
           log.warn("[pond ipc] saves.understandMedia could not read media", {
@@ -141,8 +146,9 @@ export function createMediaUnderstandingQueries(
           });
           return { ok: false as const, reason: "read_failed" as const };
         }
-        if (bytes.byteLength > MAX_IMAGE_BYTES)
+        if (bytes.byteLength > MAX_IMAGE_BYTES) {
           return { ok: false as const, reason: "too_large" as const };
+        }
 
         let connection: Awaited<ReturnType<typeof resolveConnection>>;
         try {

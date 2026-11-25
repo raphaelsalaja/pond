@@ -1,12 +1,12 @@
 .window {
-  -webkit-app-region: drag;
+  box-sizing: border-box;
   display: grid;
   grid-template-columns: 296px minmax(0, 1fr) 64px;
   gap: var(--ds-space-md);
-  box-sizing: border-box;
   height: 100dvh;
   padding: var(--ds-space-md);
   background: var(--ds-background-tertiary);
+  -webkit-app-region: drag;
 }
 
 .placeholder {

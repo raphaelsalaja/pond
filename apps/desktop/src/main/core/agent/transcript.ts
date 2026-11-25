@@ -4,27 +4,34 @@ import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { assistantMetadata } from "../../../shared/assistant";
 import { joinMessages } from "../../../shared/assistant-text";
-import { type Db, getDb } from "../../db";
+import { getDb } from "../../db";
+import type { Db } from "../../db";
 import { answerProblem } from "./output";
 
 export async function loadModelTranscript(
   chatId: string,
   database?: Pick<Db, "select">,
-): Promise<ModelMessage[]> {
+): Promise<Array<ModelMessage>> {
   const db = database ?? (await getDb());
   const canonical = loadCanonical(db, chatId);
   const projected = projectMessages(db, chatId);
   let request = "";
   return reconcileTranscript(canonical, projected).flatMap((message) => {
     const text = textOf(message);
-    if (message.role === "user") request = text;
-    if (message.role !== "assistant" || !answerProblem(text, request))
+    if (message.role === "user") {
+      request = text;
+    }
+    if (message.role !== "assistant" || !answerProblem(text, request)) {
       return [message];
+    }
     return [];
   });
 }
 
-function loadCanonical(db: Pick<Db, "select">, chatId: string): ModelMessage[] {
+function loadCanonical(
+  db: Pick<Db, "select">,
+  chatId: string,
+): Array<ModelMessage> {
   const thread = db
     .select({ transcript: agentChats.canonicalTranscript })
     .from(agentChats)
@@ -61,7 +68,7 @@ function loadCanonical(db: Pick<Db, "select">, chatId: string): ModelMessage[] {
 function projectMessages(
   db: Pick<Db, "select">,
   chatId: string,
-): ModelMessage[] {
+): Array<ModelMessage> {
   return db
     .select()
     .from(agentMessages)
@@ -84,10 +91,15 @@ function projectMessages(
 }
 
 function textOf(message: ModelMessage | undefined): string {
-  if (!message) return "";
-  if (z.string().safeParse(message.content).success)
+  if (!message) {
+    return "";
+  }
+  if (z.string().safeParse(message.content).success) {
     return z.string().parse(message.content);
-  if (!Array.isArray(message.content)) return "";
+  }
+  if (!Array.isArray(message.content)) {
+    return "";
+  }
   return message.content
     .flatMap((part) => {
       const text = z
@@ -99,11 +111,13 @@ function textOf(message: ModelMessage | undefined): string {
 }
 
 function reconcileTranscript(
-  canonical: ModelMessage[],
-  projected: ModelMessage[],
-): ModelMessage[] {
-  if (!canonical.length) return projected;
-  const result: ModelMessage[] = [];
+  canonical: Array<ModelMessage>,
+  projected: Array<ModelMessage>,
+): Array<ModelMessage> {
+  if (!canonical.length) {
+    return projected;
+  }
+  const result: Array<ModelMessage> = [];
   let cursor = 0;
   for (const message of projected) {
     if (message.role !== "user") {

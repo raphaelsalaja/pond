@@ -74,14 +74,14 @@ describe("folder cover url", () => {
         path: "thumbnail.png",
         mimeType: "image/png",
         sha256: "abcdef1234567890",
-        size: 22951,
+        size: 22_951,
       },
       {
         kind: "thumbnail_dark",
         path: "thumbnail-dark.png",
         mimeType: "image/png",
         sha256: "abcdef1234567890",
-        size: 20623,
+        size: 20_623,
       },
     ];
     expect(folderCoverUrl(save, 360)).toMatch(

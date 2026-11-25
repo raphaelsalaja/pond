@@ -1,17 +1,15 @@
 import { createParts } from "@ui-sdk/react/primitive";
 import { clsx as cn } from "clsx";
-import {
-  type ComponentProps,
-  type ComponentPropsWithoutRef,
-  type ReactNode,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
+import { useId, useLayoutEffect, useMemo, useRef } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  ReactNode,
 } from "react";
 import { Tooltip } from "../tooltip";
 import { useWindow, WindowContext } from "./context";
-import { type WindowSide, windowHandle } from "./handle";
+import { windowHandle } from "./handle";
+import type { WindowSide } from "./handle";
 import styles from "./styles.module.css";
 
 const { Root: HandleRoot } = createParts(windowHandle, { root: "div" });
@@ -56,7 +54,7 @@ function Root({
   );
 }
 
-interface ToolbarProps extends ComponentPropsWithoutRef<"div"> {}
+type ToolbarProps = ComponentPropsWithoutRef<"div">;
 
 function Toolbar({ className, ...props }: ToolbarProps) {
   return (
@@ -68,7 +66,7 @@ function Toolbar({ className, ...props }: ToolbarProps) {
   );
 }
 
-interface ClusterProps extends ComponentPropsWithoutRef<"div"> {}
+type ClusterProps = ComponentPropsWithoutRef<"div">;
 
 function Leading({ className, ...props }: ClusterProps) {
   return (
@@ -90,7 +88,7 @@ function Trailing({ className, ...props }: ClusterProps) {
   );
 }
 
-interface PanesProps extends ComponentPropsWithoutRef<"div"> {}
+type PanesProps = ComponentPropsWithoutRef<"div">;
 
 function Panes({ className, ...props }: PanesProps) {
   return (
@@ -262,7 +260,7 @@ function Handle({
 }
 
 /** Takes a `ref`, so a page can portal its own controls into the row. */
-interface PartProps extends ComponentProps<"div"> {}
+type PartProps = ComponentProps<"div">;
 
 function Bar({ className, ...props }: PartProps) {
   return (

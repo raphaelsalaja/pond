@@ -1,4 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
+import { isJsonValue } from "@pond/schema/json";
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
@@ -30,7 +31,7 @@ export interface TweetScreenshotResult {
     | "timeout"
     | "capture_failed";
   quotedUrl?: string;
-  media?: CaptureMedia[];
+  media?: Array<CaptureMedia>;
 }
 
 const SCREENSHOT_PADDING_CSS = 24;
@@ -46,7 +47,7 @@ const SCREENSHOT_MAX_HEIGHT = 8192;
 const CAPTURE_PAGE_TIMEOUT_MS = 15_000;
 
 /** Matches the native card renderer's image wait. */
-const CAPTURE_MEDIA_WAIT_MS = 6_000;
+const CAPTURE_MEDIA_WAIT_MS = 6000;
 
 interface TweetDualScreenshotArgs {
   url: string;
@@ -61,7 +62,7 @@ interface TweetDualScreenshotResult {
   light: TweetScreenshotResult;
   dark: TweetScreenshotResult;
   quotedUrl?: string;
-  media?: CaptureMedia[];
+  media?: Array<CaptureMedia>;
   page?: Capture;
   pageFailureReason?: TweetScreenshotResult["reason"];
 }
@@ -73,6 +74,9 @@ function abortedDual(): TweetDualScreenshotResult {
   return { light: fail, dark: fail };
 }
 
+/** Cancel only needs the page gone; a blank load the pool interrupts has done that. */
+function ignoreInterruptedBlank(): void {}
+
 /** Cancel has to drop the page, or the article script keeps the window until it finishes. */
 function watchAbort(
   win: BrowserWindow,
@@ -82,7 +86,7 @@ function watchAbort(
   const onAbort = () => {
     if (win.isDestroyed()) return;
     win.webContents.stop();
-    void win.loadURL("about:blank").catch(() => {});
+    void win.loadURL("about:blank").catch(ignoreInterruptedBlank);
   };
   if (signal.aborted) onAbort();
   else signal.addEventListener("abort", onAbort, { once: true });
@@ -134,7 +138,7 @@ export async function screenshotTweetDual(
       args.parentId,
     );
 
-    let media: CaptureMedia[] | undefined;
+    let media: Array<CaptureMedia> | undefined;
     let page: Capture | undefined;
     let pageFailureReason: TweetScreenshotResult["reason"];
     if (args.harvestMedia && light.ok) {
@@ -182,13 +186,15 @@ export async function screenshotTweetDual(
     if (page) dual.page = page;
     if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
-  } catch (err) {
-    if (args.signal?.aborted) return abortedDual();
-    log.warn("[pond screenshot:tweet] unexpected dual error", args.url, err);
+  } catch (error) {
+    if (args.signal?.aborted) {
+      return abortedDual();
+    }
+    log.warn("[pond screenshot:tweet] unexpected dual error", args.url, error);
     const fail: TweetScreenshotResult = {
       ok: false,
       reason:
-        err instanceof ScreenshotTimeoutError ? "timeout" : "capture_failed",
+        error instanceof ScreenshotTimeoutError ? "timeout" : "capture_failed",
     };
     return { light: fail, dark: fail };
   } finally {
@@ -243,7 +249,7 @@ export async function screenshotThreadsDual(
       args.parentId,
     );
 
-    let media: CaptureMedia[] | undefined;
+    let media: Array<CaptureMedia> | undefined;
     let page: Capture | undefined;
     let pageFailureReason: TweetScreenshotResult["reason"];
     if (args.harvestMedia && light.ok) {
@@ -294,13 +300,19 @@ export async function screenshotThreadsDual(
     if (page) dual.page = page;
     if (pageFailureReason) dual.pageFailureReason = pageFailureReason;
     return dual;
-  } catch (err) {
-    if (args.signal?.aborted) return abortedDual();
-    log.warn("[pond screenshot:threads] unexpected dual error", args.url, err);
+  } catch (error) {
+    if (args.signal?.aborted) {
+      return abortedDual();
+    }
+    log.warn(
+      "[pond screenshot:threads] unexpected dual error",
+      args.url,
+      error,
+    );
     const fail: TweetScreenshotResult = {
       ok: false,
       reason:
-        err instanceof ScreenshotTimeoutError ? "timeout" : "capture_failed",
+        error instanceof ScreenshotTimeoutError ? "timeout" : "capture_failed",
     };
     return { light: fail, dark: fail };
   } finally {
@@ -395,7 +407,9 @@ async function captureCurrentScheme(
       if (resized) {
         try {
           win.setContentSize(contentWidth, originalContentHeight);
-        } catch {}
+        } catch {
+          /** The window may already be destroyed, and the next lease resizes it anyway. */
+        }
       }
     }
   } finally {
@@ -410,9 +424,13 @@ async function waitForSchemeFlip(
   const deadline = Date.now() + 1500;
   while (Date.now() < deadline) {
     const lum = await readBackgroundLuminance(win);
-    if (lum != null) {
-      if (target === "dark" && lum < 0.4) return true;
-      if (target === "light" && lum > 0.6) return true;
+    if (lum !== null) {
+      if (target === "dark" && lum < 0.4) {
+        return true;
+      }
+      if (target === "light" && lum > 0.6) {
+        return true;
+      }
     }
     await sleep(150);
   }
@@ -442,7 +460,7 @@ async function readBackgroundLuminance(
     }
   })()`;
   try {
-    const raw = await Promise.race([
+    const raw: unknown = await Promise.race([
       win.webContents.executeJavaScript(expr, true),
       sleep(1000).then(() => null),
     ]);
@@ -465,15 +483,16 @@ async function harvestPageMedia(
       kind === "threads"
         ? buildThreadsExpression(sourceId)
         : buildExpression(sourceId);
-    const raw = await Promise.race([
+    const result: unknown = await Promise.race([
       win.webContents.executeJavaScript(expr, true),
       sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(
         () => "__pond_screenshot_timeout__",
       ),
     ]);
-    if (raw === "__pond_screenshot_timeout__") {
+    if (result === "__pond_screenshot_timeout__") {
       return { failureReason: "timeout" };
     }
+    const raw = isJsonValue(result) ? result : null;
     const ctx = {
       source: kind === "threads" ? ("threads" as const) : ("twitter" as const),
       url: win.webContents.getURL(),
@@ -482,8 +501,8 @@ async function harvestPageMedia(
     const harvested =
       kind === "threads" ? adaptThreads(raw, ctx) : adapt(raw, ctx);
     return harvested ? { page: harvested } : { failureReason: "no_article" };
-  } catch (err) {
-    log.warn("[pond screenshot] media harvest failed", err);
+  } catch (error) {
+    log.warn("[pond screenshot] media harvest failed", error);
     return { failureReason: "capture_failed" };
   }
 }
@@ -504,8 +523,8 @@ async function padScreenshot(
       .png()
       .toBuffer({ resolveWithObject: true });
     return { bytes: out.data, width: out.info.width, height: out.info.height };
-  } catch (err) {
-    log.warn("[pond screenshot:tweet] padding failed, using raw", err);
+  } catch (error) {
+    log.warn("[pond screenshot:tweet] padding failed, using raw", error);
     return { bytes, width: raw.width, height: raw.height };
   }
 }
@@ -532,12 +551,12 @@ async function waitForCaptureMedia(win: BrowserWindow): Promise<boolean> {
       )
       .then(
         (settled) => settled === true,
-        (err) => {
-          log.warn("[pond screenshot:tweet] media wait failed", err);
+        (cause: unknown) => {
+          log.warn("[pond screenshot:tweet] media wait failed", cause);
           return false;
         },
       ),
-    sleep(CAPTURE_MEDIA_WAIT_MS + 2_000).then(() => false),
+    sleep(CAPTURE_MEDIA_WAIT_MS + 2000).then(() => false),
   ]);
 }
 
@@ -551,7 +570,7 @@ async function readArticleRect(
     kind === "threads"
       ? buildThreadsPostRectExpression(sourceId, parentId)
       : buildArticleRectExpression(sourceId, parentId);
-  const raw = await Promise.race([
+  const raw: unknown = await Promise.race([
     win.webContents.executeJavaScript(expr, true),
     sleep(SCREENSHOT_ARTICLE_TIMEOUT_MS).then(
       () => "__pond_screenshot_timeout__",

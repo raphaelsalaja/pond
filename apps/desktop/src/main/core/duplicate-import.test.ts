@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  type DuplicateImportCandidate,
-  resolveDuplicateDecisions,
-} from "./duplicate-import";
+import { resolveDuplicateDecisions } from "./duplicate-import";
+import type { DuplicateImportCandidate } from "./duplicate-import";
 
 const live: DuplicateImportCandidate = {
   path: "/imports/live.png",

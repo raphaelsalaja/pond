@@ -1,0 +1,36 @@
+/** @type {import("stylelint").Config} */
+export default {
+  extends: ["stylelint-config-recommended", "stylelint-config-recess-order"],
+  reportNeedlessDisables: true,
+  reportInvalidScopeDisables: true,
+  ignoreFiles: [
+    "**/dist/**",
+    "**/build/**",
+    "**/out/**",
+    "**/.next/**",
+    "**/.output/**",
+    "**/.wxt/**",
+    "**/coverage/**",
+    "branding/**",
+    ".mobbin/**",
+    ".impeccable/**",
+    "packages/icons/next/**",
+    "packages/icons/seed/**",
+    "packages/theme/src/colors/palette.css",
+    "packages/theme/src/colors/scale.css",
+  ],
+  rules: {
+    "at-rule-no-unknown": [true, { ignoreAtRules: ["typography"] }],
+    "declaration-no-important": true,
+    "declaration-property-value-keyword-no-deprecated": null,
+    "no-descending-specificity": null,
+    "no-duplicate-selectors": null,
+    "order/order": ["custom-properties", "declarations"],
+    "property-no-deprecated": null,
+    "property-no-unknown": [true, { ignoreProperties: ["composes"] }],
+    "selector-pseudo-class-no-unknown": [
+      true,
+      { ignorePseudoClasses: ["global"] },
+    ],
+  },
+};

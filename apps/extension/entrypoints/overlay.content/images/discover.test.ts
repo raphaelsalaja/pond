@@ -2,13 +2,13 @@ import { expect, describe as group, it } from "vitest";
 import {
   describe,
   facetCounts,
-  type ImageFilters,
   imageFormat,
   imageName,
   largestSrcset,
   matchesFilters,
   sizeBucket,
 } from "./discover";
+import type { ImageFilters } from "./discover";
 
 const filters: ImageFilters = {
   query: "",

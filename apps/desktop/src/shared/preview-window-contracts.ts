@@ -136,6 +136,8 @@ export function previewMediaProfile(
     case "pdf":
     case "text":
       return null;
+    case "generic":
+      break;
   }
 
   if (format.mediaType === "video") {
