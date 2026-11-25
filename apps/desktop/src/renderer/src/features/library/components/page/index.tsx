@@ -63,7 +63,7 @@ export function Library() {
             <Outlet />
           </div>
         )}
-        {grid && !saveOpen ? <InboxReview /> : null}
+        {grid ? <InboxReview /> : null}
         {saveId !== null ? (
           <div className={styles.overlay}>
             <SaveDetailPage id={saveId} />
