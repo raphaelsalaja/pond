@@ -286,7 +286,7 @@ button.label:hover {
   &[data-size="lg"] {
     height: auto;
     min-height: 44px;
-    padding: var(--ds-space-sm);
+    padding: var(--ds-space-md);
   }
 
   &[data-size="lg"] .icon {

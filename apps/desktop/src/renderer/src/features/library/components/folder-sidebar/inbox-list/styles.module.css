@@ -22,7 +22,57 @@
 }
 
 .section {
-  margin-top: var(--ds-space-sm);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* Linear-style section band: pinned under the Inbox header while its section scrolls. */
+.sectionHeader {
+  position: sticky;
+  top: var(--window-header-height, 44px);
+  z-index: 1;
+  box-sizing: border-box;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+  height: var(--sidebar-height-lg);
+  padding: 0 12px;
+  margin-block: var(--ds-space-2xs);
+  font: inherit;
+  font-size: var(--ds-text-small);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
+  text-align: left;
+  cursor: var(--ds-cursor-interactive, pointer);
+  /* Layered on the panel background so rows never show through while it is pinned. */
+  background:
+    linear-gradient(var(--ds-surface-primary), var(--ds-surface-primary)),
+    var(--ds-background-primary);
+  border: none;
+  border-radius: var(--ds-radius-md);
+
+  > svg {
+    flex: none;
+    margin-left: -5px;
+    color: var(--ds-foreground-tertiary);
+    transform: rotate(90deg);
+    transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+  }
+
+  &[aria-expanded="false"] > svg {
+    transform: none;
+  }
+}
+
+.section:first-child > .sectionHeader {
+  margin-top: 0;
+}
+
+.sectionCount {
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
 }
 
 .line {

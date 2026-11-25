@@ -1,6 +1,6 @@
 import { Loader, Sidebar } from "@pond/ui";
 import type { InboxNotification } from "@shared/notification-contracts";
-import { Fragment } from "react";
+import { useId } from "react";
 import type { ReactNode } from "react";
 import { SaveThumb } from "@/features/library/components/command-menu/save-thumb";
 import { useInboxItems } from "@/features/library/hooks/use-inbox-items";
@@ -12,6 +12,10 @@ import {
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
+import {
+  inboxSections,
+  useCollapsedInboxSections,
+} from "@/features/library/state/inbox-sections";
 import { NotificationIcon, notificationTone } from "@/features/notifications";
 import type { InboxProgress } from "@/features/notifications";
 import {
@@ -204,51 +208,96 @@ function runs(items: ReadonlyArray<InboxItem>): Array<Run> {
   return out;
 }
 
+/** A pinned band that names the section, counts it and folds it shut. */
+function Section({
+  section,
+  count,
+  open,
+  children,
+}: {
+  section: string;
+  count: number;
+  open: boolean;
+  children: ReactNode;
+}) {
+  const id = useId();
+  return (
+    <div className={styles.section}>
+      <button
+        type="button"
+        className={styles.sectionHeader}
+        aria-expanded={open}
+        aria-controls={id}
+        onClick={() => inboxSections.toggle(section)}
+      >
+        {section}
+        <span className={styles.sectionCount}>{count}</span>
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden>
+          <path
+            d="M6.75 10.62c-.33.2-.75-.04-.75-.43V5.81c0-.39.42-.63.75-.43l3.76 2.19c.33.19.33.67 0 .86l-3.76 2.19z"
+            fill="currentColor"
+          />
+        </svg>
+      </button>
+      {open ? (
+        <Sidebar.GroupContent id={id} aria-label={section}>
+          {children}
+        </Sidebar.GroupContent>
+      ) : null}
+    </div>
+  );
+}
+
 export function InboxList() {
   const queue = useInboxReview();
   const scope = useInboxReviewScope() ?? "review";
   const selected = useInboxSelection();
   const items = useInboxItems();
+  const collapsed = useCollapsedInboxSections();
   const label = scope === "snoozed" ? "Snoozed" : "Inbox";
 
+  // The group itself is the menu trigger, so its header stays the first child the sidebar pins as the panel header.
   return (
-    <Sidebar.Group>
-      <SaveCollectionContextMenu
-        acceptsBackground={() => false}
-        buildBackgroundItems={() => []}
-        onOpenSave={(save) => {
-          const index = queue?.ids.indexOf(save.id) ?? -1;
-          if (index >= 0) inboxReview.jump(index);
-        }}
-      >
-        <div>
-          <InboxHeader scope={scope} />
-          {runs(items).map((run) => (
-            <Fragment key={run.section ?? ""}>
-              {run.section ? (
-                <Sidebar.GroupLabel className={styles.section}>
-                  {run.section}
-                </Sidebar.GroupLabel>
-              ) : null}
-              <Sidebar.GroupContent aria-label={run.section ?? label}>
-                {run.items.map((item) => (
-                  <Item
-                    key={item.key}
-                    item={item}
-                    selected={selected}
-                    index={queue?.index ?? null}
-                  />
-                ))}
-              </Sidebar.GroupContent>
-            </Fragment>
-          ))}
-          {queue && items.length === 0 ? (
-            <Sidebar.Empty>
-              {scope === "snoozed" ? "Nothing snoozed" : "Nothing to review"}
-            </Sidebar.Empty>
-          ) : null}
-        </div>
-      </SaveCollectionContextMenu>
-    </Sidebar.Group>
+    <SaveCollectionContextMenu
+      acceptsBackground={() => false}
+      buildBackgroundItems={() => []}
+      onOpenSave={(save) => {
+        const index = queue?.ids.indexOf(save.id) ?? -1;
+        if (index >= 0) inboxReview.jump(index);
+      }}
+    >
+      <Sidebar.Group>
+        <InboxHeader scope={scope} />
+        {runs(items).map((run) => {
+          const rows = run.items.map((item) => (
+            <Item
+              key={item.key}
+              item={item}
+              selected={selected}
+              index={queue?.index ?? null}
+            />
+          ));
+          return run.section ? (
+            <Section
+              key={run.section}
+              section={run.section}
+              count={run.items.length}
+              open={!collapsed.has(run.section)}
+            >
+              {rows}
+            </Section>
+          ) : (
+            <Sidebar.GroupContent key="" aria-label={label}>
+              {rows}
+            </Sidebar.GroupContent>
+          );
+        })}
+        {queue && items.length === 0 ? (
+          <Sidebar.Empty>
+            {scope === "snoozed" ? "Nothing snoozed" : "Nothing to review"}
+          </Sidebar.Empty>
+        ) : null}
+      </Sidebar.Group>
+    </SaveCollectionContextMenu>
   );
 }

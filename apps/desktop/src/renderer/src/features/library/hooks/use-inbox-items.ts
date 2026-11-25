@@ -1,8 +1,6 @@
 import type { Prefs } from "@pond/schema";
-import type {
-  InboxNotification,
-  NotificationKind,
-} from "@shared/notification-contracts";
+import { FIELD_DESCRIPTORS } from "@pond/schema/filters/fields";
+import type { InboxNotification } from "@shared/notification-contracts";
 import { shallow, useSelector } from "@tanstack/react-store";
 import { useMemo } from "react";
 import {
@@ -12,6 +10,7 @@ import {
   useInboxReviewScope,
   useInboxSelection,
 } from "@/features/library/state/inbox-review";
+import { useCollapsedInboxSections } from "@/features/library/state/inbox-sections";
 import {
   isSnoozed,
   isUnread,
@@ -19,6 +18,7 @@ import {
   useNotifications,
 } from "@/features/notifications";
 import type { InboxProgress } from "@/features/notifications";
+import { getSourceLabel } from "@/features/saves";
 import { savesStore } from "@/features/saves/pool";
 import { usePrefs } from "@/shared/state/prefs";
 
@@ -31,6 +31,9 @@ export type InboxItem =
       index: number;
       unread: boolean;
       at: number;
+      /** The Library's Type value, such as image or link; empty until the Save loads. */
+      kind: string;
+      source: string;
       section?: string;
     }
   | {
@@ -84,15 +87,23 @@ function merge(
   return [...items, ...sorted.slice(next)];
 }
 
-const TYPE_SECTIONS = {
-  save: "Saves",
-  attention: "Needs Attention",
-  activity: "Activity",
-} satisfies Record<"save" | NotificationKind, string>;
+const OTHER = "Other";
+const NOTIFICATIONS = "Notifications";
 
-const TYPE_ORDER = Object.values(TYPE_SECTIONS);
+/** Type sections use the Library's Type labels, in its filter order. */
+const TYPE_LABELS = new Map<string, string>(
+  (FIELD_DESCRIPTORS.type.presets ?? []).map((preset) => [
+    String(preset.value),
+    preset.label,
+  ]),
+);
+
+const TYPE_ORDER = [...TYPE_LABELS.values()];
 
 const DATE_ORDER = ["Today", "Yesterday", "Last 7 Days", "Older"];
+
+/** Catch-all sections close the list: Saves without a value, then notifications. */
+const TAIL = [OTHER, NOTIFICATIONS];
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -103,24 +114,42 @@ function dateSection(at: number, today: number): string {
   return "Older";
 }
 
+function sectionOf(
+  entry: Entry,
+  by: Exclude<Display["groupBy"], "none">,
+  today: number,
+): string {
+  if (by === "date") return dateSection(entry.at, today);
+  if (entry.type === "notification") return NOTIFICATIONS;
+  if (by === "type") return TYPE_LABELS.get(entry.kind) ?? OTHER;
+  return entry.source ? getSourceLabel(entry.source) : OTHER;
+}
+
+function compareSections(
+  a: string,
+  b: string,
+  by: Exclude<Display["groupBy"], "none">,
+): number {
+  const tail = TAIL.indexOf(a) - TAIL.indexOf(b);
+  if (tail !== 0) return tail;
+  if (by === "date") return DATE_ORDER.indexOf(a) - DATE_ORDER.indexOf(b);
+  if (by === "type") return TYPE_ORDER.indexOf(a) - TYPE_ORDER.indexOf(b);
+  return a.localeCompare(b);
+}
+
 /** Sections reorder the list so J and K walk it in the order it's drawn; rank order holds inside each section. */
-function group(entries: Array<Entry>, by: Display["groupBy"]): Array<Entry> {
+export function groupInboxEntries(
+  entries: ReadonlyArray<Entry>,
+  by: Display["groupBy"],
+  now = Date.now(),
+): Array<Entry> {
   if (by === "none") {
-    return entries;
+    return [...entries];
   }
-  const today = new Date().setHours(0, 0, 0, 0);
-  const order = by === "type" ? TYPE_ORDER : DATE_ORDER;
+  const today = new Date(now).setHours(0, 0, 0, 0);
   return entries
-    .map((entry) => ({
-      ...entry,
-      section:
-        by === "type"
-          ? TYPE_SECTIONS[
-              entry.type === "save" ? "save" : entry.notification.kind
-            ]
-          : dateSection(entry.at, today),
-    }))
-    .toSorted((a, b) => order.indexOf(a.section) - order.indexOf(b.section));
+    .map((entry) => ({ ...entry, section: sectionOf(entry, by, today) }))
+    .toSorted((a, b) => compareSections(a.section, b.section, by));
 }
 
 /** Saves and notifications, without the running-work rows. */
@@ -134,6 +163,20 @@ function useInboxEntries(): Array<Entry> {
   const savedAt = useSelector(
     savesStore,
     (state) => ids.map((id) => state.byId.get(id)?.savedAt ?? 0),
+    { compare: shallow },
+  );
+  const kinds = useSelector(
+    savesStore,
+    (state) =>
+      ids.map((id) => {
+        const save = state.byId.get(id);
+        return save ? String(FIELD_DESCRIPTORS.type.project(save) ?? "") : "";
+      }),
+    { compare: shallow },
+  );
+  const sources = useSelector(
+    savesStore,
+    (state) => ids.map((id) => state.byId.get(id)?.source ?? ""),
     { compare: shallow },
   );
   const states = useSelector(
@@ -173,6 +216,8 @@ function useInboxEntries(): Array<Entry> {
         index,
         unread: outcome === undefined,
         at: savedAt[index] ?? 0,
+        kind: kinds[index] ?? "",
+        source: sources[index] ?? "",
       };
       return shown(entry) ? [entry] : [];
     });
@@ -189,8 +234,19 @@ function useInboxEntries(): Array<Entry> {
       };
       return shown(entry) ? [entry] : [];
     });
-    return group(merge(saves, listed, display), display.groupBy);
-  }, [ids, savedAt, states, queue, notifications, scope, selected, display]);
+    return groupInboxEntries(merge(saves, listed, display), display.groupBy);
+  }, [
+    ids,
+    savedAt,
+    kinds,
+    sources,
+    states,
+    queue,
+    notifications,
+    scope,
+    selected,
+    display,
+  ]);
 }
 
 export function useInboxItems(): Array<InboxItem> {
@@ -214,9 +270,13 @@ function pick(item: Entry | undefined): void {
   else inboxPicker.select(item?.type === "notification" ? item.key : null);
 }
 
-/** J and K walk Saves and notifications as one list; running-work rows aren't stops. */
+/** J and K walk Saves and notifications as one list; running-work rows and folded sections aren't stops. */
 export function useInboxNavigation() {
-  const pickable = useInboxEntries();
+  const entries = useInboxEntries();
+  const collapsed = useCollapsedInboxSections();
+  const pickable = entries.filter(
+    (entry) => entry.section === undefined || !collapsed.has(entry.section),
+  );
   const queue = useInboxReview();
   const selected = useInboxSelection();
   const at = pickable.findIndex((item) =>

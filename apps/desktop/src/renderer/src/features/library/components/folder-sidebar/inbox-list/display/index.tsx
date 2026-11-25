@@ -26,6 +26,7 @@ const ORDERINGS = INBOX_ORDERINGS.map((value) => ({
 const GROUPING_LABELS = {
   none: "None",
   type: "Type",
+  source: "Source",
   date: "Date",
 } satisfies Record<(typeof INBOX_GROUPINGS)[number], string>;
 
