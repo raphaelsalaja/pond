@@ -346,7 +346,7 @@ export function SaveHotkeys() {
           const ids = waitingInInbox(targetIds());
           if (!ids.length) {
             notify({
-              id: "inbox-change",
+              id: "inbox-process",
               title: "Nothing to process",
               description: "No selected saves are waiting in the Inbox.",
             });
@@ -362,7 +362,7 @@ export function SaveHotkeys() {
           const ids = waitingInInbox(targetIds());
           if (!ids.length) {
             notify({
-              id: "inbox-change",
+              id: "inbox-snooze",
               title: "Nothing to snooze",
               description: "No selected saves are waiting in the Inbox.",
             });
