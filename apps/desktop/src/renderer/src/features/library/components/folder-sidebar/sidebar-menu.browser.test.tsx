@@ -187,11 +187,17 @@ describe("sidebar background menu", () => {
     "opens the %s panel's actions from its More button",
     async (path, label, item) => {
       await harness.mount(path);
-      const more = await vi.waitFor(() => harness.iconButton(label));
-      await act(async () => more.click());
-      await vi.waitFor(() => {
-        expect(hasMenuItem(item)).toBe(true);
+      /** A panel's route loads on first visit, which can take a while on a cold CI runner. */
+      const more = await vi.waitFor(() => harness.iconButton(label), {
+        timeout: 5000,
       });
+      await act(async () => more.click());
+      await vi.waitFor(
+        () => {
+          expect(hasMenuItem(item)).toBe(true);
+        },
+        { timeout: 5000 },
+      );
     },
   );
 
