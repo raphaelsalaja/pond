@@ -8,7 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { LibraryGrid } from "@/features/library/components/layouts/grid";
 import type { GridLayout } from "@/features/library/components/layouts/grid";
 import { stackSections } from "@/features/library/components/layouts/packing";
@@ -467,6 +467,53 @@ interface SavePackedGridProps {
   divider?: ReactNode;
 }
 
+type CardSlot = ComponentProps<typeof SaveCard>["slot"];
+
+function cardSlot(item: PackedItem): CardSlot {
+  return {
+    width: item.width,
+    height: item.height,
+    previewHeight: item.mediaHeight,
+    top: item.top,
+    left: item.left,
+  };
+}
+
+function sameSlot(slot: CardSlot, item: PackedItem): boolean {
+  return (
+    slot.width === item.width &&
+    slot.height === item.height &&
+    slot.previewHeight === item.mediaHeight &&
+    slot.top === item.top &&
+    slot.left === item.left
+  );
+}
+
+/**
+ * Every re-pack makes new items, even when one Save's data changed and no card moved, such as
+ * each enrichment write during ingest. Keeping a card's slot object while its geometry is the
+ * same lets `memo(SaveCard)` skip every card that didn't move.
+ */
+export function useCardSlots(
+  items: ReadonlyArray<PackedItem>,
+): ReadonlyMap<string, CardSlot> {
+  const [cache, setCache] = useState<{
+    items: ReadonlyArray<PackedItem>;
+    slots: ReadonlyMap<string, CardSlot>;
+  }>(() => ({ items: [], slots: new Map() }));
+  if (cache.items === items) return cache.slots;
+  const slots = new Map<string, CardSlot>();
+  for (const item of items) {
+    const previous = cache.slots.get(item.id);
+    slots.set(
+      item.id,
+      previous && sameSlot(previous, item) ? previous : cardSlot(item),
+    );
+  }
+  setCache({ items, slots });
+  return slots;
+}
+
 export function SavePackedGrid({
   layout,
   items: restItems,
@@ -503,6 +550,7 @@ export function SavePackedGrid({
     [items],
   );
   const setSize = Math.max(items.length, total);
+  const slots = useCardSlots(items);
   const renderItem = useCallback(
     (it: PackedItem) => (
       <SaveCard
@@ -511,16 +559,10 @@ export function SavePackedGrid({
         view={layout}
         position={positions.get(it.id)}
         total={setSize}
-        slot={{
-          width: it.width,
-          height: it.height,
-          previewHeight: it.mediaHeight,
-          top: it.top,
-          left: it.left,
-        }}
+        slot={slots.get(it.id) ?? cardSlot(it)}
       />
     ),
-    [layout, positions, setSize],
+    [layout, positions, setSize, slots],
   );
   return (
     <LibraryGrid.Sections>
