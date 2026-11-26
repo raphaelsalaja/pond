@@ -13,7 +13,6 @@ export default {
     "**/coverage/**",
     "branding/**",
     ".mobbin/**",
-    ".impeccable/**",
     "packages/icons/next/**",
     "packages/icons/seed/**",
     "packages/theme/src/colors/palette.css",

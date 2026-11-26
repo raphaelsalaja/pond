@@ -26,7 +26,6 @@
     "**/dist",
     "branding",
     ".mobbin",
-    ".impeccable",
     "packages/icons/next",
     "packages/icons/seed",
     "packages/icons/svg/manifest.json",

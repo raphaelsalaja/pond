@@ -64,9 +64,6 @@ apps/raycast/raycast-env.d.ts
 # mobbin UI evidence boards (design-exploration scratch)
 .mobbin/
 
-# impeccable design-exploration scratch
-.impeccable/
-
 # TanStack Router cache
 **/.tanstack/
 

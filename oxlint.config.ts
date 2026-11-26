@@ -68,7 +68,6 @@ export default defineConfig({
     ".continue/**",
     ".cursor/**",
     ".gemini/**",
-    ".impeccable/**",
     ".mobbin/**",
     ".opencode/**",
     ".pi/**",
