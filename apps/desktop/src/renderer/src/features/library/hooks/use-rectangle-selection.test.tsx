@@ -8,7 +8,10 @@ import {
   resultNavigation,
   selection,
 } from "@/features/saves/navigation";
-import { useRectangleSelection } from "./use-rectangle-selection";
+import {
+  edgeScrollStep,
+  useRectangleSelection,
+} from "./use-rectangle-selection";
 
 function Gallery() {
   const marquee = useRectangleSelection();
@@ -126,5 +129,26 @@ describe("rectangle selection cancellation", () => {
     expect(selection.snapshot()).toEqual(["C", "A", "B"]);
     expect(selection.getCursor()).toBe("B");
     expect(host.querySelector("output")).toBeNull();
+  });
+});
+
+describe("edge scroll step", () => {
+  const viewport = { top: 100, bottom: 400 };
+  function step(pointerY: number, elapsedMs = 1000) {
+    return edgeScrollStep({ pointerY, viewport, elapsedMs });
+  }
+  it("accelerates as the pointer moves farther into the edge zone", () => {
+    expect(Math.abs(step(120))).toBeGreaterThan(Math.abs(step(130)));
+    expect(Math.abs(step(380))).toBeGreaterThan(Math.abs(step(370)));
+  });
+  it("accelerates farther when the pointer passes the viewport edge", () => {
+    expect(Math.abs(step(80))).toBeGreaterThan(Math.abs(step(100)));
+    expect(Math.abs(step(420))).toBeGreaterThan(Math.abs(step(400)));
+  });
+  it("scales with elapsed frame time", () => {
+    expect(Math.abs(step(100, 40))).toBeCloseTo(Math.abs(step(100, 20)) * 2);
+  });
+  it("does not scroll away from the edge zone", () => {
+    expect(step(250)).toBe(0);
   });
 });

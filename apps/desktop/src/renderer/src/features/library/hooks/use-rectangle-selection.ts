@@ -18,6 +18,40 @@ interface Rectangle {
   height: number;
 }
 
+const EDGE_SCROLL_ZONE = 36;
+const EDGE_SCROLL_SPEED_PER_PIXEL = 36;
+const MAX_EDGE_SCROLL_SPEED = 1800;
+/** A hitched frame is animation catch-up, not extra drag distance. */
+const MAX_SCROLL_FRAME_MS = 50;
+
+function edgeScrollSpeed(distance: number): number {
+  return Math.min(
+    MAX_EDGE_SCROLL_SPEED,
+    distance * EDGE_SCROLL_SPEED_PER_PIXEL,
+  );
+}
+
+export function edgeScrollStep({
+  pointerY,
+  viewport,
+  elapsedMs,
+}: {
+  pointerY: number;
+  viewport: { top: number; bottom: number };
+  elapsedMs: number;
+}): number {
+  const topDistance = viewport.top + EDGE_SCROLL_ZONE - pointerY;
+  const bottomDistance = pointerY - (viewport.bottom - EDGE_SCROLL_ZONE);
+  const velocity =
+    topDistance > 0
+      ? -edgeScrollSpeed(topDistance)
+      : bottomDistance > 0
+        ? edgeScrollSpeed(bottomDistance)
+        : 0;
+  const frameMs = Math.min(MAX_SCROLL_FRAME_MS, Math.max(0, elapsedMs));
+  return (velocity * frameMs) / 1000;
+}
+
 export function useRectangleSelection() {
   const [rectangle, setRectangle] = useState<Rectangle | null>(null);
   const cancelRef = useRef<(() => void) | null>(null);
@@ -53,6 +87,7 @@ export function useRectangleSelection() {
     let dragging = false;
     let stopped = false;
     let frame = 0;
+    let lastFrame = performance.now();
     const pointerId = event.pointerId;
     grid.focus({ preventScroll: true });
     if (!additive) clearSaveSelection();
@@ -92,19 +127,19 @@ export function useRectangleSelection() {
         height: Math.max(0, bottom - top),
       });
     };
-    const tick = () => {
+    const tick = (now: number) => {
       if (stopped) return;
+      const elapsedMs = now - lastFrame;
+      lastFrame = now;
       if (dragging) {
         const viewport = parent.getBoundingClientRect();
-        const edge = 36;
-        const velocity =
-          pointer.y < viewport.top + edge
-            ? -Math.min(24, (viewport.top + edge - pointer.y) / 3)
-            : pointer.y > viewport.bottom - edge
-              ? Math.min(24, (pointer.y - viewport.bottom + edge) / 3)
-              : 0;
-        if (velocity) {
-          parent.scrollTop += velocity;
+        const scrollBy = edgeScrollStep({
+          pointerY: pointer.y,
+          viewport,
+          elapsedMs,
+        });
+        if (scrollBy) {
+          parent.scrollTop += scrollBy;
           update();
         }
       }
