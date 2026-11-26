@@ -5,7 +5,7 @@ import type { MediaUnit } from "@/features/saves/lib/media/units";
 import { thumbUrlFor } from "@/features/saves/lib/media/url";
 import { aspectCoverKey, recordAspect } from "@/features/saves/state/aspect";
 import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
-import { useMachineMotionPaused } from "@/shared/lib/use-machine-motion";
+import { useMachinePlaybackPaused } from "@/shared/lib/use-machine-motion";
 import { usePrefs } from "@/shared/state/prefs";
 import styles from "./styles.module.css";
 
@@ -24,6 +24,11 @@ function seekToStart(el: HTMLVideoElement) {
 
 /** Autoplay rejections are expected, and pausing before playback starts rejects `play()`. */
 function ignoreAutoplayRejection(): void {}
+
+/** The poster and video fill the same media well, whose hit target can be either sibling. */
+function mediaWellHovered(el: HTMLVideoElement): boolean {
+  return el.matches(":hover") || el.parentElement?.matches(":hover") === true;
+}
 
 export function HoverVideo({
   saveId,
@@ -49,13 +54,14 @@ export function HoverVideo({
   hasVideoDims?: boolean;
 }) {
   const [prefs] = usePrefs("viewer");
-  const motionPaused = useMachineMotionPaused();
+  const playbackPaused = useMachinePlaybackPaused();
   const hoverEnabled = prefs.hoverVideo !== false;
   const internalRef = useRef<HTMLVideoElement | null>(null);
   const releaseTimer = useRef<number | undefined>(undefined);
   const hoverTimer = useRef<number | undefined>(undefined);
   const [hoverPrimed, setHoverPrimed] = useState(false);
   const [active, setActive] = useState(false);
+  const [dragVetoed, setDragVetoed] = useState(false);
   const [videoReady, setVideoReady] = useState(false);
   const [posterBroken, setPosterBroken] = useState(false);
   const coverKey = aspectCoverKey(unit);
@@ -104,7 +110,7 @@ export function HoverVideo({
       if (document.hidden) pause();
       else if (document.hasFocus()) play();
     };
-    if (motionPaused) {
+    if (playbackPaused) {
       pause();
       return () => pause();
     }
@@ -118,7 +124,7 @@ export function HoverVideo({
       window.removeEventListener("focus", onVisibility);
       pause();
     };
-  }, [active, primed, hoverEnabled, motionPaused]);
+  }, [active, primed, hoverEnabled, playbackPaused]);
 
   useEffect(() => {
     if (primed) return;
@@ -139,7 +145,12 @@ export function HoverVideo({
   );
 
   const activate = useCallback(() => {
-    if (!hoverEnabled || document.body.dataset.saveDragging) return;
+    if (!hoverEnabled) return;
+    if (document.body.dataset.saveDragging) {
+      setDragVetoed(true);
+      return;
+    }
+    setDragVetoed(false);
     window.clearTimeout(releaseTimer.current);
     setActive(true);
     setHoverPrimed(true);
@@ -155,7 +166,36 @@ export function HoverVideo({
     }, HOVER_DELAY_MS);
   }, [activate, hoverEnabled]);
 
-  /** Enter fires once per hover, so a vetoed activation or a remount under a resting pointer never re-arms; movement does. */
+  /** Chromium does not fire mouseenter for an element inserted under a stationary pointer. */
+  useEffect(() => {
+    const el = internalRef.current;
+    if (!el || hoverTimer.current !== undefined || !mediaWellHovered(el)) {
+      return;
+    }
+    armHover();
+  }, [armHover, src, unit.key]);
+
+  useEffect(() => {
+    if (!dragVetoed) return;
+    const retry = (): void => {
+      if (document.body.dataset.saveDragging) return;
+      setDragVetoed(false);
+      if (active || hoverTimer.current !== undefined) return;
+      const el = internalRef.current;
+      if (!el || !mediaWellHovered(el)) return;
+      armHover();
+    };
+    retry();
+    if (!document.body.dataset.saveDragging) return;
+    const observer = new MutationObserver(retry);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ["data-save-dragging"],
+    });
+    return () => observer.disconnect();
+  }, [active, armHover, dragVetoed]);
+
+  /** Enter fires once per hover, so movement re-arms a missed or vetoed activation. */
   const onPointerMove = useCallback(() => {
     if (active || hoverTimer.current !== undefined) return;
     armHover();
@@ -164,6 +204,7 @@ export function HoverVideo({
   const onLeave = useCallback(() => {
     window.clearTimeout(hoverTimer.current);
     setActive(false);
+    setDragVetoed(false);
     window.clearTimeout(releaseTimer.current);
     releaseTimer.current = window.setTimeout(
       () => setHoverPrimed(false),

@@ -52,6 +52,11 @@ export function motionPaused(pace: MachinePace, now: number): boolean {
   );
 }
 
+/** Explicit playback pauses while Pond is hidden or unfocused, or while serious heat or its relief window is active. */
+export function playbackPaused(pace: MachinePace, now: number): boolean {
+  return pace.hidden || !pace.focused || thermalHot(pace, now);
+}
+
 /** Inference stops while the window is hidden or the Mac is hot. A background window still finishes work, more slowly. */
 export function enrichmentSuspended(pace: MachinePace, now: number): boolean {
   return (

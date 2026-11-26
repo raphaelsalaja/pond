@@ -84,6 +84,12 @@ it("plays on hover and ignores pointer movement while scrub on hover stays avail
   expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
 });
 
+async function settleMachinePace(): Promise<void> {
+  await act(async () => {
+    await Promise.resolve();
+  });
+}
+
 async function renderClip(posterUrl?: string): Promise<HTMLVideoElement> {
   await loadPrefs();
   await act(async () => {
@@ -100,6 +106,7 @@ async function renderClip(posterUrl?: string): Promise<HTMLVideoElement> {
   });
   const video = host.querySelector("video");
   if (!video) throw new Error("Missing hover video");
+  await settleMachinePace();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   return video;
 }
@@ -191,6 +198,48 @@ it("does not restart the hover delay when the pointer keeps moving", async () =>
   });
   expect(video.getAttribute("src")).toBe("pond://clip/video.mp4");
   expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+});
+
+it("plays explicit hover playback under fair heat", async () => {
+  const video = await renderClip("pond://clip/poster.jpg");
+  await act(async () => {
+    bridge.emit("onMachinePace", { thermal: "fair", onBattery: false });
+  });
+
+  await hover(video);
+
+  expect(video.getAttribute("src")).toBe("pond://clip/video.mp4");
+  expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+});
+
+it("does not play explicit hover playback under serious heat", async () => {
+  const video = await renderClip("pond://clip/poster.jpg");
+  await act(async () => {
+    bridge.emit("onMachinePace", { thermal: "serious", onBattery: false });
+  });
+
+  await hover(video);
+
+  expect(video.getAttribute("src")).toBe("pond://clip/video.mp4");
+  expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
+});
+
+it("pauses playback while the window is blurred and resumes on focus", async () => {
+  const video = await renderClip("pond://clip/poster.jpg");
+  await hover(video);
+  const play = vi.mocked(HTMLMediaElement.prototype.play);
+  const playsBeforeBlur = play.mock.calls.length;
+
+  await act(async () => {
+    window.dispatchEvent(new Event("blur"));
+  });
+  expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
+  expect(play.mock.calls).toHaveLength(playsBeforeBlur);
+
+  await act(async () => {
+    window.dispatchEvent(new Event("focus"));
+  });
+  expect(play.mock.calls.length).toBeGreaterThan(playsBeforeBlur);
 });
 
 it("releases the original after the pointer leaves a video with a poster", async () => {
