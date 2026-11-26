@@ -181,3 +181,16 @@ it("retries an empty scrape instead of calling the page deleted", async () => {
     ),
   ).rejects.toThrow(new TransientError("scrape returned no data"));
 });
+
+it("terminal-fails a harvest the source page reports as missing", async () => {
+  await expect(
+    captureFromSource(
+      {
+        url: "https://x.com/anyuser/status/1",
+        source: "twitter",
+        sourceId: "1",
+      },
+      { harvest: harvestOf({ ok: false, reason: "not_found" }) },
+    ),
+  ).rejects.toThrow(new TerminalError("page not found or no longer exists"));
+});

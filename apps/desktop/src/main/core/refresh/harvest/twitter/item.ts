@@ -6,7 +6,7 @@ import {
   draftFromDomHarvest,
   draftFromRichPost,
 } from "../../../capture/tweet-draft";
-import { parsePageBlob } from "../from-page";
+import { HARVEST_NOT_FOUND, parsePageBlob } from "../from-page";
 import type { HarvestAdaptCtx } from "../from-page";
 import { draftFromRichTweet } from "./draft";
 import { parseBookmarksResponses } from "./graphql";
@@ -45,27 +45,33 @@ export function buildExpression(tweetId: string): string {
   const normSrc = `(${inPageTwitterNormalize.toString()})()`;
   const ssrSrc = `(${inPageTwitterSsr.toString()})()`;
   const fnSrc = harvestSource();
+  const notFound = JSON.stringify(HARVEST_NOT_FOUND);
   return `(async () => {
     const norm = ${normSrc};
     const ssr = ${ssrSrc};
     const fn = ${fnSrc};
     const tweetId = ${JSON.stringify(tweetId)};
     const aboutPost = (b) => typeof b === 'string' && b.includes('"rest_id":"' + tweetId + '"');
-    const hooked = () => (globalThis.__pondTweetCaptures || []).map((c) => c && c.body).filter(aboutPost);
+    const tweetCaptures = () => globalThis.__pondTweetCaptures || [];
+    const hooked = () => tweetCaptures().map((c) => c && c.body).filter(aboutPost);
+    const missingPost = () => tweetCaptures().some((c) => c && (c.status === 404 || c.status === 410));
     /** x-web has no test ids to scrape, so prefer the post's GraphQL response the preload hook keeps. */
     const hookDeadline = Date.now() + 1_500;
     while (Date.now() < hookDeadline) {
+      if (missingPost()) return ${notFound};
       if (hooked().length > 0) return { tweetResponses: hooked() };
       await new Promise(r => setTimeout(r, 250));
     }
     /** A post page opened directly is server-rendered, so its responses only exist in the HTML. */
     try {
       const res = await fetch(location.href, { credentials: 'include' });
+      if (res.status === 404 || res.status === 410) return ${notFound};
       const bodies = res.ok ? ssr.ssrResponseBodies(await res.text()).filter(aboutPost) : [];
       if (bodies.length > 0) return { tweetResponses: bodies };
     } catch (e) {}
     const responseDeadline = Date.now() + 8_500;
     while (Date.now() < responseDeadline) {
+      if (missingPost()) return ${notFound};
       if (hooked().length > 0) return { tweetResponses: hooked() };
       await new Promise(r => setTimeout(r, 250));
     }

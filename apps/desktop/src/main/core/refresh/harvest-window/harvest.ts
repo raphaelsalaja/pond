@@ -7,6 +7,7 @@ import type { ReportDownloadActivity } from "@shared/download-activity";
 import log from "electron-log/main.js";
 import { partitionForIngest } from "../../sync/accounts";
 import { harvesterFor } from "../harvest";
+import { HarvestFailureSchema } from "../harvest/from-page";
 import { HARVEST_TIMEOUT_MS, NAV_TIMEOUT_MS } from "./constants";
 import {
   looksLikeAuthWall,
@@ -43,7 +44,12 @@ export interface HarvestResult {
   ok: boolean;
   capture?: Capture;
   sourceId?: string;
-  reason?: "navigate_failed" | "harvest_failed" | "auth_required" | "timeout";
+  reason?:
+    | "navigate_failed"
+    | "harvest_failed"
+    | "auth_required"
+    | "timeout"
+    | "not_found";
 }
 
 export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
@@ -98,6 +104,9 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
         navUrl,
       });
       return { ok: false, reason: "timeout", sourceId };
+    }
+    if (HarvestFailureSchema.safeParse(raw).success) {
+      return { ok: false, reason: "not_found", sourceId };
     }
 
     const capture = harv.adapt(isJsonValue(raw) ? raw : null, {
