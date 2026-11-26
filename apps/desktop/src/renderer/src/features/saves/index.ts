@@ -49,7 +49,9 @@ export {
 export { modeForNav, type SaveListMode } from "./lib/list";
 export { storedFileViewerKind } from "./lib/media/file-viewer";
 export {
+  buildSaveLinkItems,
   buildSaveMenu,
+  copyPondLinks,
   loadOpenWithApps,
   type OpenWithApp,
   openWith,

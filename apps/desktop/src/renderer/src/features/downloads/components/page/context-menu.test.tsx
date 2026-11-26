@@ -137,3 +137,28 @@ it("offers Open Save only for a finished download", () => {
     visible([row("complete"), row("failed")]).map((item) => item.label),
   ).not.toContain("Open Save");
 });
+
+it("copies every selected link and Pond links for finished downloads", () => {
+  bridge.use({
+    query: {
+      "clipboard.writeText": () => ({ ok: true }),
+      "saves.copyInternalLinks": () => ({ ok: true }),
+    },
+  });
+  const rows = [row("complete"), row("failed")];
+  const labels = visible(rows).map((item) => item.label);
+  expect(labels).toContain("Copy Links");
+  expect(labels).toContain("Copy Pond Link");
+
+  click(rows, "Copy Links");
+  expect(window.pond.query).toHaveBeenCalledWith("clipboard.writeText", {
+    text: "https://example.com/complete\nhttps://example.com/failed",
+  });
+  click(rows, "Copy Pond Link");
+  expect(window.pond.query).toHaveBeenCalledWith("saves.copyInternalLinks", {
+    ids: ["complete"],
+  });
+  expect(visible([row("failed")]).map((item) => item.label)).not.toContain(
+    "Copy Pond Link",
+  );
+});

@@ -24,8 +24,8 @@ import {
 import type { SavedView } from "@pond/schema/db";
 import { Chip } from "@pond/ui";
 import type { MenuItemSpec } from "@pond/ui";
-import { librarySavedViewLink } from "@shared/library-links";
 import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
+import { copySavedViewLink } from "@/features/library/lib/copy-links";
 import {
   combineQueries,
   groupMoveChoices,
@@ -323,13 +323,7 @@ export function entryItems({
     {
       label: "Copy Link",
       icon: <IconLink2 />,
-      onClick: () => {
-        void window.pond
-          .query("clipboard.writeText", {
-            text: librarySavedViewLink(window.pond.libraryId(), view.id),
-          })
-          .then(() => notify({ id: "saved-view-link", title: "Link copied" }));
-      },
+      onClick: () => copySavedViewLink(view.id),
     },
     {
       type: "submenu",

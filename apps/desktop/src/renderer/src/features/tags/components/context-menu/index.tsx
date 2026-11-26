@@ -1,6 +1,7 @@
 import {
   IconArrowRight as ArrowRight,
   IconBarsFilter as Filter,
+  IconCopy as Copy,
   IconFolder as Folder,
   IconMerge as Merge,
   IconPencil as Pencil,
@@ -14,8 +15,10 @@ import type { MenuItemSpec } from "@pond/ui";
 import type { ReactElement } from "react";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
+import { notify } from "@/shared/lib/toast";
 
 export interface TagMenuActions {
+  name: string;
   groups: Array<string>;
   mergeTargets: Array<string>;
   inGroup: string | null;
@@ -28,6 +31,12 @@ export interface TagMenuActions {
   onMerge: (tag: string) => void;
   onRename: () => void;
   onRemove: () => void;
+}
+
+function copyTagName(name: string): void {
+  void window.pond
+    .query("clipboard.writeText", { text: name })
+    .then(() => notify({ id: "copy-tag-name", title: "Tag name copied" }));
 }
 
 function groupItems(
@@ -68,6 +77,11 @@ export function buildTagMenuItems(a: TagMenuActions): Array<MenuItemSpec> {
       icon: <Pencil />,
       shortcut: shortcutGlyphs("tags.rename"),
       onClick: a.onRename,
+    },
+    {
+      label: "Copy Tag Name",
+      icon: <Copy />,
+      onClick: () => copyTagName(a.name),
     },
     {
       type: "submenu",

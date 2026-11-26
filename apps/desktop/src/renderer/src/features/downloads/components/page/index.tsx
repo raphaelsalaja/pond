@@ -46,6 +46,7 @@ import {
   useDownloadsFilters,
 } from "@/features/downloads/state/downloads-filters";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
+import { useCommandContext } from "@/features/library";
 import { useSaves } from "@/features/saves/pool";
 import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
@@ -59,6 +60,7 @@ import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { useDownloadActivity } from "../../hooks/use-download-activity";
 import { useSourceGates } from "../../hooks/use-source-gates";
 import { transferActive, transferToDownloadRow } from "../../lib/transfer-rows";
+import { buildDownloadMenuItems } from "./context-menu";
 import { DownloadOptionsMenu } from "./options";
 import { DownloadSelectionBar } from "./selection-bar";
 import { TRANSFER_JOBS_KEY } from "./transfer-menu";
@@ -161,6 +163,13 @@ export function DownloadsPage() {
     );
   }, [rows, visibleCompleted]);
   useEffect(() => () => downloadsSelection.clear(), []);
+  const selectedCount = downloadsSelection.useSize();
+  useCommandContext(
+    "Selected Downloads",
+    selectedCount > 0
+      ? () => buildDownloadMenuItems(downloadsSelection.snapshot())
+      : null,
+  );
 
   const pipeline = useQuery({
     queryKey: ["pipeline.status"],

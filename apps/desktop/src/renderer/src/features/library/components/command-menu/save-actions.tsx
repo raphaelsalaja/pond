@@ -9,9 +9,10 @@ import type { MenuEntry } from "./types";
 
 /** Right-click selects the Save first; the menu does the same so selection-based actions like Add Tags hit it. */
 function onSave(entry: MenuEntry, focus: () => void): MenuEntry {
-  const { run, page } = entry;
+  const { run, page, nested } = entry;
   return {
     ...entry,
+    nested: nested?.map((child) => onSave(child, focus)),
     run:
       run &&
       (() => {

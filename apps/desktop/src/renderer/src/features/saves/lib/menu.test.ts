@@ -271,17 +271,18 @@ describe("buildSaveMenu", () => {
     expect(topLevelLabels(detailCopyItems)).toEqual([
       "Copy Name",
       "Copy",
+      "Copy URL",
       "Copy Prompt",
       "Copy File Path",
     ]);
     expect(visibleLabels(detailCopyItems)).toEqual([
       "Copy Name",
       "Copy",
+      "Copy URL",
       "Copy Prompt",
       "Copy File Path",
       "Copy as Base64",
       "Copy Pond Link",
-      "Copy URL",
     ]);
     const copyIcons = visibleLeafItems(detailCopyItems).map((item) =>
       "icon" in item && isValidElement(item.icon) ? item.icon.type : null,
@@ -574,6 +575,7 @@ describe("buildSaveMenu", () => {
       "Merge Duplicates",
       "Copy Name",
       "Copy",
+      "Copy URL",
       "Copy Prompt",
       "Copy File Path",
       "Copy Options",

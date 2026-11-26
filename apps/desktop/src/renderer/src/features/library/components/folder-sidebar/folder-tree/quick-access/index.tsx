@@ -12,6 +12,7 @@ import { FolderIcon, folderColorCss } from "@/shared/lib/folder-icons";
 import type { LibraryNav } from "@/shared/lib/library-nav";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../../../hooks/use-organization-tree";
+import { copySavedViewLink } from "../../../../lib/copy-links";
 import {
   combineQueries,
   inheritedQueryFor,
@@ -199,6 +200,10 @@ export function QuickAccess({
                             : "Smart Folder"
                       }`,
                       onClick: () => savedViews.select(view.id),
+                    },
+                    {
+                      label: "Copy Link",
+                      onClick: () => copySavedViewLink(view.id),
                     },
                     {
                       label: "Remove from Quick Access",
