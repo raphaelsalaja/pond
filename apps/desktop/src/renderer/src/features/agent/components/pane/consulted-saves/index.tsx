@@ -7,7 +7,7 @@ import { pickPrimaryFile } from "@/features/saves/media";
 import { openSave } from "@/features/saves/navigation";
 import { useSave } from "@/features/saves/pool";
 import { formatAbsolute } from "@/shared/lib/format";
-import { SourceThumbnail, useSourceCovers } from "../save-preview";
+import { SaveMenu, SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
 export interface ReferenceItem {
@@ -142,9 +142,16 @@ export function ConsultedSaves({
     <article key={item.id} className={styles.row} data-hover-row="">
       <Popover.Root>
         <Popover.Trigger
-          render={
-            <Button variant="bare" width="full" className={styles.open} />
-          }
+          render={(props) => (
+            <SaveMenu id={item.id}>
+              <Button
+                {...props}
+                variant="bare"
+                width="full"
+                className={styles.open}
+              />
+            </SaveMenu>
+          )}
           aria-label={`Preview ${item.title}`}
         >
           <span className={styles.media}>{item.media}</span>

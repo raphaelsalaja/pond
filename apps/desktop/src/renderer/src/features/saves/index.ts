@@ -9,7 +9,10 @@ export { useSaveCardModel } from "./components/card/model";
 export { Card } from "./components/card/parts";
 export { SaveTile } from "./components/card/tile";
 export type { LibraryCardView } from "./components/card/types";
-export { SaveCollectionContextMenu } from "./components/context-menu";
+export {
+  SaveCollectionContextMenu,
+  SaveContextMenu,
+} from "./components/context-menu";
 export {
   FolderMenu,
   type FolderMenuItem,

@@ -3,8 +3,14 @@ import { Button } from "@pond/ui";
 import type { AssistantSource } from "@shared/assistant";
 import { sourceExcerpt } from "@shared/assistant-text";
 import log from "electron-log/renderer";
-import type { ComponentProps, CSSProperties, ReactNode } from "react";
+import type {
+  ComponentProps,
+  CSSProperties,
+  ReactElement,
+  ReactNode,
+} from "react";
 import { useEffect, useMemo, useState } from "react";
+import { SaveContextMenu } from "@/features/saves";
 import {
   aspectFor,
   clampRatio,
@@ -121,6 +127,22 @@ export function SourceThumbnail({
   );
 }
 
+/** The Save menu on a right-click, once the Save has loaded; until then the reference only opens it. */
+export function SaveMenu({
+  id,
+  children,
+}: {
+  id: string;
+  children: ReactElement;
+}) {
+  const save = useSave(id);
+  return save ? (
+    <SaveContextMenu save={save}>{children}</SaveContextMenu>
+  ) : (
+    children
+  );
+}
+
 /** An inline reference in running text: a small picture or icon, then an underlined name. */
 export function InlineReference({
   media,
@@ -162,13 +184,15 @@ export function SaveReference({
   onOpenSave: (id: string) => void;
 }) {
   return (
-    <InlineReference
-      media={<SourceThumbnail id={id} size="compact" />}
-      label={title}
-      title={fullTitle}
-      aria-label={`Open ${fullTitle}`}
-      onClick={() => onOpenSave(id)}
-    />
+    <SaveMenu id={id}>
+      <InlineReference
+        media={<SourceThumbnail id={id} size="compact" />}
+        label={title}
+        title={fullTitle}
+        aria-label={`Open ${fullTitle}`}
+        onClick={() => onOpenSave(id)}
+      />
+    </SaveMenu>
   );
 }
 
@@ -194,29 +218,33 @@ export function SaveCitation({
   };
   if (compact) {
     return (
-      <Button
-        type="button"
-        variant="bare"
-        className={styles.citation}
+      <SaveMenu id={source.id}>
+        <Button
+          type="button"
+          variant="bare"
+          className={styles.citation}
+          data-citation=""
+          aria-label={`Open source ${reference}: ${title}`}
+          onClick={() => onOpenSave(source.id)}
+          title={`Open ${title}`}
+          {...hover}
+        >
+          <span>{reference}</span>
+        </Button>
+      </SaveMenu>
+    );
+  }
+  return (
+    <SaveMenu id={source.id}>
+      <InlineReference
         data-citation=""
+        media={<SourceThumbnail id={source.id} size="compact" />}
+        label={title}
         aria-label={`Open source ${reference}: ${title}`}
         onClick={() => onOpenSave(source.id)}
         title={`Open ${title}`}
         {...hover}
-      >
-        <span>{reference}</span>
-      </Button>
-    );
-  }
-  return (
-    <InlineReference
-      data-citation=""
-      media={<SourceThumbnail id={source.id} size="compact" />}
-      label={title}
-      aria-label={`Open source ${reference}: ${title}`}
-      onClick={() => onOpenSave(source.id)}
-      title={`Open ${title}`}
-      {...hover}
-    />
+      />
+    </SaveMenu>
   );
 }
