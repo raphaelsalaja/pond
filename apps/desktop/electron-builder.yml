@@ -260,8 +260,8 @@ linux:
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg
       to: bin/ffmpeg
-    # ffprobe-static ships no linux/arm64, so ${arch} fails the pack loudly instead of shipping the wrong binary.
-    - from: node_modules/ffprobe-static/bin/linux/${arch}/ffprobe
+    # scripts/dist-linux.mjs fetches it, because ffprobe-static ships no linux/arm64.
+    - from: vendor/ffmpeg/linux-${arch}/ffprobe
       to: bin/ffprobe
   desktop:
     entry:
