@@ -24,6 +24,7 @@ void test("classifies desktop setup steps by runtime requirement", () => {
       ["prepare-dock-icons.mjs", false],
       ["patch-electron-name.mjs", false],
       ["copy-replay-assets.mjs", true],
+      ["fetch-mac-ffmpeg.mjs", false],
       ["build-native-host.mjs", process.platform === "darwin"],
     ],
   );

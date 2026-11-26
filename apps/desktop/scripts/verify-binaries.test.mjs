@@ -86,6 +86,7 @@ void describe("verifyMacSlices", () => {
   void it("accepts universal and matching helpers", () => {
     const read = slices({
       ffmpeg: ["x86_64"],
+      ffprobe: ["x86_64"],
       "pond-native-host": ["x86_64", "arm64"],
     });
     assert.doesNotThrow(() => verifyMacSlices("/res", "x64", read));
@@ -94,6 +95,7 @@ void describe("verifyMacSlices", () => {
   void it("fails an Intel build that ships an Apple silicon native host", () => {
     const read = slices({
       ffmpeg: ["x86_64"],
+      ffprobe: ["x86_64"],
       "pond-native-host": ["arm64"],
     });
     assert.throws(
@@ -105,11 +107,24 @@ void describe("verifyMacSlices", () => {
   void it("fails an Intel build that ships Apple silicon ffmpeg", () => {
     const read = slices({
       ffmpeg: ["arm64"],
+      ffprobe: ["x86_64"],
       "pond-native-host": ["x86_64", "arm64"],
     });
     assert.throws(
       () => verifyMacSlices("/res", "x64", read),
       /ffmpeg .* missing x86_64/,
+    );
+  });
+
+  void it("fails when ffprobe has the wrong architecture", () => {
+    const read = slices({
+      ffmpeg: ["x86_64"],
+      ffprobe: ["arm64"],
+      "pond-native-host": ["x86_64", "arm64"],
+    });
+    assert.throws(
+      () => verifyMacSlices("/res", "x64", read),
+      /ffprobe .* missing x86_64/,
     );
   });
 });

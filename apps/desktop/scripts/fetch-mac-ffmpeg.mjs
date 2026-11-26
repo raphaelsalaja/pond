@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-/** Fetches ffmpeg for both Mac architectures; ffmpeg-static installs only the runner's. */
+/** Fetches ffmpeg and ffprobe for both Mac architectures; ffmpeg-static installs only the runner's. */
 
 import { spawnSync } from "node:child_process";
 import {
@@ -29,20 +29,25 @@ const ARCHS = [
 if (process.platform !== "darwin") process.exit(0);
 
 for (const { arch, slice } of ARCHS) {
-  const dir = resolve(root, "vendor/ffmpeg", `darwin-${arch}`);
-  const binary = join(dir, "ffmpeg");
-  const marker = join(dir, "release");
-  if (readText(marker) === release && hasSlice(binary, slice)) continue;
+  for (const tool of ["ffmpeg", "ffprobe"]) {
+    const dir = resolve(root, "vendor/ffmpeg", `darwin-${arch}`);
+    const binary = join(dir, tool);
+    const marker = join(dir, `${tool}-release`);
+    if (readText(marker) === release && hasSlice(binary, slice)) continue;
 
-  const url = `https://github.com/eugeneware/ffmpeg-static/releases/download/${release}/ffmpeg-darwin-${arch}.gz`;
-  const response = await fetch(url);
-  if (!response.ok) fail(`${url} answered ${response.status}`);
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(binary, gunzipSync(Buffer.from(await response.arrayBuffer())));
-  chmodSync(binary, 0o755);
-  if (!hasSlice(binary, slice)) fail(`${binary} has no ${slice} slice`);
-  writeFileSync(marker, release);
-  console.log(`[pond] ffmpeg ${release} darwin-${arch} ok`);
+    const url = `https://github.com/eugeneware/ffmpeg-static/releases/download/${release}/${tool}-darwin-${arch}.gz`;
+    const response = await fetch(url);
+    if (!response.ok) fail(`${url} answered ${response.status}`);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      binary,
+      gunzipSync(Buffer.from(await response.arrayBuffer())),
+    );
+    chmodSync(binary, 0o755);
+    if (!hasSlice(binary, slice)) fail(`${binary} has no ${slice} slice`);
+    writeFileSync(marker, release);
+    console.log(`[pond] ${tool} ${release} darwin-${arch} ok`);
+  }
 }
 
 function readText(path) {
@@ -58,6 +63,6 @@ function hasSlice(path, slice) {
 }
 
 function fail(message) {
-  console.error(`[pond] ffmpeg fetch failed: ${message}`);
+  console.error(`[pond] av binary fetch failed: ${message}`);
   process.exit(1);
 }

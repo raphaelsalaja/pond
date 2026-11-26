@@ -42,6 +42,12 @@ export const SETUP_STEPS = Object.freeze([
     required: true,
   },
   {
+    name: "Mac ffmpeg and ffprobe binaries",
+    script: "fetch-mac-ffmpeg.mjs",
+    // Network-dependent and only needed for video downloads in dev; packaging runs it again in dist.
+    required: false,
+  },
+  {
     name: "browser native host",
     script: "build-native-host.mjs",
     // Every release platform except macOS needs an extra toolchain (MSVC on
