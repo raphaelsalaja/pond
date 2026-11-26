@@ -11,10 +11,10 @@ function file(
   return { path, kind, mimeType, sha256, size: 1 };
 }
 
-function save(files: Array<SaveFile>): Save {
+function save(files: Array<SaveFile>, source: Save["source"] = "local"): Save {
   return {
     id: "viewer-items",
-    source: "local",
+    source,
     sourceId: "viewer-items",
     url: "https://example.test/viewer-items",
     title: "Viewer items",
@@ -58,6 +58,40 @@ describe("buildViewerItems", () => {
     expect(items[2]?.posterUrl).toBe(
       "pond://viewer-items/poster.jpg?v=222222222222",
     );
+  });
+
+  it("marks a YouTube platform poster as cross-file", () => {
+    const items = buildViewerItems(
+      save(
+        [
+          file("movie.mp4", "video", "video/mp4"),
+          file("poster.jpg", "poster", "image/jpeg", "222222222222bbbb"),
+        ],
+        "youtube",
+      ),
+    );
+
+    expect(items[0]).toMatchObject({
+      posterUrl: "pond://viewer-items/poster.jpg?v=222222222222",
+      posterIsCrossFile: true,
+    });
+  });
+
+  it("keeps a non-YouTube first-frame poster same-file", () => {
+    const items = buildViewerItems(
+      save(
+        [
+          file("movie.mp4", "video", "video/mp4"),
+          file("poster.jpg", "poster", "image/jpeg", "222222222222bbbb"),
+        ],
+        "twitter",
+      ),
+    );
+
+    expect(items[0]?.posterUrl).toBe(
+      "pond://viewer-items/poster.jpg?v=222222222222",
+    );
+    expect(items[0]?.posterIsCrossFile).toBeUndefined();
   });
 
   it("does not discard unsupported originals", () => {

@@ -12,6 +12,7 @@ import {
   ViewerChrome,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
 import { savePrefsSection } from "@/shared/state/prefs";
 import { bridge } from "@/shared/test/pond-bridge";
 import { VideoPlayer } from "./";
@@ -442,6 +443,28 @@ it("shows the video over the poster once the first frame loads", async () => {
 
   expect(poster()?.hasAttribute("data-covered")).toBe(true);
   expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(false);
+});
+
+it("keeps a cross-file poster out of the start and end surfaces even with a card thumbnail", async () => {
+  const src = "pond://test/youtube-cross-file.mp4";
+  const poster = "pond://test/youtube-platform-poster.jpg";
+  rememberCardThumbnail(src, poster);
+  await act(async () => {
+    root.render(
+      <ViewerChrome>
+        <VideoPlayer src={src} poster={poster} posterIsCrossFile />
+      </ViewerChrome>,
+    );
+  });
+
+  expect(host.querySelector(`img[src="${poster}"]`)).toBeNull();
+
+  const video = host.querySelector("video");
+  if (!video) throw new Error("Missing video");
+  Object.defineProperty(video, "ended", { configurable: true, value: true });
+  await act(async () => video.dispatchEvent(new Event("ended")));
+
+  expect(host.querySelector(`img[src="${poster}"]`)).toBeNull();
 });
 
 it("holds the poster until a video frame is presented", async () => {

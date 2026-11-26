@@ -1,3 +1,4 @@
+import { posterIsCrossFile } from "@shared/poster-policy";
 import {
   ARTICLE_KIND,
   isAuxiliaryKind,
@@ -20,6 +21,8 @@ export interface ViewerItem {
   url: string;
   capability: ViewerCapability;
   posterUrl?: string;
+  /** Cross-file posters are covers, not frames; the viewer must not paint them as video frames. */
+  posterIsCrossFile?: boolean;
 }
 
 interface ViewerItemOptions {
@@ -47,7 +50,12 @@ export function buildViewerItems(
     if (capability.surface === "temporal") {
       const poster = posters[videoIndex] ?? posters[0];
       videoIndex += 1;
-      if (poster) item.posterUrl = buildPondUrl(save.id, poster);
+      if (poster) {
+        item.posterUrl = buildPondUrl(save.id, poster);
+        if (posterIsCrossFile(poster, save.source)) {
+          item.posterIsCrossFile = true;
+        }
+      }
     }
 
     return [item];
