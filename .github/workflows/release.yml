@@ -172,7 +172,7 @@ jobs:
         run: pnpm --filter @pond/ui exec playwright install chromium
 
       - name: Verify workspace
-        run: pnpm check
+        run: pnpm exec turbo run lint:repo architecture:check:repo knip:repo generate:check typecheck
 
       - name: Build workspace
         run: pnpm build
