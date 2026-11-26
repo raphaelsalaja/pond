@@ -30,6 +30,8 @@ export const SETUP_STEPS = Object.freeze([
     name: "Dock icon preparation",
     script: "prepare-dock-icons.mjs",
     required: false,
+    // `pnpm build` writes these again, so CI installs that never package skip them.
+    skipEnv: "POND_SKIP_DOCK_ICONS",
   },
   {
     name: "development Electron branding",
@@ -80,8 +82,14 @@ export function runSetup({
   steps = SETUP_STEPS,
   run = runScript,
   warn = console.warn,
+  log = console.log,
+  env = process.env,
 } = {}) {
   for (const step of steps) {
+    if (step.skipEnv && env[step.skipEnv] === "1") {
+      log(`[pond] skipped ${step.name} (${step.skipEnv}=1)`);
+      continue;
+    }
     try {
       run(step);
     } catch (error) {

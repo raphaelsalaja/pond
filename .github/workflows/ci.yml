@@ -12,6 +12,8 @@ concurrency:
 
 permissions:
   contents: read
+  # Turborepo Remote Cache exchanges a GitHub OIDC token for a short-lived token.
+  id-token: write
 
 jobs:
   lint:
@@ -23,6 +25,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           turbo-cache: lint
+          turbo-team: ${{ vars.TURBO_TEAM }}
 
       - name: Generated files are up to date
         run: pnpm generate && git diff --exit-code
@@ -42,6 +45,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           turbo-cache: typecheck
+          turbo-team: ${{ vars.TURBO_TEAM }}
 
       - name: Typecheck
         run: pnpm exec turbo run typecheck
@@ -65,6 +69,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           turbo-cache: test
+          turbo-team: ${{ vars.TURBO_TEAM }}
 
       - name: Install browser for UI tests
         run: pnpm --filter @pond/ui exec playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium
@@ -99,6 +104,7 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           turbo-cache: desktop-test-${{ matrix.shard }}
+          turbo-team: ${{ vars.TURBO_TEAM }}
 
       - name: Install Chromium for browser tests
         run: pnpm --filter @pond/desktop exec playwright install ${{ runner.os == 'Linux' && '--with-deps' || '' }} chromium

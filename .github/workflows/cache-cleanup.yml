@@ -1,0 +1,56 @@
+name: Cache Cleanup
+
+# Keeps the GitHub Actions cache under its 10 GB limit, so GitHub doesn't
+# evict the pnpm stores that CI is still using. Each pnpm store is close to
+# 1 GB per runner, and a lockfile change or a pull request writes a new one.
+
+on:
+  # pull_request_target also runs for fork pull requests, whose token can't
+  # delete caches. It checks out nothing and runs no pull request code.
+  pull_request_target:
+    types: [closed]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || 'main' }}
+
+permissions:
+  actions: write
+
+jobs:
+  pull-request:
+    if: github.event_name == 'pull_request_target'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete the closed pull request's caches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REF: refs/pull/${{ github.event.pull_request.number }}/merge
+        run: gh cache delete --all --ref "$REF" --succeed-on-no-caches
+
+  main:
+    if: github.event_name != 'pull_request_target'
+    runs-on: ubuntu-latest
+
+    steps:
+      # A key ends in a lockfile hash or a commit. Entries sharing the rest of
+      # the key replace one another, so only the most recently used is kept.
+      - name: Delete superseded caches on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh cache list --ref refs/heads/main --limit 1000 --json id,key,lastAccessedAt \
+            --jq 'group_by(.key | sub("-[^-]+$"; ""))
+              | map(sort_by(.lastAccessedAt) | reverse | .[1:][])
+              | .[] | "\(.id) \(.key)"' \
+            | while read -r id key; do
+                echo "Deleting $key"
+                gh cache delete "$id"
+              done
