@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useFolders } from "@/features/library/state/folders";
 import { useIncludeSubfolders } from "@/features/library/state/view-store";
 import { descendantFolderIds } from "@/features/saves";
+import { onSyncRefetch } from "@/shared/lib/sync-refetch";
 
 /** Counts the open Folder's saves still downloading, over the same subfolder scope as its contents. */
 export function useFolderDownloading(folderId: string | null): number {
@@ -22,31 +23,31 @@ export function useFolderDownloading(folderId: string | null): number {
       return;
     }
     let active = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     const refresh = async () => {
       try {
         const next = await window.pond.query("folders.downloading", {
           folderIds: ids,
         });
         if (active) {
-          setCounted({ key, count: next.count });
+          setCounted((previous) =>
+            previous.key === key && previous.count === next.count
+              ? previous
+              : { key, count: next.count },
+          );
         }
       } catch (cause) {
         log.warn("[pond] folder downloading count failed", cause);
       }
     };
     void refresh();
-    const off = window.pond.onSyncAction(() => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = undefined;
-        void refresh();
-      }, 500);
+    const off = onSyncRefetch({
+      models: ["save", "save_folder", "folder"],
+      delayMs: 500,
+      run: refresh,
     });
     return () => {
       active = false;
       off();
-      if (timer) clearTimeout(timer);
     };
   }, [key]);
   return counted.key === key ? counted.count : 0;

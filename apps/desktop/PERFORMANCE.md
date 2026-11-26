@@ -60,6 +60,19 @@ Process memory snapshots are bytes from `process.memoryUsage()`, not peaks or
 retained-memory measurements. GC is not forced. RSS/heap/external allocations in a
 test worker do not represent the complete Electron app, GPU, or all native memory.
 
+### Wide-row counts
+
+`src/main/core/sidebar-counts-benchmark.test.ts` seeds 20k and 50k Saves whose rows carry
+raw JSON and two 768-dimension embeddings, as real Libraries do, then times sidebar counts,
+first and next Library pages, an Inbox page, and an Account count. Run it with the native
+command above (`POND_BENCH_LIBRARY=1`, Electron Node mode). Each line is one JSON record with
+p50/p95 milliseconds over 15 samples after 3 warm-ups.
+
+Narrow rows hide this cost: a count that reads `status`, `deleted_at` or `saved_at` from the
+table walks every row's overflow pages. `saves_live_idx` and `saves_live_account_idx` keep
+those counts and the default page order on narrow indexes; `library-query.test.ts` checks
+the plans with and without `ANALYZE` statistics.
+
 ## Render budgets
 
 Render budget tests assert which components re-render after an interaction. They
@@ -98,7 +111,7 @@ rendered, not the number of commits.
    overhead directly with production.
 3. Capture startup only after an approved restart. Retain existing
    `[pond startup]` milestones (modules-loaded, app-ready, window-created,
-   window-shown, renderer-ready). Separately mark first usable Library: visible
+   index-open, window-shown, renderer-ready). Separately mark first usable Library: visible
    populated results and an input responding. Renderer-ready is not proof of
    usability. Label fresh-process versus warm-process, OS disk cache state
    (unknown unless controlled), and model state. Do not claim in-memory seeding

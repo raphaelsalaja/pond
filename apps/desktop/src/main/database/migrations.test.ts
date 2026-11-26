@@ -198,6 +198,52 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
     }
   });
 
+  it("rebuilds search rows on Save rowids so edits and deletes touch one row", () => {
+    const db = new Database(":memory:");
+    try {
+      migratePond(db);
+      const insert = db.prepare(
+        "INSERT INTO saves (id, source, source_id, url, title) VALUES (?, 'web', ?, 'https://example.com/', ?)",
+      );
+      insert.run("a", "a", "alpha");
+      insert.run("b", "b", "bravo");
+      /** An older index: id-keyed triggers and search rows with their own rowids. */
+      db.exec(`
+        DROP TRIGGER saves_ai; DROP TRIGGER saves_ad; DROP TRIGGER saves_au;
+        DELETE FROM saves_fts;
+        INSERT INTO saves_fts(rowid, id, title) VALUES (10, 'b', 'bravo'), (11, 'a', 'alpha');
+        CREATE TRIGGER saves_ad AFTER DELETE ON saves BEGIN
+          DELETE FROM saves_fts WHERE id = old.id;
+        END;
+      `);
+
+      migratePond(db);
+      migratePond(db);
+
+      const rows = (sql: string) =>
+        db
+          .prepare(sql)
+          .all()
+          .map((row) => z.object({ id: z.string() }).parse(row).id);
+      expect(
+        rows(
+          "SELECT saves.id FROM saves JOIN saves_fts ON saves_fts.rowid = saves.rowid AND saves_fts.id = saves.id ORDER BY saves.id",
+        ),
+      ).toEqual(["a", "b"]);
+      db.prepare("UPDATE saves SET title = 'charlie' WHERE id = 'a'").run();
+      db.prepare("DELETE FROM saves WHERE id = 'b'").run();
+      expect(
+        rows("SELECT id FROM saves_fts WHERE saves_fts MATCH 'charlie'"),
+      ).toEqual(["a"]);
+      expect(
+        rows("SELECT id FROM saves_fts WHERE saves_fts MATCH 'alpha OR bravo'"),
+      ).toEqual([]);
+      expect(rows("SELECT id FROM saves_fts")).toEqual(["a"]);
+    } finally {
+      db.close();
+    }
+  });
+
   describe("on a library file", () => {
     let root = "";
     let created: Database.Database | null = null;

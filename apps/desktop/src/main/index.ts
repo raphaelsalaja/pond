@@ -368,6 +368,18 @@ void app
       trayEnabled: launchPrefs?.quickCapture.menuBarIcon !== false,
     });
     if (shouldOpenInitialWindow(launchedHidden, initialDestination)) {
+      /**
+       * Open the index while the renderer parses and runs its bundle; its first queries wait on it.
+       * The open is synchronous on this thread, so it starts once the window has shown its boot
+       * screen rather than holding up `ready-to-show`.
+       */
+      app.once("browser-window-created", (_event, win) => {
+        win.once("ready-to-show", () => {
+          getDb().catch((cause: unknown) => {
+            log.warn("[pond] early index open failed; retrying", cause);
+          });
+        });
+      });
       await createWindow();
     } else {
       void settleDockAfterClose();

@@ -1,15 +1,25 @@
+import { saves } from "@pond/schema/db";
 import { EMPTY_QUERY } from "@pond/schema/filters";
 import Database from "better-sqlite3";
+import { count, desc } from "drizzle-orm";
+import type { SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { z } from "zod";
 import type { LibraryQueryRequest } from "../../shared/library-query";
 import { recentlyAddedSince } from "../../shared/recently-added";
 import { eventTables, libraryTables } from "../database/tables";
 import { initializePondSchema } from "../db";
 import { queryFolderSummaries } from "./folder-summaries";
-import { queryLibraryIds, queryLibraryPage } from "./library-query";
+import {
+  libraryQueryWhere,
+  queryLibraryIds,
+  queryLibraryPage,
+} from "./library-query";
 import { querySidebarCounts } from "./sidebar-counts";
 import { countSplitPosts, querySplitPosts } from "./split-posts";
+import { syncBaselineWhere } from "./sync/sync-baseline";
 
 function nativeAvailable() {
   try {
@@ -200,6 +210,44 @@ describe.skipIf(!nativeAvailable())("authoritative library query", () => {
       folders: { all: 1199 },
       foldersDownloading: {},
     });
+  });
+  it("reads live counts, the default page order and Account counts from narrow indexes", () => {
+    const { db, sqlite } = setup();
+    const plan = (query: SQL) => {
+      const compiled = new SQLiteSyncDialect().sqlToQuery(query);
+      return sqlite
+        .prepare(`explain query plan ${compiled.sql}`)
+        .all(...compiled.params)
+        .map((row) => z.object({ detail: z.string() }).parse(row).detail)
+        .join("\n");
+    };
+    const live = libraryQueryWhere({ query: EMPTY_QUERY });
+    for (const analyzed of [false, true]) {
+      if (analyzed) sqlite.exec("analyze");
+      const counted = plan(
+        db.select({ n: count() }).from(saves).where(live).getSQL(),
+      );
+      expect(counted).toContain("COVERING INDEX saves_live_idx");
+      const ordered = plan(
+        db
+          .select({ id: saves.id })
+          .from(saves)
+          .where(live)
+          .orderBy(desc(saves.savedAt), desc(saves.id))
+          .limit(251)
+          .getSQL(),
+      );
+      expect(ordered).toContain("saves_live_idx");
+      expect(ordered).not.toContain("TEMP B-TREE");
+      const account = plan(
+        db
+          .select({ n: count() })
+          .from(saves)
+          .where(syncBaselineWhere({ id: "account", source: "twitter" }))
+          .getSQL(),
+      );
+      expect(account).toContain("COVERING INDEX saves_live_account_idx");
+    }
   });
   it("groups split posts and pages one post in post order", async () => {
     const { db, sqlite } = setup();

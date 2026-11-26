@@ -45,6 +45,7 @@ import {
   heartbeatTaskLease,
   ingestLeaseStillRunnable,
   recoverExpiredLeases,
+  releaseWebHostWaiter,
   sweepOrphanTasks,
   sweepTasklessIngestingSaves,
   TASK_LEASE_MS,
@@ -607,6 +608,14 @@ async function dispatchTask(task: DueTask): Promise<void> {
       }),
     );
     void track(commitEvent(ev));
+    if (task.source === "web") {
+      await releaseWebHostWaiter(task).catch((cause: unknown) =>
+        log.warn(
+          "[pond pipeline:reconciler] host waiter release failed",
+          cause,
+        ),
+      );
+    }
     kickReconciler();
   }
 }

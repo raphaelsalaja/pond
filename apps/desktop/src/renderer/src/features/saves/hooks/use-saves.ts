@@ -23,6 +23,22 @@ export function useSaves(): ReadonlyArray<Save> {
   return useSelector(savesStore, (s) => s.sorted);
 }
 
+/**
+ * The pooled rows for these IDs, in order, skipping any not loaded. Unlike `useSaves`, a write
+ * to another Save neither re-renders the reader nor makes it scan the whole pool.
+ */
+export function useSavesById(ids: ReadonlyArray<string>): Array<Save> {
+  return useSelector(
+    savesStore,
+    (s) =>
+      ids.flatMap((id) => {
+        const save = s.byId.get(id);
+        return save ? [save] : [];
+      }),
+    { compare: shallow },
+  );
+}
+
 /** The pool total can lag a sync insert, so a live Save in the pool also counts. */
 export function useLibraryEmpty(): boolean {
   const settled = useSelector(

@@ -2,6 +2,7 @@ import { IconChevronRight } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
 import { Button, Menu } from "@pond/ui";
 import type { FolderSummary } from "@shared/folder-contracts";
+import { dequal } from "dequal/lite";
 import log from "electron-log/renderer";
 import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
@@ -30,6 +31,7 @@ import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { FolderIcon } from "@/shared/lib/folder-icons";
 import type { FolderIconId } from "@/shared/lib/folder-icons";
 import { formatNumber, formatPlural } from "@/shared/lib/format";
+import { onSyncRefetch } from "@/shared/lib/sync-refetch";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
 import { openOrganizationRenameDialog } from "../../state/organization-rename-dialog";
@@ -272,7 +274,7 @@ export function FolderBrowser({
       try {
         const next = await window.pond.query("folders.summaries", { parentId });
         if (!active) return;
-        setSummaries(next);
+        setSummaries((previous) => (dequal(previous, next) ? previous : next));
         const summaryById = new Map(
           next.map((summary) => [summary.id, summary]),
         );
@@ -289,14 +291,10 @@ export function FolderBrowser({
       }
     };
     void load();
-    const unsubscribe = window.pond.onSyncAction((event) => {
-      if (
-        event.modelName === "folder" ||
-        event.modelName === "save_folder" ||
-        event.modelName === "save"
-      ) {
-        void load();
-      }
+    const unsubscribe = onSyncRefetch({
+      models: ["folder", "save_folder", "save"],
+      delayMs: 150,
+      run: load,
     });
     return () => {
       active = false;

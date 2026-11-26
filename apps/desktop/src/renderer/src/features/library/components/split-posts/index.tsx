@@ -16,6 +16,7 @@ import { MatchesEmpty } from "@/shared/components/matches-empty";
 import { SearchChrome } from "@/shared/components/search-chrome";
 import { useResolvedTheme } from "@/shared/hooks/use-resolved-theme";
 import { formatPlural } from "@/shared/lib/format";
+import { onSyncRefetch } from "@/shared/lib/sync-refetch";
 import { usePrefs } from "@/shared/state/prefs";
 import { SplitPostsIntro } from "./intro";
 import styles from "./styles.module.css";
@@ -78,8 +79,12 @@ export function SplitPostsPage() {
 
   useEffect(
     () =>
-      window.pond.onSyncAction((event) => {
-        if (event.modelName === "save") void refetch();
+      onSyncRefetch({
+        models: ["save"],
+        delayMs: 250,
+        run: async () => {
+          await refetch({ cancelRefetch: false });
+        },
       }),
     [refetch],
   );

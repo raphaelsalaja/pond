@@ -162,6 +162,7 @@ export default defineConfig({
         "apps/desktop/src/main/core/conversion-benchmark.test.ts",
         "apps/desktop/src/main/core/library-performance-benchmark.test.ts",
         "apps/desktop/src/main/core/library-retrieval-benchmark.test.ts",
+        "apps/desktop/src/main/core/sidebar-counts-benchmark.test.ts",
         "apps/desktop/src/renderer/src/features/saves/lib/bulk-performance-benchmark.test.ts",
       ],
       rules: {

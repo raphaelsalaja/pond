@@ -2,7 +2,6 @@ import { LEGACY_IMPORT_PREFIXES } from "@pond/schema/import-origin";
 import type Database from "better-sqlite3";
 import { z } from "zod";
 
-const CountRowSchema = z.object({ n: z.number() });
 const ColumnRowSchema = z.object({ name: z.string() });
 
 export function migrateGlobal(sqlite: Database.Database): void {
@@ -354,7 +353,23 @@ export function migratePond(sqlite: Database.Database): void {
   ensureImportedFrom(sqlite);
   ensureFavorite(sqlite);
   ensureInboxColumns(sqlite);
+  ensureLiveSaveIndexes(sqlite);
   ensureSavesFts(sqlite);
+}
+
+/**
+ * `saves` rows hold raw JSON and two embeddings as text ahead of `status`, `deleted_at` and `saved_at`,
+ * so a count read from the table walks every row's overflow pages. Leading with the columns every
+ * Library query matches by equality lets live-Save counts and the default page order read only
+ * this narrow index. Account counts get their own.
+ */
+function ensureLiveSaveIndexes(sqlite: Database.Database): void {
+  sqlite.exec(`
+    CREATE INDEX IF NOT EXISTS saves_live_idx
+      ON saves(status, deleted_at, saved_at, id, inbox_state, tags);
+    CREATE INDEX IF NOT EXISTS saves_live_account_idx
+      ON saves(deleted_at, source, account_id);
+  `);
 }
 
 function savesColumns(sqlite: Database.Database): Array<string> {
@@ -404,6 +419,39 @@ function ensureImportedFrom(sqlite: Database.Database): void {
   })();
 }
 
+const FTS_COLUMNS =
+  "id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url";
+const ftsValues = (row: "new" | "") => {
+  const col = (name: string) => (row ? `${row}.${name}` : name);
+  return `${col("id")}, ${col("title")}, ${col("description")}, ${col("author")},
+    COALESCE(replace(replace(replace(${col("tags")}, '[', ''), ']', ''), '"', ''), ''),
+    ${col("caption")}, ${col("ocr_text")}, ${col("transcript")}, ${col("notes")}, ${col("url")}`;
+};
+
+/**
+ * Each search row shares its Save's rowid. `id` is UNINDEXED, so deleting by it scanned every
+ * search row on each text edit or delete; deleting by rowid is a single lookup. The `id`
+ * check keeps a mismatched row from being removed if the two ever drift.
+ */
+const FTS_TRIGGERS = `
+  CREATE TRIGGER saves_ai AFTER INSERT ON saves BEGIN
+    INSERT INTO saves_fts(rowid, ${FTS_COLUMNS}) VALUES (new.rowid, ${ftsValues("new")});
+  END;
+
+  CREATE TRIGGER saves_ad AFTER DELETE ON saves BEGIN
+    DELETE FROM saves_fts WHERE rowid = old.rowid AND id = old.id;
+  END;
+
+  CREATE TRIGGER saves_au
+  AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url
+  ON saves BEGIN
+    DELETE FROM saves_fts WHERE rowid = old.rowid AND id = old.id;
+    INSERT INTO saves_fts(rowid, ${FTS_COLUMNS}) VALUES (new.rowid, ${ftsValues("new")});
+  END;
+`;
+
+const TriggerSqlSchema = z.object({ sql: z.string() });
+
 function ensureSavesFts(sqlite: Database.Database): void {
   sqlite.exec(`
 				CREATE VIRTUAL TABLE IF NOT EXISTS saves_fts USING fts5(
@@ -419,44 +467,24 @@ function ensureSavesFts(sqlite: Database.Database): void {
 					url,
 					tokenize = 'porter unicode61'
 				);
-
-				CREATE TRIGGER IF NOT EXISTS saves_ai AFTER INSERT ON saves BEGIN
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
-					VALUES (
-						new.id, new.title, new.description, new.author,
-						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript, new.notes, new.url
-					);
-				END;
-
-				CREATE TRIGGER IF NOT EXISTS saves_ad AFTER DELETE ON saves BEGIN
-					DELETE FROM saves_fts WHERE id = old.id;
-				END;
-
-				CREATE TRIGGER IF NOT EXISTS saves_au
-				AFTER UPDATE OF title, description, author, tags, caption, ocr_text, transcript, notes, url
-				ON saves BEGIN
-					DELETE FROM saves_fts WHERE id = old.id;
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
-					VALUES (
-						new.id, new.title, new.description, new.author,
-						COALESCE(replace(replace(replace(new.tags, '[', ''), ']', ''), '"', ''), ''),
-						new.caption, new.ocr_text, new.transcript, new.notes, new.url
-					);
-				END;
 			`);
-
-  const count = CountRowSchema.parse(
-    sqlite.prepare("SELECT COUNT(*) AS n FROM saves_fts").get(),
+  const trigger = TriggerSqlSchema.optional().parse(
+    sqlite
+      .prepare(
+        "SELECT sql FROM sqlite_master WHERE type = 'trigger' AND name = 'saves_ad'",
+      )
+      .get(),
   );
-  if (count.n === 0) {
+  if (trigger?.sql.includes("old.rowid")) return;
+  /** Older indexes gave search rows their own rowids, so they are rebuilt once to match. */
+  sqlite.transaction(() => {
     sqlite.exec(`
-					INSERT INTO saves_fts(id, title, description, author, tag_names, caption, ocr_text, transcript, notes, url)
-					SELECT
-						id, title, description, author,
-						COALESCE(replace(replace(replace(tags, '[', ''), ']', ''), '"', ''), ''),
-						caption, ocr_text, transcript, notes, url
-					FROM saves;
-				`);
-  }
+      DROP TRIGGER IF EXISTS saves_ai;
+      DROP TRIGGER IF EXISTS saves_ad;
+      DROP TRIGGER IF EXISTS saves_au;
+      DELETE FROM saves_fts;
+      INSERT INTO saves_fts(rowid, ${FTS_COLUMNS}) SELECT rowid, ${ftsValues("")} FROM saves;
+      ${FTS_TRIGGERS}
+    `);
+  })();
 }
