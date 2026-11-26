@@ -11,7 +11,7 @@ exports.default = (context) => verify(context);
 async function verify(
   context,
   {
-    runFfmpeg = runFfmpegVersion,
+    runBinaryVersion = runVersionProbe,
     runOnnx = runOnnxSmoke,
     readArchs = lipoArchs,
   } = {},
@@ -36,17 +36,28 @@ async function verify(
     nativeHostName(platform),
   );
 
+  const ffprobePath = nodePath.join(
+    resourcesDir,
+    "bin",
+    platform === "win32" ? "ffprobe.exe" : "ffprobe",
+  );
   assertPresent(ffmpegPath, "ffmpeg");
+  assertPresent(ffprobePath, "ffprobe");
   // Another OS can't run it, and Rosetta's first launch of another arch outlasts
   // the timeout, so verifyMacSlices covers cross-arch Mac builds instead.
   const runnable = arch === process.arch || arch === "universal";
   if (process.platform === platform && runnable) {
-    const result = runFfmpeg(ffmpegPath);
-    if (result.error || result.status !== 0) {
-      throw new Error(
-        `[pond verify] bundled ffmpeg at ${ffmpegPath} does not run: ` +
-          `${result.error?.message ?? `exit status ${result.status}`}`,
-      );
+    for (const [binary, label] of [
+      [ffmpegPath, "ffmpeg"],
+      [ffprobePath, "ffprobe"],
+    ]) {
+      const result = runBinaryVersion(binary);
+      if (result.error || result.status !== 0) {
+        throw new Error(
+          `[pond verify] bundled ${label} at ${binary} does not run: ` +
+            `${result.error?.message ?? `exit status ${result.status}`}`,
+        );
+      }
     }
   }
   if (onnxShipped && process.platform === platform && arch === process.arch) {
@@ -74,7 +85,7 @@ async function verify(
     verifyMacSlices(resourcesDir, arch, readArchs);
   }
 
-  console.log(`[pond verify] bundled ffmpeg OK (${platform})`);
+  console.log(`[pond verify] bundled ffmpeg and ffprobe OK (${platform})`);
 }
 
 const MAC_SLICES = new Map([
@@ -87,7 +98,7 @@ const MAC_SLICES = new Map([
 function verifyMacSlices(resourcesDir, arch, readArchs = lipoArchs) {
   const wanted = MAC_SLICES.get(arch);
   if (!wanted) return;
-  for (const name of ["ffmpeg", "pond-native-host"]) {
+  for (const name of ["ffmpeg", "ffprobe", "pond-native-host"]) {
     const path = nodePath.join(resourcesDir, "bin", name);
     const archs = readArchs(path);
     const missing = wanted.filter((slice) => !archs.includes(slice));
@@ -105,8 +116,8 @@ function lipoArchs(path) {
   return result.status === 0 ? result.stdout.trim().split(/\s+/) : [];
 }
 
-function runFfmpegVersion(ffmpegPath) {
-  return spawnSync(ffmpegPath, ["-version"], {
+function runVersionProbe(binaryPath) {
+  return spawnSync(binaryPath, ["-version"], {
     stdio: "ignore",
     timeout: 10_000,
     windowsHide: true,

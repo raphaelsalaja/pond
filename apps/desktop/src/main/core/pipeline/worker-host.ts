@@ -4,7 +4,11 @@ import { app, utilityProcess } from "electron";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { resolveMainOut } from "../../lib/resolve-preload";
-import { binariesAvailable, FFMPEG_PATH_ENV } from "../refresh/binaries";
+import {
+  binariesAvailable,
+  FFMPEG_PATH_ENV,
+  FFPROBE_PATH_ENV,
+} from "../refresh/binaries";
 import { QueueWorkerResponseSchema } from "./worker-contract";
 import { createQueueWorkerHost } from "./worker-host-core";
 import type {
@@ -19,11 +23,14 @@ const dependencies: QueueWorkerHostDependencies = {
     if (!app.isReady()) {
       throw new Error("Queue workers require Electron to be ready.");
     }
-    const ffmpeg = binariesAvailable().ffmpeg;
+    const { ffmpeg, ffprobe } = binariesAvailable();
+    const env = { ...process.env };
+    if (ffmpeg) env[FFMPEG_PATH_ENV] = ffmpeg;
+    if (ffprobe) env[FFPROBE_PATH_ENV] = ffprobe;
     const child = utilityProcess.fork(resolveMainOut("queue-worker.js"), [], {
       serviceName: "Pond Queue Worker",
       stdio: ["ignore", "ignore", "pipe"],
-      env: ffmpeg ? { ...process.env, [FFMPEG_PATH_ENV]: ffmpeg } : process.env,
+      env,
     });
     child.stderr?.on("data", (chunk: Buffer) => {
       log.warn("[pond queue workers] stderr", String(chunk).trim());

@@ -141,6 +141,9 @@ mac:
     # scripts/fetch-mac-ffmpeg.mjs rather than the runner-only ffmpeg-static copy.
     - from: vendor/ffmpeg/darwin-${arch}/ffmpeg
       to: bin/ffmpeg
+    # Same per-arch pipeline as ffmpeg: ffprobe-static's "arm64" build is really x86_64.
+    - from: vendor/ffmpeg/darwin-${arch}/ffprobe
+      to: bin/ffprobe
     # Loaded by the main process to open Safari at Pond's extension; Safari answers
     # only the main process of the app that holds the extension.
     - from: resources/SafariExtension/safari-settings.node
@@ -212,6 +215,8 @@ win:
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg.exe
       to: bin/ffmpeg.exe
+    - from: node_modules/ffprobe-static/bin/win32/${arch}/ffprobe.exe
+      to: bin/ffprobe.exe
   signExts:
     - .dll
     - .node
@@ -255,6 +260,9 @@ linux:
   extraResources:
     - from: node_modules/ffmpeg-static/ffmpeg
       to: bin/ffmpeg
+    # ffprobe-static ships no linux/arm64, so ${arch} fails the pack loudly instead of shipping the wrong binary.
+    - from: node_modules/ffprobe-static/bin/linux/${arch}/ffprobe
+      to: bin/ffprobe
   desktop:
     entry:
       Keywords: archive;saves;library;inspiration;

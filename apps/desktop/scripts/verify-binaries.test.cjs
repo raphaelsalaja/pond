@@ -27,7 +27,7 @@ function verify(context) {
         ? ["arm64", "x86_64"]
         : ["x86_64"];
   return verifyBinaries.verify(context, {
-    runFfmpeg: () => ({ status: 0 }),
+    runBinaryVersion: () => ({ status: 0 }),
     runOnnx: () => ({ status: 0 }),
     readArchs: () => slices,
   });
@@ -52,6 +52,7 @@ async function writeWindowsRuntime(resourcesDirectory, options = {}) {
   const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
   await writeFile(path.join(binaryDirectory, "ffmpeg.exe"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffprobe.exe"), "binary");
   if (options.nativeHost !== false) {
     await writeFile(
       path.join(binaryDirectory, "pond-native-host.exe"),
@@ -202,6 +203,7 @@ async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
   const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
   await writeFile(path.join(binaryDirectory, "ffmpeg"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffprobe"), "binary");
   await writeFile(path.join(binaryDirectory, "pond-native-host"), "binary");
   await mkdir(
     path.join(
@@ -300,6 +302,7 @@ async function writeLinuxRuntime(resourcesDirectory, options = {}) {
   const binaryDirectory = path.join(resourcesDirectory, "bin");
   await mkdir(binaryDirectory, { recursive: true });
   await writeFile(path.join(binaryDirectory, "ffmpeg"), "binary");
+  await writeFile(path.join(binaryDirectory, "ffprobe"), "binary");
   if (options.nativeHost !== false) {
     await writeFile(path.join(binaryDirectory, "pond-native-host"), "binary");
   }
@@ -406,7 +409,7 @@ void test(
 
       await assert.rejects(
         verifyBinaries.verify(buildContext(appOutDir, "win32"), {
-          runFfmpeg: () => ({ status: 1 }),
+          runBinaryVersion: () => ({ status: 1 }),
           runOnnx: () => ({ status: 0 }),
         }),
         /does not run/,
@@ -436,7 +439,7 @@ void test(
 
       await assert.rejects(
         verifyBinaries.verify(buildContext(appOutDir, hostPlatform), {
-          runFfmpeg: () => ({ status: 0 }),
+          runBinaryVersion: () => ({ status: 0 }),
           runOnnx: () => ({ status: 1, stderr: "missing DirectML.dll" }),
         }),
         /cannot run a CPU session/,
