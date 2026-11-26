@@ -18,6 +18,7 @@ import { FolderTemplateDialogHost } from "@/features/library/components/folder-t
 import { NewMenuDialogHost } from "@/features/library/components/new-menu";
 import { OrganizationRenameDialogHost } from "@/features/library/components/organization-rename-dialog";
 import { AppShell } from "@/features/library/components/workspace-shell";
+import { detailsColumn } from "@/features/library/lib/details-column";
 import {
   useShellDetails,
   useShellLayout,
@@ -68,7 +69,9 @@ function AppHosts() {
   const saveOpen = useOpenSaveId() !== null;
   const { details, rightOpen } = useShellLayout();
   const previewsDetails =
-    rightOpen && details === "save" && (surface === "grid" || saveOpen);
+    rightOpen &&
+    detailsColumn(details, saveOpen) === "save" &&
+    (surface === "grid" || saveOpen);
   return (
     <>
       <EditableHotkeyGuard />
@@ -105,6 +108,8 @@ function useMainProcessNavigation() {
 
 export function RootShell() {
   const details = useShellDetails();
+  const saveOpen = useOpenSaveId() !== null;
+  const column = detailsColumn(details, saveOpen);
   useMainProcessNavigation();
 
   return (
@@ -123,7 +128,7 @@ export function RootShell() {
             <Outlet />
           </Window.Center>
           <AppShell.Details>
-            {details === "fish" ? (
+            {column === "fish" ? (
               <Suspense fallback={null}>
                 <FishDetails />
               </Suspense>

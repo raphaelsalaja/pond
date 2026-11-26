@@ -63,25 +63,33 @@ export function SavePreview({
             {item.description || "Only the saved title is available."}
           </Popover.Description>
           <div className={styles.actions}>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={() => onOpenSave(item.id)}
+            <Popover.Close
+              render={
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => onOpenSave(item.id)}
+                />
+              }
             >
               Open Save
-            </Button>
-            <Button
-              size="sm"
-              variant="text"
-              aria-label={`Add ${item.title}`}
-              disabled={attached}
-              onClick={() => {
-                const source = sources.find((save) => save.id === item.id);
-                if (source) onAttach([source]);
-              }}
+            </Popover.Close>
+            <Popover.Close
+              render={
+                <Button
+                  size="sm"
+                  variant="text"
+                  aria-label={`Add ${item.title}`}
+                  disabled={attached}
+                  onClick={() => {
+                    const source = sources.find((save) => save.id === item.id);
+                    if (source) onAttach([source]);
+                  }}
+                />
+              }
             >
               {attached ? "Added to message" : "Add to message"}
-            </Button>
+            </Popover.Close>
           </div>
         </Popover.Popup>
       </Popover.Positioner>
@@ -215,7 +223,10 @@ export function ReferencedSavesPopover({
             <ConsultedSaves
               sources={sources}
               attachedIds={attachedIds}
-              onOpenSave={openSave}
+              onOpenSave={(id) => {
+                openSave(id);
+                onClose();
+              }}
               onAttach={(next) => {
                 onAttach(next);
                 onClose();
