@@ -1,13 +1,8 @@
 import { Popover } from "@pond/ui";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { expect, it, vi } from "vitest";
 import { SavePreview } from ".";
-
-beforeEach(() => {
-  vi.stubGlobal("pond", { query: async () => [] });
-});
-afterEach(() => vi.unstubAllGlobals());
 
 function previewButton(label: string) {
   return [...document.querySelectorAll("button")].find(

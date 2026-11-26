@@ -17,7 +17,8 @@
       "ignoreDependencies": [
         "@types/better-sqlite3",
         "app-builder-lib",
-        "drizzle-kit"
+        "drizzle-kit",
+        "ffprobe-static"
       ]
     },
     "apps/website": {
