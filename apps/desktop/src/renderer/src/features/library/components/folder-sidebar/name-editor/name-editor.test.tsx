@@ -56,6 +56,19 @@ it("focuses and selects the new folder name", () => {
   expect(field().selectionStart).toBe(0);
   expect(field().selectionEnd).toBe("Untitled".length);
 });
+it("renders the folder icon it is given", async () => {
+  await act(async () => {
+    root.render(
+      <FolderNameEditor
+        name="Untitled"
+        icon={<span data-custom-icon="" />}
+        onSave={onSave}
+        onFinish={onFinish}
+      />,
+    );
+  });
+  expect(container.querySelector("[data-custom-icon]")).not.toBeNull();
+});
 it("saves the trimmed name once on Enter followed by blur", async () => {
   field().value = "  Travel  ";
   await press("Enter");
