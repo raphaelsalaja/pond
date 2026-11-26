@@ -1,9 +1,13 @@
 name: Set up workspace
-description: Install pnpm, Node, and dependencies, and restore the Turborepo cache.
+description: Install pnpm, Node, and dependencies, and connect the Turborepo cache.
 
 inputs:
   turbo-cache:
     description: Cache key for Turborepo task results, unique per job. Leave empty for jobs that need real build output.
+    required: false
+    default: ""
+  turbo-team:
+    description: Vercel team for Turborepo Remote Cache, usually vars.TURBO_TEAM. Without it, task results use the GitHub Actions cache.
     required: false
     default: ""
 
@@ -24,10 +28,23 @@ runs:
 
     - name: Install dependencies
       shell: bash
+      env:
+        # `pnpm build` writes the Dock icons itself, so installing skips them.
+        POND_SKIP_DOCK_ICONS: "1"
       run: pnpm install --frozen-lockfile
 
+    # Fork pull requests get no OIDC token, so they fall back to the GitHub
+    # Actions cache below. So does a job whose remote authentication fails.
+    - if: inputs.turbo-cache != '' && inputs.turbo-team != '' && github.event.pull_request.head.repo.fork != true
+      id: remote-cache
+      name: Set up Turborepo Remote Cache
+      continue-on-error: true
+      uses: vercel/setup-turborepo-remote-cache-action@v1.1.0
+      with:
+        team: ${{ inputs.turbo-team }}
+
     # Tasks declare no outputs, so a hit replays the result without restoring files.
-    - if: inputs.turbo-cache != ''
+    - if: inputs.turbo-cache != '' && steps.remote-cache.outcome != 'success'
       name: Restore Turborepo cache
       uses: actions/cache@v6
       with:

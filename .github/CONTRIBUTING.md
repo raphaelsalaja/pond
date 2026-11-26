@@ -18,7 +18,9 @@ Turborepo owns the build, typecheck, test, generation-check, and repository veri
 
 Run `pnpm generate` only when you intend to update tracked generated files. Run `pnpm generate:check` to verify them without writing. CI runs both the non-mutating checks and a generated diff gate.
 
-CI caches Turborepo task results with the GitHub Actions cache, so lint, typecheck, and test tasks whose inputs haven't changed replay instead of running. Jobs that build and launch the app skip that cache. Release and package workflows can share task artifacts through Vercel Remote Cache. Configure a Turborepo CLI OIDC policy for the repository and set the `TURBO_TEAM` GitHub Actions variable. Workflows skip remote authentication when the variable is absent.
+CI caches Turborepo task results, so lint, typecheck, and test tasks whose inputs haven't changed replay instead of running. Jobs that build and launch the app skip that cache. CI, release, and package workflows share task results through Vercel Remote Cache: configure a Turborepo CLI OIDC policy for the repository and set the `TURBO_TEAM` GitHub Actions variable. Without the variable, and for fork pull requests, CI falls back to the GitHub Actions cache. Task hashes include `RUNNER_OS` and `RUNNER_ARCH`, so one platform never replays another's result. The Cache Cleanup workflow deletes a pull request's caches when it closes and superseded caches on `main`, which keeps the GitHub Actions cache under its 10 GB limit.
+
+CI installs set `POND_SKIP_DOCK_ICONS=1`, so the desktop postinstall skips the Dock icons that `pnpm build` writes again.
 
 Use `pnpm knip` when removing unused code or dependencies. Check worker, HTML, generated, and dynamic entrypoints before accepting a deletion.
 

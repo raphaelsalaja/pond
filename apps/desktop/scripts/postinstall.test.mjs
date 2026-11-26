@@ -78,3 +78,31 @@ void test("continues after optional cosmetic preparation fails", () => {
   assert.deepEqual(calls, ["cosmetic.mjs", "required.mjs"]);
   assert.equal(warnings.length, 1);
 });
+
+void test("skips a step when its skip variable is set to 1", () => {
+  const calls = [];
+  const logs = [];
+  const steps = [
+    {
+      name: "build-time asset",
+      script: "asset.mjs",
+      required: false,
+      skipEnv: "POND_SKIP_ASSET",
+    },
+    { name: "runtime asset", script: "runtime.mjs", required: true },
+  ];
+  const run = ({ script }) => calls.push(script);
+
+  runSetup({
+    steps,
+    run,
+    log: (message) => logs.push(message),
+    env: { POND_SKIP_ASSET: "1" },
+  });
+  assert.deepEqual(calls, ["runtime.mjs"]);
+  assert.equal(logs.length, 1);
+
+  calls.length = 0;
+  runSetup({ steps, run, env: { POND_SKIP_ASSET: "0" } });
+  assert.deepEqual(calls, ["asset.mjs", "runtime.mjs"]);
+});

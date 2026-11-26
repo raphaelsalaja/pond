@@ -2,6 +2,7 @@
   "$schema": "https://turborepo.com/schema.json",
   "ui": "tui",
   "globalDependencies": ["tsconfig.base.json", "pnpm-workspace.yaml"],
+  "globalEnv": ["RUNNER_OS", "RUNNER_ARCH"],
   "globalPassThroughEnv": [
     "GITHUB_STEP_SUMMARY",
     "POND_DEV_RUNTIME_TOKEN",
