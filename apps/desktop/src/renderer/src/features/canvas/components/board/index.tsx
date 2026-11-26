@@ -1,4 +1,5 @@
 import {
+  IconArrowUpRight,
   IconBorder,
   IconBroom,
   IconCode2,
@@ -17,6 +18,7 @@ import {
   IconTypography,
   IconUngroup,
 } from "@pond/icons";
+import type { MenuItemSpec } from "@pond/ui";
 import { isHTMLElement } from "@pond/ui/dom";
 import { CANVAS_ITEM_LIMIT, CanvasClipSchema } from "@shared/canvas-contracts";
 import type {
@@ -66,6 +68,7 @@ import {
   useState,
 } from "react";
 import {
+  buildSaveLinkItems,
   isLibrarySaveDrag,
   pasteImportOf,
   runPasteImport,
@@ -1437,33 +1440,60 @@ export function Board({ canvas }: BoardProps) {
       return boardItems({ kind: "edge" }, run);
     }
     const picked = latest.current.nodes.filter((node) => node.selected);
-    return boardItems(
-      {
-        kind: "nodes",
-        count: picked.length,
-        grouped: picked.some((node) => node.data.group),
-        movable: picked.filter((node) => !isLocked(node)).length,
-        locked: picked.length > 0 && picked.every(isLocked),
-        duplicable: picked.some((node) => node.type !== "save"),
-        canRotate: picked.some(
-          (node) => node.type !== "section" && !isLocked(node),
-        ),
-        canFlip: picked.some(
-          (node) => node.type === "figure" && !isLocked(node),
-        ),
-        canConvert: picked.some(
-          (node) => node.type === "text" && !isLocked(node),
-        ),
-        canSort:
-          picked.filter((node) => node.type === "note" && !isLocked(node))
-            .length > 1,
-        canCrop: picked.some((node) => node.type === "save"),
-        cropped: picked.some((node) => node.type === "save" && node.data.crop),
-        canQuick:
-          picked.length === 1 && picked.some((node) => canQuickCreate(node)),
-      },
-      run,
-    );
+    const saves = picked.flatMap((node) => {
+      const save = node.type === "save" ? pool.get(node.data.saveId) : null;
+      return save ? [save] : [];
+    });
+    const [onlySave] = saves;
+    const saveItems: Array<MenuItemSpec> =
+      saves.length > 0
+        ? [
+            ...(saves.length === 1 && onlySave
+              ? [
+                  {
+                    label: "Open Save",
+                    icon: <IconArrowUpRight />,
+                    shortcut: "↵",
+                    onClick: () => openSave(onlySave.id),
+                  },
+                ]
+              : []),
+            ...buildSaveLinkItems(saves),
+            { type: "separator" },
+          ]
+        : [];
+    return [
+      ...saveItems,
+      ...boardItems(
+        {
+          kind: "nodes",
+          count: picked.length,
+          grouped: picked.some((node) => node.data.group),
+          movable: picked.filter((node) => !isLocked(node)).length,
+          locked: picked.length > 0 && picked.every(isLocked),
+          duplicable: picked.some((node) => node.type !== "save"),
+          canRotate: picked.some(
+            (node) => node.type !== "section" && !isLocked(node),
+          ),
+          canFlip: picked.some(
+            (node) => node.type === "figure" && !isLocked(node),
+          ),
+          canConvert: picked.some(
+            (node) => node.type === "text" && !isLocked(node),
+          ),
+          canSort:
+            picked.filter((node) => node.type === "note" && !isLocked(node))
+              .length > 1,
+          canCrop: picked.some((node) => node.type === "save"),
+          cropped: picked.some(
+            (node) => node.type === "save" && node.data.crop,
+          ),
+          canQuick:
+            picked.length === 1 && picked.some((node) => canQuickCreate(node)),
+        },
+        run,
+      ),
+    ];
   };
 
   const openable =

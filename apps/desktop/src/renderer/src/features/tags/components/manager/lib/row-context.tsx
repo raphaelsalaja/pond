@@ -121,6 +121,7 @@ export function TagRowProvider({
     }
     const inGroup = row.kind === "tag" ? row.inGroup : null;
     const actions: TagMenuActions = {
+      name,
       groups,
       mergeTargets: tags.filter(
         (candidate) => candidate.toLowerCase() !== name.toLowerCase(),

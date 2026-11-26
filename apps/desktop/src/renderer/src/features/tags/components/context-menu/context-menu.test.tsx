@@ -8,6 +8,7 @@ import type { TagMenuActions } from ".";
 
 function actions(overrides: Partial<TagMenuActions> = {}): TagMenuActions {
   return {
+    name: "poster",
     groups: ["Design", "Reference"],
     mergeTargets: ["Inspiration", "Motion"],
     inGroup: "Design",
@@ -37,6 +38,7 @@ describe("tag context menu", () => {
       "Add to Starred",
       "Remove from Starred",
       "Rename Tag",
+      "Copy Tag Name",
       "Merge Into",
       "Inspiration",
       "Motion",

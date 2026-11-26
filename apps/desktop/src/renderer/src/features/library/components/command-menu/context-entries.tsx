@@ -1,6 +1,7 @@
 import {
   IconFolder,
   IconFolderTree,
+  IconLink2,
   IconTrashXmark,
   IconUpload,
 } from "@pond/icons";
@@ -14,6 +15,7 @@ import {
 import { selectLibraryNav } from "@/features/library/components/folder-sidebar/navigation";
 import { buildTrashMenuItems } from "@/features/library/components/folder-sidebar/trash-menu";
 import { newFolder } from "@/features/library/components/new-menu/actions";
+import { copyFolderLink } from "@/features/library/lib/copy-links";
 import { folders, useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import {
@@ -116,6 +118,14 @@ function folderEntries(
     });
   }
   entries.push(
+    {
+      id: "folder:copy-link",
+      group,
+      label: "Copy Folder Link",
+      keywords: "pond url share",
+      icon: <IconLink2 aria-hidden />,
+      run: () => copyFolderLink(folder.id),
+    },
     {
       id: "folder:export",
       group,

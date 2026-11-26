@@ -287,6 +287,16 @@ describe("command menu", () => {
     expect(document.body.textContent).toContain("1 Selected");
   });
 
+  it("finds Save actions nested in a submenu by typing", async () => {
+    selection.set(["save-1"]);
+    await open();
+    await type("copy pond link");
+    const first = document.querySelector('[role="option"]');
+    expect(first?.textContent).toContain("Copy Pond Link");
+    expect(first?.textContent).toContain("Copy Options");
+    expect(document.body.textContent).toContain("1 Selected");
+  });
+
   it("acts on the open Save without a selection", async () => {
     await open("/?save=save-1");
     expect(document.body.textContent).toContain("Current Save");

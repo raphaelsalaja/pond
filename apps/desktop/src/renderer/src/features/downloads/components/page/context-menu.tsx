@@ -4,6 +4,7 @@ import {
   IconBan,
   IconCircleXmark,
   IconCopy,
+  IconGlobe,
   IconLink2,
   IconMediaPause,
   IconTrashXmark,
@@ -26,16 +27,20 @@ import { statusFeed } from "@/features/downloads/lib/status-feed";
 import type { DownloadRow } from "@/features/downloads/lib/status-feed";
 import { humanizeError } from "@/features/downloads/lib/status-feed/queue";
 import { downloadsSelection } from "@/features/downloads/state/downloads-selection";
+import { copyPondLinks } from "@/features/saves";
 import { openSave } from "@/features/saves/navigation";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { notify } from "@/shared/lib/toast";
 import type { DownloadViewRow } from "./columns";
 
 export function openDownloadSave(row: DownloadRow): void {
   if (row.status === "complete") openSave(row.saveId);
 }
 
-function copyText(text: string): void {
-  void window.pond.query("clipboard.writeText", { text });
+function copyText(text: string, title: string): void {
+  void window.pond
+    .query("clipboard.writeText", { text })
+    .then(() => notify({ id: "copy-download", title }));
 }
 
 const WEB_LINK = /^https?:\/\//i;
@@ -67,6 +72,13 @@ export function buildDownloadMenuItems(
   const plural = rows.length > 1;
   const single = plural ? undefined : rows[0];
   const url = single?.url.trim() ?? "";
+  const urls = rows.flatMap((row) => {
+    const trimmed = row.url.trim();
+    return trimmed ? [trimmed] : [];
+  });
+  const completedIds = rows.flatMap((row) =>
+    row.status === "complete" ? [row.saveId] : [],
+  );
   const error = single ? downloadErrorText(single) : "";
   const retryable = rows.some(canRetryDownload);
   const cancellable = rows.some(canCancelDownload);
@@ -108,16 +120,26 @@ export function buildDownloadMenuItems(
       onClick: () => openLink(url),
     },
     {
-      label: "Copy Link",
+      label: urls.length > 1 ? "Copy Links" : "Copy Link",
+      icon: <IconGlobe />,
+      hidden: urls.length === 0,
+      onClick: () =>
+        copyText(
+          urls.join("\n"),
+          urls.length > 1 ? "Links copied" : "Link copied",
+        ),
+    },
+    {
+      label: "Copy Pond Link",
       icon: <IconLink2 />,
-      hidden: !url,
-      onClick: () => copyText(url),
+      hidden: completedIds.length === 0,
+      onClick: () => copyPondLinks(completedIds),
     },
     {
       label: "Copy Error",
       icon: <IconCopy />,
       hidden: !error,
-      onClick: () => copyText(error),
+      onClick: () => copyText(error, "Error copied"),
     },
     { type: "separator" },
     {

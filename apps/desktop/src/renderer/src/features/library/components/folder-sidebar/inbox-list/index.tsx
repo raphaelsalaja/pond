@@ -1,9 +1,13 @@
 import { Loader, Sidebar } from "@pond/ui";
+import { isElement } from "@pond/ui/dom";
 import type { InboxNotification } from "@shared/notification-contracts";
-import { useId } from "react";
+import { useId, useRef } from "react";
 import type { ReactNode } from "react";
 import { SaveThumb } from "@/features/library/components/command-menu/save-thumb";
-import { useInboxItems } from "@/features/library/hooks/use-inbox-items";
+import {
+  useInboxItems,
+  useInboxNavigation,
+} from "@/features/library/hooks/use-inbox-items";
 import type { InboxItem } from "@/features/library/hooks/use-inbox-items";
 import {
   inboxPicker,
@@ -16,7 +20,12 @@ import {
   inboxSections,
   useCollapsedInboxSections,
 } from "@/features/library/state/inbox-sections";
-import { NotificationIcon, notificationTone } from "@/features/notifications";
+import {
+  buildNotificationMenuItems,
+  NotificationIcon,
+  notifications,
+  notificationTone,
+} from "@/features/notifications";
 import type { InboxProgress } from "@/features/notifications";
 import {
   displayTitleForSave,
@@ -114,6 +123,7 @@ function NotificationItem({
       data-status={current ? "active" : undefined}
       data-unread={unread || undefined}
       data-tone={notificationTone(notification.kind)}
+      data-notification-id={notification.id}
       aria-current={current ? "true" : undefined}
       onClick={() => inboxPicker.select(notification.id)}
     >
@@ -194,6 +204,16 @@ function Item({
   }
 }
 
+/** The Notification row a right-click landed on; Save rows get the Save menu instead. */
+function targetNotification(
+  target: EventTarget | null,
+): InboxNotification | null {
+  if (!isElement(target)) return null;
+  const id = target.closest<HTMLElement>("[data-notification-id]")?.dataset
+    .notificationId;
+  return id ? notifications.find(id) : null;
+}
+
 type Run = { section: string | null; items: Array<InboxItem> };
 
 /** Splits the list where the section changes; running-work rows lead with no heading. */
@@ -254,13 +274,24 @@ export function InboxList() {
   const selected = useInboxSelection();
   const items = useInboxItems();
   const collapsed = useCollapsedInboxSections();
+  const navigation = useInboxNavigation();
+  const menuNotification = useRef<InboxNotification | null>(null);
   const label = scope === "snoozed" ? "Snoozed" : "Inbox";
 
   // The group itself is the menu trigger, so its header stays the first child the sidebar pins as the panel header.
   return (
     <SaveCollectionContextMenu
-      acceptsBackground={() => false}
-      buildBackgroundItems={() => []}
+      acceptsBackground={(target) => {
+        menuNotification.current = targetNotification(target);
+        return menuNotification.current !== null;
+      }}
+      buildBackgroundItems={() => {
+        const notification = menuNotification.current;
+        if (!notification) return [];
+        return buildNotificationMenuItems(notification, () => {
+          if (selected === notification.id) navigation.leave();
+        });
+      }}
       onOpenSave={(save) => {
         const index = queue?.ids.indexOf(save.id) ?? -1;
         if (index >= 0) inboxReview.jump(index);

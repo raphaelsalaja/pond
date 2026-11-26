@@ -35,6 +35,7 @@ export {
   peekOpenWithApps,
 } from "@/features/saves/lib/open-with-menu";
 export { contextMenuSaves } from "./menu/context";
+export { buildSaveLinkItems, copyPondLinks } from "./menu/links";
 
 export function buildSaveMenu(
   saveOrSaves: Save | ReadonlyArray<Save>,

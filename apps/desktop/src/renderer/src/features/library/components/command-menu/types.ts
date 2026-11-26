@@ -50,6 +50,8 @@ export interface MenuEntry {
   actions?: () => ReadonlyArray<MenuEntry>;
   /** Opens a page instead of running. */
   page?: () => MenuPage;
+  /** The page's actions, also matched by a query typed at this entry's level, so nested actions don't hide from search. */
+  nested?: ReadonlyArray<MenuEntry>;
   run?: () => void;
 }
 

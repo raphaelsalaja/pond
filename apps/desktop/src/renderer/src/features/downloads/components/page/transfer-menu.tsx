@@ -17,6 +17,7 @@ import {
   transferRevealable,
 } from "@/features/downloads/lib/transfer-rows";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import { notify } from "@/shared/lib/toast";
 
 export const TRANSFER_JOBS_KEY = ["transfer-jobs"] as const;
 
@@ -50,8 +51,10 @@ export async function revealTransfer(job: TransferJob) {
   if (!result.ok) statusFeed.error("Show in Finder", result.error);
 }
 
-function copyText(text: string) {
-  void window.pond.query("clipboard.writeText", { text });
+function copyText(text: string, title: string) {
+  void window.pond
+    .query("clipboard.writeText", { text })
+    .then(() => notify({ id: "copy-transfer", title }));
 }
 
 export function buildTransferMenuItems(
@@ -83,13 +86,13 @@ export function buildTransferMenuItems(
     {
       label: "Copy Path",
       icon: <IconCopy />,
-      onClick: () => copyText(job.request.destination),
+      onClick: () => copyText(job.request.destination, "Path copied"),
     },
     {
       label: "Copy Error",
       icon: <IconCopy />,
       hidden: !error,
-      onClick: () => copyText(error),
+      onClick: () => copyText(error, "Error copied"),
     },
     { type: "separator" },
     {

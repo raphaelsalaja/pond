@@ -47,6 +47,7 @@ function useTagEntries(
       groups.find((group) => group.tagNames.some((n) => same(n, tag.name)))
         ?.name ?? null;
     const items = buildTagMenuItems({
+      name: tag.name,
       groups: groups.map((group) => group.name),
       mergeTargets: tags
         .map((row) => row.name)

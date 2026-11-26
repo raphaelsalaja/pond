@@ -4,7 +4,7 @@ import type { AssistantSource } from "@shared/assistant";
 import { useEffect, useRef } from "react";
 import { SaveTile } from "@/features/saves";
 import { SavePreview, toReferenceItems } from "../consulted-saves";
-import { SourceThumbnail, useSourceCovers } from "../save-preview";
+import { SaveMenu, SourceThumbnail, useSourceCovers } from "../save-preview";
 import styles from "./styles.module.css";
 
 /** How wide each card is, so a reply's row of Saves reads like a strip of the Library grid. */
@@ -78,13 +78,15 @@ export function SaveCards({
         <Popover.Root key={item.id}>
           <Popover.Trigger
             render={(props) => (
-              <SaveTile
-                {...props}
-                saveId={item.id}
-                width={CARD_WIDTH}
-                badges={false}
-                fallback={{ icon: <IconFile />, title: item.title }}
-              />
+              <SaveMenu id={item.id}>
+                <SaveTile
+                  {...props}
+                  saveId={item.id}
+                  width={CARD_WIDTH}
+                  badges={false}
+                  fallback={{ icon: <IconFile />, title: item.title }}
+                />
+              </SaveMenu>
             )}
             aria-label={`Preview ${item.title}`}
           />

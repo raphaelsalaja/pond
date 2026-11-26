@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { FolderCustomizeDialog } from "@/features/library/components/folder-customize-dialog";
 import { useLibrarySaveGap } from "@/features/library/components/layouts/save-gap";
+import { copyFolderLink } from "@/features/library/lib/copy-links";
 import {
   folderColorMenuItems,
   folderIconMenuItems,
@@ -124,6 +125,10 @@ function FolderCard({
           {
             label: "Open Folder",
             onClick: () => void enterFolder(folder.id),
+          },
+          {
+            label: "Copy Folder Link",
+            onClick: () => copyFolderLink(folder.id),
           },
           {
             type: "checkbox",

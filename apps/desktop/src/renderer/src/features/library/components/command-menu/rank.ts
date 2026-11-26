@@ -1,6 +1,38 @@
 import { MIN_SCORE, matchItem } from "./score";
 import type { MenuEntry, MenuModel, MenuRow, RankedEntry } from "./types";
 
+/** Nested actions rank below anything at the level you're on, so typing a folder or tag name still finds it before a submenu entry such as Add to Folders. */
+const NESTED_WEIGHT = 0.6;
+
+interface Candidate {
+  entry: MenuEntry;
+  weight: number;
+}
+
+/** Adds each entry's nested actions after it, in its group, with the path to them as detail. */
+function withNestedEntries(
+  entries: ReadonlyArray<MenuEntry>,
+  parent?: { group: string; path: string; weight: number },
+): Array<Candidate> {
+  const out: Array<Candidate> = [];
+  for (const entry of entries) {
+    const placed = parent
+      ? { ...entry, group: parent.group, detail: entry.detail ?? parent.path }
+      : entry;
+    const weight = parent?.weight ?? 1;
+    out.push({ entry: placed, weight });
+    if (!entry.nested) continue;
+    out.push(
+      ...withNestedEntries(entry.nested, {
+        group: placed.group,
+        path: parent ? `${parent.path} › ${entry.label}` : entry.label,
+        weight: weight * NESTED_WEIGHT,
+      }),
+    );
+  }
+  return out;
+}
+
 export function rankEntries(
   entries: ReadonlyArray<MenuEntry>,
   query: string,
@@ -10,12 +42,12 @@ export function rankEntries(
     return entries.map((entry) => ({ entry, score: 1, ranges: [] }));
   }
   const ranked: Array<RankedEntry> = [];
-  for (const entry of entries) {
+  for (const { entry, weight: depth } of withNestedEntries(entries)) {
     const match = matchItem(entry, trimmed);
     const weight = entry.scoreWeight ?? 1;
     const matched =
       !match || weight === 0 ? 0 : match.score === 1 ? 1 : match.score * weight;
-    const score = Math.max(matched, entry.scoreFloor ?? 0);
+    const score = Math.max(matched * depth, entry.scoreFloor ?? 0);
     if (score < MIN_SCORE) continue;
     ranked.push({ entry, score, ranges: match?.ranges ?? [] });
   }

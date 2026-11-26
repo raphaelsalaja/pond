@@ -1,22 +1,17 @@
-import {
-  IconCircleDashedClock,
-  IconEnvelope,
-  IconInbox,
-  IconTrash,
-} from "@pond/icons";
+import { IconCircleDashedClock, IconEnvelope, IconTrash } from "@pond/icons";
 import { Button, Keyboard, Menu, Tooltip } from "@pond/ui";
-import type { MenuItemSpec } from "@pond/ui";
 import type {
   InboxNotification,
   NotificationTarget,
 } from "@shared/notification-contracts";
-import { createElement, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { KeyboardEvent } from "react";
 import { openSave } from "@/features/saves/navigation";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import { openSettings } from "@/shared/lib/open-settings";
-import { formatSnoozeTime, snoozeOptions } from "@/shared/lib/snooze";
-import { isSnoozed, isUnread, notifications } from "../../state/notifications";
+import { formatSnoozeTime } from "@/shared/lib/snooze";
+import { snoozeItems } from "../../lib/menu";
+import { isUnread, notifications } from "../../state/notifications";
 import { NotificationIcon, notificationTone } from "../notification-icon";
 import { ignoresKey, navigationKey } from "./keys";
 import { Detail } from "./layout";
@@ -46,32 +41,6 @@ function PrimaryAction({ target }: { target: NotificationTarget | undefined }) {
     default:
       return null;
   }
-}
-
-function snoozeItems(
-  notification: InboxNotification,
-  onLeave: () => void,
-): Array<MenuItemSpec> {
-  const snooze = (until: number | null) => {
-    onLeave();
-    notifications.snooze([notification.id], until);
-  };
-  const items = snoozeOptions().map((option): MenuItemSpec => ({
-    label: option.label,
-    icon: createElement(IconCircleDashedClock),
-    onClick: () => snooze(option.until),
-  }));
-  if (isSnoozed(notification)) {
-    items.push(
-      { type: "separator" },
-      {
-        label: "Return to Inbox",
-        icon: createElement(IconInbox),
-        onClick: () => snooze(null),
-      },
-    );
-  }
-  return items;
 }
 
 interface DetailProps {

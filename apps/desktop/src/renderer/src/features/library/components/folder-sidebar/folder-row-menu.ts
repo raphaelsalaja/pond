@@ -11,7 +11,6 @@ import {
   IconSortArrows,
 } from "@pond/icons";
 import type { Folder } from "@pond/schema/db";
-import { libraryFolderLink } from "@shared/library-links";
 import { createElement } from "react";
 import {
   buildFolderCanvasItems,
@@ -26,6 +25,7 @@ import {
   exportFolderPackage,
 } from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
+import { copyFolderLink } from "@/features/library/lib/copy-links";
 import {
   folderColorMenuItems,
   folderIconMenuItems,
@@ -95,6 +95,10 @@ export function buildQuickAccessFolderMenuItems(input: {
   const index = input.folderIds.indexOf(input.folder.id);
   return [
     { label: "Open Folder", onClick: input.onOpen },
+    {
+      label: "Copy Folder Link",
+      onClick: () => copyFolderLink(input.folder.id),
+    },
     {
       label: "Remove from Quick Access",
       onClick: () =>
@@ -169,13 +173,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     onCreateCanvas: () =>
       void createCanvasFromFolderSaves(folder.name, input.exportIds),
     canvasItems: buildFolderCanvasItems(input.exportIds),
-    onCopyLink: () => {
-      void window.pond
-        .query("clipboard.writeText", {
-          text: libraryFolderLink(window.pond.libraryId(), folder.id),
-        })
-        .then(() => notify({ id: "folder-link", title: "Folder link copied" }));
-    },
+    onCopyLink: () => copyFolderLink(folder.id),
     onToggleSubfolders: (next) => {
       if (input.viewing) {
         setIncludeSubfolders(next);

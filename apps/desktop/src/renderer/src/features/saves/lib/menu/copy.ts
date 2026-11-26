@@ -29,6 +29,7 @@ import {
 } from "@/features/saves/lib/selection";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { notify } from "@/shared/lib/toast";
+import { copyPondLinks } from "./links";
 import { glyph, notifyCopy, submenuHidden } from "./shared";
 import type { SaveMenuContext } from "./types";
 
@@ -59,32 +60,7 @@ export function buildCopyItems({
     {
       label: "Copy Pond Link",
       icon: glyph(IconLink2),
-      onClick: () => {
-        void window.pond
-          .query("saves.copyInternalLinks", { ids })
-          .then(() =>
-            notify({
-              id: "copy-pond-link",
-              title: ids.length > 1 ? "Pond links copied" : "Pond link copied",
-            }),
-          )
-          .catch(() =>
-            notify({ id: "copy-pond-link", title: "Couldn't copy Pond link" }),
-          );
-      },
-    },
-    {
-      label: "Copy URL",
-      icon: glyph(IconGlobe),
-      hidden: !hasUrl,
-      shortcut: shortcutGlyphs("save.copy-url"),
-      onClick: () => {
-        if (batch) {
-          void copyUrlsForSelection(ids).then(notifyCopy);
-          return;
-        }
-        if (save.url) void copyUrl(save.url);
-      },
+      onClick: () => copyPondLinks(ids),
     },
   ];
 
@@ -106,6 +82,19 @@ export function buildCopyItems({
       onClick: () => {
         if (batch) void copyFilesForSelection(ids);
         else void copyPrimaryMedia(save, fileIndex);
+      },
+    },
+    {
+      label: "Copy URL",
+      icon: glyph(IconGlobe),
+      hidden: !hasUrl,
+      shortcut: shortcutGlyphs("save.copy-url"),
+      onClick: () => {
+        if (batch) {
+          void copyUrlsForSelection(ids).then(notifyCopy);
+          return;
+        }
+        if (save.url) void copyUrl(save.url);
       },
     },
     {

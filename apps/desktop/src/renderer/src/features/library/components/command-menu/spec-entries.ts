@@ -57,6 +57,7 @@ export function specEntries(
       if (children.length === 0) return;
       entries.push({
         ...base,
+        nested: children,
         page: () => ({
           kind: "actions",
           key: base.id,
