@@ -326,154 +326,159 @@ export function buildNewMenuItems(
       label: "Library",
       icon: <IconLibrary />,
       keywords: "duplicates rescan verify repair diagnostics",
+      items: libraryMenuItems(),
+    },
+  ];
+}
+
+/** Library-wide maintenance, shared by the New menu and the sidebar's Library header. */
+export function libraryMenuItems(): Array<MenuItemSpec> {
+  return [
+    {
+      type: "submenu",
+      id: "find-duplicates",
+      label: "Find Duplicates",
+      icon: <IconDuplicate />,
+      keywords: "scan similar exact",
       items: [
         {
-          type: "submenu",
-          id: "find-duplicates",
-          label: "Find Duplicates",
-          icon: <IconDuplicate />,
-          keywords: "scan similar exact",
-          items: [
-            {
-              id: "duplicates-all",
-              label: "Scan All",
-              icon: <IconScan />,
-              keywords: "library",
-              onClick: () => findDuplicates("all"),
-            },
-            {
-              id: "duplicates-list",
-              label: "Current List",
-              icon: <IconBulletList />,
-              keywords: "folder view filter",
-              onClick: () => findDuplicates("list"),
-            },
-            {
-              id: "duplicates-selected",
-              label: "Selected",
-              icon: <IconCheckboxChecked />,
-              keywords: "selection",
-              onClick: () => findDuplicates("selected"),
-            },
-          ],
+          id: "duplicates-all",
+          label: "Scan All",
+          icon: <IconScan />,
+          keywords: "library",
+          onClick: () => findDuplicates("all"),
         },
         {
-          type: "submenu",
-          id: "review-organization",
-          label: "Review Organization",
-          icon: <IconFolderSearch />,
-          keywords: "cluster classify labels folders related",
-          items: [
-            {
-              id: "organization-all",
-              label: "All Saves",
-              icon: <IconLibrary />,
-              onClick: () => reviewOrganization("all"),
-            },
-            {
-              id: "organization-list",
-              label: "Current List",
-              icon: <IconBulletList />,
-              onClick: () => reviewOrganization("list"),
-            },
-            {
-              id: "organization-selected",
-              label: "Selected",
-              icon: <IconCheckboxChecked />,
-              onClick: () => reviewOrganization("selected"),
-            },
-          ],
+          id: "duplicates-list",
+          label: "Current List",
+          icon: <IconBulletList />,
+          keywords: "folder view filter",
+          onClick: () => findDuplicates("list"),
         },
         {
-          id: "rescan",
-          label: "Rescan Library",
-          icon: <IconRefresh />,
-          keywords: "reconcile index files disk",
-          shortcut: shortcutGlyphs("library.rescan"),
-          onClick: () => void runNewAction(rescanLibrary),
-        },
-        {
-          id: "health",
-          label: "Library Health",
-          icon: <IconShieldCheck />,
-          keywords: "status problems failed missing thumbnails posters check",
-          onClick: () => openSettings("health"),
-        },
-        {
-          id: "verify",
-          label: "Verify Integrity",
-          icon: <IconShieldCheck />,
-          keywords: "check missing orphan files disk",
-          onClick: () => void runNewAction(verifyIntegrity),
-        },
-        {
-          type: "submenu",
-          id: "repair-library",
-          label: "Repair Library",
-          icon: <IconSettingsWrench />,
-          keywords: "fix maintenance metadata filenames thumbnails content",
-          items: [
-            {
-              id: "repair-thumbnails",
-              label: "Repair Thumbnails",
-              icon: <IconImage />,
-              onClick: () =>
-                newMenuDialog.open({
-                  kind: "repair",
-                  repair: "thumbnails",
-                }),
-            },
-            {
-              id: "repair-physical-file-names",
-              label: "Repair Physical File Names",
-              icon: <IconRename />,
-              onClick: () =>
-                newMenuDialog.open({
-                  kind: "repair",
-                  repair: "physical-file-names",
-                }),
-            },
-            {
-              id: "repair-invalid-content",
-              label: "Repair Invalid Content",
-              icon: <IconFileAlert />,
-              onClick: () =>
-                newMenuDialog.open({
-                  kind: "repair",
-                  repair: "invalid-content",
-                }),
-            },
-            {
-              id: "repair-save-metadata",
-              label: "Repair Save Metadata",
-              icon: <IconFileSettings />,
-              onClick: () =>
-                newMenuDialog.open({
-                  kind: "repair",
-                  repair: "save-metadata",
-                }),
-            },
-            {
-              id: "repair-eagle-previews",
-              label: "Remove Duplicate Eagle Previews",
-              icon: <IconCopy />,
-              keywords: "eagle thumbnail duplicate",
-              onClick: () =>
-                newMenuDialog.open({
-                  kind: "repair",
-                  repair: "eagle-previews",
-                }),
-            },
-          ],
-        },
-        {
-          id: "debug-report",
-          label: "Export Debug Report",
-          icon: <IconReportFile />,
-          keywords: "diagnostics support privacy redacted",
-          onClick: () => void runNewAction(exportDebugReport),
+          id: "duplicates-selected",
+          label: "Selected",
+          icon: <IconCheckboxChecked />,
+          keywords: "selection",
+          onClick: () => findDuplicates("selected"),
         },
       ],
+    },
+    {
+      type: "submenu",
+      id: "review-organization",
+      label: "Review Organization",
+      icon: <IconFolderSearch />,
+      keywords: "cluster classify labels folders related",
+      items: [
+        {
+          id: "organization-all",
+          label: "All Saves",
+          icon: <IconLibrary />,
+          onClick: () => reviewOrganization("all"),
+        },
+        {
+          id: "organization-list",
+          label: "Current List",
+          icon: <IconBulletList />,
+          onClick: () => reviewOrganization("list"),
+        },
+        {
+          id: "organization-selected",
+          label: "Selected",
+          icon: <IconCheckboxChecked />,
+          onClick: () => reviewOrganization("selected"),
+        },
+      ],
+    },
+    {
+      id: "rescan",
+      label: "Rescan Library",
+      icon: <IconRefresh />,
+      keywords: "reconcile index files disk",
+      shortcut: shortcutGlyphs("library.rescan"),
+      onClick: () => void runNewAction(rescanLibrary),
+    },
+    {
+      id: "health",
+      label: "Library Health",
+      icon: <IconShieldCheck />,
+      keywords: "status problems failed missing thumbnails posters check",
+      onClick: () => openSettings("health"),
+    },
+    {
+      id: "verify",
+      label: "Verify Integrity",
+      icon: <IconShieldCheck />,
+      keywords: "check missing orphan files disk",
+      onClick: () => void runNewAction(verifyIntegrity),
+    },
+    {
+      type: "submenu",
+      id: "repair-library",
+      label: "Repair Library",
+      icon: <IconSettingsWrench />,
+      keywords: "fix maintenance metadata filenames thumbnails content",
+      items: [
+        {
+          id: "repair-thumbnails",
+          label: "Repair Thumbnails",
+          icon: <IconImage />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "thumbnails",
+            }),
+        },
+        {
+          id: "repair-physical-file-names",
+          label: "Repair Physical File Names",
+          icon: <IconRename />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "physical-file-names",
+            }),
+        },
+        {
+          id: "repair-invalid-content",
+          label: "Repair Invalid Content",
+          icon: <IconFileAlert />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "invalid-content",
+            }),
+        },
+        {
+          id: "repair-save-metadata",
+          label: "Repair Save Metadata",
+          icon: <IconFileSettings />,
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "save-metadata",
+            }),
+        },
+        {
+          id: "repair-eagle-previews",
+          label: "Remove Duplicate Eagle Previews",
+          icon: <IconCopy />,
+          keywords: "eagle thumbnail duplicate",
+          onClick: () =>
+            newMenuDialog.open({
+              kind: "repair",
+              repair: "eagle-previews",
+            }),
+        },
+      ],
+    },
+    {
+      id: "debug-report",
+      label: "Export Debug Report",
+      icon: <IconReportFile />,
+      keywords: "diagnostics support privacy redacted",
+      onClick: () => void runNewAction(exportDebugReport),
     },
   ];
 }

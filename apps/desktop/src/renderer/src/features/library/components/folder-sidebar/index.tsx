@@ -58,7 +58,7 @@ import { InboxList } from "./inbox-list";
 import { selectLibraryNav } from "./navigation";
 import { isRailPage, Rail } from "./rail";
 import type { RailItem, RailSection } from "./rail";
-import { SidebarMenu } from "./sidebar-menu";
+import { LibraryHeader, SidebarMenu } from "./sidebar-menu";
 import styles from "./styles.module.css";
 
 /** Dialogs rendered from sidebar rows portal out of the sidebar, but React still bubbles their right-clicks here. */
@@ -254,9 +254,7 @@ export function FolderSidebar() {
       ) : null}
       {panel === "library" ? (
         <>
-          <Sidebar.GroupHeader>
-            <Sidebar.GroupLabel>Library</Sidebar.GroupLabel>
-          </Sidebar.GroupHeader>
+          <LibraryHeader />
           <LibraryDestinations
             activeViewId={activeViewId}
             destination={destination}

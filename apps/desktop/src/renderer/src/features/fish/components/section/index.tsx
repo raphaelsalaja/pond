@@ -27,7 +27,10 @@ import { Menu, Sidebar } from "@pond/ui";
 import { useReducedMotionConfig } from "motion/react";
 import { useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { SidebarSectionMenu } from "@/features/settings";
+import {
+  SidebarSectionMenu,
+  SidebarSectionMoreMenu,
+} from "@/features/settings";
 import { SpecMenu } from "@/shared/components/spec-context-menu";
 import {
   createSortableAnnouncements,
@@ -200,6 +203,11 @@ export function FishSection({ activeId }: { activeId: string | null }) {
               <IconPlus />
             </Menu.Trigger>
           </SpecMenu>
+          <SidebarSectionMoreMenu
+            section="fish"
+            label="More Fish Actions"
+            buildItems={sectionItems}
+          />
         </Sidebar.GroupHeader>
       </SidebarSectionMenu>
       <Sidebar.GroupContent aria-label="Fish">

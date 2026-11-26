@@ -2,6 +2,7 @@ import { IconPlus } from "@pond/icons";
 import { Button, Sidebar } from "@pond/ui";
 import {
   SidebarSectionMenu,
+  SidebarSectionMoreMenu,
   useRevealSidebarSection,
 } from "@/features/settings";
 import { usePrefs } from "@/shared/state/prefs";
@@ -43,6 +44,11 @@ export function CanvasesSection({ activeId }: { activeId: string | null }) {
           >
             <IconPlus />
           </Button>
+          <SidebarSectionMoreMenu
+            section="canvases"
+            label="More Canvas Actions"
+            buildItems={sectionItems}
+          />
         </Sidebar.GroupHeader>
       </SidebarSectionMenu>
       <Sidebar.GroupContent aria-label="Canvases">

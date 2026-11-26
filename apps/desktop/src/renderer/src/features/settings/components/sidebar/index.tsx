@@ -1,6 +1,9 @@
+import { IconFolderOpen, IconGift, IconRefresh } from "@pond/icons";
 import { Sidebar } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import Fuse from "fuse.js";
 import { useEffect, useMemo, useState } from "react";
+import { requestUpdateCheck } from "@/features/settings/components/update-dialog/session";
 import {
   SETTINGS_MASTER_GROUPS,
   sectionForId,
@@ -11,13 +14,37 @@ import { SETTINGS_SEARCH_INDEX } from "@/features/settings/lib/search-index";
 import type { SettingsSearchEntry } from "@/features/settings/lib/search-index";
 import { SECTION_PRELOADS } from "@/features/settings/lib/sections";
 import { SearchChrome } from "@/shared/components/search-chrome";
+import { SpecMoreMenu } from "@/shared/components/spec-context-menu";
 import { useRouteLocation } from "@/shared/hooks/use-route-location";
 import { preloadWhenIdle } from "@/shared/lib/lazy-with-preload";
 import { openSettings } from "@/shared/lib/open-settings";
+import { FILE_MANAGER } from "@/shared/lib/platform";
+import { whatsNewDialog } from "@/shared/state/whats-new";
 
 interface SectionResult {
   section: SectionDef;
   items: Array<SettingsSearchEntry>;
+}
+
+function moreItems(): Array<MenuItemSpec> {
+  return [
+    {
+      label: "Check for Updates",
+      icon: <IconRefresh />,
+      onClick: () => requestUpdateCheck(),
+    },
+    {
+      label: "What's New",
+      icon: <IconGift />,
+      onClick: () => whatsNewDialog.open(),
+    },
+    { type: "separator" },
+    {
+      label: `Show Library in ${FILE_MANAGER}`,
+      icon: <IconFolderOpen />,
+      onClick: () => void window.pond.query("library.openInFinder", {}),
+    },
+  ];
 }
 
 export function SettingsSidebar() {
@@ -95,6 +122,7 @@ export function SettingsSidebarView({
     <>
       <Sidebar.GroupHeader>
         <Sidebar.GroupLabel>Settings</Sidebar.GroupLabel>
+        <SpecMoreMenu label="More Settings Actions" buildItems={moreItems} />
       </Sidebar.GroupHeader>
       <SearchChrome.Root>
         <SearchChrome.Field
