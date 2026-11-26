@@ -226,7 +226,8 @@ function VideoSlide({
 }
 
 function PosterSlide({ slide, saveId }: { slide: MediaSlide; saveId: string }) {
-  if (!slide.posterUrl) return <div className={styles["media-shell"]} />;
+  if (!slide.posterUrl || slide.posterIsCrossFile)
+    return <div className={styles["media-shell"]} />;
   return (
     <button
       type="button"
