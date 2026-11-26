@@ -1,3 +1,4 @@
+import { IconDots } from "@pond/icons";
 import { ContextMenu, Menu } from "@pond/ui";
 import type { MenuItemSpec } from "@pond/ui";
 import { isElement } from "@pond/ui/dom";
@@ -279,5 +280,22 @@ export function SpecMenu({
         </Menu.Portal>
       </Menu.Root>
     </SearchFilter>
+  );
+}
+
+/** A panel header's ⋯ button: its actions without needing a right-click. */
+export function SpecMoreMenu({
+  label,
+  buildItems,
+}: {
+  label: string;
+  buildItems: () => Array<MenuItemSpec>;
+}) {
+  return (
+    <SpecMenu align="end" buildItems={buildItems}>
+      <Menu.Trigger icon size="sm" variant="ghost" aria-label={label}>
+        <IconDots size={12} />
+      </Menu.Trigger>
+    </SpecMenu>
   );
 }

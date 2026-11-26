@@ -16,15 +16,20 @@ import {
   IconUser,
 } from "@pond/icons";
 import { Sidebar } from "@pond/ui";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { SOURCE_STATUS_OPTIONS } from "@/features/sources/components/page/lib/filters";
 import type { SourceStatusId } from "@/features/sources/components/page/lib/filters";
 import { useSourceTableRows } from "@/features/sources/hooks/use-source-table-rows";
+import { startConnect, startWatch } from "@/features/sources/lib/create";
+import { buildSourceNewMenuItems } from "@/features/sources/lib/create-menu";
+import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
 import {
   sourcesFilters,
   useSourcesFilters,
 } from "@/features/sources/state/sources-filters";
+import { SpecMoreMenu } from "@/shared/components/spec-context-menu";
 
 const STATUS_ICONS = {
   active: <IconCircleCheck />,
@@ -92,12 +97,26 @@ export function SourcesSidebar() {
     return counts;
   }, [rows]);
   const unfiltered = filters.statuses.size === 0 && filters.types.size === 0;
+  const client = useQueryClient();
 
   return (
     <>
       <Sidebar.Group>
         <Sidebar.GroupHeader>
           <Sidebar.GroupLabel>Sources</Sidebar.GroupLabel>
+          <SpecMoreMenu
+            label="More Source Actions"
+            buildItems={() =>
+              buildSourceNewMenuItems({
+                onConnect: (source) => void startConnect(source),
+                onWatch: startWatch,
+                onFolder: () =>
+                  void pickWatchedFolder().then(() =>
+                    client.invalidateQueries({ queryKey: ["watched-folder"] }),
+                  ),
+              })
+            }
+          />
         </Sidebar.GroupHeader>
         <Sidebar.GroupContent aria-label="Status">
           <Row

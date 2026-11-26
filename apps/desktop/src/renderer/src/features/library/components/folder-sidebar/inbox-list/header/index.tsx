@@ -1,10 +1,10 @@
-import { IconDots, IconEnvelope, IconTrash } from "@pond/icons";
-import { Menu, Sidebar, Toggle, Tooltip } from "@pond/ui";
+import { IconEnvelope, IconTrash } from "@pond/icons";
+import { Sidebar, Toggle, Tooltip } from "@pond/ui";
 import type { MenuItemSpec } from "@pond/ui";
 import { createElement } from "react";
 import type { InboxScope } from "@/features/library/state/inbox-review";
 import { notifications } from "@/features/notifications";
-import { SpecMenu } from "@/shared/components/spec-context-menu";
+import { SpecMoreMenu } from "@/shared/components/spec-context-menu";
 import { usePrefs } from "@/shared/state/prefs";
 import { InboxDisplayMenu } from "../display";
 
@@ -33,16 +33,7 @@ export function InboxHeader({ scope }: { scope: InboxScope }) {
   return (
     <Sidebar.GroupHeader>
       <Sidebar.GroupLabel>{label}</Sidebar.GroupLabel>
-      <SpecMenu align="end" buildItems={moreItems}>
-        <Menu.Trigger
-          icon
-          size="sm"
-          variant="ghost"
-          aria-label="More Inbox Actions"
-        >
-          <IconDots size={12} />
-        </Menu.Trigger>
-      </SpecMenu>
+      <SpecMoreMenu label="More Inbox Actions" buildItems={moreItems} />
       <Tooltip label={UNREAD_ONLY} side="bottom">
         <Toggle
           icon

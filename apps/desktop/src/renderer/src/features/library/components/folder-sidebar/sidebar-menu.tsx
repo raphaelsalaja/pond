@@ -11,6 +11,7 @@ import {
   SIDEBAR_SECTIONS,
 } from "@pond/schema";
 import type { Prefs } from "@pond/schema";
+import { Sidebar } from "@pond/ui";
 import type { MenuItemSpec } from "@pond/ui";
 import { useState } from "react";
 import type { ReactElement } from "react";
@@ -18,12 +19,16 @@ import {
   newFolder,
   newSmartFolder,
 } from "@/features/library/components/new-menu/actions";
+import { libraryMenuItems } from "@/features/library/components/new-menu/spec";
 import {
   SIDEBAR_DESTINATION_LABELS,
   SIDEBAR_SECTION_LABELS,
   SidebarCustomizationDialog,
 } from "@/features/settings";
-import { SpecContextMenu } from "@/shared/components/spec-context-menu";
+import {
+  SpecContextMenu,
+  SpecMoreMenu,
+} from "@/shared/components/spec-context-menu";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { usePrefs } from "@/shared/state/prefs";
 
@@ -104,28 +109,56 @@ export function sidebarMenuItems({
   ];
 }
 
-/** Rows and section headers open their own menus first; this catches the space around them. */
-export function SidebarMenu({ children }: { children: ReactElement }) {
+function useSidebarMenu() {
   const [sidebar, patch] = usePrefs("sidebar");
   const [customizing, setCustomizing] = useState(false);
 
-  return (
-    <>
-      <SpecContextMenu
-        buildItems={() =>
-          sidebarMenuItems({
-            sidebar,
-            patch: (next) => void patch(next),
-            customize: () => setCustomizing(true),
-          })
-        }
-      >
-        {children}
-      </SpecContextMenu>
+  return {
+    buildItems: () =>
+      sidebarMenuItems({
+        sidebar,
+        patch: (next) => void patch(next),
+        customize: () => setCustomizing(true),
+      }),
+    dialog: (
       <SidebarCustomizationDialog
         open={customizing}
         onOpenChange={setCustomizing}
       />
+    ),
+  };
+}
+
+/** Rows and section headers open their own menus first; this catches the space around them. */
+export function SidebarMenu({ children }: { children: ReactElement }) {
+  const { buildItems, dialog } = useSidebarMenu();
+
+  return (
+    <>
+      <SpecContextMenu buildItems={buildItems}>{children}</SpecContextMenu>
+      {dialog}
+    </>
+  );
+}
+
+/** The ⋯ button puts Library maintenance and the sidebar menu in reach without a right-click. */
+export function LibraryHeader() {
+  const { buildItems, dialog } = useSidebarMenu();
+
+  return (
+    <>
+      <Sidebar.GroupHeader>
+        <Sidebar.GroupLabel>Library</Sidebar.GroupLabel>
+        <SpecMoreMenu
+          label="More Library Actions"
+          buildItems={() => [
+            ...libraryMenuItems(),
+            { type: "separator" },
+            ...buildItems(),
+          ]}
+        />
+      </Sidebar.GroupHeader>
+      {dialog}
     </>
   );
 }

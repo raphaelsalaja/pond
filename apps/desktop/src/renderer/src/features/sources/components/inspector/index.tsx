@@ -14,6 +14,7 @@ import {
   watchSourceLabel,
 } from "@pond/schema/watches";
 import { Button, Input, Settings, Sidebar, Switch } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import type { SourceTargetInput } from "@shared/account-contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
@@ -71,6 +72,7 @@ import type {
 } from "@/features/sources/state/source-detail";
 import { useSyncByAccount } from "@/features/sources/state/sync-monitor";
 import { SearchChrome } from "@/shared/components/search-chrome";
+import { SpecMoreMenu } from "@/shared/components/spec-context-menu";
 import { getAppHistory } from "@/shared/lib/app-router";
 import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { openSettings } from "@/shared/lib/open-settings";
@@ -162,6 +164,8 @@ export type SourceDetailModel =
       initialPage: SourceDetailsPage;
       /** Mounted beside every page so switching pages keeps shared state. */
       effect?: ReactNode;
+      /** The source's action menu, shown from the sidebar header's ⋯ button. */
+      menu?: () => Array<MenuItemSpec>;
     };
 
 export function SourceDetailSidebar({ kind, id, page }: SourceDetailTarget) {
@@ -263,6 +267,9 @@ export function SourceDetailNavView({
     <>
       <Sidebar.GroupHeader>
         <Sidebar.GroupLabel>{model.name}</Sidebar.GroupLabel>
+        {model.menu ? (
+          <SpecMoreMenu label="More Source Actions" buildItems={model.menu} />
+        ) : null}
       </Sidebar.GroupHeader>
       <SearchChrome.Root>
         <SearchChrome.Field
@@ -404,22 +411,20 @@ function AccountData({
   const { accounts, loading, refetch } = useAccounts();
   const account = accounts.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
-  useCommandContext(
-    "Current Source",
-    account
-      ? () =>
-          buildSourceActionMenu(
-            accountMenuTarget(account, cardModel(byAccount[account.id])),
-            {
-              accounts,
-              onChanged: () => {
-                void refetch();
-                sourceDetail.changed();
-              },
+  const menu = account
+    ? () =>
+        buildSourceActionMenu(
+          accountMenuTarget(account, cardModel(byAccount[account.id])),
+          {
+            accounts,
+            onChanged: () => {
+              void refetch();
+              sourceDetail.changed();
             },
-          )
-      : null,
-  );
+          },
+        )
+    : null;
+  useCommandContext("Current Source", menu);
   if (!account) {
     return children({ status: loading ? "loading" : "missing" });
   }
@@ -494,6 +499,7 @@ function AccountData({
         await saveAccountNickname(account, value);
         changed();
       },
+      menu: menu ?? undefined,
     }),
   );
 }
@@ -514,21 +520,19 @@ function WatchData({
   const { accounts } = useAccounts();
   const watch = watches.find((row) => row.id === id);
   const byAccount = useSyncByAccount();
-  useCommandContext(
-    "Current Source",
-    watch
-      ? () =>
-          buildSourceActionMenu(
-            watchMenuTarget(watch, cardModel(byAccount[watch.id])),
-            {
-              onChanged: () => {
-                void refetch();
-                sourceDetail.changed();
-              },
+  const menu = watch
+    ? () =>
+        buildSourceActionMenu(
+          watchMenuTarget(watch, cardModel(byAccount[watch.id])),
+          {
+            onChanged: () => {
+              void refetch();
+              sourceDetail.changed();
             },
-          )
-      : null,
-  );
+          },
+        )
+    : null;
+  useCommandContext("Current Source", menu);
   if (!watch) {
     return children({ status: loading ? "loading" : "missing" });
   }
@@ -565,6 +569,7 @@ function WatchData({
         await saveWatchNickname(watch, value);
         changed();
       },
+      menu: menu ?? undefined,
     }),
   );
 }
@@ -641,6 +646,7 @@ export interface SourceDetailsProps {
   initialPage?: SourceDetailsPage;
   effect?: ReactNode;
   onNicknameSave?: (value: string) => Promise<void>;
+  menu?: () => Array<MenuItemSpec>;
 }
 
 export function sourceDetailModel({
@@ -657,6 +663,7 @@ export function sourceDetailModel({
   initialPage = "general",
   effect,
   onNicknameSave,
+  menu,
 }: SourceDetailsProps): SourceDetailModel {
   const general: SourceDetailPageDef = {
     id: "general",
@@ -705,6 +712,7 @@ export function sourceDetailModel({
     ],
     initialPage,
     effect,
+    menu,
   };
 }
 

@@ -1,5 +1,12 @@
-import { IconFolder, IconPlus, IconStar, IconTag } from "@pond/icons";
+import {
+  IconFolder,
+  IconPlus,
+  IconStar,
+  IconTag,
+  IconWindow,
+} from "@pond/icons";
 import { Button, Sidebar, Tooltip } from "@pond/ui";
+import type { MenuItemSpec } from "@pond/ui";
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { tagCreation } from "@/features/tags/state/creation";
@@ -7,6 +14,7 @@ import { useTagGroups } from "@/features/tags/state/tag-groups";
 import { useTags } from "@/features/tags/state/tags";
 import { tagsScope, useTagsScope } from "@/features/tags/state/tags-scope";
 import type { TagsScope } from "@/features/tags/state/tags-scope";
+import { SpecMoreMenu } from "@/shared/components/spec-context-menu";
 
 function Row({
   scope,
@@ -38,6 +46,21 @@ function Row({
   );
 }
 
+function moreItems(): Array<MenuItemSpec> {
+  return [
+    {
+      label: "New Tag",
+      icon: <IconTag />,
+      onClick: () => tagCreation.request("tag"),
+    },
+    {
+      label: "New Tag Group",
+      icon: <IconWindow />,
+      onClick: () => tagCreation.request("group"),
+    },
+  ];
+}
+
 export function TagsSidebar() {
   const tags = useTags();
   const groups = useTagGroups();
@@ -63,6 +86,7 @@ export function TagsSidebar() {
       <Sidebar.Group>
         <Sidebar.GroupHeader>
           <Sidebar.GroupLabel>Tags</Sidebar.GroupLabel>
+          <SpecMoreMenu label="More Tag Actions" buildItems={moreItems} />
         </Sidebar.GroupHeader>
         <Sidebar.GroupContent aria-label="Tag Collections">
           <Row

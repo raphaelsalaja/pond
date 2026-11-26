@@ -156,6 +156,51 @@ describe("sidebar background menu", () => {
     expect(hasMenuItem("Sections")).toBe(true);
   });
 
+  it("opens Library and sidebar actions from the header's More button", async () => {
+    await harness.mount();
+    await act(async () => harness.iconButton("More Library Actions").click());
+    await vi.waitFor(() => {
+      expect(hasMenuItem("Find Duplicates")).toBe(true);
+    });
+    for (const label of [
+      "Review Organization",
+      "Rescan Library",
+      "Library Health",
+      "Customize Sidebar",
+      "Sections",
+      "New Folder",
+      "New Smart Folder",
+    ]) {
+      expect(hasMenuItem(label)).toBe(true);
+    }
+    await act(async () => harness.menuItem("Customize Sidebar").click());
+    expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+  });
+
+  it.each([
+    ["/tags", "More Tag Actions", "New Tag"],
+    ["/downloads", "More Download Actions", "Download Video or Audio"],
+    ["/sources", "More Source Actions", "New Source"],
+    ["/canvases", "More Canvas Actions", "New Canvas"],
+    ["/settings", "More Settings Actions", "Check for Updates"],
+  ])(
+    "opens the %s panel's actions from its More button",
+    async (path, label, item) => {
+      await harness.mount(path);
+      /** A panel's route loads on first visit, which can take a while on a cold CI runner. */
+      const more = await vi.waitFor(() => harness.iconButton(label), {
+        timeout: 5000,
+      });
+      await act(async () => more.click());
+      await vi.waitFor(
+        () => {
+          expect(hasMenuItem(item)).toBe(true);
+        },
+        { timeout: 5000 },
+      );
+    },
+  );
+
   it("leaves row and section header menus in charge", async () => {
     await harness.mount();
     await rightClick(harness.button("Uncategorized"));

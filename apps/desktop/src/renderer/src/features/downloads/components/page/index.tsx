@@ -9,14 +9,8 @@ import {
 import { sourceLabel } from "@pond/schema/sources";
 import { Button, Keyboard, Tooltip } from "@pond/ui";
 import type { QueueSourceGate } from "@shared/queue-contracts";
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import type { z } from "zod";
 import { DownloadsCompletedHidden } from "@/features/downloads/components/empty";
 import { DownloadsIntro } from "@/features/downloads/components/intro";
 import {
@@ -24,17 +18,16 @@ import {
   clearUnfinishedDownloads,
 } from "@/features/downloads/components/lib/actions";
 import { useLiveDownloadHydration } from "@/features/downloads/hooks/use-live-download-hydration";
+import { usePipelinePause } from "@/features/downloads/hooks/use-pipeline-pause";
 import {
   downloadFiltersActive,
   downloadRowSource,
   HistoryPageSchema,
   historyToDownloadRow,
   matchesDownloadFilters,
-  PipelineStatusSchema,
   projectLiveDownloads,
   STATUS_FILTER_OPTIONS,
   showsCompletedDownloads,
-  statusFeed,
 } from "@/features/downloads/lib/status-feed";
 import type {
   HistoryCursor,
@@ -69,11 +62,9 @@ import styles from "./styles.module.css";
 
 const initialHistoryCursor: HistoryCursor = null;
 const NO_GATES: ReadonlyArray<QueueSourceGate> = [];
-type PipelineStatus = z.infer<typeof PipelineStatusSchema>;
 
 export function DownloadsPage() {
   const saves = useSaves();
-  const qc = useQueryClient();
   useLiveDownloadHydration();
   const filters = useDownloadsFilters();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -171,14 +162,8 @@ export function DownloadsPage() {
       : null,
   );
 
-  const pipeline = useQuery({
-    queryKey: ["pipeline.status"],
-    queryFn: async () =>
-      PipelineStatusSchema.parse(
-        await window.pond.query("pipeline.status", {}),
-      ),
-  });
-  const paused = pipeline.data?.paused === true;
+  const pause = usePipelinePause();
+  const paused = pause.paused;
   const tableFiltersActive = downloadFiltersActive(filters);
   const filtering = filters.q.trim() !== "" || tableFiltersActive;
   const showCompleted = showsCompletedDownloads(filters);
@@ -197,18 +182,6 @@ export function DownloadsPage() {
   const showMatchesEmpty =
     nothingVisible && !showPlaceEmpty && !showCompletedHidden;
 
-  const pause = useMutation({
-    mutationFn: () => window.pond.pipelinePause(!paused),
-    onSuccess: (result) =>
-      qc.setQueryData<PipelineStatus>(["pipeline.status"], {
-        paused: result.paused,
-      }),
-    onError: () =>
-      statusFeed.error(
-        "Pause downloads",
-        "Couldn't change the queue. Try again.",
-      ),
-  });
   const clearUnfinished = useMutation({ mutationFn: clearUnfinishedDownloads });
 
   if (
@@ -284,9 +257,9 @@ export function DownloadsPage() {
               icon
               size="sm"
               variant="ghost"
-              disabled={!pipeline.data || pause.isPending}
-              loading={pause.isPending}
-              onClick={() => pause.mutate()}
+              disabled={!pause.ready || pause.pending}
+              loading={pause.pending}
+              onClick={pause.toggle}
               aria-label={paused ? "Resume Queue" : "Pause Queue"}
             >
               {paused ? <IconMediaPlay /> : <IconMediaPause />}
