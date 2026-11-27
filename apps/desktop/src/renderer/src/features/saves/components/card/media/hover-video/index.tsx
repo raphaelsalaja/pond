@@ -41,6 +41,7 @@ export function HoverVideo({
   onBroken,
   onReady,
   hasVideoDims = false,
+  hoverOnly = false,
 }: {
   saveId: string;
   src: string;
@@ -52,6 +53,8 @@ export function HoverVideo({
   onBroken: () => void;
   onReady?: () => void;
   hasVideoDims?: boolean;
+  /** The card already paints its own still, so the video never renders a poster, hash, or resting frame: it appears only while hovered. */
+  hoverOnly?: boolean;
 }) {
   const [prefs] = usePrefs("viewer");
   const playbackPaused = useMachinePlaybackPaused();
@@ -65,10 +68,11 @@ export function HoverVideo({
   const [videoReady, setVideoReady] = useState(false);
   const [posterBroken, setPosterBroken] = useState(false);
   const coverKey = aspectCoverKey(unit);
-  const effectivePosterUrl = posterBroken
-    ? undefined
-    : posterUrl && thumbUrlFor(posterUrl, posterWidth);
-  const needsRestingVideo = !effectivePosterUrl;
+  const effectivePosterUrl =
+    hoverOnly || posterBroken
+      ? undefined
+      : posterUrl && thumbUrlFor(posterUrl, posterWidth);
+  const needsRestingVideo = !hoverOnly && !effectivePosterUrl;
   const primed = hoverPrimed || needsRestingVideo;
 
   const reportPosterReady = useCallback(
@@ -242,7 +246,9 @@ export function HoverVideo({
   ]);
 
   const showHash =
-    Boolean(blurhash) && (effectivePosterUrl ? !posterLoaded : !videoReady);
+    !hoverOnly &&
+    Boolean(blurhash) &&
+    (effectivePosterUrl ? !posterLoaded : !videoReady);
 
   return (
     <>

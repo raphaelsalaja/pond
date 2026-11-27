@@ -240,6 +240,16 @@ export function pickCardUnit(
     : null;
 }
 
+/** The card still and the hover playback media are separate picks: whatever resting image was selected, a local browser-renderable video still plays on hover. */
+export function pickHoverVideoUnit(
+  cardUnit: MediaUnit | null,
+  mediaUnits: Array<MediaUnit>,
+): MediaUnit | null {
+  if (!cardUnit) return null;
+  if (cardUnit.isVideo) return cardUnit;
+  return mediaUnits.find((unit) => unit.isVideo) ?? null;
+}
+
 export function detailsPreviewUrl(unit: MediaUnit | null): string | null {
   if (!unit) return null;
   if (unit.isVideo) return unit.posterUrl ?? null;

@@ -6,6 +6,7 @@ import {
   deriveTypeKind,
   deriveTypeLabel,
   pickCardUnit,
+  pickHoverVideoUnit,
   pickPrimaryUnit,
 } from "./units";
 
@@ -382,6 +383,131 @@ describe("expanded library formats", () => {
     });
     expect(deriveTypeKind(save.files[0] ?? null, save)).toBe(kind);
     expect(deriveTypeLabel(save.files[0] ?? null, save)).toBe(label);
+  });
+});
+
+function hoverUnit(save: Save, opts = {}) {
+  return pickHoverVideoUnit(
+    pickCardUnit(save, opts),
+    buildMediaUnits(save, opts),
+  );
+}
+
+describe("pickHoverVideoUnit", () => {
+  it("plays the video on hover when a generated media thumbnail is the card still", () => {
+    const save = makeSave({
+      id: "reel-thumb",
+      source: "instagram",
+      mediaType: "video",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+        file("thumbnail", "video-1.mp4_thumbnail.webp", "image/webp"),
+      ],
+    });
+    expect(pickCardUnit(save, { theme: "light" })?.key).toBe(
+      "video-1.mp4_thumbnail.webp",
+    );
+
+    const unit = hoverUnit(save, { theme: "light" });
+    expect(unit?.key).toBe("video-1.mp4");
+    expect(unit?.isVideo).toBe(true);
+    expect(unit?.posterKey).toBe("poster-1.jpg");
+  });
+
+  it("keeps hover playback for an Instagram cover and video shape", () => {
+    const save = makeSave({
+      id: "reel-cover",
+      source: "instagram",
+      mediaType: "video",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("image", "media-1.jpg", "image/jpeg"),
+      ],
+    });
+
+    const unit = hoverUnit(save);
+    expect(unit?.key).toBe("video-1.mp4");
+    expect(unit?.isVideo).toBe(true);
+  });
+
+  it("does not let a custom thumbnail suppress hover eligibility", () => {
+    const save = makeSave({
+      id: "custom-thumb",
+      source: "twitter",
+      mediaType: "video",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+        file("thumbnail", "video-1.mp4_thumbnail.png", "image/png"),
+      ],
+    });
+    expect(pickCardUnit(save, { theme: "light" })?.isVideo).toBe(false);
+
+    expect(hoverUnit(save, { theme: "light" })?.key).toBe("video-1.mp4");
+  });
+
+  it("stays static for a poster-only save", () => {
+    const save = makeSave({
+      id: "poster-only",
+      source: "youtube",
+      mediaType: "video",
+      files: [
+        file("poster", "poster.jpg", "image/jpeg"),
+        file("thumbnail", "poster.jpg_thumbnail.webp", "image/webp"),
+      ],
+    });
+
+    expect(hoverUnit(save, { theme: "light" })).toBeNull();
+  });
+
+  it("stays static for a video format the browser cannot render", () => {
+    const save = makeSave({
+      id: "mpeg-thumb",
+      source: "local",
+      mediaType: "video",
+      files: [
+        file("video", "movie.mpeg", "video/mpeg"),
+        file("thumbnail", "movie.mpeg_thumbnail.webp", "image/webp"),
+      ],
+    });
+
+    expect(hoverUnit(save, { theme: "light" })).toBeNull();
+  });
+
+  it("plays the video on hover when a post screenshot is the card still", () => {
+    const save = makeSave({
+      id: "tweet-shot",
+      source: "twitter",
+      mediaType: "video",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+        file("tweet_screenshot_light", "tweet-light.png", "image/png"),
+      ],
+    });
+    const opts = { theme: "light" as const, tweetCover: "screenshot" as const };
+    expect(pickCardUnit(save, opts)?.key).toBe("tweet-light.png");
+
+    const unit = hoverUnit(save, opts);
+    expect(unit?.key).toBe("video-1.mp4");
+    expect(unit?.isVideo).toBe(true);
+  });
+
+  it("returns the card unit itself when the card already shows the video", () => {
+    const save = makeSave({
+      id: "bare-video",
+      source: "twitter",
+      mediaType: "video",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+      ],
+    });
+    const cardUnit = pickCardUnit(save);
+
+    expect(cardUnit?.isVideo).toBe(true);
+    expect(pickHoverVideoUnit(cardUnit, buildMediaUnits(save))).toBe(cardUnit);
   });
 });
 
