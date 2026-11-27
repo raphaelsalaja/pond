@@ -37,7 +37,7 @@ export type GithubRepoResult =
     };
 
 /** Direct reads bypass the harvest window pool, so the session transport gates and reports itself. */
-export function githubSessionGet(partition: string): GithubGet {
+function githubSessionGet(partition: string): GithubGet {
   const ses = session.fromPartition(partition);
   const ua = browserUserAgent();
   return async (url) => {
