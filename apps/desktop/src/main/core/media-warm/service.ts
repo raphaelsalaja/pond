@@ -275,7 +275,10 @@ async function processCandidate(candidate: MediaWarmCandidate): Promise<void> {
     await runEnsurePoster(candidate.saveId);
     const refreshed = await readCandidateSave(candidate.saveId);
     if (!refreshed) return;
-    const next = mediaWarmCandidates(refreshed);
+    /** A poster ensure-poster kept still looks repairable; queueing it again would loop. */
+    const next = mediaWarmCandidates(refreshed).filter(
+      (c) => c.kind !== "poster",
+    );
     if (next.length > 0) {
       candidates.unshift(...next);
       publish({ remaining: status.remaining + next.length });

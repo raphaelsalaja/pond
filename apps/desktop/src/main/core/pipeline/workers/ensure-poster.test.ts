@@ -2,9 +2,10 @@ import type { SaveFile } from "@pond/schema/db";
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
+import type { PosterWrite } from "../../../lib/poster-policy";
 import type { persistSave } from "../../persist-save";
 import type { ensureSaveThumbnail } from "../../save-thumbnail";
-import { ensureRemotePoster } from "./ensure-poster";
+import { chooseVideoPoster, ensureRemotePoster } from "./ensure-poster";
 import type { RemotePosterSave } from "./ensure-poster";
 
 const POSTER_URL = "https://cdn.test/poster.jpg";
@@ -275,5 +276,142 @@ describe("ensureRemotePoster", () => {
       runtime,
     );
     expect(persisted).toHaveLength(1);
+  });
+});
+
+function posterWrite(
+  width: number,
+  height: number,
+  sourceUrl?: string,
+): PosterWrite {
+  const poster: PosterWrite = {
+    kind: "poster",
+    filename: "poster-1.jpg",
+    bytes: Buffer.from([1]),
+    mimeType: "image/jpeg",
+    width,
+    height,
+  };
+  if (sourceUrl) poster.sourceUrl = sourceUrl;
+  return poster;
+}
+
+function posterCandidates(found: {
+  platform?: PosterWrite;
+  frame?: PosterWrite;
+}) {
+  const calls: Array<"platform" | "frame"> = [];
+  return {
+    calls,
+    candidates: {
+      platformPoster: async () => {
+        calls.push("platform");
+        return found.platform ?? null;
+      },
+      framePoster: async () => {
+        calls.push("frame");
+        return found.frame ?? null;
+      },
+    },
+  };
+}
+
+const portraitVideo = { width: 1080, height: 1920 };
+const COVER_URL = "https://i.ytimg.com/vi/x/hqdefault.jpg";
+
+describe("chooseVideoPoster", () => {
+  it("writes a platform cover that matches the video without extracting a frame", async () => {
+    const cover = posterWrite(1080, 1920, COVER_URL);
+    const { calls, candidates } = posterCandidates({ platform: cover });
+
+    await expect(
+      chooseVideoPoster(
+        { video: portraitVideo, hasPoster: true, usePlatform: true },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "write", poster: cover });
+    expect(calls).toEqual(["platform"]);
+  });
+
+  it("replaces a landscape platform cover on a portrait video with the first frame", async () => {
+    const frame = posterWrite(1080, 1920);
+    const { calls, candidates } = posterCandidates({
+      platform: posterWrite(1280, 720, COVER_URL),
+      frame,
+    });
+
+    await expect(
+      chooseVideoPoster(
+        { video: portraitVideo, hasPoster: true, usePlatform: true },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "write", poster: frame });
+    expect(calls).toEqual(["platform", "frame"]);
+  });
+
+  it("uses only the first frame for sources without platform covers", async () => {
+    const frame = posterWrite(1080, 1920);
+    const { calls, candidates } = posterCandidates({
+      platform: posterWrite(1080, 1920, COVER_URL),
+      frame,
+    });
+
+    await expect(
+      chooseVideoPoster(
+        { video: portraitVideo, hasPoster: false, usePlatform: false },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "write", poster: frame });
+    expect(calls).toEqual(["frame"]);
+  });
+
+  it("keeps the current poster when no candidate matches the video", async () => {
+    const { candidates } = posterCandidates({
+      platform: posterWrite(1280, 720, COVER_URL),
+      frame: posterWrite(1920, 1080),
+    });
+
+    await expect(
+      chooseVideoPoster(
+        { video: portraitVideo, hasPoster: true, usePlatform: true },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "keep" });
+  });
+
+  it("fills an empty slot with the platform cover when no candidate matches", async () => {
+    const cover = posterWrite(1280, 720, COVER_URL);
+    const { candidates } = posterCandidates({ platform: cover });
+
+    await expect(
+      chooseVideoPoster(
+        { video: portraitVideo, hasPoster: false, usePlatform: true },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "write", poster: cover });
+  });
+
+  it("writes the platform cover when the video has no dimensions", async () => {
+    const cover = posterWrite(1280, 720, COVER_URL);
+    const { calls, candidates } = posterCandidates({ platform: cover });
+
+    await expect(
+      chooseVideoPoster(
+        { video: {}, hasPoster: true, usePlatform: true },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "write", poster: cover });
+    expect(calls).toEqual(["platform"]);
+  });
+
+  it("reports none when no poster can be produced", async () => {
+    const { candidates } = posterCandidates({});
+
+    await expect(
+      chooseVideoPoster(
+        { video: portraitVideo, hasPoster: true, usePlatform: true },
+        candidates,
+      ),
+    ).resolves.toEqual({ kind: "none" });
   });
 });

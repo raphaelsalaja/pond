@@ -53,32 +53,76 @@ describe("needsPosterRepair", () => {
     expect(needsPosterRepair([file("video", "video.mp4")])).toBe(true);
   });
 
-  it("keeps existing posters even when aspects disagree", () => {
+  it("repairs a landscape poster on a portrait video", () => {
     expect(
       needsPosterRepair([
         file("video", "video.mp4", { width: 1080, height: 1920 }),
         file("poster", "poster.jpg", { width: 1280, height: 720 }),
       ]),
+    ).toBe(true);
+  });
+
+  it("repairs a portrait poster on a landscape video", () => {
+    expect(
+      needsPosterRepair([
+        file("video", "video.mp4", { width: 1920, height: 1080 }),
+        file("poster", "poster.jpg", { width: 1080, height: 1920 }),
+      ]),
+    ).toBe(true);
+  });
+
+  it("keeps posters within the aspect tolerance", () => {
+    expect(
+      needsPosterRepair([
+        file("video", "video.mp4", { width: 1080, height: 1920 }),
+        file("poster", "poster.jpg", { width: 1080, height: 1350 }),
+      ]),
+    ).toBe(false);
+    expect(
+      needsPosterRepair([
+        file("video", "video.mp4", { width: 1920, height: 1080 }),
+        file("poster", "poster.jpg", { width: 640, height: 480 }),
+      ]),
+    ).toBe(false);
+    expect(
+      needsPosterRepair([
+        file("video", "video.mp4", { width: 1080, height: 1920 }),
+        file("poster", "poster.jpg", { width: 540, height: 960 }),
+      ]),
     ).toBe(false);
   });
 
-  it("keeps undimmed existing posters", () => {
+  it("keeps a poster when either side has no dimensions", () => {
     expect(
       needsPosterRepair([
         file("video", "video.mp4"),
         file("poster", "poster.jpg"),
       ]),
     ).toBe(false);
+    expect(
+      needsPosterRepair([
+        file("video", "video.mp4"),
+        file("poster", "poster.jpg", { width: 1280, height: 720 }),
+      ]),
+    ).toBe(false);
+    expect(
+      needsPosterRepair([
+        file("video", "video.mp4", { width: 1080, height: 1920 }),
+        file("poster", "poster.jpg"),
+      ]),
+    ).toBe(false);
   });
 
-  it("returns only missing poster indexes", () => {
+  it("returns missing and wrong-aspect poster indexes", () => {
     expect(
       posterRepairIndexes([
         file("video", "a.mp4", { width: 1920, height: 1080 }),
         file("video", "b.mp4", { width: 1080, height: 1920 }),
-        file("poster", "poster.jpg", { width: 1280, height: 720 }),
+        file("video", "c.mp4", { width: 1080, height: 1920 }),
+        file("poster", "poster-1.jpg", { width: 1280, height: 720 }),
+        file("poster", "poster-2.jpg", { width: 1280, height: 720 }),
       ]),
-    ).toEqual([1]);
+    ).toEqual([1, 2]);
   });
 });
 
