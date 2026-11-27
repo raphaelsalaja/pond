@@ -573,6 +573,9 @@ jobs:
 
     permissions:
       contents: write
+      pull-requests: write
+      # Starts CI on the cask branch; see the comment in the last step.
+      actions: write
 
     steps:
       - uses: actions/checkout@v6
@@ -598,14 +601,31 @@ jobs:
             "homebrew-artifacts/Pond-${VERSION}-arm64.dmg" \
             "homebrew-artifacts/Pond-${VERSION}-x64.dmg"
 
-      - name: Commit Homebrew cask
+      # main requires CI to pass, so the cask lands through a pull request
+      # that merges itself once its checks are green.
+      - name: Open Homebrew cask pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if git diff --quiet -- Casks/pond.rb; then
             exit 0
           fi
           VERSION="${GITHUB_REF_NAME#v}"
+          BRANCH="release/homebrew-cask-${VERSION}"
+          TITLE="chore(release): update Homebrew cask to ${VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
           git add Casks/pond.rb
-          git commit -m "chore(release): update Homebrew cask to ${VERSION}"
-          git push origin HEAD:main
+          git commit -m "$TITLE"
+          # A rerun of this job rebuilds the same one-commit branch.
+          git push --force origin "HEAD:refs/heads/${BRANCH}"
+          if ! gh pr view "$BRANCH" --json state --jq .state 2>/dev/null | grep -q OPEN; then
+            gh pr create --base main --head "$BRANCH" --title "$TITLE" \
+              --body "Updates \`Casks/pond.rb\` to ${VERSION} with the checksums of the published DMGs. Opened by the release workflow for ${GITHUB_REF_NAME}; it merges itself once CI passes."
+          fi
+          # Pull requests opened with GITHUB_TOKEN start no workflows, so CI is
+          # started on the branch here. Its checks report on the head commit,
+          # which is what the pull request's required checks wait for.
+          gh workflow run ci.yml --ref "$BRANCH"
+          gh pr merge "$BRANCH" --auto --squash --subject "$TITLE"
