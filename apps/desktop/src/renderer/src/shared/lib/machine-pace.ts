@@ -1,6 +1,7 @@
 import {
   MachinePaceWireSchema,
   motionPaused,
+  playbackPaused,
   THERMAL_RELIEF_MS,
 } from "@shared/machine-pace";
 import type { MachinePace, ThermalState } from "@shared/machine-pace";
@@ -16,6 +17,7 @@ const idle = (): MachinePace => ({
 
 let pace = idle();
 let motionHold = false;
+let playbackHold = false;
 let users = 0;
 let stopListening = (): void => {};
 let reliefTimer: ReturnType<typeof setTimeout> | null = null;
@@ -27,6 +29,10 @@ export function readMachinePace(): MachinePace {
 
 export function machineMotionPaused(): boolean {
   return motionHold;
+}
+
+export function machinePlaybackPaused(): boolean {
+  return playbackHold;
 }
 
 export function subscribeMachinePace(listener: () => void): () => void {
@@ -54,6 +60,7 @@ function publish(next: MachinePace): void {
     }
   }
   motionHold = motionPaused(pace, Date.now());
+  playbackHold = playbackPaused(pace, Date.now());
   if ("document" in globalThis) {
     const root = document.documentElement;
     if (motionHold) root.setAttribute("data-motion-paused", "true");
@@ -156,6 +163,7 @@ export function retainMachinePace(): () => void {
     reliefTimer = null;
     pace = idle();
     motionHold = false;
+    playbackHold = false;
     if ("document" in globalThis) {
       document.documentElement.removeAttribute("data-motion-paused");
     }

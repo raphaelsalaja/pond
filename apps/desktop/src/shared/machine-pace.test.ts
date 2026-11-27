@@ -4,6 +4,7 @@ import {
   enrichmentRestMs,
   enrichmentSuspended,
   motionPaused,
+  playbackPaused,
   THERMAL_RELIEF_MS,
 } from "./machine-pace";
 import type { MachinePace } from "./machine-pace";
@@ -28,6 +29,21 @@ it("pauses decorative motion while hidden, unfocused, or hot", () => {
   expect(motionPaused(pace({ thermal: "fair" }), now)).toBe(true);
   expect(motionPaused(pace({ thermal: "serious" }), now)).toBe(true);
   expect(motionPaused(pace({ thermal: "critical" }), now)).toBe(true);
+});
+
+it("allows explicit playback under fair heat but not while hidden, unfocused, or seriously hot", () => {
+  expect(playbackPaused(pace(), now)).toBe(false);
+  expect(playbackPaused(pace({ thermal: "fair" }), now)).toBe(false);
+  expect(playbackPaused(pace({ hidden: true }), now)).toBe(true);
+  expect(playbackPaused(pace({ focused: false }), now)).toBe(true);
+  expect(playbackPaused(pace({ thermal: "serious" }), now)).toBe(true);
+  expect(playbackPaused(pace({ thermal: "critical" }), now)).toBe(true);
+  expect(
+    playbackPaused(pace({ reliefAt: now - THERMAL_RELIEF_MS + 1 }), now),
+  ).toBe(true);
+  expect(playbackPaused(pace({ reliefAt: now - THERMAL_RELIEF_MS }), now)).toBe(
+    false,
+  );
 });
 
 it("stops enrichment while hidden or hot, and keeps going in a background window", () => {
