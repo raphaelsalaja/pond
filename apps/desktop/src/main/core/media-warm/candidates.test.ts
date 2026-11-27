@@ -78,6 +78,24 @@ describe("mediaWarmCandidates", () => {
     ).toEqual([{ kind: "poster", saveId: "save-1", title: "Example" }]);
   });
 
+  it("repairs a stored poster whose aspect disagrees with its video", () => {
+    expect(
+      mediaWarmCandidates(
+        fixture({
+          source: "youtube",
+          files: [
+            { ...file("video", "video.mp4"), width: 1080, height: 1920 },
+            {
+              ...file("poster", "poster-1.jpg", "image/jpeg"),
+              width: 1280,
+              height: 720,
+            },
+          ],
+        }),
+      ),
+    ).toEqual([{ kind: "poster", saveId: "save-1", title: "Example" }]);
+  });
+
   it("extracts a first-frame poster even when a cover already exists", () => {
     expect(
       mediaWarmCandidates(

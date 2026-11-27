@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { NewSave, Save, SaveFile, Source } from "@pond/schema/db";
+import type { NewSave, Save, SaveFile } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
 import { isVideoFile } from "@shared/media-index";
 import log from "electron-log/main.js";
@@ -9,6 +9,7 @@ import { buildFirstFramePoster } from "../../../lib/poster-from-frame";
 import {
   hasMediaDims,
   needsPosterRepair,
+  posterAspectMismatch,
   posterFilename,
   posterRepairIndexes,
   remotePosterUrl,
@@ -127,6 +128,7 @@ async function ensurePoster(
       }));
 
   const newFiles: Array<PosterWrite> = [];
+  let wrote = false;
   for (const { video, index } of targets) {
     if (!video) continue;
     if (replacing && !repairIndexes.has(index)) {
@@ -137,23 +139,41 @@ async function ensurePoster(
       }
     }
 
-    const produced = await producePoster({
-      saveId,
-      video,
-      index,
-      source: save.source,
-      rawJson: save.rawJson,
-      worker: opts.worker,
-    });
-    if (!produced) {
-      throw new TransientError(
-        `ensure-poster: no poster produced for ${saveId}/${video.path}`,
-      );
+    const choice = await chooseVideoPoster(
+      {
+        video,
+        hasPoster: posters[index] !== undefined,
+        usePlatform: usesPlatformPoster(save.source),
+      },
+      {
+        platformPoster: () => platformPosterFromSave(save.rawJson, index),
+        framePoster: () =>
+          framePoster({ saveId, video, index, worker: opts.worker }),
+      },
+    );
+    if (choice.kind === "write") {
+      newFiles.push(choice.poster);
+      wrote = true;
+      continue;
     }
-    newFiles.push(produced);
+    if (choice.kind === "keep") {
+      const kept = await readExistingPoster(saveId, posters[index], index);
+      if (kept) {
+        log.info(
+          "[pond pipeline:ensure-poster] no poster matches the video aspect; keeping the current one",
+          saveId,
+          index,
+        );
+        newFiles.push(kept);
+        continue;
+      }
+    }
+    throw new TransientError(
+      `ensure-poster: no poster produced for ${saveId}/${video.path}`,
+    );
   }
 
-  if (newFiles.length === 0) return;
+  if (!wrote) return;
 
   const options: Parameters<typeof persistSave>[2] = {
     actorReason: "pipeline:ensure-poster",
@@ -191,18 +211,51 @@ async function hydrateVideoDims(
   };
 }
 
-async function producePoster(args: {
+type VideoPosterChoice =
+  | { kind: "write"; poster: PosterWrite }
+  | { kind: "keep" }
+  | { kind: "none" };
+
+interface VideoPosterCandidates {
+  platformPoster: () => Promise<PosterWrite | null>;
+  framePoster: () => Promise<PosterWrite | null>;
+}
+
+/**
+ * Picks the poster for one video slot. A platform cover must agree with the
+ * video's aspect, or the video's first frame replaces it. When neither agrees,
+ * an empty slot takes the best poster there is, and a slot that has a poster
+ * keeps it: swapping one wrong poster for another repairs nothing, and the
+ * written poster would be flagged for repair again on the next pass.
+ */
+export async function chooseVideoPoster(
+  slot: {
+    video: Pick<SaveFile, "width" | "height">;
+    hasPoster: boolean;
+    usePlatform: boolean;
+  },
+  candidates: VideoPosterCandidates,
+): Promise<VideoPosterChoice> {
+  const platform = slot.usePlatform ? await candidates.platformPoster() : null;
+  if (platform && !posterAspectMismatch(slot.video, platform)) {
+    return { kind: "write", poster: platform };
+  }
+  const frame = await candidates.framePoster();
+  if (frame && !posterAspectMismatch(slot.video, frame)) {
+    return { kind: "write", poster: frame };
+  }
+  const fallback = platform ?? frame;
+  if (!fallback) return { kind: "none" };
+  if (slot.hasPoster) return { kind: "keep" };
+  return { kind: "write", poster: fallback };
+}
+
+async function framePoster(args: {
   saveId: string;
   video: SaveFile;
   index: number;
-  source: Source | null;
-  rawJson: RawJson | null;
   worker?: PosterWorkerContext;
 }): Promise<PosterWrite | null> {
-  if (usesPlatformPoster(args.source)) {
-    const platform = await platformPosterFromSave(args.rawJson, args.index);
-    if (platform) return platform;
-  }
   const source = join(saveDir(args.saveId), args.video.path);
   const filename = posterFilename(args.index, ".jpg");
   if (!args.worker) return buildFirstFramePoster(source, filename);
