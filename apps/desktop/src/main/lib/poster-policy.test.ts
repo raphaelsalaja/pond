@@ -137,6 +137,26 @@ describe("platformPosterUrl", () => {
     );
   });
 
+  it("does not reuse a later carousel poster when the first video has none", () => {
+    const rawJson = storedAsRawJson({
+      capture: {
+        media: [
+          { type: "video", url: "https://cdn.test/first.mp4" },
+          {
+            type: "video",
+            url: "https://cdn.test/second.mp4",
+            posterUrl: "https://cdn.test/second-cover.jpg",
+          },
+        ],
+      },
+    });
+
+    expect(platformPosterUrl(rawJson, 0)).toBeNull();
+    expect(platformPosterUrl(rawJson, 1)).toBe(
+      "https://cdn.test/second-cover.jpg",
+    );
+  });
+
   it("does not reuse the first carousel poster for a later video without one", () => {
     const rawJson = storedAsRawJson({
       capture: {

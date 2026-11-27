@@ -68,7 +68,7 @@ export function platformPosterUrl(
   );
   const captured = videos[index]?.posterUrl;
   if (captured) return captured;
-  if (index !== 0) return null;
+  if (index !== 0 || videos.length > 1) return null;
 
   const media = rawJson.capture?.media ?? [];
   for (const entry of media) {

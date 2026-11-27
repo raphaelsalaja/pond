@@ -392,13 +392,17 @@ async function runCaptionsDownload(
     if (captions.posterPath && !files.some((file) => file.kind === "poster")) {
       const bytes = await readPath(captions.posterPath);
       if (bytes) {
-        newFiles.push({
+        const poster: WriteFileArgs = {
           kind: "poster",
           filename: posterFilename(0, extname(captions.posterPath) || ".jpg"),
           bytes,
           mimeType: captions.posterMimeType ?? "image/jpeg",
-          ...(await probeImageDims(bytes)),
-        });
+        };
+        if (captions.infoJson?.thumbnail) {
+          poster.sourceUrl = captions.infoJson.thumbnail;
+        }
+        Object.assign(poster, await probeImageDims(bytes));
+        newFiles.push(poster);
       }
     }
     const patch: Partial<NewSave> = {
