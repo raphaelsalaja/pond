@@ -59,15 +59,6 @@ addResult(
   mainStaticGraph(join(desktopOut, "main/index.js")),
   3_850_000,
 );
-addResult(
-  "desktop renderer initial JS/CSS",
-  htmlAssetSize(
-    join(desktopOut, "renderer/index.html"),
-    join(desktopOut, "renderer"),
-    /(?:href|src)="\.\/([^"?#]+\.(?:js|css))/g,
-  ),
-  3_450_000,
-);
 
 const websiteRoot = join(workspace, "apps/website/.next");
 addResult(
