@@ -22,8 +22,8 @@ function mediaHeavyPayload(): string {
 }
 
 async function responseText(token: string): Promise<string | null> {
-  const response = renderCardPayloadResponse(token);
-  return response ? response.text() : null;
+  const response = renderCardPayloadResponse(token, "GET");
+  return response.status === 200 ? response.text() : null;
 }
 
 afterEach(() => {
@@ -52,11 +52,21 @@ describe("render card payload transport", () => {
     await expect(responseText(consumed.token)).resolves.toBe(
       JSON.stringify({ text: "first" }),
     );
-    expect(renderCardPayloadResponse(consumed.token)).toBeNull();
+    expect(renderCardPayloadResponse(consumed.token, "GET").status).toBe(404);
 
     const unused = storeRenderCardPayload(JSON.stringify({ text: "unused" }));
     releaseRenderCardPayload(unused.token);
-    expect(renderCardPayloadResponse(unused.token)).toBeNull();
+    expect(renderCardPayloadResponse(unused.token, "GET").status).toBe(404);
+  });
+
+  it("serves only GET requests and reports missing tokens", async () => {
+    const stored = storeRenderCardPayload(JSON.stringify({ text: "get only" }));
+
+    expect(renderCardPayloadResponse(stored.token, "POST").status).toBe(405);
+    expect(renderCardPayloadResponse("missing-token", "GET").status).toBe(404);
+    await expect(responseText(stored.token)).resolves.toBe(
+      JSON.stringify({ text: "get only" }),
+    );
   });
 
   it("keeps overlapping payloads isolated by token", async () => {

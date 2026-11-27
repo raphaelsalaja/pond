@@ -38,10 +38,16 @@ export function clearRenderCardPayloads(): void {
   payloads.clear();
 }
 
-export function renderCardPayloadResponse(token: string): Response | null {
+export function renderCardPayloadResponse(
+  token: string,
+  method: string,
+): Response {
+  if (method !== "GET") {
+    return new Response("method not allowed", { status: 405 });
+  }
   pruneExpired();
   const payload = payloads.get(token);
-  if (!payload) return null;
+  if (!payload) return new Response("not found", { status: 404 });
   payloads.delete(token);
   return new Response(payload.body, {
     status: 200,

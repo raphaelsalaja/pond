@@ -69,13 +69,7 @@ export function registerProtocol() {
         return new Response("bad request", { status: 400 });
       }
       if (host === RENDER_CARD_PAYLOAD_HOST) {
-        if (request.method !== "GET") {
-          return new Response("method not allowed", { status: 405 });
-        }
-        return (
-          renderCardPayloadResponse(file) ??
-          new Response("not found", { status: 404 })
-        );
+        return renderCardPayloadResponse(file, request.method);
       }
       const { resolved, root } = resolveTarget(host, file);
       if (!root || !isPathInside(root, resolved)) {
