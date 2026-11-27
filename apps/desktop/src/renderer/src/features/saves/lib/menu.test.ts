@@ -635,6 +635,7 @@ describe("buildSaveMenu", () => {
       "Export Eagle Package",
       "Export Pond Package",
       "Export Share Page",
+      "Create Share Link",
       "Export to CSV",
     ]);
     expect(visibleLabels(sectionItems(items, "More") ?? [])).toEqual([

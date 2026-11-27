@@ -7,6 +7,7 @@ export const TransferRequestSchema = z.object({
     "export_files",
     "export_package",
     "export_share_page",
+    "publish_share_link",
     "import_eagle_package",
     "import_package",
     "copy_library",

@@ -48,6 +48,7 @@ import { startLaunchSync } from "./core/sync/launch";
 import { flushTagsDump, hydrateTagsFromBundle } from "./core/tags-bundle";
 import {
   registerInboxSnoozeCron,
+  registerShareLinkExpiryCron,
   registerSyncCron,
   registerTrashCron,
   registerYtDlpUpdateCron,
@@ -504,6 +505,7 @@ async function postLaunchInit(): Promise<void> {
   );
   registerTrashCron();
   registerInboxSnoozeCron();
+  registerShareLinkExpiryCron();
   registerYtDlpUpdateCron();
   registerSyncCron();
   await startStorageWatcher().catch((cause: unknown) =>

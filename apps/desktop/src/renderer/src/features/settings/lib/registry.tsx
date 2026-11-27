@@ -5,6 +5,7 @@ import {
   IconNut as General,
   IconShieldCheck as Health,
   IconImage as Images,
+  IconGlobe as ShareLinks,
   IconFolder as Library,
   IconCode as LocalApi,
   IconBracketsCurly as Mcp,
@@ -42,6 +43,7 @@ const ICONS = new Map<string, IconComponent>([
   ["shortcuts", Shortcuts],
   ["extension", Extension],
   ["local-api", LocalApi],
+  ["share-links", ShareLinks],
   ["tags", Tags],
   ["library", Library],
   ["health", Health],
@@ -93,6 +95,7 @@ const BESPOKE_SECTION_IDS = new Set([
   "personalization",
   "mcp",
   "local-api",
+  "share-links",
 ]);
 
 export function isBespokeSection(section: SectionDef): boolean {

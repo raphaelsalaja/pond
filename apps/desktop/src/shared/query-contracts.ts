@@ -109,6 +109,10 @@ import type {
   SavesReadQueryInputs,
   SavesReadQueryResults,
 } from "./saves-read-contracts";
+import type {
+  ShareLinkQueryInputs,
+  ShareLinkQueryResults,
+} from "./share-link-contracts";
 import type { StorageOrder } from "./storage-insights";
 import type {
   TagGroupQueryInputs,
@@ -180,6 +184,7 @@ export interface QueryInputs
     LibraryRepairQueryInputs,
     LibraryHealthQueryInputs,
     NotificationQueryInputs,
+    ShareLinkQueryInputs,
     MediaProcessingQueryInputs,
     TagGroupQueryInputs {
   "saves.understandMedia": MediaUnderstandInput;
@@ -441,6 +446,7 @@ export interface QueryResults
     LibraryRepairQueryResults,
     LibraryHealthQueryResults,
     NotificationQueryResults,
+    ShareLinkQueryResults,
     TagGroupQueryResults {
   "folders.rules.get": { tags: Array<string>; inheritedTags: Array<string> };
   "folders.rules.set": OkResult<{ affected: number }>;

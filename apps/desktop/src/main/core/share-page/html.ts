@@ -11,9 +11,15 @@ export interface SharePageViewer {
  * The viewer and its styles are inlined and allowed by hash, so the page runs no script
  * but its own, works from disk, and needs nothing from any server but its media.
  */
+export interface SharePageHtmlOptions {
+  /** The page's public address. With it, links to the page unfurl in chat apps; a page on disk has none. */
+  pageUrl?: string;
+}
+
 export function sharePageHtml(
   manifest: SharePageManifest,
   viewer: SharePageViewer,
+  options: SharePageHtmlOptions = {},
 ): string {
   if (/<\/script/i.test(viewer.script) || /<\/style/i.test(viewer.style)) {
     throw new Error("The Share Page viewer can't be inlined.");
@@ -38,6 +44,7 @@ export function sharePageHtml(
     '<meta name="robots" content="noindex, nofollow">',
     '<meta name="generator" content="Pond">',
     `<title>${escapeHtml(manifest.title)}</title>`,
+    ...(options.pageUrl ? previewTags(manifest, options.pageUrl) : []),
     `<style>${viewer.style}</style>`,
     "</head>",
     "<body>",
@@ -57,6 +64,36 @@ function manifestJson(manifest: SharePageManifest): string {
     .replaceAll("<", String.raw`\u003c`)
     .replaceAll("\u2028", String.raw`\u2028`)
     .replaceAll("\u2029", String.raw`\u2029`);
+}
+
+/** Open Graph tags. Only the title, a count, and one card image: what any visitor sees first anyway. */
+function previewTags(
+  manifest: SharePageManifest,
+  pageUrl: string,
+): Array<string> {
+  const count = manifest.saves.length;
+  const description = count === 1 ? "1 Save" : `${count} Saves`;
+  const thumbnail = manifest.saves.find((save) => save.thumbnail)?.thumbnail;
+  const tags = [
+    ["og:type", "website"],
+    ["og:title", manifest.title],
+    ["og:description", description],
+    ["og:url", pageUrl],
+    ...(thumbnail
+      ? [
+          ["og:image", new URL(thumbnail.src, pageUrl).href],
+          ["og:image:width", String(thumbnail.width)],
+          ["og:image:height", String(thumbnail.height)],
+        ]
+      : []),
+  ];
+  return [
+    ...tags.map(
+      ([property, content]) =>
+        `<meta property="${property}" content="${escapeHtml(content ?? "")}">`,
+    ),
+    `<meta name="twitter:card" content="${thumbnail ? "summary_large_image" : "summary"}">`,
+  ];
 }
 
 function sha256(value: string): string {

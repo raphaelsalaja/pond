@@ -5,6 +5,7 @@ import {
   IconFileExport,
   IconFileZip,
   IconGlobe,
+  IconLink2,
   IconGauge,
   IconImage,
   IconImageBinary,
@@ -23,6 +24,7 @@ import {
   exportSelectionFiles,
   exportSelectionSharePage,
 } from "@/features/saves/lib/selection";
+import { shareSaves } from "@/features/share-links";
 import { formatBytes, formatPlural } from "@/shared/lib/format";
 import { IS_MAC } from "@/shared/lib/platform";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
@@ -367,6 +369,19 @@ export function buildExportItems(
       icon: glyph(IconGlobe),
       keywords: "share page web html site browser",
       onClick: () => void exportSelectionSharePage(ids),
+    },
+    {
+      id: "create-share-link",
+      label: "Create Share Link",
+      icon: glyph(IconLink2),
+      keywords: "share link public publish url",
+      onClick: () =>
+        void shareSaves(ids, {
+          subject:
+            ids.length === 1
+              ? "this Save"
+              : `these ${formatPlural(ids.length, { one: "Save", other: "Saves" })}`,
+        }),
     },
     {
       id: "export-csv",

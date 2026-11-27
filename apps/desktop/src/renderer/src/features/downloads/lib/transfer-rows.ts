@@ -6,6 +6,7 @@ export const TRANSFER_LABELS = {
   export_files: "Export Files",
   export_package: "Export Pond Package",
   export_share_page: "Export Share Page",
+  publish_share_link: "Publish Share Link",
   import_eagle_package: "Import Eagle Package",
   import_package: "Import Pond Package",
   copy_library: "Copy to Library",

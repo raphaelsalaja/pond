@@ -19,7 +19,7 @@ export default function Privacy() {
           no Pond servers, and no analytics in the app, the browser extension,
           or this website.
         </p>
-        <Policy.Updated>November 23, 2026</Policy.Updated>
+        <Policy.Updated>November 27, 2026</Policy.Updated>
       </Policy.Header>
 
       <Policy.Section>
@@ -75,6 +75,10 @@ export default function Privacy() {
             The AI provider you set up for Fish, with your own key, and only
             when you use it. A local host you run works too.
           </li>
+          <li>
+            The storage you set up as a Share Host, with your own key, only when
+            you create, update, or stop a Share Link
+          </li>
         </Policy.List>
       </Policy.Section>
 
@@ -97,6 +101,24 @@ export default function Privacy() {
         <p>
           Fish use a key you add or a local host you run. Pond sends your
           prompts and the saves a fish reads only to the provider you choose.
+        </p>
+      </Policy.Section>
+
+      <Policy.Section>
+        <Policy.Heading>Share Pages and Share Links</Policy.Heading>
+        <p>
+          Export Share Page writes a read-only page of the Saves you pick to a
+          folder on your computer. A Share Link uploads the same page to storage
+          you own, such as a Cloudflare R2 bucket, and gives you its address.
+          Pond has no server in between, and anyone with the address can open
+          the page.
+        </p>
+        <p>
+          A page holds titles, links, post text, authors, and copies of the
+          media. Pond removes location and camera data from images and videos
+          first. Notes, tags, ratings, and your folders stay out. Stop Sharing
+          deletes the page from your storage, but anyone who opened it may have
+          kept a copy.
         </p>
       </Policy.Section>
 

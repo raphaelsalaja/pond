@@ -92,6 +92,8 @@ export interface ExportSharePageInput {
   viewer: SharePageViewer;
   options?: SharePageOptions;
   now?: Date;
+  /** Set when the page will live at a public address, for link previews. */
+  pageUrl?: string;
 }
 
 /**
@@ -127,7 +129,7 @@ export function exportSharePage(input: ExportSharePageInput) {
       const manifest = assembleManifest(plan, staged);
       await writeFile(
         join(staging, "index.html"),
-        sharePageHtml(manifest, input.viewer),
+        sharePageHtml(manifest, input.viewer, { pageUrl: input.pageUrl }),
         "utf8",
       );
       checkTransferCancellation();
