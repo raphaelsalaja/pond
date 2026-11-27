@@ -43,7 +43,7 @@ function dark(
 }
 
 export const THEME_PRESETS: ReadonlyArray<ThemePreset> = [
-  light("light", "Light", "#5E6AD2", "#ffffff", "#1B1B1B"),
+  light("light", "Light", "#0090FF", "#ffffff", "#1B1B1B"),
   light("paper", "Paper", "#E8590C", "#FCFBF8", "#1C1917"),
   light("mint", "Mint", "#0CA678", "#F5FBF8", "#0B1F18"),
   light("rose", "Rose", "#E64980", "#ffffff", "#1B1B1B"),
@@ -59,7 +59,7 @@ export const THEME_PRESETS: ReadonlyArray<ThemePreset> = [
   light("seafoam", "Seafoam", "#14B8A6", "#F0FDFA", "#042F2E"),
   light("ink", "Ink", "#2563EB", "#F5F5F4", "#171717", 45),
 
-  dark("dark", "Dark", "#5E6AD2", "#0A0A0A", "#EEEEEE"),
+  dark("dark", "Dark", "#0090FF", "#0A0A0A", "#EEEEEE"),
   dark("midnight", "Midnight", "#4C8DFF", "#0B0F1A", "#E8EEF8"),
   dark("forest", "Forest", "#2FB380", "#0A0F0C", "#E6F4EC"),
   dark("plum", "Plum", "#A17CFF", "#100A16", "#F0E8FF"),

@@ -65,12 +65,37 @@ describe("theme prefs rebuild", () => {
     expect(isCustomTheme("missing", DEFAULT_LIGHT_THEME)).toBe(true);
   });
 
+  it("moves themes still on the old default purple to the new accent", () => {
+    const prefs = PrefsSchema.parse({
+      preferences: {
+        lightPresetId: "light",
+        darkPresetId: "dark",
+        light: { ...DEFAULT_LIGHT_THEME, accent: "#5E6AD2" },
+        dark: {
+          accent: "#5e6ad2",
+          background: "#0A0A0A",
+          foreground: "#EEEEEE",
+          contrast: 50,
+        },
+      },
+    });
+    expect(prefs.preferences.light.accent).toBe("#0090FF");
+    expect(prefs.preferences.dark.accent).toBe("#0090FF");
+    expect(isCustomTheme("light", prefs.preferences.light)).toBe(false);
+    expect(isCustomTheme("dark", prefs.preferences.dark)).toBe(false);
+
+    const chosen = PrefsSchema.parse({
+      preferences: { light: { ...DEFAULT_LIGHT_THEME, accent: "#7C5CFF" } },
+    });
+    expect(chosen.preferences.light.accent).toBe("#7C5CFF");
+  });
+
   it("normalizes stored colors and derives the mode", () => {
     const prefs = PrefsSchema.parse({});
     expect(normalizeTheme(prefs.preferences.light)).toEqual({
       background: "#ffffff",
       foreground: "#1b1b1b",
-      accent: "#5e6ad2",
+      accent: "#0090ff",
       contrast: 50,
       mode: "light",
     });
@@ -85,7 +110,7 @@ describe("theme prefs rebuild", () => {
     ).toEqual({
       background: "#ffffff",
       foreground: "#eeeeee",
-      accent: "#5e6ad2",
+      accent: "#0090ff",
       contrast: 100,
       mode: "light",
     });

@@ -71,7 +71,7 @@ export interface NormalizedTheme extends ThemeDef {
 export function normalizeTheme(def: ThemeDef): NormalizedTheme {
   const background = normalizeHex(def?.background ?? "") ?? "#ffffff";
   const foreground = normalizeHex(def?.foreground ?? "") ?? "#1b1b1b";
-  const accent = normalizeHex(def?.accent ?? "") ?? "#5e6ad2";
+  const accent = normalizeHex(def?.accent ?? "") ?? "#0090ff";
   const contrast = Number.isFinite(def?.contrast)
     ? clamp(def.contrast, CONTRAST_MIN, CONTRAST_MAX)
     : CONTRAST_DEFAULT;

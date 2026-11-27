@@ -85,7 +85,7 @@ const CONTRAST_STRETCH = 1.6;
 const FALLBACK: Omit<ThemeInput, "contrast"> = {
   background: "#ffffff",
   foreground: "#1b1b1b",
-  accent: "#5e6ad2",
+  accent: "#0090ff",
 };
 
 const WHITE: Lch = { l: 1, c: 0, h: 0 };
