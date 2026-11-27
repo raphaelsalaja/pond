@@ -4,7 +4,7 @@ Before changing code, read [CONTRIBUTING.md](.github/CONTRIBUTING.md), including
 
 For PR bodies, screenshots, and clips, read [pull requests](.github/PULL_REQUESTS.md).
 
-For module moves, state ownership, or main/preload/renderer interfaces, read [desktop architecture](apps/desktop/ARCHITECTURE.md). For domain naming, use [Domain language](#domain-language) below. For UI behavior, read [design principles](apps/desktop/src/renderer/src/PRINCIPLES.md).
+For module moves, state ownership, or main/preload/renderer interfaces, read [desktop architecture](apps/desktop/ARCHITECTURE.md). For domain naming, use [Domain language](#domain-language) below. For UI behavior, read [design principles](apps/desktop/src/renderer/src/PRINCIPLES.md). For Figma files, tokens, and re-syncing them from code, read [Figma](packages/theme/FIGMA.md).
 
 ## UI SDK
 

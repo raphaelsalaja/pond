@@ -101,8 +101,6 @@ apps/alfred/.pack/
 # generated icon previews
 apps/desktop/src/renderer/src/generated/
 
-# video media pulled from a local library
-packages/video/videos/*/public/
 __pycache__/
 
 # Local caches, scratch files, and UI inspection captures
