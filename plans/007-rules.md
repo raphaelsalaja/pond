@@ -1,6 +1,6 @@
 # Plan 007: Rules that file new Saves
 
-> Executor: work phase by phase and honor each STOP condition. Issue: raphaelsalaja/pond#577. This plan is a design for review; nothing in it is built yet.
+> Executor: work phase by phase and honor each STOP condition. Issue: raphaelsalaja/pond#577. Phases 0–3 are built; Phases 4 and 5 are deferred.
 >
 > Drift check: `git diff --stat cc3974ffb..HEAD -- apps/desktop/src/main/core/sync/incoming.ts apps/desktop/src/main/core/pipeline/enqueue.ts apps/desktop/src/main/core/pipeline/task-settlement.ts apps/desktop/src/main/core/pipeline/workers/finalize.ts apps/desktop/src/main/core/inbox apps/desktop/src/main/core/fish apps/desktop/src/main/core/folders.ts packages/schema/src/filters`.
 
@@ -11,14 +11,14 @@
 - Risk: MED (it runs on every new Save, so the ingest path changes)
 - Category: feature
 - Planned at: `cc3974ffb`, 2026-11-27
-- Status: PROPOSED, waiting for review
+- Status: IN REVIEW, Phases 0–3 built
 
 | Phase | Scope                                                       | Status   |
 | ----- | ----------------------------------------------------------- | -------- |
-| 0     | Domain term, contracts, `rules.json` store                  | TODO     |
-| 1     | Engine on Save settle, Settings page, builder, single test  | TODO     |
-| 2     | Library preview, Apply to Existing Saves, activity          | TODO     |
-| 3     | Move Source incoming rules into Rules                       | TODO     |
+| 0     | Domain term, contracts, `rules.json` store                  | DONE     |
+| 1     | Engine on Save settle, Settings page, builder, single test  | DONE     |
+| 2     | Library preview, Apply to Existing Saves, activity          | DONE     |
+| 3     | Move Source incoming rules into Rules                       | DONE     |
 | 4     | More triggers and actions, Any/All, folder-entry trigger    | DEFERRED |
 | 5     | Agent operations: draft, explain, edit rules                | DEFERRED |
 
