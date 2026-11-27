@@ -5,6 +5,11 @@ import type { Capture } from "@pond/schema/raw";
 import { sourceLabel } from "@pond/schema/sources";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import log from "electron-log/main.js";
+import {
+  AuthRequiredError,
+  TerminalError,
+  TransientError,
+} from "../../pipeline/extractors/errors";
 import { partitionForIngest } from "../../sync/accounts";
 import { harvesterFor } from "../harvest";
 import { HarvestFailureSchema } from "../harvest/from-page";
@@ -132,5 +137,27 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
     return { ok: false, reason: "harvest_failed", sourceId };
   } finally {
     lease.release();
+  }
+}
+
+export function harvestFailure(
+  source: Source,
+  reason: HarvestResult["reason"],
+): AuthRequiredError | TerminalError | TransientError {
+  switch (reason) {
+    case "auth_required":
+      return new AuthRequiredError(
+        `Connect ${sourceLabel(source)} with the Pond extension`,
+        source,
+      );
+    case "navigate_failed":
+      return new TransientError("navigate failed");
+    case "timeout":
+      return new TransientError("scrape timeout");
+    case "not_found":
+      return new TerminalError("page not found or no longer exists");
+    /** An empty scrape means Pond found nothing it could read, not that the page is gone, so it retries like the Pinterest path. */
+    default:
+      return new TransientError("scrape returned no data");
   }
 }

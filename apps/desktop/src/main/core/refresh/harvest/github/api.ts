@@ -1,9 +1,17 @@
 import type { Capture } from "@pond/schema/raw";
 import { session } from "electron";
 import log from "electron-log/main.js";
+import {
+  CaptureIncompleteError,
+  RateLimitedError,
+  TerminalError,
+  TransientError,
+} from "../../../pipeline/extractors/errors";
 import { acquire, report } from "../../../pipeline/rate-governor";
 import { partitionForIngest } from "../../../sync/accounts";
 import { browserUserAgent } from "../../harvest-window/constants";
+import { harvestFailure } from "../../harvest-window/harvest";
+import type { HarvestArgs, HarvestResult } from "../../harvest-window/harvest";
 import { adapt } from "./item";
 import { parseRepoPage } from "./page";
 
@@ -99,6 +107,63 @@ export async function fetchGithubRepoCapture(args: {
   });
   if (!capture) return { ok: false, reason: "no_repo" };
   return { ok: true, capture };
+}
+
+interface GithubCaptureDeps {
+  githubGet?: GithubGet;
+  partition?: string;
+}
+
+/**
+ * GitHub server-renders everything the repo extractor reads into the initial
+ * HTML, so a direct fetch answers first and the hidden browser only backs up
+ * bot walls, transport failures, and page variants the parse cannot read.
+ */
+export async function captureGithubRepo(
+  args: HarvestArgs,
+  deps: GithubCaptureDeps,
+  harvest: (args: HarvestArgs) => Promise<HarvestResult>,
+): Promise<Capture> {
+  const get =
+    deps.githubGet ??
+    githubSessionGet(
+      deps.partition ?? (await partitionForIngest("github", args.accountId)),
+    );
+  const result = await fetchGithubRepoCapture({
+    url: args.url,
+    sourceId: args.sourceId ?? "",
+    accountId: args.accountId,
+    get,
+  });
+
+  if (result.ok) {
+    /** Every repository serves at least GitHub's generated card, so a valid page with zero media is a partial read, not a finished harvest. */
+    if (result.capture.media.length === 0) {
+      throw new CaptureIncompleteError("github repo capture read no media");
+    }
+    return result.capture;
+  }
+  if (result.reason === "not_found") {
+    throw new TerminalError("github repository is gone or private");
+  }
+  if (result.reason === "rate_limited") {
+    throw new RateLimitedError(result.retryAfterSec, "github fetch 429");
+  }
+  if (result.reason === "server_error") {
+    throw new TransientError(`github fetch ${result.status ?? 500}`);
+  }
+  if (result.reason === "client_error") {
+    throw new TerminalError(`github fetch ${result.status ?? 400}`);
+  }
+
+  const fallback = await harvest(args);
+  if (fallback.ok && fallback.capture) {
+    if (fallback.capture.media.length === 0) {
+      throw new CaptureIncompleteError("github repo capture read no media");
+    }
+    return fallback.capture;
+  }
+  throw harvestFailure("github", fallback.reason);
 }
 
 /** Retry-After is either delta-seconds or an HTTP date. */
