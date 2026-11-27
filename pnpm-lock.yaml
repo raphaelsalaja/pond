@@ -863,49 +863,6 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
 
-  packages/video:
-    dependencies:
-      '@pond/icons':
-        specifier: workspace:*
-        version: link:../icons
-      '@pond/theme':
-        specifier: workspace:*
-        version: link:../theme
-      '@pond/ui':
-        specifier: workspace:*
-        version: link:../ui
-      perfect-freehand:
-        specifier: ^1.2.3
-        version: 1.2.3
-      react:
-        specifier: 'catalog:'
-        version: 19.3.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.3.0(react@19.3.0)
-    devDependencies:
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.19.2
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.3.0
-      '@types/react-dom':
-        specifier: 'catalog:'
-        version: 19.3.0(@types/react@19.3.0)
-      '@vitejs/plugin-react':
-        specifier: ^6.1.1
-        version: 6.1.1(vite@8.3.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1))
-      electron:
-        specifier: ^44.4.0
-        version: 44.4.0(supports-color@10.2.2)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vite:
-        specifier: ^8.3.0
-        version: 8.3.0(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.1)
-
 packages:
 
   '@1natsu/wait-element@4.2.0':

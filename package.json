@@ -25,7 +25,6 @@
     "cli": "pnpm --filter @pond/cli exec tsx src/index.ts",
     "cli:build": "pnpm --filter @pond/cli build",
     "cli:link": "pnpm --filter @pond/cli build && pnpm --filter @pond/cli link --global",
-    "video": "pnpm --filter @pond/video video",
     "generate": "turbo run generate",
     "generate:check": "turbo run generate:check",
     "lint": "turbo run lint:repo",
