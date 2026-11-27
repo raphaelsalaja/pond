@@ -177,6 +177,20 @@ jobs:
       - name: Build workspace
         run: pnpm build
 
+      # Posts on X, Threads and Bluesky draw through this WebAssembly build of
+      # the xeet fork. verify-binaries fails the pack when it is missing.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Fetch the pinned xeet fork
+        env:
+          POND_XEET_TOKEN: ${{ secrets.POND_XEET_TOKEN }}
+        run: node packages/render/scripts/fetch-xeet.mjs
+
+      - name: Build the post renderer
+        run: node packages/render/scripts/build.mjs --required
+
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
 

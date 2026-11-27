@@ -1,5 +1,13 @@
 const { spawnSync } = require("node:child_process");
-const { existsSync, readdirSync, rmSync, statSync } = require("node:fs");
+const {
+  closeSync,
+  existsSync,
+  openSync,
+  readdirSync,
+  readSync,
+  rmSync,
+  statSync,
+} = require("node:fs");
 const { createRequire } = require("node:module");
 const nodePath = require("node:path");
 const { z } = require("zod");
@@ -27,6 +35,7 @@ async function verify(
   if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
   if (platform === "win32" || platform === "linux") assertAppIcon(context);
   if (platform === "darwin") assertIconCatalog(resourcesDir);
+  if (platform === "darwin") assertPostRenderer(resourcesDir);
   assertTintIcons(resourcesDir);
   const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = nodePath.join(resourcesDir, "bin", ffmpegName(platform));
@@ -163,6 +172,49 @@ function assertTintIcons(resourcesDir) {
     throw new Error(
       `[pond verify] no tint icons in ${dir}. ` +
         "Run prepare-dock-icons so the app icon picker is not empty.",
+    );
+  }
+}
+
+const WASM_MAGIC = Buffer.from([0x00, 0x61, 0x73, 0x6d]);
+const INTER_FACES = [
+  "Inter-Regular.otf",
+  "Inter-Medium.otf",
+  "Inter-SemiBold.otf",
+  "Inter-Bold.otf",
+];
+
+/** Only macOS draws posts natively; without the build X and Threads fall back to the React card and Bluesky gets no card. */
+function assertPostRenderer(resourcesDir) {
+  const dir = nodePath.join(resourcesDir, "render");
+  const hint =
+    "Run `node packages/render/scripts/build.mjs --required` with the pinned xeet fork before packaging.";
+  const wasm = nodePath.join(dir, "pond-render.wasm");
+  if (!existsSync(wasm)) {
+    throw new Error(`[pond verify] missing post renderer at ${wasm}. ${hint}`);
+  }
+  const head = Buffer.alloc(WASM_MAGIC.length);
+  const fd = openSync(wasm, "r");
+  try {
+    readSync(fd, head, 0, head.length, 0);
+  } finally {
+    closeSync(fd);
+  }
+  if (!head.equals(WASM_MAGIC)) {
+    throw new Error(
+      `[pond verify] ${wasm} is not a WebAssembly module. ${hint}`,
+    );
+  }
+  const fontsDir = nodePath.join(dir, "fonts");
+  const fonts = existsSync(fontsDir) ? readdirSync(fontsDir) : [];
+  const missing = [...INTER_FACES, "OFL.txt"].filter(
+    (name) => !fonts.includes(name),
+  );
+  if (!fonts.some((name) => name.startsWith("Noto"))) missing.push("Noto*");
+  if (!fonts.some((name) => name.startsWith("STIX"))) missing.push("STIX*");
+  if (missing.length > 0) {
+    throw new Error(
+      `[pond verify] post renderer fonts in ${fontsDir} are missing ${missing.join(", ")}. ${hint}`,
     );
   }
 }

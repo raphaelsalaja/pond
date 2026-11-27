@@ -245,11 +245,36 @@ async function writeMacRuntime(resourcesDirectory, arch, options = {}) {
     await writeFile(path.join(onnxDir, "libonnxruntime.1.dylib"), "binary");
   }
   await writeTintIcon(resourcesDirectory);
+  await writePostRenderer(resourcesDirectory, options.renderer);
   if (options.catalog !== false) {
     await writeFile(
       path.join(resourcesDirectory, "Assets.car"),
       options.catalog ?? "binary",
     );
+  }
+}
+
+const RENDER_FONTS = [
+  "Inter-Regular.otf",
+  "Inter-Medium.otf",
+  "Inter-SemiBold.otf",
+  "Inter-Bold.otf",
+  "OFL.txt",
+  "NotoSans-Regular.ttf",
+  "STIXTwoMath-Regular.otf",
+];
+
+async function writePostRenderer(resourcesDirectory, renderer = {}) {
+  if (renderer === false) return;
+  const fontsDirectory = path.join(resourcesDirectory, "render", "fonts");
+  await mkdir(fontsDirectory, { recursive: true });
+  await writeFile(
+    path.join(resourcesDirectory, "render", "pond-render.wasm"),
+    renderer.wasm ?? Buffer.from([0x00, 0x61, 0x73, 0x6d, 0x01, 0x00]),
+  );
+  for (const font of RENDER_FONTS) {
+    if (renderer.omit === font) continue;
+    await writeFile(path.join(fontsDirectory, font), "font");
   }
 }
 
@@ -498,6 +523,53 @@ for (const [platform, kept, pruned] of [
 
       assert.deepEqual(readdirSync(directory).sort(), Array.from(kept).sort());
       assert.equal(existsSync(path.join(directory, "..", "arm64")), false);
+    });
+  });
+}
+
+void test("rejects a macOS package without the post renderer", async () => {
+  await withTemporaryDirectory(async (appOutDir) => {
+    const resources = path.join(appOutDir, "Pond.app", "Contents", "Resources");
+    await writeMacRuntime(resources, "arm64", { renderer: false });
+
+    await assert.rejects(
+      verify(buildContext(appOutDir, "darwin", "arm64")),
+      /missing post renderer at .*pond-render\.wasm/,
+    );
+  });
+});
+
+void test("rejects a macOS package whose post renderer is not WebAssembly", async () => {
+  await withTemporaryDirectory(async (appOutDir) => {
+    const resources = path.join(appOutDir, "Pond.app", "Contents", "Resources");
+    await writeMacRuntime(resources, "arm64", { renderer: { wasm: "" } });
+
+    await assert.rejects(
+      verify(buildContext(appOutDir, "darwin", "arm64")),
+      /pond-render\.wasm is not a WebAssembly module/,
+    );
+  });
+});
+
+for (const font of [
+  "Inter-Bold.otf",
+  "NotoSans-Regular.ttf",
+  "STIXTwoMath-Regular.otf",
+]) {
+  void test(`rejects a macOS package whose post renderer lacks ${font}`, async () => {
+    await withTemporaryDirectory(async (appOutDir) => {
+      const resources = path.join(
+        appOutDir,
+        "Pond.app",
+        "Contents",
+        "Resources",
+      );
+      await writeMacRuntime(resources, "arm64", { renderer: { omit: font } });
+
+      await assert.rejects(
+        verify(buildContext(appOutDir, "darwin", "arm64")),
+        /post renderer fonts .* are missing/,
+      );
     });
   });
 }
