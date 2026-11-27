@@ -4,7 +4,6 @@ import metascraperAuthor from "metascraper-author";
 import metascraperDate from "metascraper-date";
 import metascraperDescription from "metascraper-description";
 import metascraperImage from "metascraper-image";
-import metascraperLogoFavicon from "metascraper-logo-favicon";
 import metascraperPublisher from "metascraper-publisher";
 import metascraperTitle from "metascraper-title";
 import metascraperUrl from "metascraper-url";
@@ -13,6 +12,8 @@ import { renderPageHtml } from "../../../refresh/web-page-renderer";
 import { RateLimitedError, TerminalError, TransientError } from "../errors";
 import type { Capture, ExtractInput, Extractor } from "../types";
 import { searchPageQuery } from "./search-page";
+import { faviconRules } from "./web-favicon";
+import type { FaviconRequest } from "./web-favicon";
 import { fetchHtml } from "./web-fetch";
 import type { FetchHtmlSuccess } from "./web-fetch";
 
@@ -156,28 +157,44 @@ function parseJson(text: string) {
   }
 }
 
-const scrape = metascraper([
-  metascraperTitle(),
-  metascraperDescription(),
-  amazonProductImage,
-  jsonLdProductImage,
-  pageMarkupProduct,
-  metascraperImage(),
-  metascraperLogoFavicon(),
-  metascraperAuthor(),
-  metascraperDate(),
-  metascraperPublisher(),
-  metascraperUrl(),
-]);
+function createScrape(request: FaviconRequest) {
+  return metascraper([
+    metascraperTitle(),
+    metascraperDescription(),
+    amazonProductImage,
+    jsonLdProductImage,
+    pageMarkupProduct,
+    metascraperImage(),
+    faviconRules(request),
+    metascraperAuthor(),
+    metascraperDate(),
+    metascraperPublisher(),
+    metascraperUrl(),
+  ]);
+}
+
+/** Extractors are made per Save, so each favicon request builds its rule set once. */
+const scrapers = new WeakMap<FaviconRequest, ReturnType<typeof createScrape>>();
+
+function scrapeWith(request: FaviconRequest) {
+  const existing = scrapers.get(request);
+  if (existing) return existing;
+  const created = createScrape(request);
+  scrapers.set(request, created);
+  return created;
+}
 
 interface WebPageExtractorDependencies {
   fetchHtml: (url: string) => Promise<FetchHtmlSuccess | null>;
   renderHtml: (url: string, signal?: AbortSignal) => Promise<string>;
+  /** Probes favicon candidates; only the first bytes of each response are read. */
+  fetchFavicon: FaviconRequest;
 }
 
 const defaultDependencies: WebPageExtractorDependencies = {
   fetchHtml,
   renderHtml,
+  fetchFavicon: fetch,
 };
 
 export class WebPageExtractor implements Extractor {
@@ -203,6 +220,7 @@ export class WebPageExtractor implements Extractor {
     const html =
       fetched?.html ??
       (await this.dependencies.renderHtml(input.url.href, input.signal));
+    const scrape = scrapeWith(this.dependencies.fetchFavicon);
     const meta = await scrape({ url: input.url.href, html });
 
     const canonical = pickString(meta.url) ?? input.url.href;

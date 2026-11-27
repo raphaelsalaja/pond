@@ -390,9 +390,6 @@ importers:
       metascraper-image:
         specifier: ^5.56.2
         version: 5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2))
-      metascraper-logo-favicon:
-        specifier: ^5.56.2
-        version: 5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2))
       metascraper-publisher:
         specifier: ^5.56.2
         version: 5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2))
@@ -444,6 +441,9 @@ importers:
       three:
         specifier: ^0.186.0
         version: 0.186.0
+      tldts:
+        specifier: ^7.4.3
+        version: 7.4.3
       ulid:
         specifier: ^3.0.2
         version: 3.0.2
@@ -2574,14 +2574,6 @@ packages:
 
   '@keyv/serialize@1.1.1':
     resolution: {integrity: sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==}
-
-  '@keyvhq/core@2.1.15':
-    resolution: {integrity: sha512-YPc/vUECeKkWj1XSVT7ts7BQzU62RITjfru/Ft9uc+n2W0rm5mxTWzG51IK81g27+JrW+jI3OCUgNaeMCjTAMg==}
-    engines: {node: '>= 18'}
-
-  '@keyvhq/memoize@2.2.5':
-    resolution: {integrity: sha512-Ut/O/k9RsClEiVhBMEcM0B4DEpLdaEdCCpu6xCFU+WhWAzvpm6kWck3fOgeUoCB7VytT1JFbD2tl0rn6R2BHwA==}
-    engines: {node: '>= 18'}
 
   '@kikobeats/time-span@1.0.13':
     resolution: {integrity: sha512-CfBK4/EZ73uN/6b5/wOfvWju1Ev/6H+uXqS2Vqd7/dEQTyOsvv4BdOHDqESp4Efa9YyrPPvN3IHU+C4z9FAo3Q==}
@@ -7823,10 +7815,6 @@ packages:
     resolution: {integrity: sha512-N4DGdcylu6z1lcBxLD+S4ppEwfr1lHgQ5Xp3WVJ7opIBfUgJLkO0OUxM0xsvUbiXV/q/6aKCqE2Gp+11seccaQ==}
     engines: {node: '>= 22'}
 
-  metascraper-logo-favicon@5.56.2:
-    resolution: {integrity: sha512-J86iz3hzH1YpuiiOWLStKL1a//BW1R8LVPTJy9UNrqO+TcWDl4tdkjmQ11J3ty07WLUdXdqcVSovEdysjI4qfA==}
-    engines: {node: '>= 22'}
-
   metascraper-publisher@5.56.2:
     resolution: {integrity: sha512-su9iopa4fQoD9WYKmJdvAOwRD/E36AvrgI/ZA6LbioAfuL+gaQBdS4cYFOfnZ6yWcNDgD9QQc8gesrQ+vrDKCg==}
     engines: {node: '>= 22'}
@@ -7960,10 +7948,6 @@ packages:
     resolution: {integrity: sha512-X5ju04+cAzsojXKes0B/S4tcYtFAJ6tTMuSPBEn9CPGlrWr8Fiw7qYeLT0XyH80HSoAoqWCaz+MWKh22P7G1cw==}
     engines: {node: '>=16'}
     hasBin: true
-
-  mimic-fn@3.1.0:
-    resolution: {integrity: sha512-Ysbi9uYW9hFyfrThdDEQuykN4Ey6BuwPD2kpI5ES/nFTDn/98yxYNLZJcgUAKPT/mcrLLKaGzJR9YVxJrIdASQ==}
-    engines: {node: '>=8'}
 
   mimic-function@5.0.1:
     resolution: {integrity: sha512-VP79XUPxV2CigYP3jWwAUFSku2aKqBH7uTAapFWCBqutsbmDo96KY5o8uh6U+/YSIn5OxJnXp73beVkpqMIGhA==}
@@ -8685,10 +8669,6 @@ packages:
   re2@1.26.1:
     resolution: {integrity: sha512-oi79a4h6EO3PAwNsDMWgeCcsRGQEUa52DIgOiFTZGDEZocEXG9h+oXy0qZqndo47huUeJuVWSoOJIEhOupqOcg==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
-
-  reachable-url@2.1.3:
-    resolution: {integrity: sha512-1cDak2nU15JgMM2WRRmr6RNOtLRGvRBxKKVINsBfTK2cdXrecwvM21bw9/cChacfnVCHsZzbJ3NYYqpkBXYjMg==}
-    engines: {node: '>=14'}
 
   react-doctor@0.9.23:
     resolution: {integrity: sha512-mKFbd0fYaiR8CS5PHyydJ//Bcs+TmdYhLVoiArdIvGNsUsG576GstUP69c7KFNMJheheZz7z2ww0byrmkizQLA==}
@@ -11810,16 +11790,6 @@ snapshots:
       keyv: 5.6.0
 
   '@keyv/serialize@1.1.1': {}
-
-  '@keyvhq/core@2.1.15':
-    dependencies:
-      json-buffer: 3.0.1
-
-  '@keyvhq/memoize@2.2.5':
-    dependencies:
-      '@keyvhq/core': 2.1.15
-      mimic-fn: 3.1.0
-      null-prototype-object: 1.2.7
 
   '@kikobeats/time-span@1.0.13': {}
 
@@ -16956,17 +16926,6 @@ snapshots:
       - canvas
       - debug
 
-  metascraper-logo-favicon@5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2)):
-    dependencies:
-      '@keyvhq/memoize': 2.2.5
-      '@metascraper/helpers': 5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2))
-      lodash: 4.18.1
-      reachable-url: 2.1.3
-    transitivePeerDependencies:
-      - '@noble/hashes'
-      - canvas
-      - debug
-
   metascraper-publisher@5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2)):
     dependencies:
       '@metascraper/helpers': 5.56.2(@noble/hashes@2.4.0)(debug@4.4.3(supports-color@10.2.2))
@@ -17237,8 +17196,6 @@ snapshots:
   mime@2.6.0: {}
 
   mime@4.1.0: {}
-
-  mimic-fn@3.1.0: {}
 
   mimic-function@5.0.1: {}
 
@@ -18033,10 +17990,6 @@ snapshots:
       install-artifact-from-github: 1.8.1
       nan: 2.29.0
       node-gyp: 13.0.2
-
-  reachable-url@2.1.3:
-    dependencies:
-      got: 11.8.6
 
   react-doctor@0.9.23(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.10.0(jiti@2.7.0)(supports-color@10.2.2))(react@19.3.0)(supports-color@10.2.2):
     dependencies:
