@@ -13,8 +13,8 @@ import {
   posterRepairIndexes,
   remotePosterUrl,
   usesPlatformPoster,
+  platformPosterUrl,
   videoPosterSlots,
-  youtubeThumbnailUrl,
 } from "../../../lib/poster-policy";
 import type { PosterWrite } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
@@ -101,7 +101,7 @@ async function ensurePoster(
   const forcePlatform =
     Boolean(opts.forcePlatform) &&
     usesPlatformPoster(save.source) &&
-    youtubeThumbnailUrl(save.rawJson) !== null;
+    platformPosterUrl(save.rawJson) !== null;
   if (!opts.force && !forcePlatform && !needsPosterRepair(files)) {
     log.debug(
       "[pond pipeline:ensure-poster] posters already satisfy policy",
@@ -255,7 +255,7 @@ async function platformPosterFromSave(
 ): Promise<PosterWrite | null> {
   return loadPoster(
     rawJson,
-    youtubeThumbnailUrl(rawJson),
+    platformPosterUrl(rawJson, index),
     index,
     fetchAvatarToTxFile,
   );
@@ -307,6 +307,7 @@ async function posterFromUrl(
     filename: posterFilename(index, ext),
     bytes,
     mimeType: outcome.file.mimeType ?? "image/jpeg",
+    sourceUrl: url,
     ...dims,
   };
 }
@@ -333,6 +334,7 @@ async function readExistingPoster(
       write.width = poster.width;
       write.height = poster.height;
     }
+    if (poster.sourceUrl) write.sourceUrl = poster.sourceUrl;
     return write;
   } catch {
     return null;

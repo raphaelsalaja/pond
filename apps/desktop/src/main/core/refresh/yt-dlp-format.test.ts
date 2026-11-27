@@ -77,6 +77,19 @@ describe("downloadArgv", () => {
     expect(argv).not.toContain("--download-sections");
   });
 
+  it("writes platform cover thumbnails for Instagram downloads", () => {
+    const argv = downloadArgv({ ...base, source: "instagram" });
+
+    expect(argv).toContain("--write-thumbnail");
+    expect(after(argv, "--convert-thumbnails")).toBe("jpg");
+  });
+
+  it("does not write thumbnails for sources that use first-frame posters", () => {
+    const argv = downloadArgv({ ...base, source: "tiktok" });
+
+    expect(argv).not.toContain("--write-thumbnail");
+  });
+
   it("prefers and merges into a picked container", () => {
     const argv = downloadArgv({
       ...base,

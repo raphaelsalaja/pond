@@ -60,7 +60,7 @@ describe("buildViewerItems", () => {
     );
   });
 
-  it("marks a YouTube platform poster as cross-file", () => {
+  it("marks YouTube and Instagram platform posters as cross-file", () => {
     const items = buildViewerItems(
       save(
         [
@@ -75,9 +75,37 @@ describe("buildViewerItems", () => {
       posterUrl: "pond://viewer-items/poster.jpg?v=222222222222",
       posterIsCrossFile: true,
     });
+
+    const instagram = buildViewerItems(
+      save(
+        [
+          file("movie.mp4", "video", "video/mp4"),
+          {
+            ...file("poster.jpg", "poster", "image/jpeg", "222222222222bbbb"),
+            sourceUrl: "https://cdn.test/cover.jpg",
+          },
+        ],
+        "instagram",
+      ),
+    );
+    expect(instagram[0]?.posterIsCrossFile).toBe(true);
   });
 
-  it("keeps a non-YouTube first-frame poster same-file", () => {
+  it("keeps an Instagram first-frame poster without provenance same-file", () => {
+    const items = buildViewerItems(
+      save(
+        [
+          file("movie.mp4", "video", "video/mp4"),
+          file("poster.jpg", "poster", "image/jpeg", "222222222222bbbb"),
+        ],
+        "instagram",
+      ),
+    );
+
+    expect(items[0]?.posterIsCrossFile).toBeUndefined();
+  });
+
+  it("keeps a non-platform first-frame poster same-file", () => {
     const items = buildViewerItems(
       save(
         [

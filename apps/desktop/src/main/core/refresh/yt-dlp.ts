@@ -5,6 +5,7 @@ import type { Source } from "@pond/schema/db";
 import type { RawYtdlp } from "@pond/schema/raw";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import type { DownloadRequest } from "@shared/downloader-contracts";
+import { usesPlatformPoster } from "@shared/poster-policy";
 import log from "electron-log/main.js";
 import { TASK_WATCHDOG_MS } from "../pipeline/task-timeouts";
 import { getVideoDownloadPrefs } from "../prefs";
@@ -187,7 +188,7 @@ export async function downloadVideo(
 
     const wantPoster =
       Boolean(args.request) ||
-      args.source === "youtube" ||
+      usesPlatformPoster(args.source) ||
       Boolean(prefs.embedThumbnail);
     const subtitles =
       prefs.subtitles === "download" && args.request?.mode !== "audio"

@@ -12,6 +12,7 @@ export type PosterWrite = {
   mimeType: string;
   width?: number;
   height?: number;
+  sourceUrl?: string;
 };
 
 export function hasMediaDims(
@@ -55,11 +56,19 @@ export function needsPosterRepair(files: ReadonlyArray<SaveFile>): boolean {
   return posterRepairIndexes(files).length > 0;
 }
 
-export function youtubeThumbnailUrl(
+export function platformPosterUrl(
   rawJson: RawJson | null | undefined,
+  index = 0,
 ): string | null {
   if (!rawJson) return null;
-  if (rawJson.ytdlp?.thumbnail) return rawJson.ytdlp.thumbnail;
+  if (index === 0 && rawJson.ytdlp?.thumbnail) return rawJson.ytdlp.thumbnail;
+
+  const videos = walkCaptureMedia(rawJson.capture).filter(
+    (entry) => entry.type === "video",
+  );
+  const captured = videos[index]?.posterUrl;
+  if (captured) return captured;
+  if (index !== 0 || videos.length > 1) return null;
 
   const media = rawJson.capture?.media ?? [];
   for (const entry of media) {

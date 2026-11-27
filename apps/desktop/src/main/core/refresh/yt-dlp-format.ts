@@ -3,6 +3,7 @@ import type {
   DownloadRange,
   DownloadRequest,
 } from "@shared/downloader-contracts";
+import { usesPlatformPoster } from "@shared/poster-policy";
 import { YTDLP_PROGRESS_TEMPLATE } from "./yt-dlp-progress";
 
 const YTDLP_CONCURRENT_FRAGMENTS = 8;
@@ -135,7 +136,7 @@ export function downloadArgv(input: DownloadArgvInput): Array<string> {
         : "ba[ext=m4a]/ba/b"
       : formatSelector(source, prefs),
   ];
-  if (request || source === "youtube" || prefs.embedThumbnail) {
+  if (request || usesPlatformPoster(source) || prefs.embedThumbnail) {
     argv.push("--write-thumbnail", "--convert-thumbnails", "jpg");
   }
   const filesize = maxFilesizeArg(prefs);
