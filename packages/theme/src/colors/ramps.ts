@@ -4,13 +4,13 @@ import type { Gamut, ThemeInput, ThemeMode } from "./tokens.ts";
 /** Mirrors DEFAULT_LIGHT_THEME and DEFAULT_DARK_THEME in @pond/schema so the first paint matches the app defaults. */
 export const DEFAULT_THEMES = {
   light: {
-    accent: "#00AAFF",
+    accent: "#0090FF",
     background: "#ffffff",
     foreground: "#1B1B1B",
     contrast: 50,
   },
   dark: {
-    accent: "#00AAFF",
+    accent: "#0090FF",
     background: "#0A0A0A",
     foreground: "#EEEEEE",
     contrast: 50,

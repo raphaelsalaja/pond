@@ -79,8 +79,8 @@ describe("theme prefs rebuild", () => {
         },
       },
     });
-    expect(prefs.preferences.light.accent).toBe("#00AAFF");
-    expect(prefs.preferences.dark.accent).toBe("#00AAFF");
+    expect(prefs.preferences.light.accent).toBe("#0090FF");
+    expect(prefs.preferences.dark.accent).toBe("#0090FF");
     expect(isCustomTheme("light", prefs.preferences.light)).toBe(false);
     expect(isCustomTheme("dark", prefs.preferences.dark)).toBe(false);
 
@@ -95,7 +95,7 @@ describe("theme prefs rebuild", () => {
     expect(normalizeTheme(prefs.preferences.light)).toEqual({
       background: "#ffffff",
       foreground: "#1b1b1b",
-      accent: "#00aaff",
+      accent: "#0090ff",
       contrast: 50,
       mode: "light",
     });
@@ -110,7 +110,7 @@ describe("theme prefs rebuild", () => {
     ).toEqual({
       background: "#ffffff",
       foreground: "#eeeeee",
-      accent: "#00aaff",
+      accent: "#0090ff",
       contrast: 100,
       mode: "light",
     });

@@ -201,14 +201,14 @@ export const CONTRAST_MAX = 100;
 export const CONTRAST_DEFAULT = 50;
 
 export const DEFAULT_LIGHT_THEME: ThemeDef = {
-  accent: "#00AAFF",
+  accent: "#0090FF",
   background: "#ffffff",
   foreground: "#1B1B1B",
   contrast: CONTRAST_DEFAULT,
 };
 
 export const DEFAULT_DARK_THEME: ThemeDef = {
-  accent: "#00AAFF",
+  accent: "#0090FF",
   background: "#0A0A0A",
   foreground: "#EEEEEE",
   contrast: CONTRAST_DEFAULT,

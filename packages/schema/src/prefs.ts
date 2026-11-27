@@ -30,7 +30,7 @@ import { ViewerPrefsSchema } from "./viewer-prefs";
 
 export * from "./prefs.types";
 
-/** The default accent before #00AAFF. Nobody could pick it apart from the default, so a theme still holding it moves to the new one. */
+/** The default accent before #0090FF. Nobody could pick it apart from the default, so a theme still holding it moves to the new one. */
 export const LEGACY_DEFAULT_ACCENT = "#5e6ad2";
 
 const themeDefSchema = (fallback: typeof DEFAULT_LIGHT_THEME) =>
