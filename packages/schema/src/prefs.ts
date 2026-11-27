@@ -30,23 +30,27 @@ import { ViewerPrefsSchema } from "./viewer-prefs";
 
 export * from "./prefs.types";
 
-const lightThemeDefSchema = z
-  .object({
-    accent: z.string(),
-    background: z.string(),
-    foreground: z.string(),
-    contrast: z.number(),
-  })
-  .catch(DEFAULT_LIGHT_THEME);
+/** The default accent before #00AAFF. Nobody could pick it apart from the default, so a theme still holding it moves to the new one. */
+export const LEGACY_DEFAULT_ACCENT = "#5e6ad2";
 
-const darkThemeDefSchema = z
-  .object({
-    accent: z.string(),
-    background: z.string(),
-    foreground: z.string(),
-    contrast: z.number(),
-  })
-  .catch(DEFAULT_DARK_THEME);
+const themeDefSchema = (fallback: typeof DEFAULT_LIGHT_THEME) =>
+  z
+    .object({
+      accent: z.string(),
+      background: z.string(),
+      foreground: z.string(),
+      contrast: z.number(),
+    })
+    .transform((def) =>
+      def.accent.trim().toLowerCase() === LEGACY_DEFAULT_ACCENT
+        ? { ...def, accent: fallback.accent }
+        : def,
+    )
+    .catch(fallback);
+
+const lightThemeDefSchema = themeDefSchema(DEFAULT_LIGHT_THEME);
+
+const darkThemeDefSchema = themeDefSchema(DEFAULT_DARK_THEME);
 
 const preferences = z.object({
   appearance: z

@@ -17,11 +17,11 @@
   --ds-foreground-secondary: #393939;
   --ds-foreground-tertiary: #5f5f5f;
   --ds-foreground-inverse: #ffffff;
-  --ds-accent: #5e6ad2;
-  --ds-accent-hover: #535ebd;
-  --ds-accent-foreground: #515bc2;
-  --ds-accent-tint: rgb(2.1 48.1 255 / 0.087);
-  --ds-accent-border: rgb(0.4 39.8 255 / 0.381);
+  --ds-accent: #007dbc;
+  --ds-accent-hover: #006fa8;
+  --ds-accent-foreground: #006ba3;
+  --ds-accent-tint: rgb(1.2 139.6 255 / 0.13);
+  --ds-accent-border: rgb(0 149 255 / 0.651);
   --ds-accent-contrast: #ffffff;
   --ds-danger: #e62431;
   --ds-danger-hover: #d11f2b;
@@ -46,11 +46,11 @@
   --ds-foreground-secondary: #c2c2c2;
   --ds-foreground-tertiary: #979797;
   --ds-foreground-inverse: #0a0a0a;
-  --ds-accent: #5e6ad2;
-  --ds-accent-hover: #535ebd;
-  --ds-accent-foreground: #717fe9;
-  --ds-accent-tint: rgb(54.4 76.7 254.4 / 0.135);
-  --ds-accent-border: rgb(112.4 130.3 255 / 0.449);
+  --ds-accent: #007dbc;
+  --ds-accent-hover: #006fa8;
+  --ds-accent-foreground: #008fd7;
+  --ds-accent-tint: rgb(0 23 39 / 1);
+  --ds-accent-border: rgb(0 72 111 / 1);
   --ds-accent-contrast: #ffffff;
   --ds-danger: #e62431;
   --ds-danger-hover: #d11f2b;
@@ -63,11 +63,11 @@
 @media (color-gamut: p3) {
   :root:not([data-theme="dark"]),
   [data-theme="light"] {
-    --ds-accent: #5d68d8;
-    --ds-accent-hover: #525cc2;
-    --ds-accent-foreground: #5059c8;
-    --ds-accent-tint: color(display-p3 0.0071 0.175 1 / 0.084);
-    --ds-accent-border: color(display-p3 0.0027 0.1331 1 / 0.375);
+    --ds-accent: color(display-p3 0 0.4799 0.7992);
+    --ds-accent-hover: color(display-p3 0 0.4272 0.7149);
+    --ds-accent-foreground: color(display-p3 0 0.4109 0.689);
+    --ds-accent-tint: color(display-p3 0.0008 0.5118 1 / 0.119);
+    --ds-accent-border: color(display-p3 0.0003 0.5219 1 / 0.581);
     --ds-danger: color(display-p3 0.8708 0.151 0.1859);
     --ds-danger-hover: color(display-p3 0.7893 0.1312 0.1638);
     --ds-danger-foreground: color(display-p3 0.7799 0 0.1191);
@@ -76,9 +76,11 @@
   }
 
   [data-theme="dark"] {
-    --ds-accent: #5d68d8;
-    --ds-accent-hover: #525cc2;
-    --ds-accent-foreground: #6f7ef1;
+    --ds-accent: color(display-p3 0 0.4799 0.7992);
+    --ds-accent-hover: color(display-p3 0 0.4272 0.7149);
+    --ds-accent-foreground: color(display-p3 0 0.5488 0.9091);
+    --ds-accent-tint: color(display-p3 0 0.0862 0.1706 / 1);
+    --ds-accent-border: color(display-p3 0 0.2758 0.4731 / 1);
     --ds-danger: color(display-p3 0.8708 0.151 0.1859);
     --ds-danger-hover: color(display-p3 0.7893 0.1312 0.1638);
     --ds-danger-foreground: color(display-p3 0.9977 0.1563 0.208);
