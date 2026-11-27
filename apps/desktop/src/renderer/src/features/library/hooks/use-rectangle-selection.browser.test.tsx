@@ -21,9 +21,9 @@ function Gallery() {
   return (
     <div
       style={{ height: VIEWPORT_HEIGHT, overflowY: "auto", width: 320 }}
-      data-viewport=""
+      data-library-grid-viewport=""
     >
-      <div onPointerDown={marquee.onPointerDown} data-library-grid="">
+      <div data-library-grid="">
         <div
           data-save-collection=""
           tabIndex={0}
@@ -93,7 +93,7 @@ describe("rectangle selection edge scrolling", () => {
   });
 
   it("keeps the intended edge-scroll speed when smooth scrolling is preferred", async () => {
-    const viewport = element(host, "[data-viewport]");
+    const viewport = element(host, "[data-library-grid-viewport]");
     const collection = element(host, "[data-save-collection]");
     expect(getComputedStyle(viewport).scrollBehavior).toBe("smooth");
     const bounds = viewport.getBoundingClientRect();
