@@ -20,6 +20,7 @@ beforeEach(() => {
       "settings.getPrefs": () =>
         PrefsSchema.parse({
           viewer: { hoverVideo: true, thumbnailBehavior: "scrub" },
+          preferences: { tweetCover: "screenshot" },
         }),
     },
   });
@@ -34,8 +35,13 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-function file(kind: string, path: string, mimeType: string): SaveFile {
-  return { kind, path, mimeType, sha256: "abcdef1234567890", size: 10 };
+function file(
+  kind: string,
+  path: string,
+  mimeType: string,
+  sha256 = "abcdef1234567890",
+): SaveFile {
+  return { kind, path, mimeType, sha256, size: 10 };
 }
 
 function makeSave(partial: Partial<Save> & { id: string }): Save {
@@ -159,6 +165,39 @@ describe("CardThumb hover video eligibility", () => {
     expect(videos()).toHaveLength(1);
   });
 
+  it("keeps the X post screenshot as the resting card while the video hover-plays", async () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play");
+    const save = makeSave({
+      id: "tweet",
+      source: "twitter",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+        file("tweet_screenshot_light", "tweet-light.png", "image/png"),
+      ],
+    });
+
+    await renderCard(save);
+
+    expect(images()).toHaveLength(1);
+    expect(images()[0]?.getAttribute("src")).toContain("tweet-light.png");
+    const video = videos()[0];
+    if (!video) throw new Error("Missing hover video");
+    expect(video.hasAttribute("src")).toBe(false);
+    await act(async () => {
+      await Promise.resolve();
+    });
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+
+    await act(async () => {
+      video.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      vi.runOnlyPendingTimers();
+    });
+
+    expect(video.getAttribute("src")).toContain("video-1.mp4");
+    expect(play).toHaveBeenCalled();
+  });
+
   it("keeps a poster-only save static", async () => {
     const save = makeSave({
       id: "poster-only",
@@ -213,5 +252,39 @@ describe("CardThumb hover video eligibility", () => {
     expect(images()[0]?.getAttribute("src")).toContain(
       "video-1.mp4_thumbnail.webp",
     );
+  });
+
+  it("mounts the hover video again when a replaced file changes its URL", async () => {
+    const save = makeSave({
+      id: "replaced-reel",
+      files: [
+        file("video", "video-1.mp4", "video/mp4"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+        file("thumbnail", "video-1.mp4_thumbnail.webp", "image/webp"),
+      ],
+    });
+
+    await renderCard(save);
+    const video = videos()[0];
+    if (!video) throw new Error("Missing hover video");
+    await act(async () => {
+      video.dispatchEvent(new Event("error"));
+    });
+    expect(videos()).toHaveLength(0);
+
+    const replaced = makeSave({
+      id: "replaced-reel",
+      files: [
+        file("video", "video-1.mp4", "video/mp4", "fedcba0987654321"),
+        file("poster", "poster-1.jpg", "image/jpeg"),
+        file("thumbnail", "video-1.mp4_thumbnail.webp", "image/webp"),
+      ],
+    });
+    if (!root) throw new Error("Missing root");
+    await act(async () => {
+      root?.render(<CardThumb save={replaced} view="grid" />);
+    });
+
+    expect(videos()).toHaveLength(1);
   });
 });

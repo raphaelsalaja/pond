@@ -102,8 +102,8 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       : null;
   }, [primary, save]);
   const hoverUnit = useMemo(
-    () => pickHoverVideoUnit(save, unit, mediaUnits),
-    [save, unit, mediaUnits],
+    () => pickHoverVideoUnit(unit, mediaUnits),
+    [unit, mediaUnits],
   );
   const hasVideoDims = useMemo(() => {
     if (!hoverUnit?.isVideo) return false;
@@ -192,10 +192,10 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
 
   /** A broken hover video only disables hover playback; the thumbnail still keeps drawing. */
   const hoverOnly = hoverUnit !== null && !unit?.isVideo;
-  const [hoverBrokenKey, setHoverBrokenKey] = useState<string | null>(null);
-  const hoverBroken = hoverUnit !== null && hoverBrokenKey === hoverUnit.key;
+  const [hoverBrokenSrc, setHoverBrokenSrc] = useState<string | null>(null);
+  const hoverBroken = hoverUnit !== null && hoverBrokenSrc === hoverUnit.url;
   const onHoverBroken = useCallback(() => {
-    if (hoverUnit) setHoverBrokenKey(hoverUnit.key);
+    if (hoverUnit) setHoverBrokenSrc(hoverUnit.url);
   }, [hoverUnit]);
 
   const pixel = aspectDimsFor(save, pickOptions, unit);

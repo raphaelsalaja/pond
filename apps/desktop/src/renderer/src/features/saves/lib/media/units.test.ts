@@ -388,7 +388,6 @@ describe("expanded library formats", () => {
 
 function hoverUnit(save: Save, opts = {}) {
   return pickHoverVideoUnit(
-    save,
     pickCardUnit(save, opts),
     buildMediaUnits(save, opts),
   );
@@ -476,7 +475,7 @@ describe("pickHoverVideoUnit", () => {
     expect(hoverUnit(save, { theme: "light" })).toBeNull();
   });
 
-  it("stays static when the card shows a post screenshot rather than a thumbnail", () => {
+  it("plays the video on hover when a post screenshot is the card still", () => {
     const save = makeSave({
       id: "tweet-shot",
       source: "twitter",
@@ -490,7 +489,9 @@ describe("pickHoverVideoUnit", () => {
     const opts = { theme: "light" as const, tweetCover: "screenshot" as const };
     expect(pickCardUnit(save, opts)?.key).toBe("tweet-light.png");
 
-    expect(hoverUnit(save, opts)).toBeNull();
+    const unit = hoverUnit(save, opts);
+    expect(unit?.key).toBe("video-1.mp4");
+    expect(unit?.isVideo).toBe(true);
   });
 
   it("returns the card unit itself when the card already shows the video", () => {
@@ -506,9 +507,7 @@ describe("pickHoverVideoUnit", () => {
     const cardUnit = pickCardUnit(save);
 
     expect(cardUnit?.isVideo).toBe(true);
-    expect(pickHoverVideoUnit(save, cardUnit, buildMediaUnits(save))).toBe(
-      cardUnit,
-    );
+    expect(pickHoverVideoUnit(cardUnit, buildMediaUnits(save))).toBe(cardUnit);
   });
 });
 
