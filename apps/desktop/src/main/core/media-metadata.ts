@@ -12,11 +12,27 @@ export function parseFfmpegMetadata(output: string): ImageMetadata {
   const bitrate = /bitrate:\s*(\d+)\s*kb\/s/i.exec(output)?.[1];
   const videoCodec = /Video:\s*([^,\s]+)/i.exec(output)?.[1];
   const audioCodec = /Audio:\s*([^,\s]+)/i.exec(output)?.[1];
+  const dimensions = /Video:[^\n]*?\b(\d{2,5})x(\d{2,5})\b/i.exec(output);
+  let width = dimensions ? Number(dimensions[1]) : undefined;
+  let height = dimensions ? Number(dimensions[2]) : undefined;
+  const rotation =
+    /rotation of (-?\d+(?:\.\d+)?)/i.exec(output) ??
+    /rotate\s*:\s*(-?\d+)/i.exec(output);
+  if (
+    width !== undefined &&
+    height !== undefined &&
+    rotation &&
+    Math.abs(Number(rotation[1])) % 180 === 90
+  ) {
+    [width, height] = [height, width];
+  }
   const colorSpace =
     /\b(bt(?:601|709|2020)[a-z0-9-]*|smpte[a-z0-9-]+|iec61966[a-z0-9-]*)\b/i.exec(
       output,
     )?.[1];
   return {
+    width,
+    height,
     container,
     videoCodec,
     audioCodec,

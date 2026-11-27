@@ -71,7 +71,7 @@ it("reveals the first frame over its poster with restrained motion", async () =>
     );
   });
   const video = host.querySelector("video");
-  const poster = host.querySelector('img[aria-hidden="true"]');
+  const poster = host.querySelector("[data-video-placeholder]");
   if (!video || !poster) {
     throw new Error("Missing video reveal media");
   }
