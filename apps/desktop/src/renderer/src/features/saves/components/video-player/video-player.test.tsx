@@ -475,6 +475,13 @@ it("uses the card blurhash as the waiting surface for a single-video save", asyn
           size: 1,
           mimeType: "video/mp4",
         },
+        {
+          kind: "subtitle",
+          path: "subtitle-1.vtt",
+          sha256: "def",
+          size: 1,
+          mimeType: "text/vtt",
+        },
       ],
     }),
   );

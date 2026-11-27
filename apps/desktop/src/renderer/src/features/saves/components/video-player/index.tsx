@@ -2,7 +2,7 @@ import { IconMediaPlay } from "@pond/icons";
 import { Tooltip, useVideo, Video } from "@pond/ui";
 import { isElement } from "@pond/ui/dom";
 import { isVideoFile } from "@shared/media-index";
-import { isAuxiliaryKind } from "@shared/save-file-names";
+import { IMAGE_KIND, VIDEO_KIND } from "@shared/save-file-names";
 import log from "electron-log/renderer";
 import {
   useCallback,
@@ -334,13 +334,15 @@ export function VideoPlayer({
   );
 
   const activeFile = save?.files[fileIndex];
-  const originalFiles =
-    save?.files.filter((file) => !isAuxiliaryKind(file.kind)) ?? [];
+  const visualFiles =
+    save?.files.filter(
+      (file) => file.kind === IMAGE_KIND || file.kind === VIDEO_KIND,
+    ) ?? [];
   const placeholderHash =
     save?.blurhash &&
     activeFile &&
-    originalFiles.length === 1 &&
-    originalFiles[0] === activeFile &&
+    visualFiles.length === 1 &&
+    visualFiles[0] === activeFile &&
     isVideoFile(activeFile)
       ? save.blurhash
       : null;
