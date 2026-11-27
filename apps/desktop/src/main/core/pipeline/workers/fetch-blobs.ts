@@ -101,15 +101,24 @@ async function fetchMissingMedia(
     challengeFetcher: harvestSessionFetcher(save),
     ...ctx,
   });
-  const settlement = settleMediaFetches(results, {
-    optionalGeneratedCard: save.source === "github",
-    finalAttempt:
-      ctx.attempt !== undefined &&
-      ctx.maxAttempts !== undefined &&
-      ctx.attempt >= ctx.maxAttempts,
-  });
+  let settlement: MediaFetchSettlement;
+  try {
+    settlement = settleMediaFetches(results, {
+      optionalGeneratedCard: save.source === "github",
+      finalAttempt:
+        ctx.attempt !== undefined &&
+        ctx.maxAttempts !== undefined &&
+        ctx.attempt >= ctx.maxAttempts,
+    });
+  } catch (error) {
+    if (error instanceof TerminalError) {
+      await recordExhaustedMedia(saveId, exhaustedMediaUrls(results));
+    }
+    throw error;
+  }
   if (settlement.generatedCardMissed) {
     ctx.signal?.throwIfAborted();
+    await recordExhaustedMedia(saveId, unfetchedMediaUrls(results));
     try {
       const { runRenderTextCover } = await import("./render-text-cover");
       await runRenderTextCover(saveId, { imageFallback: true });
@@ -251,6 +260,47 @@ async function fetchMissingMedia(
   if (transientMisses > 0) {
     throw new TransientError(
       `fetch-blobs: ${transientMisses}/${missing.length} media still pending`,
+    );
+  }
+  await recordExhaustedMedia(saveId, exhaustedMediaUrls(results));
+}
+
+/** A retry re-fetches every missing url, so only a settled task can call a miss final. */
+export function exhaustedMediaUrls(results: MediaBatchResults): Array<string> {
+  return results
+    .filter((result) => !result.file && result.miss !== "transient")
+    .map((result) => result.url);
+}
+
+/** The generated-card fallback fires on the final attempt, so even a transient-looking miss is exhausted there. */
+export function unfetchedMediaUrls(results: MediaBatchResults): Array<string> {
+  return results.filter((result) => !result.file).map((result) => result.url);
+}
+
+/** Once the task settles, missing files are indistinguishable from a medialess post unless the capture records that the download gave up. */
+async function recordExhaustedMedia(
+  saveId: string,
+  urls: Array<string>,
+): Promise<void> {
+  if (urls.length === 0) return;
+  try {
+    const save = await readSave(saveId);
+    if (!save?.rawJson?.capture) return;
+    const rawJson = structuredClone(save.rawJson);
+    rawJson.capture.extras = {
+      ...rawJson.capture.extras,
+      mediaFetchExhausted: { at: new Date().toISOString(), urls },
+    };
+    await persistSave(
+      saveId,
+      { rawJson },
+      { actorReason: "pipeline:fetch-blobs:media-exhausted" },
+    );
+  } catch (error) {
+    log.warn(
+      "[pond pipeline:fetch-blobs] could not record exhausted media",
+      saveId,
+      error,
     );
   }
 }

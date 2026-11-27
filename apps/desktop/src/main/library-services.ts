@@ -99,6 +99,12 @@ export async function startLibraryBackgroundWork(): Promise<void> {
         const module = await import("./core/refresh/article-backfill");
         await module.startArticleBackfill();
       }),
+    )
+    .then(
+      step("media cover backfill", async () => {
+        const module = await import("./core/refresh/media-cover-backfill");
+        await module.startMediaCoverBackfill();
+      }),
     );
   void enrichmentModule
     .backfillEnrichmentSidecars()

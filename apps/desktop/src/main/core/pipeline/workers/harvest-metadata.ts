@@ -66,9 +66,10 @@ export async function runHarvestMetadata(
             isSignedIn: isPartitionSignedIn,
             signal: ctx.signal,
           });
-  const { capture, files } = splitArticle(
+  const { capture: extracted, files } = splitArticle(
     withYtdlpAuthor(harvested, save.rawJson?.ytdlp),
   );
+  const capture = preserveReharvestMedia(extracted, stored);
 
   const harvestedRaw: RawJson = {
     capture,
@@ -116,6 +117,44 @@ async function addArchiveTask(saveId: string): Promise<void> {
     })
     .onConflictDoNothing()
     .run();
+}
+
+/**
+ * A medialess re-harvest of the same content keeps the previous evidence instead of erasing it.
+ * @remarks Only GitHub merges the media itself, because a resolving repository page always serves an og card, while other sources can genuinely lose media.
+ */
+export function preserveReharvestMedia(
+  capture: Capture,
+  stored: Capture | undefined,
+): Capture {
+  const merged = mergeRepositoryMedia(capture, stored);
+  return carryExhaustionMarker(merged, stored);
+}
+
+function mergeRepositoryMedia(
+  capture: Capture,
+  stored: Capture | undefined,
+): Capture {
+  if (capture.source !== "github") return capture;
+  if (!stored || stored.id !== capture.id) return capture;
+  if (walkCaptureMedia(capture).length > 0) return capture;
+  const media = walkCaptureMedia(stored).map((entry) => ({ ...entry }));
+  if (media.length === 0) return capture;
+  return { ...capture, media };
+}
+
+function carryExhaustionMarker(
+  capture: Capture,
+  stored: Capture | undefined,
+): Capture {
+  if (!stored || stored.id !== capture.id) return capture;
+  const exhausted = stored.extras?.mediaFetchExhausted;
+  if (!exhausted) return capture;
+  if (walkCaptureMedia(capture).length > 0) return capture;
+  return {
+    ...capture,
+    extras: { ...capture.extras, mediaFetchExhausted: exhausted },
+  };
 }
 
 function buildSavePatch(
