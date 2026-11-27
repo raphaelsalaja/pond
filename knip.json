@@ -48,6 +48,11 @@
       "project": ["**/*.{ts,tsx,mjs,cjs}"],
       "ignoreDependencies": ["@pond/theme"]
     },
+    "packages/share-page": {
+      "entry": ["src/main.tsx"],
+      "project": ["**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@pond/theme"]
+    },
     "packages/icons": {
       "entry": ["src/**/*.mjs", "scripts/*.mjs"]
     },

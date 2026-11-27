@@ -1,6 +1,6 @@
 # Plan 006: Share Links for Saves, Folders, and Canvases
 
-> Executor: this plan is waiting for review. Don't start Phase 1 until the open questions at the end are answered. Then work phase by phase and honor each STOP condition.
+> Executor: Phases 0 and 1 are done. Answer the remaining open questions before Phase 2, then work phase by phase and honor each STOP condition.
 >
 > Issue: [raphaelsalaja/pond#362](https://github.com/raphaelsalaja/pond/issues/362).
 >
@@ -13,12 +13,12 @@
 - Risk: HIGH. It's the first feature that puts Library content on the internet.
 - Category: feature
 - Planned at: `cc3974ffb`, 2026-11-27
-- Status: PROPOSED
+- Status: IN PROGRESS
 
 | Phase | Scope                                                                 | Status |
 | ----- | --------------------------------------------------------------------- | ------ |
-| 0     | Decisions, domain language, Snapshot manifest v1                      | TODO   |
-| 1     | Export as Web Page for a Save or a Folder (no network)                | TODO   |
+| 0     | Decisions, domain language, Share Page manifest v1                    | DONE   |
+| 1     | Export Share Page for a Save, a selection, or a Folder (no network)   | DONE   |
 | 2     | Share Host (S3-compatible), Create Share Link, Copy, Update, Stop Sharing | TODO   |
 | 3     | Expiry, the list of Share Links, link previews, Notifications         | TODO   |
 | 4     | Canvases: read-only board viewer                                      | TODO   |
@@ -64,17 +64,18 @@ _Avoid_: share (alone; that's the system Share menu), public link, published pag
 Storage you own where Pond uploads Share Links, set up once in Settings with your own credentials.
 _Avoid_: destination (that's a sidebar destination), server, cloud, bucket (as the product word)
 
-**Web Page export**:
-Export as Web Page writes the same snapshot to a folder on disk, for you to open or host yourself.
+**Share Page** (shipped in Phase 1; see AGENTS.md):
+The frozen, read-only page itself: `index.html` with the viewer and manifest inlined, plus `media/`. Export Share Page writes one to disk; a Share Link is one uploaded to a Share Host.
+_Avoid_: web page (Pond already uses that for a Save of a web page, and "Web Pages" is user-facing copy for those)
 _Avoid_: static site, HTML export
 
 ## What gets published
 
-Everything goes into one versioned manifest (`ShareManifestSchema`, `version: 1`), which becomes a compatibility contract once Phase 1 ships. Saves get opaque per-snapshot ids, never their Library ids.
+Everything goes into one versioned manifest (`SharePageManifestSchema` in `@pond/schema/share-page`, `version: 1`), which becomes a compatibility contract once Phase 1 ships. Saves get opaque per-snapshot ids, never their Library ids.
 
 | | Save | Folder | Canvas |
 | --- | --- | --- | --- |
-| Always | Title, original URL, Source, author name and handle, date saved, Capture text (post text, link card, quoted item), the Thumbnail, and the Assets as web copies | Folder name, Folder Cover, and every live Save directly in the folder, each published as a Save, in the folder's current sort | Canvas name, items (notes, text, figures, sections, tables, code, topics, drawings), connectors, and each Save on the board as a Save (with its crop) |
+| Always | Title, original URL, Source, author name and handle, date saved, Capture text (post text, link card, quoted item), the Thumbnail, and the Assets as web copies | Folder name and every live Save directly in the folder, each published as a Save, in the folder's current sort | Canvas name, items (notes, text, figures, sections, tables, code, topics, drawings), connectors, and each Save on the board as a Save (with its crop) |
 | Off unless you turn it on | Notes, Tags, original-quality files | Same, plus subfolders as sections | Same |
 | Never | Inbox state, list kinds (`liked`/`saved`), rating, other Folders, file paths, Library ids, embeddings and captions, Fish chats, cookies, file metadata (EXIF, GPS, camera, video metadata) | Saves in Trash, Smart Folder rules | Saves in Trash (their spot shows "Not shared"), the viewport you last used |
 
@@ -88,15 +89,15 @@ Media handling:
 ## Architecture
 
 ```text
-packages/share-viewer/            # new: static read-only viewer (Vite, React, @pond/ui tokens)
+packages/share-page/              # done: static read-only viewer (Vite, React, @pond/theme tokens), one classic script
   src/                            # reads <script type="application/json" id="pond-share">
-apps/desktop/src/shared/share-link-contracts.ts   # ShareManifestSchema, ShareLink record, IPC inputs
+packages/schema/src/share-page.ts                # done: SharePageManifestSchema
+apps/desktop/src/main/core/share-page/            # done: plan.ts (allowlist), stage.ts (media), html.ts, export.ts
+apps/desktop/src/shared/share-link-contracts.ts   # Phase 2: ShareLink record, IPC inputs
 apps/desktop/src/main/core/share-links/
-  snapshot.ts                     # pure: Save | Folder | Canvas → manifest + file plan (the allowlist lives here)
-  stage.ts                        # writes the snapshot folder: web copies, metadata stripped, viewer files
   hosts/
     index.ts                      # ShareHost interface: check, put, deletePrefix, publicUrl
-    folder.ts                     # Export as Web Page
+    folder.ts                     # Export Share Page
     s3.ts                         # S3-compatible (SigV4)
   links.ts                        # create, update, stop, expire; reads and writes share-links.json
 apps/desktop/src/main/ipc/queries/share-links.ts
@@ -117,7 +118,7 @@ apps/desktop/src/renderer/src/features/share-links/   # dialog, Settings section
 Following [design principles](../apps/desktop/src/renderer/src/PRINCIPLES.md): one focused job per tray.
 
 - **Create Share Link…** in the Save, Folder, and Canvas context menus, and in the hover-preview Share button's menu next to the existing system Share. It opens a popover anchored to the trigger with the options (notes, tags, original quality, expiry), a size and count preflight ("38 Saves · 212 MB"), and Create. The popover then morphs into the link with Copy Link and progress. Creating the first link on a new Share Host is a rare, significant moment and may get a small flourish.
-- If no Share Host is set up, the same popover offers **Set Up Share Host…** (opens Settings) and **Export as Web Page…** instead.
+- If no Share Host is set up, the same popover offers **Set Up Share Host…** (opens Settings) and **Export Share Page…** instead.
 - An existing link shows Copy Link, Update Link, and Stop Sharing in the same popover. Stop Sharing confirms first, because recipients lose access.
 - **Settings › Share Links**: the Share Host form (provider presets for R2, B2, S3, MinIO, and custom; Check Connection) and every Share Link in this Library with its target, created and expiry dates, size, Copy, and Stop Sharing.
 - A failed upload or expiry sweep sends an attention Notification, which clears once it succeeds. Finished uploads go to Other.
@@ -129,13 +130,13 @@ Following [design principles](../apps/desktop/src/renderer/src/PRINCIPLES.md): o
 
 - Settle the open questions below.
 - Add the domain terms to AGENTS.md.
-- Write `ShareManifestSchema` v1 and a frozen fixture under `apps/desktop/test/fixtures/compatibility`.
+- Write `SharePageManifestSchema` v1 and a frozen fixture under `apps/desktop/test/fixtures/compatibility`.
 
-### Phase 1: Export as Web Page (first shippable slice)
+### Phase 1: Export Share Page (first shippable slice)
 
-- `packages/share-viewer` renders a Save and a Folder grid: images, video with poster, post text, author, Source icon, and a link to the original. It works from `file://`, in light and dark (following the viewer's system setting), and with reduced motion.
-- `snapshot.ts` and `stage.ts` for Saves and Folders, with metadata stripping.
-- **Export as Web Page…** next to the existing exports, for one Save, a selection, or a Folder. It writes `<name>/index.html` plus files and shows it in Finder.
+- `packages/share-page` renders a Save and a Folder grid: images, video with poster, post text, author, Source, and a link to the original. It works from `file://`, in light and dark (following the viewer's system setting), and with reduced motion.
+- `plan.ts` and `stage.ts` for Saves and Folders, with metadata stripping.
+- **Export Share Page** next to the existing exports, for one Save, a selection, or a Folder. It writes `<name>/index.html` plus files and offers Show in Finder.
 - No network, credentials, or privacy page change are needed. People can already drag the folder onto any static host, and the slice builds most of the feature (format, allowlist, media pipeline, viewer) without adding anything that can leak.
 
 STOP if the viewer bundle (gzipped JS and CSS) goes over 150 KB. It's copied into every snapshot, so trim before going further.
@@ -151,7 +152,7 @@ STOP if S3 support would pull in the full AWS SDK. Use a small SigV4 signer (suc
 ### Phase 3: lifetime and management
 
 - Expiry options (Never, 1 day, 7 days, 30 days), the cron sweep, and the optional lifecycle-rule prefixes.
-- The full Share Links list in Settings, the Notifications described above, and an Open Graph image (the card-size Thumbnail or Folder Cover) so links unfurl in chat apps.
+- The full Share Links list in Settings, the Notifications described above, and an Open Graph image (the card-size Thumbnail) so links unfurl in chat apps.
 
 ### Phase 4: Canvases
 
@@ -168,7 +169,7 @@ STOP if the extraction means moving more than about 25 files or changing how the
 
 ## Verification
 
-- Offline tests on temporary Libraries for `snapshot.ts`. Notes, tags, rating, inbox, list kinds, file paths, and Library ids never appear in the manifest unless an option includes them. This is a serialized-manifest assertion, so any field later added to a Save also fails it until it's allowlisted.
+- Offline tests for `plan.ts`: notes, tags, file paths, and Library ids never appear in the serialized manifest unless an option includes them. The planner reads a `Pick` of Save fields and builds each manifest field by hand, so a field added to Saves later can't reach a page until someone adds it there.
 - `stage.ts` tests check that a JPEG with GPS EXIF and a video with metadata come out without them.
 - `ShareHost` contract tests run against the folder host and an in-memory fake with failure injection: a partial upload cleans its prefix, and Stop Sharing deletes everything under it. A live S3 test against MinIO or R2 is opt-in and separate from offline checks, like the source-drift smoke.
 - Viewer browser tests cover axe in light and dark, keyboard navigation of the grid, `file://` loading, and the CSP (no inline-script violations).
@@ -184,7 +185,7 @@ STOP if the extraction means moving more than about 25 files or changing how the
 
 ## Open questions
 
-1. Are the names **Share Link**, **Share Host**, and **Export as Web Page** right?
+1. Are the names **Share Link** and **Share Host** right? (**Share Page** replaced "Web Page", which Pond already uses for Saves of web pages.)
 2. What should new links default to for expiry: never, or 30 days?
 3. Should notes and tags stay off by default (as proposed)?
 4. Is Phase 1 (export only, no link yet) the right first release, or should Phases 1 and 2 ship together so the first release actually produces a link?

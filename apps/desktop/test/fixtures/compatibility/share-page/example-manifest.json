@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "kind": "folder",
+  "title": "References",
+  "createdAt": "2026-11-27T12:00:00.000Z",
+  "saves": [
+    {
+      "id": "s1",
+      "title": "Morning light",
+      "text": "Shot on the ferry this morning.",
+      "url": "https://example.com/p/1",
+      "source": "Instagram",
+      "author": {
+        "name": "A. Photographer",
+        "handle": "aphotographer",
+        "url": "https://example.com/aphotographer"
+      },
+      "publishedAt": "2026-11-01T08:30:00.000Z",
+      "thumbnail": {
+        "src": "media/s1-thumb.webp",
+        "width": 720,
+        "height": 900
+      },
+      "media": [
+        {
+          "kind": "image",
+          "src": "media/s1-0.webp",
+          "width": 2048,
+          "height": 2560
+        },
+        {
+          "kind": "video",
+          "src": "media/s1-1.mp4",
+          "poster": {
+            "src": "media/s1-1-poster.webp",
+            "width": 1080,
+            "height": 1920
+          },
+          "width": 1080,
+          "height": 1920
+        }
+      ]
+    },
+    {
+      "id": "s2",
+      "title": "A link worth keeping",
+      "url": "https://example.org/article",
+      "source": "Web",
+      "media": [],
+      "card": {
+        "url": "https://example.org/article",
+        "title": "An article",
+        "domain": "example.org"
+      },
+      "quote": { "text": "Quoted post text.", "author": { "name": "Someone" } },
+      "notes": "Included because the export chose notes.",
+      "tags": ["light", "ferry"]
+    }
+  ]
+}

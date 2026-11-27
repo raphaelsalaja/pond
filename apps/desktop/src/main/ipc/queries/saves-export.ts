@@ -15,6 +15,12 @@ import {
   exportSavesToZip,
 } from "../../core/export-saves";
 import { exportPondPackage } from "../../core/pond-package";
+import {
+  exportSharePage,
+  loadSharePageViewer,
+  resolveSharePageTarget,
+  sharePageFolderName,
+} from "../../core/share-page";
 import { runTransferJob } from "../../core/transfer-jobs";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
@@ -227,6 +233,64 @@ export const savesExportQueries = {
         }
       }
       return { ok: true, exported, dir };
+    },
+  ),
+
+  "saves.exportSharePage": query(
+    IdListParams.extend({ folderId: StringParam }),
+    async (params): Promise<QueryResult<"saves.exportSharePage">> => {
+      const ids = params.ids.filter(Boolean);
+      if (ids.length === 0) {
+        return { ok: false, error: "Choose Saves to export." };
+      }
+      const target = { ids, folderId: params.folderId || undefined };
+      try {
+        const viewer = await loadSharePageViewer();
+        const { title } = await resolveSharePageTarget(target);
+        const picked = await dialog.showOpenDialog({
+          title: "Export Share Page",
+          message: "Choose where to save the Share Page.",
+          buttonLabel: "Export",
+          properties: ["openDirectory", "createDirectory"],
+        });
+        if (picked.canceled || !picked.filePaths[0]) {
+          return { ok: false, reason: "cancelled" };
+        }
+        const destination = await availableExportPath(
+          picked.filePaths[0],
+          sharePageFolderName(title),
+        );
+        const result = await runTransferJob(
+          {
+            kind: "export_share_page",
+            origin: libraryRoot(),
+            destination,
+            ids,
+            folderId: target.folderId,
+          },
+          () =>
+            exportSharePage({
+              target,
+              destination,
+              libraryRoot: libraryRoot(),
+              viewer,
+            }),
+        );
+        return { ok: true, ...result };
+      } catch (error) {
+        /** Cancelling from Downloads stops the job; it isn't a failure to report. */
+        if (error instanceof Error && error.name === "TransferCancelledError") {
+          return { ok: false, reason: "cancelled" };
+        }
+        log.warn("[pond ipc] saves.exportSharePage failed", error);
+        return {
+          ok: false,
+          error:
+            error instanceof Error
+              ? error.message
+              : "Couldn't export the Share Page.",
+        };
+      }
     },
   ),
 

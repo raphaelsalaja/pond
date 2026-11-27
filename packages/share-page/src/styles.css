@@ -1,0 +1,58 @@
+@import "@pond/theme/colors.css";
+@import "@pond/theme/motion.css";
+@import "@pond/theme/radius.css";
+@import "@pond/theme/space.css";
+@import "@pond/theme/typography.css";
+
+:root {
+  --page-font:
+    system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", sans-serif;
+  --page-gutter: clamp(16px, 4vw, 48px);
+  --page-column: 260px;
+  color-scheme: light dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--page-font);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ds-foreground-primary);
+  background: var(--ds-background-primary);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ds-accent);
+  outline-offset: 2px;
+}
+
+img,
+video {
+  display: block;
+  max-width: 100%;
+}

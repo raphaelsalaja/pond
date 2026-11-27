@@ -219,6 +219,7 @@ export const queryOperationAccess = {
   "saves.exportFiles": "review",
   "saves.exportPackage": "review",
   "saves.exportWebp": "review",
+  "saves.exportSharePage": "review",
   "saves.extractPageAssets": "read",
   "saves.filePath": "read",
   "saves.findDuplicates": "read",

@@ -27,6 +27,8 @@ them.
 - `locked-eagle-folders`: Eagle password markers and inherited exclusion
 - `deep-links`: Library-bound and unbound Pond Save links
 - `eaglepack`: Eagle 4.0.0 folder and custom-thumbnail transfer packages
+- `share-page`: version 1 Share Page manifest embedded in an exported `index.html`,
+  with a frozen example the current schema must keep parsing
 
 The Eaglepack samples contain generated media and audit-only metadata. The
 characterization records checksums, entry names, observed fields, and redaction

@@ -4,6 +4,7 @@ import {
   IconConversion,
   IconFileExport,
   IconFileZip,
+  IconGlobe,
   IconGauge,
   IconImage,
   IconImageBinary,
@@ -20,6 +21,7 @@ import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import {
   exportSelectionCsv,
   exportSelectionFiles,
+  exportSelectionSharePage,
 } from "@/features/saves/lib/selection";
 import { formatBytes, formatPlural } from "@/shared/lib/format";
 import { IS_MAC } from "@/shared/lib/platform";
@@ -358,6 +360,13 @@ export function buildExportItems(
             }
           });
       },
+    },
+    {
+      id: "export-share-page",
+      label: "Export Share Page",
+      icon: glyph(IconGlobe),
+      keywords: "share page web html site browser",
+      onClick: () => void exportSelectionSharePage(ids),
     },
     {
       id: "export-csv",

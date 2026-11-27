@@ -273,6 +273,44 @@ export async function exportSelectionFiles(
   return { ok: true, message };
 }
 
+/** Writes a Share Page of the Saves, or of a Folder when `folderId` names the one they came from. */
+export async function exportSelectionSharePage(
+  ids: ReadonlyArray<string>,
+  options: { folderId?: string } = {},
+): Promise<SelectionActionResult> {
+  if (ids.length === 0) return { ok: false, message: "Nothing selected" };
+  const job = statusFeed.start("Exporting Share Page");
+  const result = await window.pond.query("saves.exportSharePage", {
+    ids: [...ids],
+    folderId: options.folderId,
+  });
+  if (!result.ok) {
+    if ("reason" in result && result.reason === "cancelled") {
+      statusFeed.dismiss(job);
+      return { ok: true, message: "Export canceled" };
+    }
+    const message =
+      "error" in result && result.error
+        ? result.error
+        : "Couldn't export the Share Page.";
+    statusFeed.fail(job, message);
+    notify({ id: "export-share-page", title: message });
+    return { ok: false, message };
+  }
+  const message = `Exported a Share Page of ${formatPlural(result.exported, { one: "Save", other: "Saves" })}`;
+  statusFeed.done(job, message);
+  notify({
+    id: "export-share-page",
+    title: message,
+    action: {
+      label: "Show in Finder",
+      onClick: () =>
+        void window.pond.query("transferJobs.reveal", { path: result.path }),
+    },
+  });
+  return { ok: true, message };
+}
+
 export async function exportSelectionCsv(
   ids: ReadonlyArray<string>,
 ): Promise<SelectionActionResult> {

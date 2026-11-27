@@ -6,6 +6,7 @@ export const TransferRequestSchema = z.object({
     "export_eagle_package",
     "export_files",
     "export_package",
+    "export_share_page",
     "import_eagle_package",
     "import_package",
     "copy_library",
@@ -15,6 +16,8 @@ export const TransferRequestSchema = z.object({
   destination: z.string().min(1),
   source: z.string().optional(),
   ids: z.array(z.string()).optional(),
+  /** A Share Page made from a Folder takes the Folder's name. */
+  folderId: z.string().optional(),
 });
 export type TransferRequest = z.infer<typeof TransferRequestSchema>;
 export const TransferJobSchema = z.object({
