@@ -99,6 +99,7 @@ describe("ensureRemotePoster", () => {
               kind: "poster",
               filename: "poster-1.jpg",
               mimeType: "image/jpeg",
+              sourceUrl: POSTER_URL,
               width: 4,
               height: 3,
             }),

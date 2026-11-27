@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   needsPosterRepair,
   posterFilename,
+  platformPosterUrl,
   posterRepairIndexes,
   remotePosterUrl,
   usesPlatformPoster,
   videoFilename,
-  youtubeThumbnailUrl,
 } from "./poster-policy";
 
 function file(
@@ -31,8 +31,9 @@ function file(
 }
 
 describe("usesPlatformPoster", () => {
-  it("is true only for youtube", () => {
+  it("is true for sources whose posters are platform covers", () => {
     expect(usesPlatformPoster("youtube")).toBe(true);
+    expect(usesPlatformPoster("instagram")).toBe(true);
     expect(usesPlatformPoster("tiktok")).toBe(false);
     expect(usesPlatformPoster(null)).toBe(false);
   });
@@ -81,17 +82,17 @@ describe("needsPosterRepair", () => {
   });
 });
 
-describe("youtubeThumbnailUrl", () => {
+describe("platformPosterUrl legacy YouTube lookup", () => {
   it("prefers ytdlp thumbnail then capture posterUrl", () => {
     expect(
-      youtubeThumbnailUrl(
+      platformPosterUrl(
         storedAsRawJson({
           ytdlp: { thumbnail: "https://i.ytimg.com/vi/x/hqdefault.jpg" },
         }),
       ),
     ).toBe("https://i.ytimg.com/vi/x/hqdefault.jpg");
     expect(
-      youtubeThumbnailUrl(
+      platformPosterUrl(
         storedAsRawJson({
           capture: {
             media: [
@@ -105,6 +106,52 @@ describe("youtubeThumbnailUrl", () => {
         }),
       ),
     ).toBe("https://i.ytimg.com/vi/y/hqdefault.jpg");
+  });
+});
+
+describe("platformPosterUrl", () => {
+  it("uses the poster for the matching carousel video slot", () => {
+    const rawJson = storedAsRawJson({
+      capture: {
+        media: [
+          { type: "image", url: "https://cdn.test/image.jpg" },
+          {
+            type: "video",
+            url: "https://cdn.test/first.mp4",
+            posterUrl: "https://cdn.test/first-cover.jpg",
+          },
+          {
+            type: "video",
+            url: "https://cdn.test/second.mp4",
+            posterUrl: "https://cdn.test/second-cover.jpg",
+          },
+        ],
+      },
+    });
+
+    expect(platformPosterUrl(rawJson, 0)).toBe(
+      "https://cdn.test/first-cover.jpg",
+    );
+    expect(platformPosterUrl(rawJson, 1)).toBe(
+      "https://cdn.test/second-cover.jpg",
+    );
+  });
+
+  it("does not reuse the first carousel poster for a later video without one", () => {
+    const rawJson = storedAsRawJson({
+      capture: {
+        media: [
+          {
+            type: "video",
+            url: "https://cdn.test/first.mp4",
+            posterUrl: "https://cdn.test/first-cover.jpg",
+          },
+          { type: "video", url: "https://cdn.test/second.mp4" },
+        ],
+      },
+    });
+
+    expect(platformPosterUrl(rawJson, 1)).toBeNull();
   });
 });
 

@@ -106,6 +106,22 @@ function setup(
   };
 }
 
+function downloadedVideoItem(
+  path: string,
+  posterPath: string,
+  width: number,
+): DownloadedVideoItem {
+  return {
+    path,
+    mimeType: "video/mp4",
+    size: 5,
+    infoJson: { width, height: 1920 },
+    posterPath,
+    posterMimeType: "image/jpeg",
+    subtitles: [],
+  };
+}
+
 function cleanupRecorder() {
   const recorder = {
     calls: 0,
@@ -220,6 +236,74 @@ describe("fetch_video_ytdlp requested downloads", () => {
     expect(patch?.fileSize).toBe(
       subtitleSize + video.byteLength + poster.byteLength,
     );
+  });
+
+  it("stores Instagram platform covers beside their matching carousel videos", async () => {
+    const gifBytes = Buffer.from(
+      "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "base64",
+    );
+    const instagramSave: VideoDownloadSave = {
+      ...videoSave,
+      source: "instagram",
+      url: "https://www.instagram.com/p/carousel/",
+      rawJson: storedAsRawJson({
+        capture: {
+          media: [
+            { type: "image", url: "https://cdn.test/image.jpg" },
+            {
+              type: "video",
+              url: "https://cdn.test/first.mp4",
+              posterUrl: "https://cdn.test/first-cover.jpg",
+            },
+            {
+              type: "video",
+              url: "https://cdn.test/second.mp4",
+              posterUrl: "https://cdn.test/second-cover.jpg",
+            },
+          ],
+        },
+      }),
+    };
+    const secondGifBytes = Buffer.concat([gifBytes, Buffer.from([0])]);
+    const firstVideo = await producedFile("first.mp4");
+    const secondVideo = await producedFile("second.mp4");
+    const firstPoster = await producedFile("first.jpg");
+    const secondPoster = await producedFile("second.jpg");
+    await writeFile(firstPoster, gifBytes);
+    await writeFile(secondPoster, secondGifBytes);
+    const { runtime, videoDownloads, persisted } = setup(false, instagramSave, {
+      video: {
+        items: [
+          downloadedVideoItem(firstVideo, firstPoster, 1080),
+          downloadedVideoItem(secondVideo, secondPoster, 1080),
+        ],
+        cleanup: cleanupRecorder().cleanup,
+      },
+    });
+
+    await runFetchVideoYtdlp("ig1", { requested: true }, undefined, runtime);
+
+    expect(videoDownloads[0]).toEqual(
+      expect.objectContaining({ allowPlaylist: true, expectedCount: 2 }),
+    );
+    const [, , opts] = persisted[0] ?? [];
+    expect(opts?.newFiles).toEqual([
+      expect.objectContaining({ kind: "video", filename: "video-1.mp4" }),
+      expect.objectContaining({
+        kind: "poster",
+        filename: "poster-1.jpg",
+        bytes: gifBytes,
+        sourceUrl: "https://cdn.test/first-cover.jpg",
+      }),
+      expect.objectContaining({ kind: "video", filename: "video-2.mp4" }),
+      expect.objectContaining({
+        kind: "poster",
+        filename: "poster-2.jpg",
+        bytes: secondGifBytes,
+        sourceUrl: "https://cdn.test/second-cover.jpg",
+      }),
+    ]);
   });
 
   it("stores audio as an audio file and an audio save", async () => {

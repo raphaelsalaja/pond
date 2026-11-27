@@ -83,6 +83,27 @@ describe("buildMediaUnits video posters", () => {
     );
     expect(youtube[0]?.posterIsCrossFile).toBe(true);
 
+    const instagramFiles = [
+      file("video", "video-1.mp4", "video/mp4"),
+      {
+        ...file("poster", "poster-1.jpg", "image/jpeg"),
+        sourceUrl: "https://cdn.test/cover.jpg",
+      },
+    ];
+    const instagram = buildMediaUnits(
+      makeSave({
+        id: "reel-cover",
+        source: "instagram",
+        files: instagramFiles,
+      }),
+    );
+    expect(instagram[0]?.posterIsCrossFile).toBe(true);
+
+    const legacyInstagram = buildMediaUnits(
+      makeSave({ id: "legacy-reel", source: "instagram", files }),
+    );
+    expect(legacyInstagram[0]?.posterIsCrossFile).toBeUndefined();
+
     const twitter = buildMediaUnits(
       makeSave({ id: "tweet", source: "twitter", files }),
     );

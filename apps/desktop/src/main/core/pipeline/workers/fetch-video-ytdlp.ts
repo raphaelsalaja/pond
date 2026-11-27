@@ -10,6 +10,7 @@ import type { TransferOptions } from "../../../lib/download-transfer";
 import { probeImageDims } from "../../../lib/image-process";
 import { buildFirstFramePoster } from "../../../lib/poster-from-frame";
 import {
+  platformPosterUrl,
   posterFilename,
   usesPlatformPoster,
   videoFilename,
@@ -156,7 +157,13 @@ export async function runFetchVideoYtdlp(
     for (let i = 0; i < dl.items.length; i++) {
       const item = dl.items[i];
       if (!item) continue;
-      const files = await filesForItem(item, i, save.source);
+      const files = await filesForItem(
+        item,
+        i,
+        save.source,
+        undefined,
+        item.infoJson?.thumbnail ?? platformPosterUrl(save.rawJson, i),
+      );
       if (!files) {
         throw new TransientError(
           `fetch-video-ytdlp: could not read produced file for ${saveId}`,
@@ -292,7 +299,13 @@ async function runRequestedDownload(
                 : videoFilename(i, ext || ".mp4"),
               poster: addsBeside ? "none" : "auto",
             };
-      const produced = await filesForItem(item, i, save.source, plan);
+      const produced = await filesForItem(
+        item,
+        i,
+        save.source,
+        plan,
+        item.infoJson?.thumbnail ?? platformPosterUrl(save.rawJson, i),
+      );
       if (!produced) {
         throw new TransientError(
           `fetch-video-ytdlp: could not read produced file for ${saveId}`,
@@ -485,6 +498,7 @@ async function filesForItem(
     filename: videoFilename(index, extname(item.path).toLowerCase() || ".mp4"),
     poster: "auto",
   },
+  platformSourceUrl: string | null = null,
 ): Promise<Array<WriteFileArgs> | null> {
   const [mediaBuf, platformPosterBuf, ...subtitleBufs] = await Promise.all([
     readPath(item.path),
@@ -519,6 +533,7 @@ async function filesForItem(
       platformPath: item.posterPath,
       platformBytes: platformPosterBuf,
       platformMimeType: item.posterMimeType,
+      platformSourceUrl,
     });
     if (poster) out.push(poster);
   } else if (
@@ -526,13 +541,15 @@ async function filesForItem(
     platformPosterBuf &&
     item.posterPath
   ) {
-    out.push({
+    const poster: WriteFileArgs = {
       kind: "poster",
       filename: posterFilename(index, extname(item.posterPath) || ".jpg"),
       bytes: platformPosterBuf,
       mimeType: item.posterMimeType ?? "image/jpeg",
-      ...(await probeImageDims(platformPosterBuf)),
-    });
+    };
+    if (platformSourceUrl) poster.sourceUrl = platformSourceUrl;
+    Object.assign(poster, await probeImageDims(platformPosterBuf));
+    out.push(poster);
   }
 
   for (let i = 0; i < item.subtitles.length; i++) {
@@ -557,6 +574,7 @@ async function resolvePoster(args: {
   platformPath: string | null;
   platformBytes: Buffer | null;
   platformMimeType: string | null;
+  platformSourceUrl: string | null;
 }): Promise<PosterWrite | null> {
   if (
     usesPlatformPoster(args.source) &&
@@ -565,13 +583,15 @@ async function resolvePoster(args: {
   ) {
     const ext = extname(args.platformPath).toLowerCase() || ".jpg";
     const dims = await probeImageDims(args.platformBytes);
-    return {
+    const poster: PosterWrite = {
       kind: "poster",
       filename: posterFilename(args.index, ext),
       bytes: args.platformBytes,
       mimeType: args.platformMimeType ?? "image/jpeg",
-      ...dims,
     };
+    if (args.platformSourceUrl) poster.sourceUrl = args.platformSourceUrl;
+    Object.assign(poster, dims);
+    return poster;
   }
   return buildFirstFramePoster(
     args.videoPath,

@@ -24,6 +24,12 @@ describe("standalone harvest validation", () => {
         play_count: "wrong",
         user: { username: "artist", is_verified: "wrong" },
         video_versions: [{ url: "https://example.com/video.mp4" }],
+        image_versions2: {
+          candidates: [
+            { url: "https://example.com/cover-small.jpg", width: 320 },
+            { url: "https://example.com/cover.jpg", width: 1080 },
+          ],
+        },
       }),
     );
     const result = await runInNewContext(expression, {});
@@ -31,10 +37,75 @@ describe("standalone harvest validation", () => {
       sourceId: "example",
       description: "A caption",
       author: "@artist",
+      mediaUrls: [
+        {
+          url: "https://example.com/video.mp4",
+          type: "video",
+          poster: "https://example.com/cover.jpg",
+        },
+      ],
       meta: { metrics: { likes: 12 } },
     });
     expect(result.meta.metrics.plays).toBeUndefined();
     expect(result.meta.verified).toBeUndefined();
+  });
+
+  it("keeps carousel video posters in carousel order", async () => {
+    const expression = buildItemExpression(
+      inPageInstagramNormalize,
+      (raw, norm) => norm.normalizeMediaNode(JSON.parse(raw)),
+      JSON.stringify({
+        code: "carousel",
+        media_type: 8,
+        carousel_media: [
+          {
+            code: "image-child",
+            media_type: 1,
+            image_versions2: {
+              candidates: [
+                { url: "https://example.com/image.jpg", width: 1080 },
+              ],
+            },
+          },
+          {
+            code: "first-video",
+            media_type: 2,
+            video_versions: [{ url: "https://example.com/first.mp4" }],
+            image_versions2: {
+              candidates: [
+                { url: "https://example.com/first-cover.jpg", width: 1080 },
+              ],
+            },
+          },
+          {
+            code: "second-video",
+            media_type: 2,
+            video_versions: [{ url: "https://example.com/second.mp4" }],
+            image_versions2: {
+              candidates: [
+                { url: "https://example.com/second-cover.jpg", width: 1080 },
+              ],
+            },
+          },
+        ],
+      }),
+    );
+
+    const result = await runInNewContext(expression, {});
+
+    expect(result.mediaUrls).toEqual([
+      { url: "https://example.com/image.jpg", type: "image" },
+      {
+        url: "https://example.com/first.mp4",
+        type: "video",
+        poster: "https://example.com/first-cover.jpg",
+      },
+      {
+        url: "https://example.com/second.mp4",
+        type: "video",
+        poster: "https://example.com/second-cover.jpg",
+      },
+    ]);
   });
 
   it("loads the TikTok normalizer without module or application globals", async () => {
