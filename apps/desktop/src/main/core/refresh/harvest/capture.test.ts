@@ -1,13 +1,16 @@
 import type { JsonObject } from "@pond/schema/json";
 import type { Capture } from "@pond/schema/raw";
-import { expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   AuthRequiredError,
+  CaptureIncompleteError,
+  RateLimitedError,
   TerminalError,
   TransientError,
 } from "../../pipeline/extractors/errors";
 import type { HarvestResult } from "../harvest-window/harvest";
 import { captureFromSource } from "./capture";
+import type { GithubGet } from "./github/api";
 import type { PinterestGet } from "./pinterest/api";
 
 const URL = "https://www.pinterest.com/pin/123/";
@@ -193,4 +196,178 @@ it("terminal-fails a harvest the source page reports as missing", async () => {
       { harvest: harvestOf({ ok: false, reason: "not_found" }) },
     ),
   ).rejects.toThrow(new TerminalError("page not found or no longer exists"));
+});
+
+const GITHUB_URL = "https://github.com/vercel/next.js";
+const GITHUB_CARD = "https://opengraph.githubassets.com/1/vercel/next.js";
+
+function githubPage(images: Array<string>): string {
+  const tags = images
+    .map((image) => `<meta property="og:image" content="${image}">`)
+    .join("\n");
+  return `<!doctype html><html><head>
+<meta name="octolytics-dimension-repository_nwo" content="vercel/next.js">
+${tags}
+</head><body>
+<div class="sidebarSection"><h2><span>About</span></h2>
+<p class="description">The React Framework</p>
+</div>
+</body></html>`;
+}
+
+function githubGet(status: number, html = ""): GithubGet {
+  return async () => new Response(html, { status });
+}
+
+const githubBase = {
+  url: GITHUB_URL,
+  source: "github" as const,
+  sourceId: "vercel/next.js",
+};
+
+function githubDeps(get: GithubGet, result: HarvestResult) {
+  return {
+    partition: "persist:test",
+    githubGet: get,
+    harvest: harvestOf(result),
+  };
+}
+
+describe("github repo capture", () => {
+  it("returns the direct fetch capture without leasing a browser", async () => {
+    const capture = await captureFromSource(
+      githubBase,
+      githubDeps(githubGet(200, githubPage([GITHUB_CARD])), {
+        ok: false,
+        reason: "harvest_failed",
+      }),
+    );
+    expect(capture.media).toEqual([{ url: GITHUB_CARD, type: "image" }]);
+    expect(capture.title).toBe("vercel/next.js");
+  });
+
+  it("treats a valid repo page with zero media as incomplete, not finished", async () => {
+    await expect(
+      captureFromSource(
+        githubBase,
+        githubDeps(githubGet(200, githubPage([])), {
+          ok: false,
+          reason: "harvest_failed",
+        }),
+      ),
+    ).rejects.toBeInstanceOf(CaptureIncompleteError);
+  });
+
+  it("terminal-fails a 404 repository without falling back to the browser", async () => {
+    await expect(
+      captureFromSource(
+        githubBase,
+        githubDeps(githubGet(404), {
+          ok: true,
+          capture: {
+            id: "vercel/next.js",
+            source: "github",
+            url: GITHUB_URL,
+            media: [{ url: GITHUB_CARD, type: "image" }],
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(TerminalError);
+  });
+
+  it("maps a 429 to RateLimitedError with the retry-after", async () => {
+    const get: GithubGet = async () =>
+      new Response("", { status: 429, headers: { "retry-after": "90" } });
+    await expect(
+      captureFromSource(githubBase, githubDeps(get, { ok: false })),
+    ).rejects.toMatchObject({
+      retryAfterSec: 90,
+    });
+    await expect(
+      captureFromSource(githubBase, githubDeps(get, { ok: false })),
+    ).rejects.toBeInstanceOf(RateLimitedError);
+  });
+
+  it("maps a 5xx to TransientError", async () => {
+    await expect(
+      captureFromSource(githubBase, githubDeps(githubGet(503), { ok: false })),
+    ).rejects.toBeInstanceOf(TransientError);
+  });
+
+  it("falls back to the browser when the fetch is blocked", async () => {
+    const capture = await captureFromSource(
+      githubBase,
+      githubDeps(githubGet(403), {
+        ok: true,
+        capture: {
+          id: "vercel/next.js",
+          source: "github",
+          url: GITHUB_URL,
+          media: [{ url: GITHUB_CARD, type: "image" }],
+        },
+      }),
+    );
+    expect(capture.media[0]?.url).toBe(GITHUB_CARD);
+  });
+
+  it("falls back to the browser when the page carries no repo meta", async () => {
+    const capture = await captureFromSource(
+      githubBase,
+      githubDeps(githubGet(200, "<html><title>GitHub</title></html>"), {
+        ok: true,
+        capture: {
+          id: "vercel/next.js",
+          source: "github",
+          url: GITHUB_URL,
+          media: [{ url: GITHUB_CARD, type: "image" }],
+        },
+      }),
+    );
+    expect(capture.media[0]?.url).toBe(GITHUB_CARD);
+  });
+
+  it("falls back to the browser when the fetch itself fails", async () => {
+    const throwing: GithubGet = async () => {
+      throw new Error("socket closed");
+    };
+    const capture = await captureFromSource(
+      githubBase,
+      githubDeps(throwing, {
+        ok: true,
+        capture: {
+          id: "vercel/next.js",
+          source: "github",
+          url: GITHUB_URL,
+          media: [{ url: GITHUB_CARD, type: "image" }],
+        },
+      }),
+    );
+    expect(capture.media[0]?.url).toBe(GITHUB_CARD);
+  });
+
+  it("treats a zero-media browser fallback as incomplete too", async () => {
+    await expect(
+      captureFromSource(
+        githubBase,
+        githubDeps(githubGet(403), {
+          ok: true,
+          capture: {
+            id: "vercel/next.js",
+            source: "github",
+            url: GITHUB_URL,
+            media: [],
+          },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(CaptureIncompleteError);
+  });
+
+  it("retries when both the fetch and the browser come back empty", async () => {
+    await expect(
+      captureFromSource(
+        githubBase,
+        githubDeps(githubGet(403), { ok: false, reason: "harvest_failed" }),
+      ),
+    ).rejects.toBeInstanceOf(TransientError);
+  });
 });

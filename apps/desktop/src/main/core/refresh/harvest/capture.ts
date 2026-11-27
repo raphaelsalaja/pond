@@ -4,12 +4,16 @@ import { sourceLabel } from "@pond/schema/sources";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import {
   AuthRequiredError,
+  CaptureIncompleteError,
+  RateLimitedError,
   TerminalError,
   TransientError,
 } from "../../pipeline/extractors/errors";
 import { partitionForIngest } from "../../sync/accounts";
 import { harvestUrl } from "../harvest-window/harvest";
 import type { HarvestArgs, HarvestResult } from "../harvest-window/harvest";
+import { fetchGithubRepoCapture, githubSessionGet } from "./github/api";
+import type { GithubGet } from "./github/api";
 import { fetchPinterestCapture, pinterestSessionGet } from "./pinterest/api";
 import type { PinterestCaptureResult, PinterestGet } from "./pinterest/api";
 
@@ -31,6 +35,7 @@ interface CaptureDeps {
   }) => Promise<PinterestCaptureResult>;
   anonymousGet?: PinterestGet;
   signedGet?: PinterestGet;
+  githubGet?: GithubGet;
   partition?: string;
 }
 
@@ -119,9 +124,66 @@ export async function captureFromSource(
     }
   }
 
+  if (args.source === "github" && args.sourceId) {
+    return captureGithubRepo(args, deps, harvest);
+  }
+
   const result = await harvest(args);
   if (result.ok && result.capture) return result.capture;
   throw harvestFailure(args.source, result.reason);
+}
+
+/**
+ * GitHub server-renders everything the repo extractor reads into the initial
+ * HTML, so a direct fetch answers first and the hidden browser only backs up
+ * bot walls, transport failures, and page variants the parse cannot read.
+ */
+async function captureGithubRepo(
+  args: CaptureArgs,
+  deps: CaptureDeps,
+  harvest: (args: HarvestArgs) => Promise<HarvestResult>,
+): Promise<Capture> {
+  const sourceId = args.sourceId ?? "";
+  const get =
+    deps.githubGet ??
+    githubSessionGet(
+      deps.partition ?? (await partitionForIngest("github", args.accountId)),
+    );
+  const result = await fetchGithubRepoCapture({
+    url: args.url,
+    sourceId,
+    accountId: args.accountId,
+    get,
+  });
+
+  if (result.ok) {
+    /** Every repository serves at least GitHub's generated card, so a valid page with zero media is a partial read, not a finished harvest. */
+    if (result.capture.media.length === 0) {
+      throw new CaptureIncompleteError("github repo capture read no media");
+    }
+    return result.capture;
+  }
+  if (result.reason === "not_found") {
+    throw new TerminalError("github repository is gone or private");
+  }
+  if (result.reason === "rate_limited") {
+    throw new RateLimitedError(result.retryAfterSec, "github fetch 429");
+  }
+  if (result.reason === "server_error") {
+    throw new TransientError(`github fetch ${result.status ?? 500}`);
+  }
+  if (result.reason === "client_error") {
+    throw new TerminalError(`github fetch ${result.status ?? 400}`);
+  }
+
+  const fallback = await harvest(args);
+  if (fallback.ok && fallback.capture) {
+    if (fallback.capture.media.length === 0) {
+      throw new CaptureIncompleteError("github repo capture read no media");
+    }
+    return fallback.capture;
+  }
+  throw harvestFailure(args.source, fallback.reason);
 }
 
 /** Logged-out PinNotFound is not deletion; only a signed-in pin page that still says PinNotFound is terminal. */
