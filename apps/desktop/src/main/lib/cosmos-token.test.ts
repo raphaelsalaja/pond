@@ -15,6 +15,12 @@ describe("cosmosIdentityFromToken", () => {
     expect(cosmosIdentityFromToken(jwtWith({ userId: 42 }))).toBe("42");
   });
 
+  it("reads the eid claim Cosmos's web client uses for the user id", () => {
+    expect(
+      cosmosIdentityFromToken(jwtWith({ eid: 42, sub: "session-uuid" })),
+    ).toBe("42");
+  });
+
   it("reads a numeric sub when userId is absent", () => {
     expect(cosmosIdentityFromToken(jwtWith({ sub: "99" }))).toBe("99");
   });
