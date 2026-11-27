@@ -129,11 +129,7 @@ export default defineConfig({
       },
     },
     {
-      files: [
-        "**/scripts/**",
-        "packages/theme/src/colors/gen.ts",
-        "packages/video/cli/**",
-      ],
+      files: ["**/scripts/**", "packages/theme/src/colors/gen.ts"],
       rules: {
         /** Command-line scripts report to the terminal. */
         "no-console": "off",
