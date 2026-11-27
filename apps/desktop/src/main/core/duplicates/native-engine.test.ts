@@ -1,5 +1,5 @@
 /**
- * Spike (plan 006): checks the Rust port in `packages/core` against this
+ * Spike (plan 009): checks the Rust port in `packages/core` against this
  * engine and the fingerprint code, then times both. Opt-in, because the native
  * module is built separately:
  *

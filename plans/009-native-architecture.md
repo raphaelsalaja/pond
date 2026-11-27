@@ -268,8 +268,10 @@ The FFT is ported line for line rather than replaced with `rustfft`, so stored p
 
 | Path | Time |
 | ---- | ---: |
-| TypeScript `matchLibrary` | 41.8 s |
+| TypeScript `matchLibrary`, before the grouping fix | 41.8 s |
 | … of which `groupPairs` alone | 30.6 s |
+| TypeScript `matchLibrary`, after the grouping fix | 22.7 s |
+| … of which `groupPairs` alone | 49 ms |
 | Rust, a line-for-line port | 5.2 s (grouping 4.2 s) |
 | Rust, grouping in one pass over the pairs | 1.04 s |
 | … including building and parsing the JSON | 1.22 s |
@@ -282,8 +284,8 @@ In the final Rust run the stages took: audio candidates 0.67 s, video 0.20 s, gr
 
 1. **Most of the TypeScript time is an algorithm problem.** `groupPairs` finds each group's pairs by looking up every two members (`pairsAmong`), which is quadratic in group size. The random fixture chains URL and Source identities into one large exact component, which makes that cost blow up. A real Library is unlikely to build one that large. But a widely shared URL or file can still chain Saves together, and the scan runs synchronously on the main thread.
 
-   Near and exact groups never share a Save, so one pass over the pairs gives the same result, already in position order. That's what the Rust version does. **This fix belongs in TypeScript too, whether or not the Rust core ships.**
-2. **Excluding grouping, Rust is about 10× faster** on matching: roughly 11 s against 1 s. That's the hashing, index lookups and string handling of the matchers.
+   Near and exact groups never share a Save, so one pass over the pairs gives the same result, already in position order. Both versions now do that: `group.ts` fills each group's pairs in one pass (#767), and `group.test.ts` covers it, including a 3,000-Save chain. The full scan's output is unchanged, checked against the Rust port.
+2. **With the grouping fixed on both sides, Rust is about 19× faster:** 22.7 s against 1.2 s. That's the hashing, index lookups and string handling in the matchers, mostly the audio candidate lookup. (An earlier estimate of about 11 s for this part came from subtracting two separate timings and was wrong.)
 3. **Fingerprint math is only about 2× faster.** V8 compiles the FFT loop well. Moving fingerprints to Rust is worth it to get them off the main thread, not for raw speed.
 4. **Marshalling is cheap:** about 0.2 s of JSON for 20,000 Saves. Reading straight from SQLite isn't needed to get the speed-up. It would still remove the TypeScript loader, which parses every CLIP vector through zod.
 
