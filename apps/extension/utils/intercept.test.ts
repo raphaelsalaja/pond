@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canonicalCaptureUrl, capture } from "./intercept";
+import {
+  canonicalCaptureUrl,
+  capture,
+  captureToCollections,
+} from "./intercept";
 import type { PondMessage } from "./types";
 
 function recorder() {
@@ -57,5 +61,36 @@ describe("capture", () => {
     capture("https://www.threads.com/t/AGAIN", "threads:save", 1000, send);
     capture("https://www.threads.com/t/AGAIN", "threads:save", 6000, send);
     expect(urls).toHaveLength(2);
+  });
+});
+
+const ELEMENT = "https://www.cosmos.so/e/123";
+
+function payloads() {
+  const sent: Array<{ url: string; collectionIds?: Array<string> }> = [];
+  const send = (message: PondMessage) => {
+    if (message.kind === "capture") sent.push(message.payload);
+  };
+  return { sent, send };
+}
+
+describe("captureToCollections", () => {
+  it("sends the collections the item was added to", () => {
+    const { sent, send } = payloads();
+    captureToCollections(ELEMENT, "cosmos:save", ["7", "9"], 1000, send);
+    expect(sent).toEqual([
+      { url: ELEMENT, trigger: "cosmos:save", collectionIds: ["7", "9"] },
+    ]);
+  });
+
+  it("sends an add to another collection inside the repeat window", () => {
+    const { sent, send } = payloads();
+    captureToCollections(ELEMENT, "cosmos:save", ["7"], 1000, send);
+    captureToCollections(ELEMENT, "cosmos:save", ["9"], 1500, send);
+    captureToCollections(ELEMENT, "cosmos:save", ["9"], 1600, send);
+    expect(sent.map((payload) => payload.collectionIds)).toEqual([
+      ["7"],
+      ["9"],
+    ]);
   });
 });

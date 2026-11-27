@@ -21,6 +21,7 @@ import { folderIdsForSave } from "./folder-memberships";
 import { runLibraryTransfer } from "./library-transfers";
 import { createManualSave } from "./manual-import";
 import { enqueue } from "./pipeline/enqueue";
+import { fileCapturedCollections } from "./sync/captured-collections";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
 import { recordBatchForUndo } from "./undo";
 import { hasUserTitle } from "./user-metadata";
@@ -133,6 +134,14 @@ export const captures = createCaptureQueue({
     const row = db.select().from(saves).where(eq(saves.id, id)).get();
     if (!row) {
       throw new Error("The captured Save is missing. Retry this capture.");
+    }
+    if (item.kind === "url" && item.collectionIds?.length) {
+      try {
+        await fileCapturedCollections(row, item.collectionIds);
+      } catch (error) {
+        /** Sync files the Save on its next walk of the collections. */
+        log.warn("[pond capture] filing into collection Folders failed", error);
+      }
     }
     return applyAfterSave({ id, duplicate }, () =>
       applyCaptureMetadata(id, row, item, metadata),

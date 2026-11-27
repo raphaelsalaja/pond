@@ -4,7 +4,7 @@ import { asText, at, isJsonValue, isRecord } from "./json";
 import { sendMessage } from "./messaging";
 import { getSettings, watchSettings } from "./settings";
 import { POND_EVENT } from "./types";
-import type { PondLogEntry } from "./types";
+import type { PondCapturePayload, PondLogEntry } from "./types";
 
 const CAPTURES_PER_MINUTE = 30;
 
@@ -36,11 +36,18 @@ export async function bridge(source: ExternalSource): Promise<void> {
     if (message.kind === "capture") {
       const url = asText(at(message, "payload", "url"));
       if (!url) return;
-      const accepted = acceptHookCapture(
-        source,
-        { url, trigger: asText(at(message, "payload", "trigger")) },
-        settings,
-      );
+      const payload: PondCapturePayload = {
+        url,
+        trigger: asText(at(message, "payload", "trigger")),
+      };
+      const collections = at(message, "payload", "collectionIds");
+      if (Array.isArray(collections)) {
+        payload.collectionIds = collections.flatMap((id) => {
+          const text = asText(id);
+          return text ? [text] : [];
+        });
+      }
+      const accepted = acceptHookCapture(source, payload, settings);
       if (!accepted || !allow(Date.now())) {
         return;
       }

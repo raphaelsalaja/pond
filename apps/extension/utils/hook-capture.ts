@@ -3,6 +3,10 @@ import type { ExternalSource } from "@pond/schema/sources";
 import { isLikeTrigger } from "@/sources";
 import type { PondCapturePayload, PondSettings } from "./types";
 
+/** The capture schema's limits, so a page can't make Pond reject the whole save. */
+const MAX_COLLECTIONS = 100;
+const MAX_COLLECTION_ID_LENGTH = 100;
+
 /** Any script on the page can post the hook message, so only same-site item URLs with this site's triggers pass. */
 export function acceptHookCapture(
   source: ExternalSource,
@@ -15,7 +19,14 @@ export function acceptHookCapture(
   if (isLikeTrigger(source, trigger) && !settings.likes[source]) return null;
   if (!/^https:\/\//i.test(payload.url)) return null;
   if (hostToSource(payload.url) !== source) return null;
-  return { url: payload.url, trigger };
+  const accepted: PondCapturePayload = { url: payload.url, trigger };
+  const collectionIds = payload.collectionIds?.filter(
+    (id) => id.length > 0 && id.length <= MAX_COLLECTION_ID_LENGTH,
+  );
+  if (collectionIds?.length) {
+    accepted.collectionIds = collectionIds.slice(0, MAX_COLLECTIONS);
+  }
+  return accepted;
 }
 
 /** A like is saved only while that source's likes setting is on. Other captures still go through. */

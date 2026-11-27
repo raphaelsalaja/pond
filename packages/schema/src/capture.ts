@@ -20,6 +20,8 @@ export const CaptureWebItemSchema = z.discriminatedUnion("kind", [
     kind: z.literal("url"),
     url: WebUrl,
     title: z.string().max(1000).optional(),
+    /** Source collections a site hook saw the item added to, filed into their Folders when the Account files collections. */
+    collectionIds: z.array(z.string().min(1).max(100)).max(100).optional(),
   }),
   z.object({
     kind: z.literal("image"),

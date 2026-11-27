@@ -1,6 +1,6 @@
-import { capture, installInterceptor } from "@/utils/intercept";
+import { captureToCollections, installInterceptor } from "@/utils/intercept";
 import type { RequestLens } from "@/utils/intercept";
-import { at, parseJsonValue } from "@/utils/json";
+import { asNumber, asText, at, parseJsonValue } from "@/utils/json";
 
 const GRAPHQL_HOST_RE = /(^|\.)api\.cosmos\.so$/i;
 const SAVE_OP = "EditElementsConnectionsToClusters";
@@ -26,10 +26,16 @@ function opFromUrl(url: string): string | null {
 export function inject(): void {
   const emitted = new Set<string>();
 
-  function emitElement(id: string): void {
-    if (!id || emitted.has(id)) return;
-    emitted.add(id);
-    capture(`https://www.cosmos.so/e/${id}`, "cosmos:save");
+  /** Keyed by collections too, so adding an element to a second collection still reaches Pond. */
+  function emitElement(id: string, collectionIds: Array<string>): void {
+    const key = `${id} ${[...collectionIds].sort().join(",")}`;
+    if (!id || emitted.has(key)) return;
+    emitted.add(key);
+    captureToCollections(
+      `https://www.cosmos.so/e/${id}`,
+      "cosmos:save",
+      collectionIds,
+    );
   }
 
   installInterceptor({
@@ -67,8 +73,12 @@ export function inject(): void {
       ) {
         return;
       }
+      const collectionIds = adding.flatMap((cluster) => {
+        const id = asText(cluster) ?? asNumber(cluster)?.toString();
+        return id ? [id] : [];
+      });
       for (const id of ids) {
-        emitElement(String(id));
+        emitElement(String(id), collectionIds);
       }
     },
   });

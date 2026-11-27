@@ -5,6 +5,12 @@ import { z } from "zod";
 import { partitionForIngest } from "../../../sync/accounts";
 import { PARTITION } from "../../harvest-window/constants";
 import type { ListHarvestArgs, ListHarvestResult } from "../list-types";
+import { cosmosAccessToken, refreshResultFromResponse } from "./access-token";
+import type {
+  CosmosRefreshResult,
+  CosmosRefreshTrigger,
+  CosmosTokenSource,
+} from "./access-token";
 import {
   CosmosClusterConnectionsDataSchema,
   CosmosClustersDataSchema,
@@ -22,6 +28,7 @@ const CHROME_UA =
   "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
 
 const GRAPHQL_URL = "https://api.cosmos.so/graphql";
+const REFRESH_URL = "https://www.cosmos.so/api/refresh-token";
 /** Cosmos GraphQL validates this client name and requires a Bearer access token. */
 const COSMOS_CLIENT_NAME = "cosmos-web";
 const PAGE_SIZE = 50;
@@ -246,20 +253,53 @@ export async function listCosmosCollections(
   return { ok: true, collections };
 }
 
+interface GraphqlVariables {
+  userId?: number;
+  pageSize?: number;
+  pageCursor?: string;
+  input?: { slug: string; ownerUsername: string };
+}
+
 async function cosmosGraphql<T>(
   partition: string,
   operationName: string,
   query: string,
-  variables: {
-    userId?: number;
-    pageSize?: number;
-    pageCursor?: string;
-    input?: { slug: string; ownerUsername: string };
-  },
+  variables: GraphqlVariables,
   schema: z.ZodType<T>,
 ): Promise<JsonResult<T>> {
-  const token = await accessToken(partition);
+  const tokens = tokenSource(partition);
+  const token = await cosmosAccessToken(tokens);
   if (!token) return { ok: false, status: 401 };
+  const result = await postGraphql(
+    partition,
+    token,
+    operationName,
+    query,
+    variables,
+    schema,
+  );
+  if (result.ok || result.status !== 401) return result;
+  /** Cosmos can end an access token before its `exp`, so a rejection gets one refresh and one retry. */
+  const retryToken = await cosmosAccessToken(tokens, { force: true });
+  if (!retryToken) return result;
+  return postGraphql(
+    partition,
+    retryToken,
+    operationName,
+    query,
+    variables,
+    schema,
+  );
+}
+
+async function postGraphql<T>(
+  partition: string,
+  token: string,
+  operationName: string,
+  query: string,
+  variables: GraphqlVariables,
+  schema: z.ZodType<T>,
+): Promise<JsonResult<T>> {
   const ses = session.fromPartition(partition);
   ses.setUserAgent(CHROME_UA);
   const url = `${GRAPHQL_URL}?q=${encodeURIComponent(operationName)}`;
@@ -316,7 +356,28 @@ async function cosmosGraphql<T>(
   }
 }
 
-async function accessToken(partition: string): Promise<string | null> {
+/** Refreshed tokens by partition, since the refresh replies in its body and the cookie can still hold the lapsed one. */
+const refreshedTokens = new Map<string, string>();
+
+function tokenSource(partition: string): CosmosTokenSource {
+  return {
+    async held() {
+      const cookie = await cookieAccessToken(partition);
+      const refreshed = refreshedTokens.get(partition);
+      /** A newer cookie means you signed in again, so it wins over a token refreshed earlier. */
+      return [cookie, refreshed].filter(
+        (token): token is string => token !== null && token !== undefined,
+      );
+    },
+    refresh: (trigger) => refreshAccessToken(partition, trigger),
+    remember(accessToken) {
+      refreshedTokens.set(partition, accessToken);
+    },
+    now: Date.now,
+  };
+}
+
+async function cookieAccessToken(partition: string): Promise<string | null> {
   try {
     const cookies = await session.fromPartition(partition).cookies.get({});
     const hit = cookies.find((cookie) => cookie.name === "csms_accessToken");
@@ -325,4 +386,34 @@ async function accessToken(partition: string): Promise<string | null> {
     log.warn("[pond cosmos-api] cookies.get failed", error);
     return null;
   }
+}
+
+/** Sends the session's cookies to the route Cosmos's web client refreshes through, and keeps any cookie it rotates. */
+async function refreshAccessToken(
+  partition: string,
+  trigger: CosmosRefreshTrigger,
+): Promise<CosmosRefreshResult> {
+  const ses = session.fromPartition(partition);
+  ses.setUserAgent(CHROME_UA);
+  let res: Response;
+  try {
+    res = await ses.fetch(REFRESH_URL, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        accept: "application/json",
+        "x-cosmos-refresh-trigger": trigger,
+        referer: "https://www.cosmos.so/",
+        "user-agent": CHROME_UA,
+      },
+    });
+  } catch (error) {
+    log.warn("[pond cosmos-api] token refresh threw", error);
+    return { ok: false, reason: "transient" };
+  }
+  const result = refreshResultFromResponse(res.status, await res.text());
+  if (!result.ok) {
+    log.info(`[pond cosmos-api] token refresh ${result.reason}`, res.status);
+  }
+  return result;
 }

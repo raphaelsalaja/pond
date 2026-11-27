@@ -126,6 +126,12 @@ never removes one. `SourceSyncPrefs.collectionFolders` remembers each
 collection's Folder id, so renaming the Folder keeps it in use; a deleted one
 is created again. `importScope.addToFolders: false` turns filing off.
 
+A site hook can name the collections a capture was added to (Cosmos sends
+the `clusterIdsToConnect` of its save request as the `url` item's
+`collectionIds`). `fileCapturedCollections` (`captured-collections.ts`)
+files that Save right away with the same rules, when the Source has exactly
+one Account. Anything it can't file waits for the next Sync.
+
 With no collections picked, `addToFolders: true` files every collection
 (`collectionFiling` in `shared/import-scope.ts`) on X, Instagram, TikTok, and
 Pinterest, where the saved list holds every collection. YouTube's default is

@@ -14,6 +14,25 @@ function settings(change: Partial<PondSettings> = {}): PondSettings {
 }
 
 describe("acceptHookCapture", () => {
+  it("keeps the collections a save went into, within the capture limits", () => {
+    const element = "https://www.cosmos.so/e/123";
+    expect(
+      acceptHookCapture(
+        "cosmos",
+        {
+          url: element,
+          trigger: "cosmos:save",
+          collectionIds: ["7", "", "x".repeat(101), "9"],
+        },
+        settings(),
+      ),
+    ).toEqual({
+      url: element,
+      trigger: "cosmos:save",
+      collectionIds: ["7", "9"],
+    });
+  });
+
   it("passes a save from the site's own hook", () => {
     expect(
       acceptHookCapture(
