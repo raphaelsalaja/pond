@@ -2,7 +2,7 @@ import { useVideo } from "@pond/ui";
 import type { ReactEventHandler } from "react";
 import styles from "./styles.module.css";
 
-/** Sits under the video until its first frame shows, so opening a video never shows an empty box. */
+/** Sits under the video through the first-frame reveal, so opening a video never shows an empty box. */
 function Start({
   src,
   covered,

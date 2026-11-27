@@ -13,7 +13,21 @@
 }
 
 .placeholder {
+  transition: visibility 0s linear;
+
   &[data-covered] {
     visibility: hidden;
+    transition-delay: var(--ds-duration-fast);
   }
+}
+
+/* The global reduced-motion override shortens durations but keeps delays. */
+@media (prefers-reduced-motion: reduce) {
+  .placeholder[data-covered] {
+    transition-delay: 0s;
+  }
+}
+
+:global(html[data-reduce-motion="true"]) .placeholder[data-covered] {
+  transition-delay: 0s;
 }
