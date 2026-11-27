@@ -11,12 +11,12 @@
 - Risk: LOW for the spike, HIGH for a native UI rewrite
 - Category: exploration
 - Planned at: `cc3974ffb`, 2026-11-27
-- Status: PROPOSED, waiting for review
+- Status: IN PROGRESS: Spike A step 2 done, results below
 
 | Phase | Scope                                                         | Status   |
 | ----- | ------------------------------------------------------------- | -------- |
 | 0     | Measure what users actually see (traces, footprint breakdown) | PROPOSED |
-| 1     | Spike A: Rust core behind the existing UI (napi-rs)           | PROPOSED |
+| 1     | Spike A: Rust core behind the existing UI (napi-rs)           | IN PROGRESS, step 2 done on macOS arm64 |
 | 2     | Spike B: GPUI grid prototype against the same Library         | PROPOSED |
 | 3     | Decide with numbers                                           | PROPOSED |
 
@@ -229,6 +229,73 @@ Goal: prove the toolchain on the safest module, then show that the core removes 
 4. Measure the `[pond perf] main thread blocked` events during a 10k-Save ingest plus a duplicate scan, with the flag on and off.
 
 STOP if results differ from the TypeScript path on any fixture, or if the module can't be built for every shipped target in CI.
+
+### Spike A results so far (2026-11-27)
+
+Step 2 is done on macOS arm64. Step 1's CI matrix, and steps 3 and 4, are not started.
+
+**What exists.**
+- `packages/core` is a napi-rs crate.
+  - It ports `lib/fingerprint` in full: the FFT, dHash, image, video and audio prints and their comparisons, and the Hamming index.
+  - It ports the pure part of `core/duplicates`: `sha256Matches`, `sourceMatches`, the image, video and audio matchers, `buildPairs`, `groupPairs`, dismissals and scope.
+- `node packages/core/scripts/build.mjs` builds it for the current machine. Nothing in the app loads it.
+- `apps/desktop/src/main/core/duplicates/native-engine.test.ts` checks the port and times both paths. It's opt-in (`POND_NATIVE_CORE=1`) and skipped otherwise.
+
+**Interface.** The engine takes one JSON snapshot and returns `{ pairs, groups }` as JSON, either synchronously or on a libuv worker thread (`matchLibrary` returns a Promise). TypeScript still does two things the engine needs:
+- re-derives URL identities with the existing classifier;
+- finds semantic neighbours through `sqlite-vec`.
+
+It passes both in as data. The test parses the result with a zod schema of `DuplicatePair` and `DuplicateGroup`, as production code would have to.
+
+**Correctness.** Every check matches the TypeScript output exactly:
+- **Engine:**
+  - 40 seeded random Libraries of 400 Saves each.
+  - One 20,000-Save Library.
+  - Together they cover:
+    - copies and resized images;
+    - re-encoded video with shifted frames, and noisy audio;
+    - low-detail hashes and invalid hashes;
+    - shared URLs and Source IDs, and split Saves;
+    - semantic neighbours, dismissals and scoped scans.
+- **Image prints:** 100 random images at four sizes, including sizes that put the center crop on fractional pixels.
+- **Video prints and comparisons:** 50 random sequences.
+- **Audio print:** a 120-second print, the same in every frame.
+- **Audio comparison:** one comparison against a shifted copy.
+
+The FFT is ported line for line rather than replaced with `rustfft`, so stored prints stay valid.
+
+**Speed.** Apple M4 Max, Node 26 under Vitest (not Electron's Node), the 20,000-Save fixture with image, video and audio prints, p50 of two runs after a warm-up:
+
+| Path | Time |
+| ---- | ---: |
+| TypeScript `matchLibrary` | 41.8 s |
+| … of which `groupPairs` alone | 30.6 s |
+| Rust, a line-for-line port | 5.2 s (grouping 4.2 s) |
+| Rust, grouping in one pass over the pairs | 1.04 s |
+| … including building and parsing the JSON | 1.22 s |
+| 120 s audio print, TypeScript | 122 ms |
+| 120 s audio print, Rust | 66 ms |
+
+In the final Rust run the stages took: audio candidates 0.67 s, video 0.20 s, grouping 0.05 s, everything else under 10 ms.
+
+**What the numbers say.**
+
+1. **Most of the TypeScript time is an algorithm problem.** `groupPairs` finds each group's pairs by looking up every two members (`pairsAmong`), which is quadratic in group size. The random fixture chains URL and Source identities into one large exact component, which makes that cost blow up. A real Library is unlikely to build one that large. But a widely shared URL or file can still chain Saves together, and the scan runs synchronously on the main thread.
+
+   Near and exact groups never share a Save, so one pass over the pairs gives the same result, already in position order. That's what the Rust version does. **This fix belongs in TypeScript too, whether or not the Rust core ships.**
+2. **Excluding grouping, Rust is about 10× faster** on matching: roughly 11 s against 1 s. That's the hashing, index lookups and string handling of the matchers.
+3. **Fingerprint math is only about 2× faster.** V8 compiles the FFT loop well. Moving fingerprints to Rust is worth it to get them off the main thread, not for raw speed.
+4. **Marshalling is cheap:** about 0.2 s of JSON for 20,000 Saves. Reading straight from SQLite isn't needed to get the speed-up. It would still remove the TypeScript loader, which parses every CLIP vector through zod.
+
+**Found along the way.**
+- **Locale-dependent sorting:** the TypeScript sorts ids and paths with `localeCompare`, which follows the system locale.
+  - Pair order, and which file wins a tie in `buildPairs`, can differ between machines for paths with mixed case or punctuation.
+  - The Rust uses byte order, which matches on ULIDs and generated file names.
+  - Switching the TypeScript to a plain comparison makes it deterministic and keeps the two in step.
+- **Float parsing:** `serde_json` needs `float_roundtrip`. Its default float parsing isn't correctly rounded, and that moved a semantic distance by one ULP.
+- **Map hashing:** maps keyed by ids and hashes need a fast hasher, `rustc-hash`. With the default SipHash, the audio candidate lookup (about 200M probes at this size) dominated the Rust run.
+
+**Next:** wire the native engine into `scanDuplicatesIn` behind a development flag, and move `fingerprint-worker.ts`'s print math onto the native calls. Then measure main-thread blocking (step 4).
 
 ## Phase 2: Spike B, GPUI grid (5 days, time-boxed)
 
