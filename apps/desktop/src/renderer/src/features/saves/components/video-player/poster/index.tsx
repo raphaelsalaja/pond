@@ -1,29 +1,40 @@
 import { useVideo } from "@pond/ui";
 import type { ReactEventHandler } from "react";
+import { BlurHash } from "@/features/saves/components/card/media/blur-hash";
 import styles from "./styles.module.css";
 
-/** Sits under the video until its first frame shows, so opening a video never shows an empty box. */
+/** Sits under the video through the first-frame reveal, so opening a video never shows an empty box. */
 function Start({
   src,
+  hash,
   covered,
   onLoad,
 }: {
   src?: string;
+  hash?: string | null;
   covered: boolean;
   onLoad?: ReactEventHandler<HTMLImageElement>;
 }) {
-  if (!src) return null;
   return (
-    <img
-      src={src}
-      alt=""
-      aria-hidden
+    <div
       className={styles.placeholder}
       data-covered={covered || undefined}
-      decoding="sync"
-      draggable={false}
-      onLoad={onLoad}
-    />
+      data-video-placeholder
+      aria-hidden
+    >
+      {src ? (
+        <img
+          src={src}
+          alt=""
+          className={styles.image}
+          decoding="sync"
+          draggable={false}
+          onLoad={onLoad}
+        />
+      ) : hash ? (
+        <BlurHash hash={hash} />
+      ) : null}
+    </div>
   );
 }
 

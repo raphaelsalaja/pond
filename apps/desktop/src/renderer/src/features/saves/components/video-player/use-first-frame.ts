@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 /**
  * True once the video's first frame is on screen.
- * @remarks `loadeddata` can fire a frame before the decoded frame is composited, so it is only the fallback.
+ * @remarks Presentation signals precede compositing, so the reveal waits two painted frames.
  */
 export function useFirstFrame(src: string): boolean {
   const { meta } = useVideo();
@@ -11,17 +11,29 @@ export function useFirstFrame(src: string): boolean {
   useEffect(() => {
     const video = meta.videoRef.current;
     if (!video) return;
-    const reveal = () => setFrameSource(src);
+    let frame = 0;
+    const cancel = () => cancelAnimationFrame(frame);
+    const reveal = () => {
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => setFrameSource(src));
+      });
+    };
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
       reveal();
-      return;
+      return cancel;
     }
     if (video.requestVideoFrameCallback) {
-      const frame = video.requestVideoFrameCallback(reveal);
-      return () => video.cancelVideoFrameCallback(frame);
+      const callback = video.requestVideoFrameCallback(reveal);
+      return () => {
+        video.cancelVideoFrameCallback(callback);
+        cancel();
+      };
     }
     video.addEventListener("loadeddata", reveal, { once: true });
-    return () => video.removeEventListener("loadeddata", reveal);
+    return () => {
+      video.removeEventListener("loadeddata", reveal);
+      cancel();
+    };
   }, [meta.videoRef, src]);
   return frameSource === src;
 }

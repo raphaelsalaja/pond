@@ -12,9 +12,12 @@ import {
   ViewerChrome,
 } from "@/features/saves/components/viewers/media-viewer/chrome";
 import { ViewerToolbarGroups } from "@/features/saves/components/viewers/viewer-toolbar-groups";
+import { normalise } from "@/features/saves/lib/reconcile";
 import { rememberCardThumbnail } from "@/features/saves/state/card-thumbnails";
+import { pool, upsertSave } from "@/features/saves/state/pool";
 import { savePrefsSection } from "@/shared/state/prefs";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { VideoPlayer } from "./";
 
 let savedPrefs = PrefsSchema.parse({});
@@ -27,6 +30,7 @@ let host: HTMLDivElement;
 let root: Root;
 
 beforeEach(async () => {
+  pool.clear();
   savedPrefs = PrefsSchema.parse({});
   bridge.use({
     query: {
@@ -61,6 +65,14 @@ afterEach(async () => {
   host.remove();
   vi.restoreAllMocks();
 });
+
+async function paintFrames(count: number): Promise<void> {
+  for (let index = 0; index < count; index++) {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  }
+}
 
 function TestVideoPlayer(props: Partial<ComponentProps<typeof VideoPlayer>>) {
   return (
@@ -433,7 +445,7 @@ it("shows the video over the poster once the first frame loads", async () => {
       </ViewerChrome>,
     );
   });
-  const poster = () => host.querySelector('img[src="pond://test/poster.jpg"]');
+  const poster = () => host.querySelector("[data-video-placeholder]");
   expect(poster()?.hasAttribute("data-covered")).toBe(false);
   expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(true);
 
@@ -441,8 +453,54 @@ it("shows the video over the poster once the first frame loads", async () => {
     host.querySelector("video")?.dispatchEvent(new Event("loadeddata"));
   });
 
+  expect(poster()?.hasAttribute("data-covered")).toBe(false);
+  expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(true);
+
+  await act(async () => paintFrames(2));
+
   expect(poster()?.hasAttribute("data-covered")).toBe(true);
   expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(false);
+});
+
+it("uses the card blurhash as the waiting surface for a single-video save", async () => {
+  const row = normalise(
+    wireSave({
+      id: "single-video-save",
+      blurhash: "LZKBm;}MoY_gxvX2jsrebbWBX8jG",
+      files: [
+        {
+          kind: "video",
+          path: "video-1.mp4",
+          sha256: "abc",
+          size: 1,
+          mimeType: "video/mp4",
+        },
+        {
+          kind: "subtitle",
+          path: "subtitle-1.vtt",
+          sha256: "def",
+          size: 1,
+          mimeType: "text/vtt",
+        },
+      ],
+    }),
+  );
+  if (!row) throw new Error("Missing video save fixture");
+  upsertSave(row);
+
+  await act(async () => {
+    root.render(
+      <ViewerChrome>
+        <VideoPlayer
+          src="pond://test/single-video.mp4"
+          saveId="single-video-save"
+          posterIsCrossFile
+        />
+      </ViewerChrome>,
+    );
+  });
+
+  expect(host.querySelector("[data-video-placeholder] canvas")).not.toBeNull();
 });
 
 it("keeps a cross-file poster out of the start and end surfaces even with a card thumbnail", async () => {
@@ -458,6 +516,7 @@ it("keeps a cross-file poster out of the start and end surfaces even with a card
   });
 
   expect(host.querySelector(`img[src="${poster}"]`)).toBeNull();
+  expect(host.querySelector("[data-video-placeholder]")).not.toBeNull();
 
   const video = host.querySelector("video");
   if (!video) throw new Error("Missing video");
@@ -491,14 +550,17 @@ it("holds the poster until a video frame is presented", async () => {
     await act(async () => {
       root.render(<TestVideoPlayer poster="pond://test/poster.jpg" />);
     });
-    const poster = () =>
-      host.querySelector('img[src="pond://test/poster.jpg"]');
+    const poster = () => host.querySelector("[data-video-placeholder]");
     await act(async () => {
       host.querySelector("video")?.dispatchEvent(new Event("loadeddata"));
     });
     expect(poster()?.hasAttribute("data-covered")).toBe(false);
 
     await act(async () => present?.());
+
+    expect(poster()?.hasAttribute("data-covered")).toBe(false);
+
+    await act(async () => paintFrames(2));
 
     expect(poster()?.hasAttribute("data-covered")).toBe(true);
   } finally {

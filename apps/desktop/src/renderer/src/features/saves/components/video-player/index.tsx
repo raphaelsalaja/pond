@@ -1,6 +1,8 @@
 import { IconMediaPlay } from "@pond/icons";
 import { Tooltip, useVideo, Video } from "@pond/ui";
 import { isElement } from "@pond/ui/dom";
+import { isVideoFile } from "@shared/media-index";
+import { IMAGE_KIND, VIDEO_KIND } from "@shared/save-file-names";
 import log from "electron-log/renderer";
 import {
   useCallback,
@@ -110,6 +112,7 @@ function VideoSurface({
   mirrored,
   ratio,
   placeholder,
+  placeholderHash,
   onError,
   onLoadedMetadata,
   measure,
@@ -123,6 +126,7 @@ function VideoSurface({
   mirrored: boolean;
   ratio: number | null;
   placeholder?: string;
+  placeholderHash?: string | null;
   onError?: () => void;
   onLoadedMetadata: ReactEventHandler<HTMLVideoElement>;
   measure: (root: HTMLElement) => ViewerSize;
@@ -203,6 +207,7 @@ function VideoSurface({
     >
       <Poster.Start
         src={placeholder}
+        hash={placeholderHash}
         covered={shown}
         onLoad={() => setLoadedPoster(placeholder ?? null)}
       />
@@ -328,6 +333,20 @@ export function VideoPlayer({
     [],
   );
 
+  const activeFile = save?.files[fileIndex];
+  const visualFiles =
+    save?.files.filter(
+      (file) => file.kind === IMAGE_KIND || file.kind === VIDEO_KIND,
+    ) ?? [];
+  const placeholderHash =
+    save?.blurhash &&
+    activeFile &&
+    visualFiles.length === 1 &&
+    visualFiles[0] === activeFile &&
+    isVideoFile(activeFile)
+      ? save.blurhash
+      : null;
+
   return (
     <Video.Root
       frameRate={frameRate}
@@ -357,6 +376,7 @@ export function VideoPlayer({
         placeholder={
           posterIsCrossFile ? undefined : (cardThumbnailFor(src) ?? poster)
         }
+        placeholderHash={placeholderHash}
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
         measure={measure}
