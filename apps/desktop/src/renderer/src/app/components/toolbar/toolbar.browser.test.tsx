@@ -350,18 +350,19 @@ describe("breadcrumb toolbar", () => {
     expect(router.state.location.pathname).toBe("/folders/child");
   });
 
-  it("offers the details toggle only on pages with a Details column", async () => {
+  it("enables the details toggle only on pages with a Details column", async () => {
     const router = await mount("/");
-    expect(labels()).toContain("Toggle Details");
+    expect(button("Toggle Details").disabled).toBe(false);
     await act(async () => router.history.push("/?save=demo"));
-    expect(labels()).toContain("Toggle Details");
+    expect(button("Toggle Details").disabled).toBe(false);
     expect(labels()).not.toContain("Fish");
     await act(async () => router.history.push("/tags"));
-    expect(labels()).toContain("Toggle Details");
+    expect(button("Toggle Details").disabled).toBe(false);
     await act(async () => router.history.push("/settings"));
-    expect(labels()).not.toContain("Toggle Details");
+    expect(button("Toggle Details").disabled).toBe(true);
+    expect(button("Toggle Details").getAttribute("aria-pressed")).toBe("false");
     await act(async () => router.history.push("/sources"));
-    expect(labels()).not.toContain("Toggle Details");
+    expect(button("Toggle Details").disabled).toBe(true);
   });
 
   it("toggles the details column from the library toolbar", async () => {
