@@ -2,7 +2,7 @@
   overflow: hidden;
   background-color: var(--ds-background-primary);
   border-radius: var(--ds-radius-xl);
-  box-shadow: var(--ds-shadow-border);
+  box-shadow: var(--ds-shadow-raised);
 }
 
 .list > :not(:last-child):not(.card) {

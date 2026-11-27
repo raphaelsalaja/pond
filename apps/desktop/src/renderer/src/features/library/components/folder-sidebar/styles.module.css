@@ -47,6 +47,7 @@
 
     > :first-child {
       font-size: var(--ds-text-body);
+      font-weight: var(--ds-weight-medium);
       color: var(--ds-foreground-primary);
     }
   }

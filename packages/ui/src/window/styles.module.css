@@ -1,7 +1,8 @@
 .root {
   --window-inset: 16px;
   --window-chrome-start: 12px;
-  --window-chrome-end: calc(var(--ds-space-md) + var(--ds-border-width));
+  /* Matches the left pane's content inset, so toolbar buttons end where panel header actions do. */
+  --window-chrome-end: var(--ds-space-md);
   --window-bar-height: 44px;
   --window-header-height: 44px;
   --window-left-track: 352px;
@@ -29,6 +30,8 @@
 
 .root[data-surface="island"] {
   --window-gutter: var(--ds-space-md);
+  /* The panes' border shifts the left column past the toolbar cell, so the toolbar insets less by the same width. */
+  --window-chrome-end: calc(var(--ds-space-md) - var(--ds-border-width));
 
   &:not(:has(> .rail)) {
     --window-gutter-start: var(--window-gutter);
