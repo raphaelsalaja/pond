@@ -157,3 +157,9 @@ _Avoid_: cover (for the card), custom thumbnail
 **Folder Cover**:
 The save chosen to represent a folder in the sidebar.
 _Avoid_: thumbnail (for this)
+
+### Sharing
+
+**Share Page**:
+A frozen, read-only copy of a Save, a selection, or a Folder that opens in any browser: an `index.html` that carries Pond's viewer and its manifest, plus web copies of the media with file metadata removed. It holds only the fields its manifest lists. Notes and tags stay out unless you include them. Export Share Page writes one to disk.
+_Avoid_: web page (that's a Save of a web page), static site, HTML export, snapshot (Capture uses that word), share (alone; that's the system Share menu)

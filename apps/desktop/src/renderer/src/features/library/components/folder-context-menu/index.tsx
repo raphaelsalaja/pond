@@ -16,6 +16,7 @@ import {
   IconFolderSend,
   IconFolderTree,
   IconFolderXmark,
+  IconGlobe,
   IconGridPlus,
   IconLayers,
   IconLink2,
@@ -32,7 +33,11 @@ import {
   createCanvasFromFolder,
 } from "@/features/canvas";
 import { descendantFolderIds } from "@/features/library/components/folder-sidebar/tree";
-import { exportSelectionCsv, exportSelectionFiles } from "@/features/saves";
+import {
+  exportSelectionCsv,
+  exportSelectionFiles,
+  exportSelectionSharePage,
+} from "@/features/saves";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { emitFeedback } from "@/shared/lib/sounds";
@@ -60,6 +65,7 @@ export interface FolderMenuActions {
   onExportCsv: () => void;
   onExportEaglePackage: () => void;
   onExportPackage: () => void;
+  onExportSharePage: () => void;
   onCopyToLibrary: () => void;
   onCreateCanvas: () => void;
   canvasItems: Array<MenuItemSpec>;
@@ -195,6 +201,12 @@ export function buildFolderMenuItems(
           keywords: "package",
           onClick: a.onExportPackage,
         },
+        {
+          label: "Export Share Page",
+          icon: <IconGlobe />,
+          keywords: "share page web html site browser",
+          onClick: a.onExportSharePage,
+        },
       ],
     },
     {
@@ -297,6 +309,16 @@ export async function exportFolderFiles(
       fromFolders: true,
     });
     if (!result.ok) notify({ id: "folder-export", title: result.message });
+  });
+}
+
+/** The page takes the Folder's name; `folderIds` also holds its subfolders when the Folder shows them. */
+export async function exportFolderSharePage(
+  folderId: string,
+  folderIds: Array<string>,
+): Promise<void> {
+  await withFolderSaves(folderIds, async (ids) => {
+    await exportSelectionSharePage(ids, { folderId });
   });
 }
 

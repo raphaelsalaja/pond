@@ -14,6 +14,7 @@ import {
 import { copyPackageToLibrary, packageLibrary } from "./library-transfer-files";
 import { runLibraryTransfer } from "./library-transfers";
 import { exportPondPackage, importPondPackage } from "./pond-package";
+import { exportSharePage, loadSharePageViewer } from "./share-page";
 import { transferJobStore } from "./transfer-jobs";
 
 export function copySaveSelectionToLibrary(
@@ -61,6 +62,13 @@ async function executeRequest(request: TransferRequest) {
         : exportSavesToFolder(request.ids ?? [], request.destination);
     case "export_package":
       return exportPondPackage(request.ids ?? [], request.destination);
+    case "export_share_page":
+      return exportSharePage({
+        target: { ids: request.ids ?? [], folderId: request.folderId },
+        destination: request.destination,
+        libraryRoot: libraryRoot(),
+        viewer: await loadSharePageViewer(),
+      });
     case "copy_library":
       return copySaveSelectionToLibrary(request.ids ?? [], request.destination);
     case "import_eagle_package":

@@ -18,7 +18,8 @@
         "src/renderer/src/generated/**",
         "build/dock-icons/**",
         "build/app-icons/**"
-      ]
+      ],
+      "dependsOn": ["$TURBO_EXTENDS$", "@pond/share-page#build"]
     },
     "dist": {
       "dependsOn": ["build", "@pond/extension#build"],

@@ -1,0 +1,113 @@
+.dialog {
+  width: min(760px, 100vw - 32px);
+  max-width: none;
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  margin: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  color: inherit;
+  background: var(--ds-background-elevated);
+  border: 0;
+  border-radius: var(--ds-radius-2xl);
+  box-shadow:
+    0 0 0 0.5px var(--ds-border-strong),
+    0 24px 64px rgb(0 0 0 / 0.24);
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--ds-duration-medium) var(--ds-easing-standard),
+    transform var(--ds-duration-medium) var(--ds-easing-snap),
+    overlay var(--ds-duration-medium) allow-discrete,
+    display var(--ds-duration-medium) allow-discrete;
+}
+
+.dialog:not([open]) {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.dialog::backdrop {
+  background: rgb(0 0 0 / 0);
+  transition:
+    background var(--ds-duration-medium) var(--ds-easing-standard),
+    overlay var(--ds-duration-medium) allow-discrete,
+    display var(--ds-duration-medium) allow-discrete;
+}
+
+.dialog[open]::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+@starting-style {
+  .dialog[open]::backdrop {
+    background: rgb(0 0 0 / 0);
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+  padding: var(--ds-space-lg) var(--ds-space-xl) var(--ds-space-2xl);
+}
+
+.bar {
+  position: sticky;
+  top: calc(var(--ds-space-lg) * -1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--ds-space-md) var(--ds-space-xl);
+  margin: calc(var(--ds-space-lg) * -1) calc(var(--ds-space-xl) * -1) 0;
+  background: var(--ds-background-elevated);
+}
+
+.position {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ds-foreground-tertiary);
+}
+
+.actions {
+  display: flex;
+  gap: var(--ds-space-xs);
+}
+
+.button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: var(--ds-foreground-secondary);
+  cursor: pointer;
+  background: var(--ds-surface-primary);
+  border: 0;
+  border-radius: var(--ds-radius-full);
+}
+
+.button:hover:not(:disabled) {
+  color: var(--ds-foreground-primary);
+  background: var(--ds-surface-secondary);
+}
+
+.button:disabled {
+  cursor: default;
+  opacity: var(--ds-opacity-disabled, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog,
+  .dialog::backdrop {
+    transition: none;
+  }
+}

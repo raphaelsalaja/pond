@@ -58,7 +58,8 @@
     "./folder-templates": "./src/folder-templates.ts",
     "./saved-view-presentation": "./src/saved-view-presentation.ts",
     "./source-ids": "./src/source-ids.ts",
-    "./watches": "./src/watches.ts"
+    "./watches": "./src/watches.ts",
+    "./share-page": "./src/share-page.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

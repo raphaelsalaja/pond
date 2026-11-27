@@ -21,6 +21,10 @@ export interface SavesExportQueryInputs {
   };
   "saves.exportWebp": SavesIdsInput;
   "saves.exportCsv": SavesIdsInput;
+  "saves.exportSharePage": SavesIdsInput & {
+    /** The page is this Folder: it takes the Folder's name. `ids` are its Saves in order. */
+    folderId?: string;
+  };
 }
 
 export interface SavesExportQueryResults {
@@ -44,4 +48,8 @@ export interface SavesExportQueryResults {
   }>;
   "saves.exportWebp": CancellableResult<{ exported: number; dir: string }>;
   "saves.exportCsv": CancellableResult<{ count: number; path: string }>;
+  "saves.exportSharePage": CancellableResult<{
+    exported: number;
+    path: string;
+  }>;
 }

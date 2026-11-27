@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "share-page-v1",
+  "kind": "share-page",
+  "baseline": {
+    "entry": "index.html",
+    "manifestElementId": "pond-share-page",
+    "manifestVersion": 1,
+    "kinds": ["save", "selection", "folder"],
+    "mediaDirectory": "media",
+    "example": "example-manifest.json"
+  },
+  "compatibilityAssertions": [
+    "Every version 1 manifest keeps parsing with the current schema; new fields stay optional.",
+    "A page opens from disk: the manifest is embedded in index.html and the viewer is a classic script, not a module.",
+    "Paths in a manifest stay inside media/, and links are http or https only.",
+    "Notes and tags appear only when the export chose to include them.",
+    "No Library id, file path, Inbox state, rating, or list kind appears in a manifest."
+  ]
+}

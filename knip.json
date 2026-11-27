@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreBinaries": ["iconutil", "cl", "lipo", "mkfifo"],
+  "ignoreBinaries": ["iconutil", "cl", "lipo", "mkfifo", "ffmpeg"],
   "workspaces": {
     "apps/desktop": {
       "entry": [
@@ -37,6 +37,11 @@
         "tests/*.test.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "scripts/*.mjs", "tests/**/*.ts"]
+    },
+    "packages/share-page": {
+      "entry": ["src/main.tsx"],
+      "project": ["**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@pond/theme"]
     },
     "packages/icons": {
       "entry": ["src/**/*.mjs", "scripts/*.mjs"]

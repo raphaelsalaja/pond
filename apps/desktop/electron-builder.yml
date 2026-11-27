@@ -87,6 +87,9 @@ extraResources:
     to: app-icons
   - from: build/dock-icons
     to: dock-icons
+  # The viewer every Share Page carries, built by @pond/share-page.
+  - from: ../../packages/share-page/dist
+    to: share-page
 
 extraMetadata:
   main: ./out/main/index.js
