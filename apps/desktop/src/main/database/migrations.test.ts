@@ -13,6 +13,7 @@ import {
 } from "drizzle-orm/sqlite-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { z } from "zod";
+import { openSqlite } from "./client";
 import { migratePond } from "./migrations";
 import { libraryTables } from "./tables";
 
@@ -250,7 +251,8 @@ describe.skipIf(!nativeSqliteAvailable())("pond database migrations", () => {
 
     beforeAll(() => {
       root = mkdtempSync(join(tmpdir(), "pond-migration-"));
-      created = new Database(join(root, "index.db"));
+      /** Opened as the app opens it: the default rollback journal syncs after every DDL statement, which took over 10s on Windows runners. */
+      created = openSqlite(join(root, "index.db"));
       migratePond(created);
     });
 
