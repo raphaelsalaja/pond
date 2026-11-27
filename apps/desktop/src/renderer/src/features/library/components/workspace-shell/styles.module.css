@@ -8,7 +8,7 @@
 :global(html[data-translucent]) .shell {
   --window-background: color-mix(
     in oklab,
-    var(--ds-background-secondary) var(--window-tint, 20%),
+    var(--ds-background-secondary) var(--window-tint, 60%),
     transparent
   );
 }

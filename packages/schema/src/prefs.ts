@@ -272,7 +272,7 @@ const windowSlice = z.object({
   interfaceZoom: z.number().int().min(50).max(200).catch(100),
   translucent: z.boolean().catch(true),
   translucentMaterial: z.enum(WINDOW_MATERIALS).catch("sidebar"),
-  translucentTint: z.number().int().min(0).max(100).catch(20),
+  translucentTint: z.number().int().min(0).max(100).catch(60),
 });
 
 const system = z.object({
