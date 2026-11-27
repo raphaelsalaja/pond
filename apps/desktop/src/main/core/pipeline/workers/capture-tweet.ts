@@ -20,18 +20,16 @@ import {
   renderThreadsCardPng,
   renderTweetCardPng,
 } from "../../render-card";
-import type { RenderedCard } from "../../render-card";
+import type {
+  PostCardRenderer,
+  RenderedCard,
+  RenderedPostCard,
+} from "../../render-card";
 import { CaptureIncompleteError, TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 import type { WriteFileArgs } from "./apply";
 import { inlineCaptureAvatars } from "./inline-card-avatars";
 import type { InlinedAvatars } from "./inline-card-avatars";
-
-type PostCardRenderer = Exclude<PostCardArtifactRenderer, "screenshot">;
-
-interface RenderedPostCard extends RenderedCard {
-  renderer: PostCardRenderer;
-}
 
 type RenderPostCardPng = (
   capture: Capture | undefined | null,
@@ -44,16 +42,6 @@ type PostCardRenderers = Partial<
   Record<PostCardScheme, PostCardArtifactRenderer>
 >;
 type StructuredPostCardRenderers = Record<PostCardScheme, PostCardRenderer>;
-
-type RenderCardPng = typeof renderTweetCardPng;
-
-function withPostCardRendererContract(
-  render: RenderCardPng,
-): RenderPostCardPng {
-  /** SAFETY: the parallel render-card branch implements this exact return contract; this is the type-only bridge until it lands. */
-  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The render-card branch owns the runtime half of this cross-branch contract.
-  return render as RenderPostCardPng;
-}
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
@@ -360,9 +348,9 @@ export const runCaptureTweet = createCaptureTweetRunner({
   },
   screenshotTweetDual,
   screenshotThreadsDual,
-  renderTweetCardPng: withPostCardRendererContract(renderTweetCardPng),
-  renderThreadsCardPng: withPostCardRendererContract(renderThreadsCardPng),
-  renderBlueskyCardPng: withPostCardRendererContract(renderBlueskyCardPng),
+  renderTweetCardPng,
+  renderThreadsCardPng,
+  renderBlueskyCardPng,
   inlineCaptureAvatars,
 });
 
