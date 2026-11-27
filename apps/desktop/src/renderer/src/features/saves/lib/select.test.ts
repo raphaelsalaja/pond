@@ -165,6 +165,20 @@ describe("isLibraryBackgroundTarget", () => {
     expect(isLibraryBackgroundTarget(gap)).toBe(true);
   });
 
+  it("treats viewport-only empty space as a background click", () => {
+    const viewport = document.createElement("div");
+    viewport.setAttribute("data-library-grid-viewport", "");
+    const gap = document.createElement("div");
+    viewport.append(gap);
+    expect(isLibraryBackgroundTarget(gap)).toBe(true);
+    expect(isLibraryBackgroundTarget(viewport)).toBe(true);
+  });
+
+  it("rejects targets outside the grid and viewport", () => {
+    const outside = document.createElement("div");
+    expect(isLibraryBackgroundTarget(outside)).toBe(false);
+  });
+
   it("ignores clicks on a save card", () => {
     const root = document.createElement("div");
     root.setAttribute("data-library-grid", "");
@@ -172,6 +186,24 @@ describe("isLibraryBackgroundTarget", () => {
     card.setAttribute("data-save-id", "a");
     root.append(card);
     expect(isLibraryBackgroundTarget(card)).toBe(false);
+  });
+
+  it("ignores clicks on interactive controls", () => {
+    const viewport = document.createElement("div");
+    viewport.setAttribute("data-library-grid-viewport", "");
+    const controls: Array<HTMLElement> = [
+      document.createElement("button"),
+      document.createElement("a"),
+      document.createElement("input"),
+      document.createElement("textarea"),
+    ];
+    const editable = document.createElement("div");
+    editable.setAttribute("contenteditable", "true");
+    controls.push(editable);
+    viewport.append(...controls);
+    for (const control of controls) {
+      expect(isLibraryBackgroundTarget(control)).toBe(false);
+    }
   });
 
   it("ignores clicks on a hover preview", () => {
