@@ -341,6 +341,25 @@ describe("SaveViewer", () => {
   });
 
   describe("stepping between Saves", () => {
+    it("keeps a same-file poster as the video start placeholder", async () => {
+      await show(videoSave("local"));
+
+      expect(host.querySelector("video[src*='local.mp4']")).not.toBeNull();
+      expect(host.querySelector('img[src*="local-poster.jpg"]')).not.toBeNull();
+    });
+
+    it("does not paint a YouTube platform poster before the first frame", async () => {
+      const save: Save = {
+        ...videoSave("youtube"),
+        source: "youtube",
+      };
+
+      await show(save);
+
+      expect(host.querySelector("video[src*='youtube.mp4']")).not.toBeNull();
+      expect(host.querySelector('img[src*="youtube-poster.jpg"]')).toBeNull();
+    });
+
     it("never lets an earlier Save's decode reveal a newer one", async () => {
       await show(imageSave("first"));
       await decodeFile("first.jpg");

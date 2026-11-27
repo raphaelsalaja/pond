@@ -69,6 +69,7 @@ function mediaSlideFor(save: Save, item: ViewerItem): MediaSlide {
     isAnimation:
       file?.mimeType === "image/gif" || /\.gif$/i.test(file?.path ?? ""),
     posterUrl: item.posterUrl,
+    posterIsCrossFile: item.posterIsCrossFile,
     width: file?.width ?? save.width ?? undefined,
     height: file?.height ?? save.height ?? undefined,
   };

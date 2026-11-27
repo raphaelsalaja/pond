@@ -6,7 +6,7 @@ import {
   typeLabelForPath,
 } from "@shared/file-format";
 import { isVideoFile } from "@shared/media-index";
-import { usesPlatformPoster } from "@shared/poster-policy";
+import { posterIsCrossFile } from "@shared/poster-policy";
 import {
   ARTICLE_KIND,
   isAuxiliaryKind,
@@ -49,7 +49,7 @@ export interface MediaUnit {
   isVideo: boolean;
   posterUrl?: string;
   posterKey?: string;
-  /** The poster is not derived from the video file: a platform cover or the post's separate cover image. Viewer underlays must not paint it. */
+  /** The poster is not derived from the video file: a platform cover or the post's separate cover image. The viewer must not paint it as a video frame. */
   posterIsCrossFile?: boolean;
   requiresGeneratedPreview?: boolean;
 }
@@ -87,12 +87,6 @@ export function buildMediaUnits(
         },
       ]
     : [];
-}
-
-/** A poster file is same-file only when it was extracted from the video's first frame; a cover image media file never is. */
-function posterIsCrossFile(poster: SaveFile, source: Save["source"]): boolean {
-  if (poster.kind !== POSTER_KIND) return true;
-  return usesPlatformPoster(source);
 }
 
 /** The Save's own photos and videos, without the rendered post card that stands in for text-only posts. */

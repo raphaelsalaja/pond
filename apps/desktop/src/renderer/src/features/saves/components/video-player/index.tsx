@@ -355,13 +355,13 @@ export function VideoPlayer({
         mirrored={mirrored}
         ratio={ratio}
         placeholder={
-          cardThumbnailFor(src) ?? (posterIsCrossFile ? undefined : poster)
+          posterIsCrossFile ? undefined : (cardThumbnailFor(src) ?? poster)
         }
         onError={onError}
         onLoadedMetadata={onLoadedMetadata}
         measure={measure}
       >
-        <Poster.End src={poster} />
+        <Poster.End src={posterIsCrossFile ? undefined : poster} />
       </VideoSurface>
       {active && !chrome ? (
         <Video.Controls role="toolbar" aria-label="Playback">
