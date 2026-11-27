@@ -3,6 +3,8 @@
   --window-chrome-start: 12px;
   /* Matches the left pane's content inset, so toolbar buttons end where panel header actions do. */
   --window-chrome-end: var(--ds-space-md);
+  /* Matches the pane header's end padding, so the trailing toolbar buttons line up with header actions below. */
+  --window-chrome-trailing: var(--ds-space-md);
   --window-bar-height: 44px;
   --window-header-height: 44px;
   --window-left-track: 352px;
@@ -32,6 +34,8 @@
   --window-gutter: var(--ds-space-md);
   /* The panes' border shifts the left column past the toolbar cell, so the toolbar insets less by the same width. */
   --window-chrome-end: calc(var(--ds-space-md) - var(--ds-border-width));
+  /* The panes' border insets the header actions, so the trailing toolbar insets by the same width. */
+  --window-chrome-trailing: calc(var(--ds-space-md) + var(--ds-border-width));
 
   &:not(:has(> .rail)) {
     --window-gutter-start: var(--window-gutter);
@@ -218,7 +222,7 @@
   grid-column: 4;
   gap: var(--ds-space-xs);
   justify-content: flex-end;
-  padding-inline-end: var(--ds-space-lg);
+  padding-inline-end: var(--window-chrome-trailing);
 }
 
 .header {

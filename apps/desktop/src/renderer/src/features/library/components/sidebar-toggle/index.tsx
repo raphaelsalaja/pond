@@ -68,9 +68,11 @@ function Glyph({ open, side }: { open: boolean; side: Side }) {
 export function SidebarToggle({
   open,
   side = "left",
+  disabled = false,
 }: {
   open: boolean;
   side?: Side;
+  disabled?: boolean;
 }) {
   const { label, shortcut, toggle } = SIDES[side];
   const [visual, setVisual] = useState(false);
@@ -88,6 +90,7 @@ export function SidebarToggle({
         variant="ghost"
         aria-label={label}
         aria-pressed={open}
+        disabled={disabled}
         onClick={toggle}
       >
         <Glyph open={visual} side={side} />

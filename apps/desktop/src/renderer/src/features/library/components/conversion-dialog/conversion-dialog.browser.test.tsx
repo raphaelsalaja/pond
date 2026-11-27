@@ -12,6 +12,8 @@ import {
 } from "@/features/library/state/conversion-dialog";
 import { bridge } from "@/shared/test/pond-bridge";
 import { ConversionDialogHost } from "./host";
+/** The host lazy-loads the dialog. Loading it with the file keeps a cold fetch of its ~250 modules out of the first test's wait for the dialog. */
+import ".";
 
 function button(label: string) {
   const element = [...document.querySelectorAll("button")].find(

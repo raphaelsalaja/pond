@@ -3,7 +3,6 @@ import type {
   DuplicateGroup,
   DuplicatePair,
 } from "../../../shared/duplicate-contracts";
-import { pairKey } from "./types";
 
 class UnionFind {
   #parent = new Map<string, string>();
@@ -39,28 +38,25 @@ class UnionFind {
   }
 }
 
-function pairsAmong(
-  ids: ReadonlyArray<string>,
-  index: ReadonlyMap<string, number>,
-): Array<number> {
-  const found: Array<number> = [];
-  for (const [offset, left] of ids.entries()) {
-    for (const right of ids.slice(offset + 1)) {
-      const position = index.get(pairKey(left, right));
-      if (position !== undefined) found.push(position);
-    }
+/** Near and exact groups never share a Save, so one pass over the pairs finds every pair inside each group, already in position order. */
+function fillGroupPairs(
+  groups: ReadonlyArray<DuplicateGroup>,
+  pairs: ReadonlyArray<DuplicatePair>,
+): void {
+  const groupOf = new Map<string, DuplicateGroup>();
+  for (const group of groups) {
+    for (const id of group.ids) groupOf.set(id, group);
   }
-  return found.sort((a, b) => a - b);
+  for (const [position, pair] of pairs.entries()) {
+    const group = groupOf.get(pair.ids[0]);
+    if (group && group === groupOf.get(pair.ids[1])) group.pairs.push(position);
+  }
 }
 
 /** Exact matches are transitive and union; near matches are not, so a near group only admits Saves that match every member, and absorbs any exact group it touches. */
 export function groupPairs(
   pairs: ReadonlyArray<DuplicatePair>,
 ): Array<DuplicateGroup> {
-  const index = new Map<string, number>();
-  for (const [position, pair] of pairs.entries()) {
-    index.set(pairKey(pair.ids[0], pair.ids[1]), position);
-  }
   const exact = new UnionFind();
   for (const pair of pairs) {
     if (pair.relation !== "exact") continue;
@@ -122,14 +118,15 @@ export function groupPairs(
     const position = groups.length;
     for (const member of nodes) nearGroupOf.set(member, position);
     const ids = nodes.flatMap((member) => [...membersOf(member)]).sort();
-    groups.push({ relation: "near", ids, pairs: pairsAmong(ids, index) });
+    groups.push({ relation: "near", ids, pairs: [] });
   }
 
   for (const [root, members] of exactComponents) {
     if (nearGroupOf.has(root)) continue;
     const ids = [...members].sort();
-    groups.push({ relation: "exact", ids, pairs: pairsAmong(ids, index) });
+    groups.push({ relation: "exact", ids, pairs: [] });
   }
+  fillGroupPairs(groups, pairs);
 
   pairs.forEach((pair, position) => {
     const left = node(pair.ids[0]);
