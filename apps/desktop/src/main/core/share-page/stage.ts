@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -62,17 +62,21 @@ export async function stageMedia(input: StageInput): Promise<StagedMedia> {
   return staged;
 }
 
-/** Re-encoding drops EXIF, GPS, XMP, and ICC data: sharp writes none of it unless asked to. */
+/**
+ * Re-encoding drops EXIF, GPS, XMP, and ICC data: sharp writes none of it unless asked to.
+ * Bytes go through buffers so libvips never holds a file open, which on Windows would block
+ * deleting or moving the page folder.
+ */
 async function stageStill(
   from: string,
   to: string,
   job: MediaJob,
 ): Promise<StagedSize> {
-  let image = sharp(from, { animated: true }).autoOrient();
+  let image = sharp(await readFile(from), { animated: true }).autoOrient();
   if (job.orient.rotate) image = image.rotate(job.orient.rotate);
   if (job.orient.flipX) image = image.flop();
   if (job.orient.flipY) image = image.flip();
-  await image
+  const output = await image
     .resize({
       ...(job.role === "thumbnail"
         ? { width: CARD_WIDTH, height: CARD_HEIGHT }
@@ -81,8 +85,10 @@ async function stageStill(
       withoutEnlargement: true,
     })
     .webp({ quality: 82 })
-    .toFile(to);
-  const written = await sharp(to).metadata();
+    .toBuffer();
+  await writeFile(to, output);
+  /** An animated image's height is its whole frame strip; a frame is `pageHeight` tall. */
+  const written = await sharp(output).metadata();
   return { width: written.width, height: written.pageHeight ?? written.height };
 }
 

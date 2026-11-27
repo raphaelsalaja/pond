@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -63,13 +63,16 @@ async function photoWithLocation(width: number, height: number) {
       IFD3: { GPSLatitudeRef: "N", GPSLatitude: "51/1 30/1 0/1" },
     })
     .jpeg()
-    .toFile(join(saveDirectory, "photo.jpg"));
+    .toBuffer()
+    .then((bytes) => writeFile(join(saveDirectory, "photo.jpg"), bytes));
 }
 
 describe("stageMedia", () => {
   it("writes a web copy without the photo's camera or location", async () => {
     await photoWithLocation(3000, 2000);
-    const before = await sharp(join(saveDirectory, "photo.jpg")).metadata();
+    const before = await sharp(
+      await readFile(join(saveDirectory, "photo.jpg")),
+    ).metadata();
     expect(before.exif).toBeDefined();
 
     const staged = await stage([job({})]);
@@ -78,7 +81,9 @@ describe("stageMedia", () => {
       width: 2560,
       height: 1707,
     });
-    const after = await sharp(join(page, "media/s1-0.webp")).metadata();
+    const after = await sharp(
+      await readFile(join(page, "media/s1-0.webp")),
+    ).metadata();
     expect(after.format).toBe("webp");
     expect(after.exif).toBeUndefined();
     expect(after.xmp).toBeUndefined();
