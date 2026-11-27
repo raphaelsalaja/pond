@@ -1,7 +1,7 @@
 "use client";
 
 import { isElement } from "@pond/ui/dom";
-import { SOUND_PATCH } from "@pond/ui/sounds";
+import { loadUiSounds } from "@pond/ui/sounds";
 import type { UiSoundName } from "@pond/ui/sounds";
 import { ensureReady } from "@web-kits/audio";
 import { useEffect } from "react";
@@ -22,6 +22,8 @@ export function Sounds() {
   useEffect(() => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
     let last = 0;
+    /** The recordings sit outside the first paint's JS, so fetch them before the first click needs one. */
+    if (!reduce.matches) void loadUiSounds().catch(skipCue);
 
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0 || reduce.matches) {
@@ -39,9 +41,8 @@ export function Sounds() {
       last = now;
 
       const name = cueFor(control);
-      const detune = (Math.random() - 0.5) * 28;
-      void ensureReady()
-        .then(() => SOUND_PATCH.play(name, { detune, volume }))
+      void Promise.all([ensureReady(), loadUiSounds()])
+        .then(([, playUiSound]) => playUiSound(name, { volume }))
         .catch(skipCue);
     };
 
