@@ -4,7 +4,6 @@ import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { getDb } from "../../db";
 import { persistSave } from "../persist-save";
-import { runCaptureTweet } from "../pipeline/workers/capture-tweet";
 import type { BookmarksEntry } from "../refresh/harvest/twitter";
 import { buildTwitterBookmarkSeed } from "./twitter-seed";
 
@@ -90,6 +89,8 @@ export async function repairTweetLinks(
         { actorReason: "sync:twitter-link-repair" },
       );
       try {
+        const { runCaptureTweet } =
+          await import("../pipeline/workers/capture-tweet");
         await runCaptureTweet(row.id, { nativeOnly: true, force: true });
       } catch (error) {
         log.warn(
