@@ -52,7 +52,7 @@ export default defineBackground(() => {
   });
 
   onMessage("capture", ({ data, sender }) =>
-    saveFromSite(data.url, data.trigger, sender.tab?.id),
+    saveFromSite(data, sender.tab?.id),
   );
 
   onMessage("runTool", async ({ data }) => {

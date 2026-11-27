@@ -42,7 +42,7 @@ Pushing a tag matching `v*` triggers [`.github/workflows/release.yml`](workflows
    - `linux` (x64 runner) and `linux-arm64` (arm64 runner) build the workspace, run the desktop smoke test, and run `pnpm dist:linux:publish`, which uploads that architecture's AppImage, deb, and update manifest. Native modules rebuild for the build host, so each architecture packages on its own runner.
 3. `publish`: checks that every artifact listed below is attached, then publishes the release, which makes it visible to the updater
 4. `stores`: submits the extension zips to the Chrome Web Store and Firefox Add-ons for review. Each store is skipped with a warning until its secrets are set (see [Extension stores](#extension-stores))
-5. `homebrew`: updates [`Casks/pond.rb`](../Casks/pond.rb) with the release version and DMG checksums
+5. `homebrew`: updates [`Casks/pond.rb`](../Casks/pond.rb) with the release version and DMG checksums, through a pull request that merges itself once CI passes
 
 Nothing is public until `publish` runs, so a failed platform build never ships a partial release. To write release notes before it goes live, edit the draft while the workflow runs.
 
@@ -118,8 +118,14 @@ brew tap raphaelsalaja/pond https://github.com/raphaelsalaja/pond
 brew install --cask raphaelsalaja/pond/pond
 ```
 
-The release workflow updates the version and checksums on `main` after both
-macOS artifacts are available.
+After both macOS artifacts are published, the release workflow opens a
+`release/homebrew-cask-<version>` pull request with the new version and
+checksums, starts CI on it, and turns on auto-merge. `main` requires CI to
+pass, and pull requests opened by a workflow don't trigger CI on their own, so
+CI is started from the release job. The repository setting "Allow GitHub
+Actions to create and approve pull requests" must stay on. If CI fails on that
+pull request, rerun it or merge it by hand; `brew` keeps serving the previous
+version until it merges.
 
 ## Local packaging (without publish)
 

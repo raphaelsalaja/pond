@@ -7,11 +7,14 @@ const OptionalId = z
 
 const CosmosTokenPayloadSchema = z
   .object({
+    /** The Cosmos web client reads the signed-in user's id from `eid`. */
+    eid: OptionalId,
     userId: OptionalId,
     user_id: OptionalId,
     uid: OptionalId,
     id: OptionalId,
     sub: OptionalId,
+    exp: z.number().positive().optional().catch(undefined),
   })
   .catch({});
 
@@ -21,12 +24,18 @@ export function cosmosIdentityFromToken(value: string): string | null {
   const payload = decodeCosmosToken(value);
   if (!payload) return null;
   const id =
+    payload.eid ??
     payload.userId ??
     payload.user_id ??
     payload.uid ??
     payload.id ??
     payload.sub;
   return id === undefined ? null : String(id);
+}
+
+/** Seconds since the epoch when the access token lapses, or null when it carries no `exp`. */
+export function cosmosTokenExpiresAt(value: string): number | null {
+  return decodeCosmosToken(value)?.exp ?? null;
 }
 
 function decodeCosmosToken(value: string): CosmosTokenPayload | null {

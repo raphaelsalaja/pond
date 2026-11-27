@@ -9,6 +9,7 @@ import type { CaptureOutcome } from "@/utils/outcome";
 import type { OverlayToast } from "@/utils/overlay-messaging";
 import { rememberTargets } from "@/utils/recent-targets";
 import { getSettings } from "@/utils/settings";
+import type { PondCapturePayload } from "@/utils/types";
 import { libraryTargets } from "./library";
 import { announce, flashBadge, showOverlay } from "./overlay";
 import { cookiesForUrl } from "./session";
@@ -225,8 +226,7 @@ function siteTitle(url: string, trigger: string | undefined): string {
 
 /** Saves an item a site hook saw you save, like, or bookmark. */
 export async function saveFromSite(
-  url: string,
-  trigger: string | undefined,
+  { url, trigger, collectionIds }: PondCapturePayload,
   tabId: number | undefined,
 ): Promise<CaptureOutcome> {
   await syncSettings(true);
@@ -235,7 +235,11 @@ export async function saveFromSite(
     return { status: "sending", id: crypto.randomUUID() };
   }
   return submitCapture({
-    items: [{ kind: "url", url }],
+    items: [
+      collectionIds?.length
+        ? { kind: "url", url, collectionIds }
+        : { kind: "url", url },
+    ],
     title: siteTitle(url, trigger),
     trigger,
     announceTab: tabId,

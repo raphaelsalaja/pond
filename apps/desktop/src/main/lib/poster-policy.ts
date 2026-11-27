@@ -15,9 +15,11 @@ export type PosterWrite = {
   sourceUrl?: string;
 };
 
+type MediaDims = Pick<SaveFile, "width" | "height">;
+
 export function hasMediaDims(
-  dims: Pick<SaveFile, "width" | "height"> | null | undefined,
-): boolean {
+  dims: MediaDims | null | undefined,
+): dims is { width: number; height: number } {
   return (
     dims !== null &&
     dims !== undefined &&
@@ -40,14 +42,35 @@ export function videoPosterSlots(files: ReadonlyArray<SaveFile>) {
   return { videos, posters };
 }
 
+/**
+ * How far a poster's aspect may drift from its video's before it counts as the
+ * wrong picture. A landscape thumbnail on a portrait Short is about 3x off; a
+ * 4:5 feed cover on a 9:16 reel (1.42x) or a 4:3 frame of a 16:9 video (1.33x)
+ * stays, since those are crops of the right picture.
+ */
+const POSTER_ASPECT_TOLERANCE = 1.5;
+
+/** False when either side has no dimensions, since the aspect is then unknown. */
+export function posterAspectMismatch(
+  video: MediaDims,
+  poster: MediaDims,
+): boolean {
+  if (!hasMediaDims(video) || !hasMediaDims(poster)) return false;
+  const drift = (poster.width / poster.height) * (video.height / video.width);
+  return Math.max(drift, 1 / drift) >= POSTER_ASPECT_TOLERANCE;
+}
+
+/** Video slots with no poster, or with a poster whose aspect disagrees with the video. */
 export function posterRepairIndexes(
   files: ReadonlyArray<SaveFile>,
 ): Array<number> {
   const { videos, posters } = videoPosterSlots(files);
   const indexes: Array<number> = [];
   for (let index = 0; index < videos.length; index += 1) {
-    if (!videos[index]) continue;
-    if (!posters[index]) indexes.push(index);
+    const video = videos[index];
+    if (!video) continue;
+    const poster = posters[index];
+    if (!poster || posterAspectMismatch(video, poster)) indexes.push(index);
   }
   return indexes;
 }
