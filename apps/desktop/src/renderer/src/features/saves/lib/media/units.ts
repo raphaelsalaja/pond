@@ -240,6 +240,21 @@ export function pickCardUnit(
     : null;
 }
 
+/** The card still and the hover playback media are separate picks: a generated or custom thumbnail stays the resting image while a local video still plays on hover. */
+export function pickHoverVideoUnit(
+  save: Save,
+  cardUnit: MediaUnit | null,
+  mediaUnits: Array<MediaUnit>,
+): MediaUnit | null {
+  if (!cardUnit) return null;
+  if (cardUnit.isVideo) return cardUnit;
+  const cardFile = (save.files ?? []).find(
+    (file) => file.path === cardUnit.key,
+  );
+  if (!cardFile || !isThumbnailKind(cardFile.kind)) return null;
+  return mediaUnits.find((unit) => unit.isVideo) ?? null;
+}
+
 export function detailsPreviewUrl(unit: MediaUnit | null): string | null {
   if (!unit) return null;
   if (unit.isVideo) return unit.posterUrl ?? null;

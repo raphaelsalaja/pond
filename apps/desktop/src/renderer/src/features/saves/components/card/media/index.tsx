@@ -18,6 +18,7 @@ import { richFilePreviewKind } from "@/features/saves/lib/media/rich-file-previe
 import {
   buildMediaUnits,
   pickCardUnit,
+  pickHoverVideoUnit,
   pickPrimaryFile,
 } from "@/features/saves/lib/media/units";
 import type {
@@ -100,9 +101,14 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
       ? { file: primary, kind, url: buildPondUrl(save.id, primary) }
       : null;
   }, [primary, save]);
+  const hoverUnit = useMemo(
+    () => pickHoverVideoUnit(save, unit, mediaUnits),
+    [save, unit, mediaUnits],
+  );
   const hasVideoDims = useMemo(() => {
-    if (!unit?.isVideo) return false;
-    const primary = (save.files ?? []).find((f) => f.path === unit.key) ?? null;
+    if (!hoverUnit?.isVideo) return false;
+    const primary =
+      (save.files ?? []).find((f) => f.path === hoverUnit.key) ?? null;
     if (
       primary?.width &&
       primary?.height &&
@@ -114,7 +120,7 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
     return Boolean(
       save.width && save.height && save.width > 0 && save.height > 0,
     );
-  }, [save.files, save.height, save.width, unit]);
+  }, [save.files, save.height, save.width, hoverUnit]);
   useEffect(() => {
     ensureTextCover(save);
   }, [save]);
@@ -184,6 +190,14 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
   const broken = brokenSrc !== null && brokenSrc === pickedSrc;
   const onBroken = useCallback(() => setBrokenSrc(pickedSrc), [pickedSrc]);
 
+  /** A broken hover video only disables hover playback; the thumbnail still keeps drawing. */
+  const hoverOnly = hoverUnit !== null && !unit?.isVideo;
+  const [hoverBrokenKey, setHoverBrokenKey] = useState<string | null>(null);
+  const hoverBroken = hoverUnit !== null && hoverBrokenKey === hoverUnit.key;
+  const onHoverBroken = useCallback(() => {
+    if (hoverUnit) setHoverBrokenKey(hoverUnit.key);
+  }, [hoverUnit]);
+
   const pixel = aspectDimsFor(save, pickOptions, unit);
   const pixelAspect =
     pixel.w && pixel.h ? pixel.w / pixel.h : aspectFor(save, pickOptions);
@@ -243,18 +257,19 @@ export const PreparedCardThumb = memo(function PreparedCardThumb({
             onBroken={onBroken}
           />
         ) : null}
-        {!richPreview && unit?.isVideo && !broken ? (
+        {!richPreview && hoverUnit && !broken && !hoverBroken ? (
           <HoverVideo
-            key={unit.url}
+            key={hoverUnit.url}
             saveId={save.id}
-            src={unit.url}
-            unit={unit}
-            posterUrl={unit.posterUrl}
+            src={hoverUnit.url}
+            unit={hoverUnit}
+            posterUrl={hoverUnit.posterUrl}
             posterWidth={width}
             blurhash={save.blurhash}
             hasVideoDims={hasVideoDims}
             label={save.title ?? "video"}
-            onBroken={onBroken}
+            hoverOnly={hoverOnly}
+            onBroken={hoverOnly ? onHoverBroken : onBroken}
           />
         ) : null}
         {showPlaceholder ? (
