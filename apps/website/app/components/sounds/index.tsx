@@ -1,7 +1,7 @@
 "use client";
 
 import { isElement } from "@pond/ui/dom";
-import { SOUND_PATCH } from "@pond/ui/sounds";
+import { playUiSound } from "@pond/ui/sounds";
 import type { UiSoundName } from "@pond/ui/sounds";
 import { ensureReady } from "@web-kits/audio";
 import { useEffect } from "react";
@@ -39,9 +39,8 @@ export function Sounds() {
       last = now;
 
       const name = cueFor(control);
-      const detune = (Math.random() - 0.5) * 28;
       void ensureReady()
-        .then(() => SOUND_PATCH.play(name, { detune, volume }))
+        .then(() => playUiSound(name, { volume }))
         .catch(skipCue);
     };
 

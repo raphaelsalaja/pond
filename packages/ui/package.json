@@ -87,6 +87,7 @@
     "./scroll-fade": "./src/scroll-fade.ts"
   },
   "scripts": {
+    "generate:sounds": "node scripts/generate-sound-samples.mjs",
     "test": "vitest run",
     "test:node": "vitest run --project node",
     "test:browser": "vitest run --project browser",

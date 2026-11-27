@@ -1,8 +1,7 @@
-import { SOUND_PATCH } from "@pond/ui/sounds";
+import { playUiSound } from "@pond/ui/sounds";
 import type { UiSoundName } from "@pond/ui/sounds";
 import type { FeedbackEvent } from "@shared/feedback";
 import { ensureReady } from "@web-kits/audio";
-import type { PlayOptions } from "@web-kits/audio";
 import log from "electron-log/renderer";
 import { getPrefsSnapshot } from "@/shared/state/prefs";
 
@@ -60,14 +59,10 @@ function play(kind: SoundKind, name: UiSoundName, interfaceSound = true): void {
   if (now - prev < RATE_MS) return;
   lastPlayed.set(kind, now);
   lastSoundAt = now;
-  const spread = kind === "success" ? 16 : 28;
-  const opts: PlayOptions = {
-    detune: (Math.random() - 0.5) * spread,
-    volume: now - prev < RAPID_MS ? 0.7 : 1,
-  };
+  const volume = now - prev < RAPID_MS ? 0.7 : 1;
   void ready()
     .then((context) => {
-      SOUND_PATCH.play(name, opts);
+      playUiSound(name, { volume });
       park(context, PARK_AFTER_MS);
     })
     .catch(warnSoundFailed);
