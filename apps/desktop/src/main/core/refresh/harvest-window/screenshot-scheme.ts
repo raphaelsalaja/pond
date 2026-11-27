@@ -240,7 +240,7 @@ export interface DomSchemeAssessment {
   strong: boolean;
 }
 
-export function assessDomSchemeEvidence(
+function assessDomSchemeEvidence(
   evidence: CaptureSchemeDomEvidence,
 ): DomSchemeAssessment {
   const background = weightedSchemeVote(evidence.backgrounds);
@@ -284,7 +284,7 @@ function classifyPixelCounts(
   return "unknown";
 }
 
-export async function assessScreenshotPixels(args: {
+async function assessScreenshotPixels(args: {
   bytes: Buffer;
   width: number;
   height: number;
@@ -376,7 +376,7 @@ export async function assessScreenshotPixels(args: {
   return edgeAssessment !== "unknown" ? edgeAssessment : interiorAssessment;
 }
 
-export function combineSchemeAssessments(
+function combineSchemeAssessments(
   dom: DomSchemeAssessment,
   pixels: CaptureColorScheme | "unknown",
 ): SchemeAssessment {
