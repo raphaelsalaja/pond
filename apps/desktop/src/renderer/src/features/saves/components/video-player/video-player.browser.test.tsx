@@ -60,7 +60,7 @@ it("reveals the first frame over its poster with restrained motion", async () =>
 
   const videoStyle = getComputedStyle(video);
   expect(list(videoStyle.transitionProperty)).toEqual(["opacity", "transform"]);
-  expect(list(videoStyle.transitionDuration)).toEqual(["0.08s", "0.2s"]);
+  expect(list(videoStyle.transitionDuration)).toEqual(["0.15s", "0.2s"]);
   const standard = getComputedStyle(document.documentElement)
     .getPropertyValue("--ds-easing-standard")
     .replaceAll(" ", "");
@@ -84,7 +84,7 @@ it("reveals the first frame over its poster with restrained motion", async () =>
   const posterStyle = getComputedStyle(poster);
   expect(posterStyle.transitionProperty).toBe("visibility");
   expect(posterStyle.transitionDuration).toBe("0s");
-  expect(posterStyle.transitionDelay).toBe("0.08s");
+  expect(posterStyle.transitionDelay).toBe("0.15s");
 
   document.documentElement.dataset.reduceMotion = "true";
   expect(getComputedStyle(poster).transitionDelay).toBe("0s");

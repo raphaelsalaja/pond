@@ -17,7 +17,7 @@
 
   &[data-covered] {
     visibility: hidden;
-    transition-delay: var(--ds-duration-fast);
+    transition-delay: var(--ds-duration-snap);
   }
 }
 

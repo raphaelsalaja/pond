@@ -39,7 +39,7 @@
 .media {
   position: relative;
   transition:
-    opacity var(--ds-duration-fast) var(--ds-easing-standard),
+    opacity var(--ds-duration-snap) var(--ds-easing-standard),
     transform var(--ds-duration-medium) var(--ds-easing-standard);
 
   &[data-pending] {
