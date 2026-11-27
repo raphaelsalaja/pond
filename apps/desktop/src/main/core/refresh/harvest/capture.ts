@@ -180,7 +180,7 @@ function hasMedia(capture: Capture): boolean {
 function harvestFailure(
   source: Source,
   reason: HarvestResult["reason"],
-): AuthRequiredError | TransientError {
+): AuthRequiredError | TerminalError | TransientError {
   switch (reason) {
     case "auth_required":
       return new AuthRequiredError(
@@ -191,6 +191,8 @@ function harvestFailure(
       return new TransientError("navigate failed");
     case "timeout":
       return new TransientError("scrape timeout");
+    case "not_found":
+      return new TerminalError("page not found or no longer exists");
     /** An empty scrape means Pond found nothing it could read, not that the page is gone, so it retries like the Pinterest path. */
     default:
       return new TransientError("scrape returned no data");

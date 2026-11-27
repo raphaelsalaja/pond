@@ -17,6 +17,14 @@ export interface HarvestAdaptCtx {
   sourceId: string;
 }
 
+export const HARVEST_NOT_FOUND = {
+  __pondHarvestFailure: "not_found",
+} as const;
+
+export const HarvestFailureSchema = z.object({
+  __pondHarvestFailure: z.literal(HARVEST_NOT_FOUND.__pondHarvestFailure),
+});
+
 const scrapedText = z.string().optional().catch(undefined);
 const scrapedNumber = z.number().optional().catch(undefined);
 const scrapedFlag = z.boolean().optional().catch(undefined);

@@ -1,5 +1,8 @@
+import { runInContext } from "node:vm";
+import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
-import { adapt } from "./item";
+import { HARVEST_NOT_FOUND } from "../from-page";
+import { adapt, buildExpression } from "./item";
 
 const ctx = {
   source: "twitter" as const,
@@ -42,6 +45,45 @@ const tweetResultByRestId = JSON.stringify({
       },
     },
   },
+});
+
+describe("buildExpression", () => {
+  it("reports X's missing-post response instead of waiting for the post", async () => {
+    const dom = new JSDOM("<!doctype html><body></body>", {
+      url: "https://x.com/anyuser/status/1",
+      runScripts: "outside-only",
+    });
+    let now = 0;
+    Object.assign(dom.window, {
+      fetch: async () => new Response("missing", { status: 404 }),
+      setTimeout: (fn: () => void) => setTimeout(fn, 0),
+    });
+    Object.assign(dom.window.Date, {
+      now: () => (now += 1000),
+    });
+    const raw = await runInContext(
+      buildExpression("1"),
+      dom.getInternalVMContext(),
+    );
+    expect(raw).toEqual(HARVEST_NOT_FOUND);
+  });
+
+  it("reports X's missing GraphQL post response", async () => {
+    const dom = new JSDOM("<!doctype html><body></body>", {
+      url: "https://x.com/anyuser/status/1",
+      runScripts: "outside-only",
+    });
+    Object.assign(dom.window, {
+      __pondTweetCaptures: [{ status: 404, body: "" }],
+      fetch: async () => new Response("<html></html>"),
+      setTimeout: (fn: () => void) => setTimeout(fn, 0),
+    });
+    const raw = await runInContext(
+      buildExpression("1"),
+      dom.getInternalVMContext(),
+    );
+    expect(raw).toEqual(HARVEST_NOT_FOUND);
+  });
 });
 
 describe("adapt", () => {
