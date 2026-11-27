@@ -1,6 +1,6 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignoreBinaries": ["iconutil", "cl", "lipo", "mkfifo"],
+  "ignoreBinaries": ["iconutil", "cl", "lipo", "mkfifo", "ffmpeg"],
   "workspaces": {
     "apps/desktop": {
       "entry": [
