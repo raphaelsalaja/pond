@@ -31,7 +31,7 @@ async function bakeFinderLayout(dmgPath) {
     try {
       layoutVolume(waitForVolume());
     } finally {
-      execFileSync("hdiutil", ["detach", device, "-force"], { stdio: "pipe" });
+      detach(device);
       waitUntilUnmounted();
     }
     execFileSync("hdiutil", ["convert", rw, "-format", FORMAT, "-o", out], {
@@ -65,6 +65,24 @@ function growScratchSpace(image) {
     ],
     { stdio: "pipe" },
   );
+}
+
+/**
+ * macOS can eject the volume before hdiutil gets to it, which fails with "No such file or
+ * directory", or hold it busy for a moment. A vanished device is already detached; a busy one
+ * gets a few more tries.
+ */
+function detach(device) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      execFileSync("hdiutil", ["detach", device, "-force"], { stdio: "pipe" });
+      return;
+    } catch (error) {
+      if (!existsSync(device)) return;
+      if (attempt === 5) throw error;
+      execFileSync("sleep", ["1"]);
+    }
+  }
 }
 
 function waitUntilUnmounted() {
