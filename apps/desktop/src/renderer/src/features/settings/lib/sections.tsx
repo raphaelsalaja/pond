@@ -26,6 +26,9 @@ import { lazyWithPreload } from "@/shared/lib/lazy-with-preload";
 const TagsSection = lazyWithPreload(() =>
   import("@/features/tags/manager").then((m) => m.TagsSection),
 );
+const RulesSection = lazyWithPreload(() =>
+  import("@/features/rules").then((m) => m.RulesSection),
+);
 const AgentSection = lazyWithPreload(() =>
   import("@/features/settings/components/sections/agent").then(
     (m) => m.AgentSection,
@@ -60,6 +63,7 @@ const ShortcutSettings = lazyWithPreload(() =>
 
 export const SECTION_PRELOADS = [
   TagsSection.preload,
+  RulesSection.preload,
   AgentSection.preload,
   ModelsSection.preload,
   PersonalizationSection.preload,
@@ -91,6 +95,25 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
       title: "Tags",
       description: "Organize, merge, and archive tags.",
       keywords: ["labels", "groups", "merge", "archive", "rename", "organize"],
+    },
+  ],
+  [
+    "rules",
+    {
+      component: RulesSection,
+      title: "Rules",
+      description:
+        "Organize new Saves automatically with folders, tags, and marks.",
+      keywords: [
+        "automation",
+        "organize",
+        "file",
+        "auto",
+        "triggers",
+        "folders",
+        "tags",
+        "incoming",
+      ],
     },
   ],
   [

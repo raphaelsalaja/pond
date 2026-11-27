@@ -100,6 +100,9 @@ export async function startLibraryBackgroundWork(): Promise<void> {
         await module.startArticleBackfill();
       }),
     );
+  void import("./core/rules/service")
+    .then((module) => (live() ? module.startRules() : undefined))
+    .catch((cause: unknown) => log.warn("[pond] rules failed to start", cause));
   void enrichmentModule
     .backfillEnrichmentSidecars()
     .catch((cause: unknown) =>
@@ -109,6 +112,7 @@ export async function startLibraryBackgroundWork(): Promise<void> {
 
 export function stopLibraryBackgroundWork(): void {
   generation += 1;
+  void import("./core/rules/service").then((module) => module.stopRules());
   stopMediaWarmer?.();
   stopFingerprintWorker?.();
   stopDisplacementWatch?.();

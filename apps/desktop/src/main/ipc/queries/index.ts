@@ -35,6 +35,7 @@ import { notificationQueries } from "./notifications";
 import { openWithQueries } from "./open-with";
 import type { QueryHandlerMap, QueryParams } from "./params";
 import { queueQueries } from "./queue";
+import { rulesQueries } from "./rules";
 import { safariExtensionQueries } from "./safari-extension";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
@@ -58,6 +59,7 @@ const queryRegistry = {
   ...openWithQueries,
   ...canvasesQueries,
   ...fishQueries,
+  ...rulesQueries,
   ...fishMcpQueries,
   ...conversionQueries,
   ...savesQueries,

@@ -6,13 +6,14 @@ import { OPERATOR_LABELS } from "../predicate-helpers";
 import { defaultRuleValue, newRule } from "../query";
 import { RuleSelect } from "../rule-select";
 import { RuleValue } from "../rule-value";
-import type { RuleChoices } from "../types";
+import type { ConditionOptions, RuleChoices } from "../types";
 import styles from "./styles.module.css";
 
 interface PredicateProps {
   rule: PredicateClause;
   index: number;
   choices: RuleChoices;
+  options?: ConditionOptions;
   onChange: (rule: PredicateClause) => void;
   onInsert: () => void;
   onRemove: () => void;
@@ -22,17 +23,22 @@ export function Predicate({
   rule,
   index,
   choices,
+  options,
   onChange,
   onInsert,
   onRemove,
 }: PredicateProps) {
   const number = index + 1;
+  const noun = options?.noun ?? "Rule";
+  const fields = options?.fields
+    ? options.fields.map((id) => FIELD_DESCRIPTORS[id])
+    : Object.values(FIELD_DESCRIPTORS);
   return (
     <div className={styles.root}>
       <RuleSelect.Single
         value={rule.field}
-        label={`Rule ${number} Field`}
-        items={Object.values(FIELD_DESCRIPTORS).map(({ id, label }) => ({
+        label={`${noun} ${number} Field`}
+        items={fields.map(({ id, label }) => ({
           value: id,
           label,
         }))}
@@ -40,7 +46,7 @@ export function Predicate({
       />
       <RuleSelect.Single
         value={rule.operator}
-        label={`Rule ${number} Operator`}
+        label={`${noun} ${number} Operator`}
         items={FIELD_DESCRIPTORS[rule.field].comparators.map((operator) => ({
           value: operator,
           label: OPERATOR_LABELS[operator] ?? operator,
@@ -63,7 +69,7 @@ export function Predicate({
       <Button
         size="sm"
         variant={rule.negate ? "secondary" : "ghost"}
-        aria-label={`Negate Rule ${number}`}
+        aria-label={`Negate ${noun} ${number}`}
         aria-pressed={Boolean(rule.negate)}
         onClick={() => onChange({ ...rule, negate: !rule.negate })}
       >
@@ -73,7 +79,7 @@ export function Predicate({
         icon
         size="xs"
         variant="ghost"
-        aria-label={`Remove Rule ${number}`}
+        aria-label={`Remove ${noun} ${number}`}
         onClick={onRemove}
       >
         <IconMinus size={12} />
@@ -82,7 +88,7 @@ export function Predicate({
         icon
         size="xs"
         variant="secondary"
-        aria-label={`Add Rule after Rule ${number}`}
+        aria-label={`Add ${noun} after ${noun} ${number}`}
         onClick={onInsert}
       >
         <IconPlus size={12} />

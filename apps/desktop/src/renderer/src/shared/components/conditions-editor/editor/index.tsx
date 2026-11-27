@@ -1,6 +1,6 @@
 import type { Query } from "@pond/schema/filters/types";
 import { Group } from "../group";
-import type { RuleChoices } from "../types";
+import type { ConditionOptions, RuleChoices } from "../types";
 
 interface RuleEditorProps {
   query: Query;
@@ -8,6 +8,8 @@ interface RuleEditorProps {
   onChange: (query: Query) => void;
   onRemove?: () => void;
   path?: string;
+  /** Fields offered in the field menu and noun used in labels; Smart Folders use every field and "Rule". */
+  options?: ConditionOptions;
 }
 
 export function RuleEditor({
@@ -16,6 +18,7 @@ export function RuleEditor({
   onChange,
   onRemove,
   path = "Rules",
+  options,
 }: RuleEditorProps) {
   return (
     <Group
@@ -24,6 +27,7 @@ export function RuleEditor({
       onChange={onChange}
       onRemove={onRemove}
       path={path}
+      options={options}
     />
   );
 }

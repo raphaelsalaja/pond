@@ -50,6 +50,20 @@ const descriptions = new Map<string, string>(
       "Create a fish with a name, color, instructions, scope, and model.",
     "fish.update":
       "Change a fish's name, color, instructions, scope, or model. Routines change through createRoutine and updateRoutine.",
+    "rules.list":
+      "List Rules: standing instructions that organize new Saves. Each has a trigger (a new Save arriving through Captures, Sync, Watches, or Imports, optionally from one Account or Watch; or a Save added to a folder), conditions in the same filter format as Smart Folders, and actions that only add (Add to Folder, Add Tags, Favorite, rate unrated Saves, send to or process in the Inbox). Includes run counts and last errors.",
+    "rules.create":
+      "Create a Rule from a trigger, filter conditions, and actions. Saving never applies it to existing Saves; use rules.preview, then rules.applyToExisting for that. Suggest creating it turned off unless the person asked to turn it on.",
+    "rules.update":
+      "Replace a Rule's name, trigger, conditions, actions, and on/off state.",
+    "rules.test":
+      "Dry-run a Rule against one Save: whether its trigger applies, which top-level conditions pass, and what it would change. Writes nothing. Use it to explain why a Save was or wasn't organized.",
+    "rules.preview":
+      "Dry-run a Rule against the whole Library: how many Saves match, how many each action would change, and a sample of Save IDs. Writes nothing.",
+    "rules.applyToExisting":
+      "Apply a saved Rule once to every existing Save that matches its conditions, as one Undo step.",
+    "rules.activity":
+      "Recent runs of one Rule: when, which Save, what changed, and failures.",
     "conversion.start":
       "Export converted image or video-to-GIF copies using a preset. Opens a native export directory picker; originals are retained. Returns a job ID for progress and cancellation.",
     "conversion.capabilities":

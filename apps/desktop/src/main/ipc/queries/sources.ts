@@ -1,12 +1,11 @@
 import { saves } from "@pond/schema/db";
-import type { IncomingSaveRule, SourceSyncPrefs } from "@pond/schema/db";
+import type { SourceSyncPrefs } from "@pond/schema/db";
 import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import type { OkResult } from "../../../shared/query-contracts-shared";
 import { getAccount, patchAccountSync } from "../../core/sync/accounts";
 import { syncBaselineWhere } from "../../core/sync/sync-baseline";
 import { getWatch, patchWatchSync } from "../../core/sync/watches";
-import { normalizeTagList } from "../../core/tags";
 import { getDb } from "../../db";
 import { lastNativeContactAt } from "../../native/rpc";
 import { query, StringParam } from "./params";
@@ -54,22 +53,6 @@ export const sourcesQueries = {
         paused: params.paused || undefined,
         intervalHours: params.intervalHours ?? undefined,
       }),
-  ),
-
-  "sources.setIncoming": query(
-    TargetSchema.extend({
-      folderId: z.string().min(1).nullable().catch(null),
-      tags: z.array(z.string()).catch([]),
-    }),
-    (params) => {
-      const tags = normalizeTagList(params.tags);
-      const incoming: IncomingSaveRule = {};
-      if (params.folderId) incoming.folderId = params.folderId;
-      if (tags.length > 0) incoming.tags = tags;
-      return patchTargetSync(params, {
-        incoming: incoming.folderId || incoming.tags ? incoming : undefined,
-      });
-    },
   ),
 
   "sources.extensionLastSeen": query(z.object({}), () => ({

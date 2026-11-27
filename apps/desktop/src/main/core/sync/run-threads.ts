@@ -13,7 +13,6 @@ import { harvestThreadsList } from "../refresh/harvest-window";
 import type { ThreadsListKind } from "../refresh/harvest/threads/list";
 import { partitionForAccount } from "./accounts";
 import { listHarvestPlan } from "./import-scope";
-import { fileIncomingSaves } from "./incoming";
 import {
   loadSyncBaseline,
   patchAccountSync,
@@ -215,12 +214,6 @@ export async function syncThreads(
     ev.outcome = "aborted";
     return;
   }
-  await fileIncomingSaves(
-    bulk.createdIds,
-    accountId,
-    "threads",
-    "sync:threads",
-  );
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,

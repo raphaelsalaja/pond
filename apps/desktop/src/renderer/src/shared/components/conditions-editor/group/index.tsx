@@ -5,7 +5,7 @@ import { Button } from "@pond/ui";
 import { useId } from "react";
 import { Predicate } from "../predicate";
 import { RuleSelect } from "../rule-select";
-import type { RuleChoices } from "../types";
+import type { ConditionOptions, RuleChoices } from "../types";
 import { useRuleGroup } from "../use-rule-group";
 import styles from "./styles.module.css";
 
@@ -15,6 +15,7 @@ interface GroupProps {
   onChange: (query: Query) => void;
   onRemove?: () => void;
   path: string;
+  options?: ConditionOptions;
 }
 
 export function Group({
@@ -23,9 +24,11 @@ export function Group({
   onChange,
   onRemove,
   path,
+  options,
 }: GroupProps) {
   const labelId = useId();
-  const editor = useRuleGroup(query, onChange);
+  const noun = options?.noun ?? "Rule";
+  const editor = useRuleGroup(query, onChange, options?.fields?.[0]);
   return (
     <fieldset className={styles.root} aria-labelledby={labelId}>
       <legend id={labelId} className={styles["sr-only"]}>
@@ -66,13 +69,13 @@ export function Group({
           </Button>
         ) : null}
         <Button variant="secondary" size="sm" onClick={editor.addGroup}>
-          Add Rule Group
+          Add {noun} Group
         </Button>
         <Button
           icon
           size="xs"
           variant="secondary"
-          aria-label={`Add Rule to ${path}`}
+          aria-label={`Add ${noun} to ${path}`}
           onClick={editor.addRule}
         >
           <IconPlus size={12} />
@@ -86,6 +89,7 @@ export function Group({
                 query={rule}
                 choices={choices}
                 path={`${path} Group ${index + 1}`}
+                options={options}
                 onChange={(next) => editor.updateRule(index, next)}
                 onRemove={() => editor.removeRule(index)}
               />
@@ -94,6 +98,7 @@ export function Group({
                 rule={rule}
                 index={index}
                 choices={choices}
+                options={options}
                 onChange={(next) => editor.updateRule(index, next)}
                 onRemove={() => editor.removeRule(index)}
                 onInsert={() => editor.insertRule(index)}
@@ -103,7 +108,7 @@ export function Group({
         ))}
         {query.rules.length === 0 ? (
           <p className={styles["no-value"]}>
-            All saves match. Add a rule to narrow the results.
+            All saves match. Add a {noun.toLowerCase()} to narrow the results.
           </p>
         ) : null}
       </div>

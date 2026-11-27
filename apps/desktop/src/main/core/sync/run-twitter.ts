@@ -25,7 +25,6 @@ import { fileIntoFolders } from "./collection-folders";
 import { NO_COLLECTION_PASS, walkEveryCollection } from "./every-collection";
 import { mergeEntryListKinds, stampListKind, unionById } from "./harvest-union";
 import { collectionCheckDue, listHarvestPlan } from "./import-scope";
-import { fileIncomingSaves } from "./incoming";
 import {
   loadAllKnownIds,
   loadSyncBaseline,
@@ -293,12 +292,6 @@ export async function syncTwitter(
     return;
   }
   await fileIntoFolders(account, filing, collectionPass.collections);
-  await fileIncomingSaves(
-    bulk.createdIds,
-    accountId,
-    "twitter",
-    "sync:twitter",
-  );
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full,

@@ -1,4 +1,4 @@
-import type { Clause, Query } from "@pond/schema/filters/types";
+import type { Clause, FieldId, Query } from "@pond/schema/filters/types";
 import { useCallback } from "react";
 import { newRule } from "./query";
 
@@ -15,6 +15,7 @@ interface RuleGroupEditor {
 export function useRuleGroup(
   query: Query,
   onChange: (query: Query) => void,
+  firstField?: FieldId,
 ): RuleGroupEditor {
   const updateRule = useCallback(
     (index: number, clause: Clause) =>
@@ -43,15 +44,15 @@ export function useRuleGroup(
           {
             id: crypto.randomUUID(),
             combinator: "and",
-            rules: [newRule()],
+            rules: [newRule(firstField)],
           },
         ],
       }),
-    [onChange, query],
+    [onChange, query, firstField],
   );
   const addRule = useCallback(
-    () => onChange({ ...query, rules: [...query.rules, newRule()] }),
-    [onChange, query],
+    () => onChange({ ...query, rules: [...query.rules, newRule(firstField)] }),
+    [onChange, query, firstField],
   );
   const insertRule = useCallback(
     (index: number) =>
@@ -59,11 +60,11 @@ export function useRuleGroup(
         ...query,
         rules: [
           ...query.rules.slice(0, index + 1),
-          newRule(),
+          newRule(firstField),
           ...query.rules.slice(index + 1),
         ],
       }),
-    [onChange, query],
+    [onChange, query, firstField],
   );
   const setCombinator = useCallback(
     (combinator: Query["combinator"]) => onChange({ ...query, combinator }),
