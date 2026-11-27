@@ -139,7 +139,8 @@ export function useRectangleSelection() {
           elapsedMs,
         });
         if (scrollBy) {
-          parent.scrollTop += scrollBy;
+          /** Global CSS makes auto scrolls smooth; instant keeps each frame's calculated step from restarting that animation. */
+          parent.scrollBy({ top: scrollBy, behavior: "instant" });
           update();
         }
       }
