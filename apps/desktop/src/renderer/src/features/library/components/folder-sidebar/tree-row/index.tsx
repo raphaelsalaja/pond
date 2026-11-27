@@ -85,6 +85,17 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
   const saveDropLabel = saveDropCount
     ? `Add ${formatPlural(saveDropCount, { one: "Save", other: "Saves" })}`
     : undefined;
+  const icon = (
+    <span style={colorCss ? { color: colorCss } : undefined}>
+      <FolderCover
+        icon={props.folderIcon}
+        coverSaveId={props.coverSaveId}
+        state={
+          props.hasChildren ? (props.collapsed ? "closed" : "open") : undefined
+        }
+      />
+    </span>
+  );
   return (
     <FolderContextMenu
       buildItems={() =>
@@ -149,6 +160,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
         {props.editing ? (
           <FolderNameEditor
             name={folder.name}
+            icon={icon}
             onSave={async (name) => {
               const result = await window.pond.query("folders.rename", {
                 id: folder.id,
@@ -164,21 +176,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
             {...attributes}
             label={folder.name}
             className={styles.row}
-            icon={
-              <span style={colorCss ? { color: colorCss } : undefined}>
-                <FolderCover
-                  icon={props.folderIcon}
-                  coverSaveId={props.coverSaveId}
-                  state={
-                    props.hasChildren
-                      ? props.collapsed
-                        ? "closed"
-                        : "open"
-                      : undefined
-                  }
-                />
-              </span>
-            }
+            icon={icon}
             depth={props.depth}
             count={count}
             downloading={showsBadge ? props.downloading : 0}
