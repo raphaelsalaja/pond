@@ -10,6 +10,8 @@ export const POND_EVENT = "pond:capture";
 export interface PondCapturePayload {
   url: string;
   trigger?: string;
+  /** Collections on the site the item was just added to. */
+  collectionIds?: Array<string>;
 }
 
 export interface PondLogEntry {

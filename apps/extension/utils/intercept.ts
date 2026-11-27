@@ -4,7 +4,7 @@
  */
 
 import { safeParse } from "zod/v4/core";
-import type { PondMessage } from "@/utils/types";
+import type { PondCapturePayload, PondMessage } from "@/utils/types";
 import { TextValue } from "./json";
 
 const POND_EVENT = "pond:capture";
@@ -38,14 +38,36 @@ export function capture(
   now: number = Date.now(),
   send: (message: PondMessage) => void = emit,
 ): void {
-  const intent = /:(?:like|upvote)$/.test(trigger) ? "like" : "save";
-  const key = `${intent} ${canonicalCaptureUrl(url)}`;
+  submitCapture({ url, trigger }, now, send);
+}
+
+/** A save into a site's collections. Adding the same item to other collections later is a capture of its own. */
+export function captureToCollections(
+  url: string,
+  trigger: string,
+  collectionIds: ReadonlyArray<string>,
+  now: number = Date.now(),
+  send: (message: PondMessage) => void = emit,
+): void {
+  submitCapture({ url, trigger, collectionIds: [...collectionIds] }, now, send);
+}
+
+function submitCapture(
+  payload: PondCapturePayload & { trigger: string },
+  now: number,
+  send: (message: PondMessage) => void,
+): void {
+  const intent = /:(?:like|upvote)$/.test(payload.trigger) ? "like" : "save";
+  const collections = payload.collectionIds?.length
+    ? ` ${[...payload.collectionIds].sort().join(",")}`
+    : "";
+  const key = `${intent} ${canonicalCaptureUrl(payload.url)}${collections}`;
   const previous = recentCaptures.get(key);
   if (previous !== undefined && now - previous < CAPTURE_DEDUPE_MS) return;
   for (const [entry, at] of recentCaptures)
     if (now - at >= CAPTURE_DEDUPE_MS) recentCaptures.delete(entry);
   recentCaptures.set(key, now);
-  send({ kind: "capture", payload: { url, trigger } });
+  send({ kind: "capture", payload });
 }
 
 export function log(
