@@ -1,55 +1,88 @@
 .root {
+  padding: 48px max(var(--page-inset), calc((100vw - 1320px) / 2));
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+/* The label and the row side by side, stacked on phones. */
+.inner {
   display: flex;
-  flex-direction: column;
-  gap: var(--ds-space-2xl);
+  gap: 32px;
   align-items: center;
-  padding: 72px var(--page-inset) 0;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: var(--ds-space-xl);
+  }
 }
 
-.caption {
+.label {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: var(--ds-size-md);
+  padding: 0 var(--ds-space-lg);
   margin: 0;
-  font-size: var(--ds-text-small);
+  font-size: var(--ds-text-body);
   font-weight: var(--ds-weight-medium);
-  line-height: var(--ds-leading-small);
   color: var(--ds-foreground-tertiary);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-/* The 1px gaps over a border-coloured background draw the hairlines between cells. */
-.grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--ds-border-width);
-  width: 100%;
-  max-width: 1232px;
-  padding: 0;
-  margin: 0;
-  overflow: hidden;
-  list-style: none;
-  background: var(--ds-border-subtle);
+  white-space: nowrap;
   border: var(--ds-border-width) solid var(--ds-border-subtle);
-  border-radius: var(--ds-radius-xl);
+  border-radius: var(--ds-radius-md);
+}
 
-  @media (max-width: 640px) {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+/*
+ * Two copies of the row slide left by one copy's width and repeat, so the loop never shows a
+ * seam. Both ends fade out over 80px.
+ */
+.marquee {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 60px;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 80px,
+    #000 calc(100% - 80px),
+    transparent
+  );
+
+  &:hover > .track {
+    animation-play-state: paused;
   }
 }
 
-.cell {
-  display: grid;
-  place-items: center;
-  height: 112px;
-  background: var(--ds-background-primary);
+.track {
+  display: flex;
+  flex-shrink: 0;
+  gap: 80px;
+  align-items: center;
+  padding: 0 80px 0 0;
+  margin: 0;
+  list-style: none;
+  animation: scroll 40s linear infinite;
 
-  @media (max-width: 640px) {
-    height: 88px;
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
   }
 }
 
-/* One grey for every mark, so no single brand colour pulls the eye. */
+@keyframes scroll {
+  to {
+    translate: -100% 0;
+  }
+}
+
+.item {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* One near-black for every mark, so no single brand colour pulls the eye. */
 .mark {
-  max-width: 70%;
-  height: auto;
-  opacity: 0.55;
+  display: block;
+  opacity: 0.85;
 }
