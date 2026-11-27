@@ -274,7 +274,11 @@ function Trailing() {
   const details = useShellDetails();
   return (
     <Window.Trailing>
-      {details ? <SidebarToggle side="right" open={detailsOpen} /> : null}
+      <SidebarToggle
+        side="right"
+        open={details ? detailsOpen : false}
+        disabled={!details}
+      />
     </Window.Trailing>
   );
 }

@@ -15,7 +15,7 @@
 
 /* Clears the traffic lights. */
 :global(html[data-platform="mac"]:not([data-full-screen])) .shell {
-  --window-chrome-start: 96px;
+  --window-chrome-start: 86px;
 }
 
 .content {
