@@ -7,6 +7,8 @@ import { wrapSqlite } from "../../database/client";
 import { initializePondSchema } from "../../db";
 import { createPendingTasks } from "../pipeline/enqueue-scheduling";
 import { archiveSiteForSave, startArchiveBackfill } from "./archive-backfill";
+/** The backfill lazy-loads the WARC stack. Loading it with the file keeps that cold load out of the first recovery test's 5s budget. */
+import "../pipeline/workers/archive-page";
 
 describe("archive backfill", () => {
   it("does not queue archives when automatic archiving is off", async () => {

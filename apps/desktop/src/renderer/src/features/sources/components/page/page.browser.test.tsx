@@ -110,6 +110,9 @@ describe("Sources page selection", () => {
   beforeEach(() => {
     bridge.use({ query: sourceQueries(accounts) });
     host = document.createElement("div");
+    /** The page fills a fixed-height window in the app. Unbounded, the table's measured height grows it a frame at a time, so React never settles. */
+    host.style.cssText =
+      "display: flex; flex-direction: column; height: 800px; overflow: hidden";
     document.body.append(host);
     root = createRoot(host);
     client = new QueryClient({
