@@ -1,5 +1,6 @@
 import { expect, it } from "vitest";
 import { WebPageExtractor } from "./web";
+import type { FaviconRequest } from "./web-favicon";
 
 const fetchedHtml = "<html><head><title>Fetched page</title></head></html>";
 const renderedHtml = "<html><head><title>Rendered page</title></head></html>";
@@ -15,11 +16,31 @@ function renderRecorder() {
   };
 }
 
+type ServedFile = { type: string; body: Uint8Array<ArrayBuffer> | string };
+
+const ICO_BYTES = new Uint8Array([0, 0, 1, 0]);
+const PNG_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+
+/** An offline web where only the listed URLs exist; every other URL answers with a 404 page. */
+function servedFiles(files: Record<string, ServedFile> = {}): FaviconRequest {
+  return async (url, init) => {
+    init.signal?.throwIfAborted();
+    const file = files[url];
+    return file
+      ? new Response(file.body, { headers: { "content-type": file.type } })
+      : new Response("<html>Not found</html>", {
+          status: 404,
+          headers: { "content-type": "text/html" },
+        });
+  };
+}
+
 it("uses a browser render when the direct fetch reaches a bot wall", async () => {
   const { renders, renderHtml } = renderRecorder();
   const extractor = new WebPageExtractor({
     fetchHtml: async () => null,
     renderHtml,
+    fetchFavicon: servedFiles(),
   });
 
   await expect(
@@ -31,10 +52,15 @@ it("uses a browser render when the direct fetch reaches a bot wall", async () =>
 const amazonCover = (attrs: string) =>
   `<html><head><title>Thinking in Systems</title></head><body><img alt="Thinking in Systems" id="landingImage" ${attrs}></body></html>`;
 
-function extractFrom(url: string, html: string) {
+function extractFrom(
+  url: string,
+  html: string,
+  files: Record<string, ServedFile> = {},
+) {
   const extractor = new WebPageExtractor({
     fetchHtml: async () => ({ html }),
     renderHtml: renderRecorder().renderHtml,
+    fetchFavicon: servedFiles(files),
   });
   return extractor.extract({ url: new URL(url) });
 }
@@ -225,6 +251,7 @@ it("does not acquire a browser when the direct fetch succeeds", async () => {
   const extractor = new WebPageExtractor({
     fetchHtml: async () => ({ html: fetchedHtml }),
     renderHtml,
+    fetchFavicon: servedFiles(),
   });
 
   await expect(
@@ -237,6 +264,12 @@ it("titles a search results page with its query instead of the engine's favicon"
   const capture = await extractFrom(
     "https://www.google.com/search?q=malaga",
     `<html><head><title>Google Search</title><meta name="description" content="Search the world's information"><link rel="icon" href="/favicon.ico"></head></html>`,
+    {
+      "https://www.google.com/favicon.ico": {
+        type: "image/x-icon",
+        body: ICO_BYTES,
+      },
+    },
   );
 
   expect(capture).toMatchObject({
@@ -267,6 +300,7 @@ it("captures a converted text document as the save's article", async () => {
       },
     }),
     renderHtml: renderRecorder().renderHtml,
+    fetchFavicon: servedFiles(),
   });
 
   const capture = await extractor.extract({
@@ -283,4 +317,68 @@ it("captures a converted text document as the save's article", async () => {
     },
   });
   expect(capture.extras?.textDocument).toBe(true);
+});
+
+it("covers a page without a share image with the site's root favicon", async () => {
+  const capture = await extractFrom(
+    "https://example.com/notes",
+    "<html><head><title>Notes</title></head></html>",
+    {
+      "https://example.com/favicon.png": { type: "image/png", body: PNG_BYTES },
+    },
+  );
+
+  expect(capture.media).toEqual([
+    { url: "https://example.com/favicon.png", type: "image" },
+  ]);
+  expect(capture.extras?.faviconUrl).toBe("https://example.com/favicon.png");
+});
+
+it("falls back to Google's favicon service when the site's favicon route serves a page", async () => {
+  const google =
+    "https://www.google.com/s2/favicons?domain_url=https%3A%2F%2Fexample.com%2Fnotes&sz=128";
+  const capture = await extractFrom(
+    "https://example.com/notes",
+    "<html><head><title>Notes</title></head></html>",
+    {
+      "https://example.com/favicon.ico": {
+        type: "image/x-icon",
+        body: "<html>Home</html>",
+      },
+      [google]: { type: "image/png", body: PNG_BYTES },
+    },
+  );
+
+  expect(capture.extras?.faviconUrl).toBe(google);
+});
+
+it("prefers the largest touch icon a page lists over its small favicon", async () => {
+  const capture = await extractFrom(
+    "https://example.com/notes",
+    `<html><head><link rel="icon" href="/favicon.ico" sizes="16x16"><link rel="apple-touch-icon" href="/touch.png" sizes="180x180"></head></html>`,
+    {
+      "https://example.com/favicon.ico": {
+        type: "image/x-icon",
+        body: ICO_BYTES,
+      },
+      "https://example.com/touch.png": { type: "image/png", body: PNG_BYTES },
+    },
+  );
+
+  expect(capture.extras?.faviconUrl).toBe("https://example.com/touch.png");
+});
+
+it("uses the registrable domain's favicon for a subdomain that serves none", async () => {
+  const capture = await extractFrom(
+    "https://docs.example.co.uk/guide",
+    "<html><head><title>Guide</title></head></html>",
+    {
+      "https://example.co.uk/favicon.ico": {
+        type: "image/x-icon",
+        body: ICO_BYTES,
+      },
+    },
+  );
+
+  expect(capture.extras?.faviconUrl).toBe("https://example.co.uk/favicon.ico");
 });
