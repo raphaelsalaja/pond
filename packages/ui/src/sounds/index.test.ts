@@ -4,11 +4,15 @@ import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import {
   createUiSoundPlayer,
-  SOUND_PATCH,
+  loadUiSounds,
   UI_SOUND_NAMES,
-  UI_SOUND_VARIANTS,
+  uiSoundPatch,
+  uiSoundVariants,
 } from ".";
 import { SOUND_SAMPLES } from "./samples.gen";
+
+const UI_SOUND_VARIANTS = uiSoundVariants(SOUND_SAMPLES);
+const SOUND_PATCH = uiSoundPatch(UI_SOUND_VARIANTS);
 
 const HertzSchema = z.number();
 const SweepSchema = z.object({ start: z.number(), end: z.number() });
@@ -115,6 +119,7 @@ function sequence(values: ReadonlyArray<number>): () => number {
 function recordPlays(random: () => number) {
   const plays: Array<{ key: string; opts: PlayOptions }> = [];
   const play = createUiSoundPlayer({
+    variants: UI_SOUND_VARIANTS,
     play: (key, opts) => plays.push({ key, opts }),
     random,
   });
@@ -264,5 +269,11 @@ describe("playing interface sounds", () => {
       success?.opts.jitter?.detune ?? 0,
     );
     expect(tap?.opts.jitter?.volume ?? 0).toBeGreaterThan(0);
+  });
+
+  it("loads the recordings once and shares the player", async () => {
+    const first = loadUiSounds();
+    expect(loadUiSounds()).toBe(first);
+    await expect(first).resolves.toBeInstanceOf(Function);
   });
 });

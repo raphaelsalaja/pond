@@ -1,5 +1,5 @@
-import { playUiSound } from "@pond/ui/sounds";
-import type { UiSoundName } from "@pond/ui/sounds";
+import { loadUiSounds } from "@pond/ui/sounds";
+import type { PlayUiSound, UiSoundName } from "@pond/ui/sounds";
 import type { FeedbackEvent } from "@shared/feedback";
 import { ensureReady } from "@web-kits/audio";
 import log from "electron-log/renderer";
@@ -37,6 +37,10 @@ function ready(): Promise<AudioContext> {
   return parking ? parking.then(() => ensureReady()) : ensureReady();
 }
 
+function readyToPlay(): Promise<[AudioContext, PlayUiSound]> {
+  return Promise.all([ready(), loadUiSounds()]);
+}
+
 function reduceMotion(): boolean {
   if (!("document" in globalThis)) return false;
   return (
@@ -60,19 +64,19 @@ function play(kind: SoundKind, name: UiSoundName, interfaceSound = true): void {
   lastPlayed.set(kind, now);
   lastSoundAt = now;
   const volume = now - prev < RAPID_MS ? 0.7 : 1;
-  void ready()
-    .then((context) => {
+  void readyToPlay()
+    .then(([context, playUiSound]) => {
       playUiSound(name, { volume });
       park(context, PARK_AFTER_MS);
     })
     .catch(warnSoundFailed);
 }
 
-/** Opening the audio device blocks for about 100 ms, so open it before the first click needs a sound. */
+/** Opening the audio device blocks for about 100 ms and the recordings load in their own chunk, so do both before the first click needs a sound. */
 export function warmUiSounds(): void {
   if (reduceMotion() || !soundsEnabled(true)) return;
-  void ready()
-    .then((context) => park(context, 0))
+  void readyToPlay()
+    .then(([context]) => park(context, 0))
     .catch(warnSoundFailed);
 }
 
