@@ -1,6 +1,6 @@
 # Plan 006: Share Links for Saves, Folders, and Canvases
 
-> Executor: Phases 0 and 1 are done. Answer the remaining open questions before Phase 2, then work phase by phase and honor each STOP condition.
+> Executor: Phases 0 to 3 are done. Phase 4 (Canvases) moved to [plan 008](008-canvas-share-pages.md) because extracting the board renderer passed this plan's stop condition. Phase 5 items are optional.
 >
 > Issue: [raphaelsalaja/pond#362](https://github.com/raphaelsalaja/pond/issues/362).
 >
@@ -19,9 +19,9 @@
 | ----- | --------------------------------------------------------------------- | ------ |
 | 0     | Decisions, domain language, Share Page manifest v1                    | DONE   |
 | 1     | Export Share Page for a Save, a selection, or a Folder (no network)   | DONE   |
-| 2     | Share Host (S3-compatible), Create Share Link, Copy, Update, Stop Sharing | TODO   |
-| 3     | Expiry, the list of Share Links, link previews, Notifications         | TODO   |
-| 4     | Canvases: read-only board viewer                                      | TODO   |
+| 2     | Share Host (S3-compatible), Create Share Link, Copy, Update, Stop Sharing | DONE   |
+| 3     | Expiry, the list of Share Links, link previews, Notifications         | DONE   |
+| 4     | Canvases: read-only board viewer                                      | MOVED to [008](008-canvas-share-pages.md) |
 | 5     | Optional: encrypted links, Smart Folders and Saved Views, more hosts  | LATER  |
 
 ## Why this is hard
@@ -183,7 +183,18 @@ STOP if the extraction means moving more than about 25 files or changing how the
 - **Large Folders.** The preflight shows count and size. Folders over 2,000 Saves or 2 GB need a confirmation, and the viewer pages a Folder in chunks rather than all at once.
 - **Format lock-in.** Manifest v1 is a public, long-lived format the moment one link exists, so old viewers inside old snapshots must keep working. Self-contained snapshots make that automatic.
 
-## Open questions
+## Decisions taken while building Phases 2 and 3
+
+These were open questions. Phases 2 and 3 shipped with the plan's defaults, and each is easy to change:
+
+- Names: **Share Page**, **Share Link**, **Share Host**.
+- Expiry: new links never expire unless the Share Host's "New Links Expire" setting says otherwise (1, 7, 30, or 90 days).
+- Notes and tags stay out of every page, with no option to include them yet.
+- Hosts: one S3-compatible form with presets for Cloudflare R2 (default), Amazon S3, Backblaze B2, and other S3-compatible storage.
+- Phase 1 shipped on its own in raphaelsalaja/pond#764, and Phases 2 and 3 are stacked on it.
+- The UI is menu items and a confirmation, not the anchored popover this plan sketched. Create Share Link copies the address and toasts it. Settings › Share Links lists every link with Open, Copy Link, Update, and Stop Sharing.
+
+## Open questions (original)
 
 1. Are the names **Share Link** and **Share Host** right? (**Share Page** replaced "Web Page", which Pond already uses for Saves of web pages.)
 2. What should new links default to for expiry: never, or 30 days?

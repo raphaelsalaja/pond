@@ -60,6 +60,12 @@ export const SETTINGS_SECTIONS: ReadonlyArray<SettingsSection> = [
   },
   { id: "backups", path: "backups", label: "Backups", group: "library" },
   {
+    id: "share-links",
+    path: "share-links",
+    label: "Share Links",
+    group: "library",
+  },
+  {
     id: "processing",
     path: "processing",
     label: "Processing",

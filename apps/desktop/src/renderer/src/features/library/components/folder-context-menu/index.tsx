@@ -38,6 +38,7 @@ import {
   exportSelectionFiles,
   exportSelectionSharePage,
 } from "@/features/saves";
+import { shareSaves } from "@/features/share-links";
 import { SpecContextMenu } from "@/shared/components/spec-context-menu";
 import { shortcutGlyphs } from "@/shared/lib/shortcuts";
 import { emitFeedback } from "@/shared/lib/sounds";
@@ -66,6 +67,7 @@ export interface FolderMenuActions {
   onExportEaglePackage: () => void;
   onExportPackage: () => void;
   onExportSharePage: () => void;
+  onCreateShareLink: () => void;
   onCopyToLibrary: () => void;
   onCreateCanvas: () => void;
   canvasItems: Array<MenuItemSpec>;
@@ -207,6 +209,12 @@ export function buildFolderMenuItems(
           keywords: "share page web html site browser",
           onClick: a.onExportSharePage,
         },
+        {
+          label: "Create Share Link",
+          icon: <IconLink2 />,
+          keywords: "share link public publish url",
+          onClick: a.onCreateShareLink,
+        },
       ],
     },
     {
@@ -320,6 +328,19 @@ export async function exportFolderSharePage(
   await withFolderSaves(folderIds, async (ids) => {
     await exportSelectionSharePage(ids, { folderId });
   });
+}
+
+/** Publishes the Folder as a Share Link, or republishes the one it already has. */
+export async function shareFolder(
+  folder: { id: string; name: string },
+  folderIds: Array<string>,
+): Promise<void> {
+  await withFolderSaves(folderIds, (ids) =>
+    shareSaves(ids, {
+      folderId: folder.id,
+      subject: `the folder ${folder.name}`,
+    }),
+  );
 }
 
 export async function exportFolderCsv(folderIds: Array<string>): Promise<void> {

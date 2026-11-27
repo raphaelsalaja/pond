@@ -6,6 +6,7 @@ import { emptyTrashOlderThan } from "./core/library-ops";
 import { notificationLog } from "./core/notifications";
 import { getPrefs } from "./core/prefs";
 import { maybeUpdateYtDlp, recoverYtDlp } from "./core/refresh/yt-dlp-updater";
+import { stopExpiredShareLinksNow } from "./core/share-links";
 import { isSyncBlockedByStorageGuard } from "./core/storage-watcher";
 import { syncAllSources } from "./core/sync";
 import { schedule } from "./lib/scheduler";
@@ -26,6 +27,16 @@ export function registerTrashCron() {
         );
       }
     },
+  });
+}
+
+/** Pond removes an expired Share Link's files the next time this runs while it's open. */
+export function registerShareLinkExpiryCron() {
+  schedule({
+    name: "share-link-expiry",
+    every: 10 * 60 * 1000,
+    initialDelay: 60_000,
+    fn: stopExpiredShareLinksNow,
   });
 }
 

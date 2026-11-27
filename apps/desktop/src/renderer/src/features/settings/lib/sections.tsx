@@ -15,6 +15,7 @@ import { librarySection } from "@/features/settings/lib/config-library";
 import { localApiSection } from "@/features/settings/lib/config-local-api";
 import { mcpSection } from "@/features/settings/lib/config-mcp";
 import { processingSection } from "@/features/settings/lib/config-processing";
+import { shareLinksSection } from "@/features/settings/lib/config-share-links";
 import { sourceDownloadsSection } from "@/features/settings/lib/config-source-downloads";
 import { storageSection } from "@/features/settings/lib/config-storage";
 import { videosSection } from "@/features/settings/lib/config-videos";
@@ -50,6 +51,9 @@ const LocalApiSection = lazyWithPreload(() =>
     (m) => m.LocalApiSection,
   ),
 );
+const ShareLinksSection = lazyWithPreload(() =>
+  import("@/features/share-links/section").then((m) => m.ShareLinksSection),
+);
 const ShortcutSettings = lazyWithPreload(() =>
   import("@/features/shortcuts").then((m) => m.ShortcutSettings),
 );
@@ -61,6 +65,7 @@ export const SECTION_PRELOADS = [
   PersonalizationSection.preload,
   McpSection.preload,
   LocalApiSection.preload,
+  ShareLinksSection.preload,
   ShortcutSettings.preload,
   ScheduleSection.preload,
 ];
@@ -150,6 +155,7 @@ export const SECTION_CONFIGS = new Map<string, SectionConfig>([
   ["health", healthSection],
   ["storage", storageSection],
   ["backups", backupsSection],
+  ["share-links", { ...shareLinksSection, component: ShareLinksSection }],
   ["processing", processingSection],
   ["schedule", scheduleSection],
   ["sources", sourcesSection],

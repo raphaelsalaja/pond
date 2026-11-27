@@ -39,6 +39,7 @@ import { safariExtensionQueries } from "./safari-extension";
 import { savedViewsQueries } from "./saved-views";
 import { savesQueries } from "./saves";
 import { settingsQueries } from "./settings";
+import { shareLinkQueries } from "./share-links";
 import { sourcesQueries } from "./sources";
 import { syncHistoryQueries } from "./sync-history";
 import { tagGroupsQueries } from "./tag-groups";
@@ -74,6 +75,7 @@ const queryRegistry = {
   ...libraryRepairQueries,
   ...libraryHealthQueries,
   ...notificationQueries,
+  ...shareLinkQueries,
   ...mediaUnderstandingQueries,
   ...mediaProcessingQueries,
   ...inspectQueries,

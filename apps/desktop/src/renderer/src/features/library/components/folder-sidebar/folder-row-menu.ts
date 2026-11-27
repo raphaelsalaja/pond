@@ -24,6 +24,7 @@ import {
   exportFolderFiles,
   exportFolderPackage,
   exportFolderSharePage,
+  shareFolder,
 } from "@/features/library/components/folder-context-menu";
 import type { FolderTool } from "@/features/library/components/folder-tools";
 import { copyFolderLink } from "@/features/library/lib/copy-links";
@@ -172,6 +173,7 @@ export function buildFolderRowMenuItems(input: FolderRowMenuInput) {
     onExportPackage: () => void exportFolderPackage(input.exportIds),
     onExportSharePage: () =>
       void exportFolderSharePage(folder.id, input.exportIds),
+    onCreateShareLink: () => void shareFolder(folder, input.exportIds),
     onCopyToLibrary: () => void copyFolderToLibrary(input.exportIds),
     onCreateCanvas: () =>
       void createCanvasFromFolderSaves(folder.name, input.exportIds),

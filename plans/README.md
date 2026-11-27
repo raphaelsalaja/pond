@@ -5,4 +5,5 @@ Handoff plans for work in progress. Read each plan fully, honor its STOP conditi
 | Plan                        | Workstream                               | Priority | Effort | Status      |
 | --------------------------- | ---------------------------------------- | -------- | ------ | ----------- |
 | [005](005-post-renderer.md) | Render post thumbnails without a browser | P2       | L      | IN PROGRESS |
-| [006](006-share-links.md) | Share Links for Saves, Folders, and Canvases | P3 | XL | IN PROGRESS |
+| [006](006-share-links.md) | Share Links for Saves, Folders, and Canvases | P3 | XL | DONE through Phase 3 |
+| [008](008-canvas-share-pages.md) | Canvases as Share Pages | P3 | L | PROPOSED |

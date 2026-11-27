@@ -163,3 +163,11 @@ _Avoid_: thumbnail (for this)
 **Share Page**:
 A frozen, read-only copy of a Save, a selection, or a Folder that opens in any browser: an `index.html` that carries Pond's viewer and its manifest, plus web copies of the media with file metadata removed. It holds only the fields its manifest lists. Notes and tags stay out unless you include them. Export Share Page writes one to disk.
 _Avoid_: web page (that's a Save of a web page), static site, HTML export, snapshot (Capture uses that word), share (alone; that's the system Share menu)
+
+**Share Link**:
+A Share Page that Pond uploaded to your Share Host, reachable by anyone with its unguessable address. Create Share Link publishes one, or republishes the one a Folder or selection already has. Update Link refreshes it at the same address, Stop Sharing deletes its files, and an expired link is removed the next time Pond runs. Its record lives in the Library's `share-links.json`.
+_Avoid_: public link, published page, share (alone)
+
+**Share Host**:
+Storage you own where Share Links upload: an S3-compatible bucket such as Cloudflare R2, with public reads and no public listing. One per computer, kept with its key in the keychain. There is no Pond server.
+_Avoid_: destination (that's a sidebar destination), server, cloud, bucket (as the product word)
