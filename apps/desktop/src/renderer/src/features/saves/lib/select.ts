@@ -123,5 +123,7 @@ export function isLibraryBackgroundTarget(target: EventTarget | null): boolean {
   if (target.closest("button, a, input, textarea, [contenteditable='true']")) {
     return false;
   }
-  return target.closest("[data-library-grid]") !== null;
+  return (
+    target.closest("[data-library-grid], [data-library-grid-viewport]") !== null
+  );
 }

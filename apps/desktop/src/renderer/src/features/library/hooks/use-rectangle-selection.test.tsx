@@ -16,8 +16,8 @@ import {
 function Gallery() {
   const marquee = useRectangleSelection();
   return (
-    <div style={{ overflowY: "auto" }} data-viewport="">
-      <div onPointerDown={marquee.onPointerDown} data-library-grid="">
+    <div style={{ overflowY: "auto" }} data-library-grid-viewport="">
+      <div data-library-grid="">
         <div
           data-save-collection=""
           tabIndex={0}
@@ -69,11 +69,20 @@ describe("rectangle selection cancellation", () => {
     await act(async () => {
       root.render(<Gallery />);
     });
-    for (const selector of ["[data-save-collection]", "[data-viewport]"]) {
-      Object.defineProperty(element(selector), "getBoundingClientRect", {
+    Object.defineProperty(
+      element("[data-save-collection]"),
+      "getBoundingClientRect",
+      {
+        value: () => new DOMRect(24, 0, 252, 160),
+      },
+    );
+    Object.defineProperty(
+      element("[data-library-grid-viewport]"),
+      "getBoundingClientRect",
+      {
         value: () => new DOMRect(0, 0, 300, 300),
-      });
-    }
+      },
+    );
     resultNavigation.setSource({ key: "marquee", ids: ["A", "B", "C"] });
     cleanupLayout = resultNavigation.setLayout([
       { id: "A", left: 0, top: 0, width: 80, height: 80 },
@@ -98,7 +107,7 @@ describe("rectangle selection cancellation", () => {
   it.each(["Escape", "pointercancel", "blur"])(
     "restores the original selection and cursor on %s",
     async (cancel) => {
-      await pointer(element("[data-save-collection]"), "pointerdown", 2, 2);
+      await pointer(element("[data-save-collection]"), "pointerdown", 26, 2);
       await pointer(window, "pointermove", 170, 70);
       expect(selection.snapshot()).toEqual(["A", "B"]);
       expect(host.querySelector("output")).not.toBeNull();
@@ -123,12 +132,41 @@ describe("rectangle selection cancellation", () => {
     },
   );
   it("adds rectangle hits to the prior selection with a modifier", async () => {
-    await pointer(element("[data-save-collection]"), "pointerdown", 2, 2, true);
+    await pointer(
+      element("[data-library-grid-viewport]"),
+      "pointerdown",
+      2,
+      2,
+      true,
+    );
     await pointer(window, "pointermove", 170, 70, true);
     await pointer(window, "pointerup", 170, 70, true);
     expect(selection.snapshot()).toEqual(["C", "A", "B"]);
     expect(selection.getCursor()).toBe("B");
     expect(host.querySelector("output")).toBeNull();
+  });
+
+  it("starts from the viewport margin and clears a non-additive selection", async () => {
+    await pointer(element("[data-library-grid-viewport]"), "pointerdown", 2, 2);
+    expect(selection.snapshot()).toEqual([]);
+    expect(primarySelection.get()).toBeNull();
+    await pointer(window, "pointermove", 170, 70);
+    expect(host.querySelector("output")).not.toBeNull();
+    expect(selection.snapshot()).toEqual(["A", "B"]);
+    await pointer(window, "pointerup", 170, 70);
+  });
+
+  it("starts below the collection content", async () => {
+    await pointer(
+      element("[data-library-grid-viewport]"),
+      "pointerdown",
+      30,
+      200,
+    );
+    await pointer(window, "pointermove", 170, 70);
+    expect(host.querySelector("output")).not.toBeNull();
+    expect(selection.snapshot()).toEqual(["A", "B"]);
+    await pointer(window, "pointerup", 170, 70);
   });
 });
 

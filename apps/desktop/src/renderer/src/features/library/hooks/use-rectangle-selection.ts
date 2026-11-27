@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import type { PointerEvent } from "react";
+import { isElement } from "@pond/ui/dom";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   clearSaveSelection,
   isLibraryBackgroundTarget,
@@ -57,27 +57,24 @@ export function useRectangleSelection() {
   const cancelRef = useRef<(() => void) | null>(null);
   useEffect(() => () => cancelRef.current?.(), []);
 
-  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || !isLibraryBackgroundTarget(event.target)) return;
-    const grid = event.currentTarget.querySelector<HTMLElement>(
-      "[data-save-collection]",
+  const onPointerDown = useCallback((event: globalThis.PointerEvent) => {
+    if (event.button !== 0 || !isElement(event.target)) return;
+    const viewport = event.target.closest<HTMLElement>(
+      "[data-library-grid-viewport]",
     );
-    if (!grid) return;
-    const bounds = grid.getBoundingClientRect();
-    const parent = findScrollParent(grid);
-    if (
-      !parent ||
-      event.clientY < bounds.top ||
-      event.clientY > bounds.bottom
-    ) {
-      return;
-    }
+    if (!viewport || !isLibraryBackgroundTarget(event.target)) return;
     cancelRef.current?.();
     const original = [...selection.snapshot()];
     const originalCursor = selection.getCursor();
     const originalAnchor = selection.getAnchor();
     const originalPrimary = primarySelection.get();
     const additive = event.metaKey || event.ctrlKey || event.shiftKey;
+    if (!additive) clearSaveSelection();
+    const grid = viewport.querySelector<HTMLElement>("[data-save-collection]");
+    if (!grid) return;
+    const bounds = grid.getBoundingClientRect();
+    const parent = findScrollParent(grid);
+    if (!parent) return;
     const key = resultNavigation.key();
     const start = {
       x: event.clientX - bounds.left,
@@ -90,7 +87,6 @@ export function useRectangleSelection() {
     let lastFrame = performance.now();
     const pointerId = event.pointerId;
     grid.focus({ preventScroll: true });
-    if (!additive) clearSaveSelection();
 
     const update = () => {
       if (stopped) return;
@@ -114,10 +110,10 @@ export function useRectangleSelection() {
       selection.setCursor(cursor);
       primarySelection.set(cursor);
       if (hits[0]) selection.setAnchor(hits[0]);
-      const viewport = parent.getBoundingClientRect();
-      const top = Math.max(viewport.top, area.top + rect.top);
+      const viewportBounds = parent.getBoundingClientRect();
+      const top = Math.max(viewportBounds.top, area.top + rect.top);
       const bottom = Math.min(
-        viewport.bottom,
+        viewportBounds.bottom,
         area.top + rect.top + area.height,
       );
       setRectangle({
@@ -132,10 +128,10 @@ export function useRectangleSelection() {
       const elapsedMs = now - lastFrame;
       lastFrame = now;
       if (dragging) {
-        const viewport = parent.getBoundingClientRect();
+        const viewportBounds = parent.getBoundingClientRect();
         const scrollBy = edgeScrollStep({
           pointerY: pointer.y,
-          viewport,
+          viewport: viewportBounds,
           elapsedMs,
         });
         if (scrollBy) {
@@ -187,6 +183,14 @@ export function useRectangleSelection() {
     window.addEventListener("keydown", keydown, true);
     frame = requestAnimationFrame(tick);
     event.preventDefault();
-  };
-  return { rectangle, onPointerDown };
+  }, []);
+
+  /** Viewport padding never reaches the grid's React handler, so marquee initiation delegates from the window. */
+  useEffect(() => {
+    window.addEventListener("pointerdown", onPointerDown, true);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown, true);
+    };
+  }, [onPointerDown]);
+  return { rectangle };
 }

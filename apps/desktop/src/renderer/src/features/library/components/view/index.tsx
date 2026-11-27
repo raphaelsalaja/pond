@@ -24,7 +24,6 @@ import { useFolders } from "@/features/library/state/folders";
 import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { resetFilters } from "@/features/library/state/view-store";
 import {
-  clearSaveSelection,
   createSelectionReconciler,
   isLibraryBackgroundTarget,
   libraryViewContext,
@@ -209,13 +208,6 @@ export function LibraryView() {
     >
       <LibraryGrid.Root
         data-library-grid=""
-        onPointerDown={marquee.onPointerDown}
-        onMouseDown={(event) => {
-          if (event.defaultPrevented || event.button !== 0) return;
-          if (event.metaKey || event.ctrlKey || event.shiftKey) return;
-          if (!isLibraryBackgroundTarget(event.target)) return;
-          clearSaveSelection();
-        }}
         onDragOver={actions.onDragOver}
         onDrop={(e) => void actions.onDrop(e)}
       >
