@@ -62,6 +62,14 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
+async function paintFrames(count: number): Promise<void> {
+  for (let index = 0; index < count; index++) {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  }
+}
+
 function TestVideoPlayer(props: Partial<ComponentProps<typeof VideoPlayer>>) {
   return (
     <ViewerChrome>
@@ -441,6 +449,11 @@ it("shows the video over the poster once the first frame loads", async () => {
     host.querySelector("video")?.dispatchEvent(new Event("loadeddata"));
   });
 
+  expect(poster()?.hasAttribute("data-covered")).toBe(false);
+  expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(true);
+
+  await act(async () => paintFrames(2));
+
   expect(poster()?.hasAttribute("data-covered")).toBe(true);
   expect(host.querySelector("video")?.hasAttribute("data-pending")).toBe(false);
 });
@@ -499,6 +512,10 @@ it("holds the poster until a video frame is presented", async () => {
     expect(poster()?.hasAttribute("data-covered")).toBe(false);
 
     await act(async () => present?.());
+
+    expect(poster()?.hasAttribute("data-covered")).toBe(false);
+
+    await act(async () => paintFrames(2));
 
     expect(poster()?.hasAttribute("data-covered")).toBe(true);
   } finally {

@@ -45,6 +45,24 @@ afterEach(async () => {
 });
 
 it("reveals the first frame over its poster with restrained motion", async () => {
+  /** Transition events bubble, so listening on the host catches the reveal even when decode beats the render. */
+  const transitions: Array<string> = [];
+  host.addEventListener("transitionstart", (event) => {
+    transitions.push(event.propertyName);
+  });
+  /** Painted-frame samples of the video's opacity, from mount past the reveal. */
+  const opacitySamples: Array<number> = [];
+  let sampling = true;
+  const sample = () => {
+    if (!sampling) return;
+    const element = host.querySelector("video");
+    if (element) {
+      opacitySamples.push(Number(getComputedStyle(element).opacity));
+    }
+    requestAnimationFrame(sample);
+  };
+  requestAnimationFrame(sample);
+
   await act(async () => {
     root.render(
       <ViewerChrome enabled={false}>
@@ -81,6 +99,23 @@ it("reveals the first frame over its poster with restrained motion", async () =>
   );
 
   expect(video.hasAttribute("data-pending")).toBe(false);
+
+  await vi.waitFor(
+    () => {
+      if (Number(getComputedStyle(video).opacity) < 1) {
+        throw new Error("Waiting for the reveal to settle");
+      }
+    },
+    { timeout: 2000 },
+  );
+  sampling = false;
+
+  /** A pop never starts a transition and never interpolates; the fade must do both. */
+  expect(transitions).toContain("opacity");
+  expect(
+    opacitySamples.some((opacity) => opacity > 0.02 && opacity < 0.98),
+  ).toBe(true);
+
   const posterStyle = getComputedStyle(poster);
   expect(posterStyle.transitionProperty).toBe("visibility");
   expect(posterStyle.transitionDuration).toBe("0s");
