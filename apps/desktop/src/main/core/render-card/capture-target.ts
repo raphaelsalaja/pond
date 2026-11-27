@@ -1,9 +1,6 @@
-import { createHash } from "node:crypto";
-
 export interface CaptureDocumentTarget {
   /** Included in the query so a new card cannot reuse the previous document. */
   search: string;
-  hash: string;
   token: string;
 }
 
@@ -11,20 +8,17 @@ export function captureDocumentTarget(
   kind: string,
   scheme: string,
   width: number,
-  payload: string,
+  token: string,
 ): CaptureDocumentTarget {
-  const token = createHash("sha256").update(payload).digest("hex").slice(0, 20);
   return {
     token,
-    search: `kind=${kind}&scheme=${scheme}&w=${width}&card=${token}`,
-    hash: Buffer.from(payload, "utf8").toString("base64"),
+    search: `kind=${kind}&scheme=${scheme}&w=${width}&card=${encodeURIComponent(token)}`,
   };
 }
 
 /**
- * Chromium keeps the current document when only the fragment changes, and the
- * capture page reads that fragment once. A shared window then photographs the
- * previous card.
+ * The capture page reads its payload once. A shared window must navigate for
+ * every card, or it photographs the previous card.
  */
 export function documentReloads(
   current: { search: string } | null,

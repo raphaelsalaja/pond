@@ -11,14 +11,14 @@ interface SharedDocument {
   ready: boolean;
 }
 
-/** The capture window is one document. A hash-only load leaves the previous card up. */
+/** The capture window is one document. A navigation that does not reload leaves the previous card up. */
 function shootBatch(
-  payloads: ReadonlyArray<string>,
+  tokens: ReadonlyArray<string>,
   scheme = "light",
 ): Array<string | null> {
   let document: SharedDocument | null = null;
-  return payloads.map((payload) => {
-    const target = captureDocumentTarget("tweet", scheme, 550, payload);
+  return tokens.map((token) => {
+    const target = captureDocumentTarget("tweet", scheme, 550, token);
     if (documentReloads(document, target)) {
       document = { search: target.search, token: target.token, ready: true };
     }
@@ -28,30 +28,15 @@ function shootBatch(
 
 describe("shared tweet card window", () => {
   it("reloads when two saves in one batch ask for the same scheme", () => {
-    const first = captureDocumentTarget(
-      "tweet",
-      "light",
-      550,
-      JSON.stringify({ text: "first save" }),
-    );
-    const second = captureDocumentTarget(
-      "tweet",
-      "light",
-      550,
-      JSON.stringify({ text: "second save" }),
-    );
+    const first = captureDocumentTarget("tweet", "light", 550, "token-first");
+    const second = captureDocumentTarget("tweet", "light", 550, "token-second");
 
     expect(first.search).not.toBe(second.search);
     expect(documentReloads({ search: first.search }, second)).toBe(true);
-    expect(first.hash).not.toBe(second.hash);
   });
 
   it("does not keep the previous save's card when renders share one window", () => {
-    const shots = shootBatch([
-      JSON.stringify({ id: "save-a", media: "image-a" }),
-      JSON.stringify({ id: "save-b", media: "image-b" }),
-      JSON.stringify({ id: "save-c", media: "video-c" }),
-    ]);
+    const shots = shootBatch(["token-a", "token-b", "token-c"]);
 
     expect(shots.every((shot) => shot !== null)).toBe(true);
     expect(new Set(shots).size).toBe(shots.length);
