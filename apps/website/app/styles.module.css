@@ -1,0 +1,18 @@
+/* Global `main` is one screen tall for single-screen pages; the homepage scrolls. */
+.page {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: 160px;
+  padding-top: 112px;
+
+  @media (max-width: 640px) {
+    gap: 112px;
+    padding-top: 80px;
+  }
+}

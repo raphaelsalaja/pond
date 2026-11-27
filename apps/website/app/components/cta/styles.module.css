@@ -1,20 +1,32 @@
 .root {
   display: inline-flex;
+  gap: 6px;
   align-items: center;
   justify-content: center;
-  height: var(--ds-size-md);
-  padding: 0 var(--ds-space-lg);
-  font-weight: var(--ds-weight-strong);
+  height: 40px;
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: var(--ds-weight-medium);
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
-  border-radius: var(--ds-radius-md);
+  border-radius: var(--ds-radius-full);
   transition:
     background-color var(--ds-duration-fast) var(--ds-easing-standard),
     opacity var(--ds-duration-fast) var(--ds-easing-standard);
 
   &:active {
     scale: 0.98;
+  }
+
+  &[data-size="sm"] {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  &[data-block] {
+    width: 100%;
   }
 }
 
@@ -27,11 +39,23 @@
   }
 }
 
-.root[data-variant="soft"] {
+.root[data-variant="outline"] {
   color: var(--ds-foreground-primary);
-  background: var(--ds-surface-secondary);
+  background: var(--ds-background-primary);
+  box-shadow: var(--ds-shadow-control);
 
   &:hover {
-    background: var(--ds-surface-tertiary);
+    background: var(--ds-surface-primary);
+  }
+}
+
+/* The UI package's tertiary button: a faint tinted fill with muted text, a step darker on hover. */
+.root[data-variant="tertiary"] {
+  color: var(--ds-foreground-secondary);
+  background: color-mix(in oklab, var(--ds-surface-primary) 90%, transparent);
+
+  &:hover {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-secondary);
   }
 }

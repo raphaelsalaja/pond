@@ -1,0 +1,65 @@
+.faq {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  width: 100%;
+  max-width: calc(640px + 2 * var(--page-inset));
+  padding: 0 var(--page-inset);
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 32px;
+}
+
+.list {
+  gap: 0;
+}
+
+.item {
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.header {
+  margin: 0;
+}
+
+/* Scoped under the item so it outranks the accordion's bare trigger, which zeroes padding and font. */
+.list .item .trigger {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 18px 0;
+  font-size: 16px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 24px;
+  color: var(--ds-foreground-primary);
+  text-align: left;
+
+  & > svg {
+    flex: none;
+    color: var(--ds-foreground-tertiary);
+  }
+}
+
+.list .item .panel {
+  padding-inline: 0;
+}
+
+.answer {
+  max-width: 600px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 26px;
+  color: var(--ds-foreground-secondary);
+  text-wrap: pretty;
+}

@@ -6,6 +6,10 @@ const RELEASES_PAGE = `https://github.com/${REPO}/releases`;
 export interface Release {
   tag: string;
   assets: Array<string>;
+  /** The release page on GitHub. */
+  url: string;
+  /** The bold first line of the release notes, or null when the notes don't open with one. */
+  headline: string | null;
 }
 
 interface GitHubAsset {
@@ -14,6 +18,8 @@ interface GitHubAsset {
 
 interface GitHubRelease {
   tag_name: string;
+  html_url: string;
+  body: string | null;
   assets: Array<GitHubAsset>;
 }
 
@@ -33,10 +39,21 @@ function isGitHubRelease(body: unknown): body is GitHubRelease {
     body !== null &&
     "tag_name" in body &&
     typeof body.tag_name === "string" &&
+    "html_url" in body &&
+    typeof body.html_url === "string" &&
+    "body" in body &&
+    (body.body === null || typeof body.body === "string") &&
     "assets" in body &&
     Array.isArray(body.assets) &&
     body.assets.every(isGitHubAsset)
   );
+}
+
+/** Release notes open with their summary in bold on the first line, like `**Faster sync**`. */
+function readHeadline(notes: string | null): string | null {
+  const first = notes?.trimStart().split("\n", 1)[0]?.trim() ?? "";
+  const match = /^\*\*(.+)\*\*$/.exec(first);
+  return match?.[1] ?? null;
 }
 
 /** GitHub's latest release skips drafts and prereleases, so links never point at a build that isn't out yet. */
@@ -59,6 +76,8 @@ export async function getLatestRelease(): Promise<Release | null> {
     return {
       tag: body.tag_name,
       assets: body.assets.map((asset) => asset.name),
+      url: body.html_url,
+      headline: readHeadline(body.body),
     };
   } catch {
     return null;

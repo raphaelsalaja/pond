@@ -1,0 +1,31 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-lg);
+  align-items: flex-start;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.others {
+  margin: 0;
+  font-size: var(--ds-text-body);
+  line-height: var(--ds-leading-body);
+  color: var(--ds-foreground-tertiary);
+}
+
+.link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--ds-border-strong);
+  text-underline-offset: 3px;
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-foreground-primary);
+  }
+}

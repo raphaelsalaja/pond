@@ -46,6 +46,7 @@
     "./logo": "./src/logo/index.tsx",
     "./menu": "./src/menu/index.tsx",
     "./message": "./src/message/index.tsx",
+    "./nav-bar": "./src/nav-bar/index.tsx",
     "./number-field": "./src/number-field/index.tsx",
     "./pane-header": "./src/pane-header/index.tsx",
     "./picker-panel": "./src/picker-panel/index.tsx",
