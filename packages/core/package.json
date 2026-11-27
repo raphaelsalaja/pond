@@ -16,6 +16,6 @@
   "main": "./index.cjs",
   "types": "./index.d.ts",
   "scripts": {
-    "build": "node scripts/build.mjs"
+    "build:native": "node scripts/build.mjs"
   }
 }
