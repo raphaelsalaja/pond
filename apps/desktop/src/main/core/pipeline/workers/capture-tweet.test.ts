@@ -226,6 +226,27 @@ describe("isCaptureTweetStale", () => {
   });
 });
 
+describe("runCaptureTweet live screenshot validation", () => {
+  it("does not persist either variant when scheme validation fails", async () => {
+    const raw = replyRaw();
+    raw.capture.isReply = false;
+    delete raw.capture.replyTo;
+    const harness = makePorts(
+      save(raw),
+      {
+        light: { ok: false, reason: "scheme_mismatch" },
+        dark: { ok: false, reason: "scheme_mismatch" },
+      },
+      { nativeCardMisses: true },
+    );
+
+    await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
+      captured: 0,
+    });
+    expect(harness.persisted).toEqual([]);
+  });
+});
+
 describe("runCaptureTweet reply parent enrichment", () => {
   it("merges parent metadata without persisting parent screenshots", async () => {
     const harness = makePorts(save(replyRaw()), {
