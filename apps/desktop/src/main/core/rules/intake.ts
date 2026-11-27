@@ -6,8 +6,6 @@ import { inboxChannelForTrigger } from "../inbox/intake";
 import { resolveIncomingOwner } from "../sync/incoming";
 import { inheritIntake, recordIntake } from "./ledger";
 import type { IntakeEntry } from "./ledger";
-import { migrateIncomingRules } from "./migrate-incoming";
-import { scheduleDrain } from "./service";
 import { listRules } from "./store";
 
 export interface NewSaveArrival {
@@ -40,6 +38,8 @@ export async function noteNewSaves(
   try {
     const wanted = arrivals.filter((arrival) => arrival.channel);
     if (!wanted.length) return;
+    // Loaded on first use so Rules stay out of the main process startup graph.
+    const { migrateIncomingRules } = await import("./migrate-incoming");
     await migrateIncomingRules();
     const channels = listeningChannels();
     const entries: Array<IntakeEntry> = [];
@@ -62,6 +62,7 @@ export async function noteNewSaves(
     }
     if (!entries.length) return;
     recordIntake((await getDb()).$raw, entries);
+    const { scheduleDrain } = await import("./service");
     scheduleDrain();
   } catch (error) {
     log.warn("[pond rules] recording new Saves failed", error);
