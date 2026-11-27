@@ -83,7 +83,7 @@ export async function startLibraryBackgroundWork(): Promise<void> {
       }),
     )
     .then(
-      step("native card backfill", async () => {
+      step("post card backfill", async () => {
         const module = await import("./core/refresh/threads-card-backfill");
         await module.startThreadsCardBackfill();
       }),

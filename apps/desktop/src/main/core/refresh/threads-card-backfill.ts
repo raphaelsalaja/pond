@@ -1,6 +1,10 @@
 import { saves, tasks } from "@pond/schema/db";
-import type { NewTask } from "@pond/schema/db";
+import type { NewTask, SaveFile } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
+import {
+  POST_RENDER_DARK_KIND,
+  POST_RENDER_LIGHT_KIND,
+} from "@shared/save-file-names";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
@@ -17,12 +21,24 @@ import {
 
 const PAGE_SIZE = 200;
 const MAX_INFLIGHT = 1;
+/** Bump when structured renderer support changes enough to reopen repairs that already failed. */
+const POST_CARD_REPAIR_VERSION = 1;
 
 const REPLY_RECAPTURE_OPS = ["capture_tweet", "finalize"] as const;
+
+type PostCardScheme = "light" | "dark";
+type PostCardFile = Pick<SaveFile, "kind" | "width">;
 
 interface BackfillRow {
   id: string;
   source: "twitter" | "threads";
+}
+
+interface PostCardBackfillRow {
+  id: string;
+  source: "twitter" | "threads" | "bluesky";
+  rawJson: RawJson | null;
+  files: Array<SaveFile>;
 }
 
 interface ReplyRecaptureRuntime {
@@ -31,18 +47,109 @@ interface ReplyRecaptureRuntime {
   persistSave: typeof persistSave;
 }
 
-const defaultRuntime: ReplyRecaptureRuntime = {
+interface PostCardBackfillRuntime extends ReplyRecaptureRuntime {
+  runCaptureTweet: typeof runCaptureTweet;
+  now: () => Date;
+}
+
+const defaultRuntime: PostCardBackfillRuntime = {
   getDb,
   kickReconciler,
   persistSave,
+  runCaptureTweet,
+  now: () => new Date(),
 };
 
-export async function startThreadsCardBackfill(): Promise<{
+function postCardScheme(kind: string): PostCardScheme | null {
+  if (kind === POST_RENDER_LIGHT_KIND) return "light";
+  if (kind === POST_RENDER_DARK_KIND) return "dark";
+  return null;
+}
+
+export function needsPostCardStructuredRepair(
+  rawJson: RawJson | null,
+  files: ReadonlyArray<PostCardFile>,
+): boolean {
+  if (!rawJson?.capture) return false;
+  if ((rawJson.postCardRepair?.version ?? 0) >= POST_CARD_REPAIR_VERSION) {
+    return false;
+  }
+  return files.some((file) => {
+    const scheme = postCardScheme(file.kind);
+    if (!scheme) return false;
+    const renderer = rawJson.postCardProvenance?.[scheme]?.renderer;
+    return renderer !== "xeet" && renderer !== "react";
+  });
+}
+
+/** Scale-three screenshot padding keeps widths on that grid; scale-two structured card widths do not. */
+function hasLegacyScreenshotGeometry(
+  width: number | null | undefined,
+): boolean {
+  return width !== undefined && width !== null && width > 0 && width % 3 === 0;
+}
+
+export function withPostCardRepairAttempt(
+  stored: RawJson | null,
+  files: ReadonlyArray<PostCardFile>,
+  attemptedAt: string,
+): RawJson | null {
+  if (!stored) return null;
+  const rawJson = structuredClone(stored);
+  const artifactVersion =
+    rawJson.captureTweetVersion !== undefined &&
+    Number.isFinite(rawJson.captureTweetVersion)
+      ? rawJson.captureTweetVersion
+      : 0;
+  const provenance = { ...rawJson.postCardProvenance };
+  let inferred = false;
+  for (const file of files) {
+    const scheme = postCardScheme(file.kind);
+    if (!scheme || provenance[scheme]) continue;
+    if (!hasLegacyScreenshotGeometry(file.width)) continue;
+    provenance[scheme] = {
+      renderer: "screenshot",
+      captureTweetVersion: artifactVersion,
+      inferred: true,
+    };
+    inferred = true;
+  }
+  if (inferred) rawJson.postCardProvenance = provenance;
+  rawJson.postCardRepair = {
+    version: POST_CARD_REPAIR_VERSION,
+    attemptedAt,
+  };
+  return rawJson;
+}
+
+async function persistPostCardRepairAttempt(
+  row: PostCardBackfillRow,
+  runtime: PostCardBackfillRuntime,
+): Promise<void> {
+  const rawJson = withPostCardRepairAttempt(
+    row.rawJson,
+    row.files,
+    runtime.now().toISOString(),
+  );
+  if (!rawJson) return;
+  await runtime.persistSave(
+    row.id,
+    { rawJson },
+    {
+      actorReason: "pipeline:post-card-repair",
+      writeInfo: true,
+    },
+  );
+}
+
+export async function startThreadsCardBackfill(
+  runtime: PostCardBackfillRuntime = defaultRuntime,
+): Promise<{
   ok: true;
   recaptured: number;
   requeued: number;
 }> {
-  const db = await getDb();
+  const db = await runtime.getDb();
   let recaptured = 0;
   let offset = 0;
   const limit = pLimit(MAX_INFLIGHT);
@@ -55,6 +162,7 @@ export async function startThreadsCardBackfill(): Promise<{
         id: saves.id,
         source: saves.source,
         rawJson: saves.rawJson,
+        files: saves.files,
       })
       .from(saves)
       .where(
@@ -71,7 +179,6 @@ export async function startThreadsCardBackfill(): Promise<{
     offset += page.length;
 
     for (const row of page) {
-      if (!isCaptureTweetStale(row.rawJson)) continue;
       const source = row.source;
       if (
         source !== "twitter" &&
@@ -80,20 +187,51 @@ export async function startThreadsCardBackfill(): Promise<{
       ) {
         continue;
       }
+      const stale = isCaptureTweetStale(row.rawJson);
+      const repair = needsPostCardStructuredRepair(row.rawJson, row.files);
+      if (!stale && !repair) continue;
       jobs.push(
         limit(async () => {
           try {
-            const result = await runCaptureTweet(row.id, { nativeOnly: true });
+            const captureOptions: NonNullable<
+              Parameters<typeof runCaptureTweet>[1]
+            > = { nativeOnly: true };
+            if (repair) captureOptions.force = true;
+            const result = await runtime.runCaptureTweet(
+              row.id,
+              captureOptions,
+            );
             if (result.captured > 0) {
               recaptured += 1;
-            } else if (
-              source !== "bluesky" &&
-              needsLiveReplyRecapture(row.rawJson)
-            ) {
-              liveReplies.push({ id: row.id, source });
+            } else {
+              if (repair) {
+                const fresh = db
+                  .select({ rawJson: saves.rawJson, files: saves.files })
+                  .from(saves)
+                  .where(eq(saves.id, row.id))
+                  .get();
+                if (fresh) {
+                  await persistPostCardRepairAttempt(
+                    {
+                      id: row.id,
+                      source,
+                      rawJson: fresh.rawJson,
+                      files: fresh.files,
+                    },
+                    runtime,
+                  );
+                }
+              }
+              if (
+                stale &&
+                source !== "bluesky" &&
+                needsLiveReplyRecapture(row.rawJson)
+              ) {
+                liveReplies.push({ id: row.id, source });
+              }
             }
           } catch (error) {
-            log.warn("[pond native-card-backfill] failed", row.id, error);
+            log.warn("[pond post-card-backfill] failed", row.id, error);
           }
         }),
       );
@@ -103,9 +241,9 @@ export async function startThreadsCardBackfill(): Promise<{
   }
 
   await Promise.all(jobs);
-  const requeued = await requeueReplyCaptures(liveReplies);
+  const requeued = await requeueReplyCaptures(liveReplies, runtime);
   if (recaptured > 0 || requeued > 0) {
-    log.info("[pond native-card-backfill] recaptured", {
+    log.info("[pond post-card-backfill] recaptured", {
       recaptured,
       requeued,
     });
@@ -197,7 +335,7 @@ export async function requeueReplyCaptures(
         ingestStartedAt: now,
         ingestCompletedAt: null,
       },
-      { actorReason: "pipeline:reply-recapture-backfill" },
+      { actorReason: "pipeline:reply-recapture-backfill", writeInfo: true },
     );
     queued += 1;
   }
