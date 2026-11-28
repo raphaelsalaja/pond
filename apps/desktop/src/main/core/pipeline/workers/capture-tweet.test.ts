@@ -48,7 +48,6 @@ const rendered = {
   bytes: Buffer.from("png"),
   width: 10,
   height: 10,
-  renderer: "xeet" as const,
 };
 
 type TweetShotArgs = Parameters<TestPorts["screenshotTweetDual"]>[0];

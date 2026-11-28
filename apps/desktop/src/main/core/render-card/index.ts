@@ -28,12 +28,6 @@ export interface RenderedCard {
   height: number;
 }
 
-export type PostCardRenderer = "xeet" | "react";
-
-export interface RenderedPostCard extends RenderedCard {
-  renderer: PostCardRenderer;
-}
-
 type CaptureKind = "tweet" | "text" | "search" | "threads";
 type CardData = TweetCardData | TextCardData | SearchCardData;
 
@@ -358,58 +352,34 @@ export async function renderTweetCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
-): Promise<RenderedPostCard | null> {
+): Promise<RenderedCard | null> {
   const data = buildTweetCardData(capture, fallbackAuthor);
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
   const native = await renderXPostPng(capture, fallbackAuthor, scheme);
-  if (native) {
-    const rendered = await pad(
-      native.png,
-      scheme,
-      TWEET_PAD_CSS,
-      TWEET_RADIUS_CSS,
-    );
-    return { ...rendered, renderer: "xeet" };
-  }
-  const rendered = await enqueueRender(
-    "tweet",
-    data,
-    scheme,
-    TWEET_PAD_CSS,
-    TWEET_RADIUS_CSS,
-  );
-  return rendered ? { ...rendered, renderer: "react" } : null;
+  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
 }
 
 export async function renderThreadsCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
-): Promise<RenderedPostCard | null> {
+): Promise<RenderedCard | null> {
   const data = buildTweetCardData(capture, fallbackAuthor);
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
   const native = await renderThreadsPostPng(data, scheme);
-  if (native) {
-    const rendered = await pad(
-      native.png,
-      scheme,
-      TWEET_PAD_CSS,
-      TWEET_RADIUS_CSS,
-    );
-    return { ...rendered, renderer: "xeet" };
-  }
-  const rendered = await enqueueRender(
+  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  return enqueueRender(
     "threads",
     data,
     scheme,
     TWEET_PAD_CSS,
     TWEET_RADIUS_CSS,
   );
-  return rendered ? { ...rendered, renderer: "react" } : null;
 }
 
 /** There is no React Bluesky card to fall back to. */
@@ -417,16 +387,11 @@ export async function renderBlueskyCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
-): Promise<RenderedPostCard | null> {
+): Promise<RenderedCard | null> {
   const native = await renderBlueskyPostPng(capture, fallbackAuthor, scheme);
-  if (!native) return null;
-  const rendered = await pad(
-    native.png,
-    scheme,
-    TWEET_PAD_CSS,
-    TWEET_RADIUS_CSS,
-  );
-  return { ...rendered, renderer: "xeet" };
+  return native
+    ? pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS)
+    : null;
 }
 
 export async function renderTextCardPng(
