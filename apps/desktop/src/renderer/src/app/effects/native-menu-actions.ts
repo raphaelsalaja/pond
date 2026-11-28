@@ -6,6 +6,7 @@ import {
   exportDebugReport,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
+import { gridTakes } from "@/features/library/lib/grid-commands";
 import { searchViewFor } from "@/features/library/lib/search-view";
 import type {
   SearchScope,
@@ -143,6 +144,7 @@ async function removeFromCurrentFolder(): Promise<void> {
 }
 
 function openFilter(field: FieldId): void {
+  if (!gridTakes("search")) return;
   filterToolbar.setPinned(field, true);
   filterToolbar.setOpen(true);
 }
@@ -167,9 +169,11 @@ function searchAllSavesInPlace(): void {
   getAppHistory()?.push(`/${router.options.stringifySearch(q ? { q } : {})}`);
 }
 
+/** Search All Saves leaves for All when no grid is showing; the current view has nowhere to go, so it is dropped. */
 function openSearch(scope: SearchScope): void {
   if (scope === "all") searchAllSavesInPlace();
-  else searchCurrentView();
+  else if (gridTakes("search")) searchCurrentView();
+  else return;
   libraryHeader.focusSearch();
 }
 
@@ -341,10 +345,10 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       void addToLastFolder();
       return true;
     case "find.filters.toggle":
-      filterToolbar.toggle();
+      if (gridTakes("search")) filterToolbar.toggle();
       return true;
     case "find.filters.reset":
-      resetFilters();
+      if (gridTakes("search")) resetFilters();
       return true;
     case "find.visual-search": {
       const id = requireSelection()[0];
@@ -376,11 +380,13 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       return true;
     }
     case "view.random": {
+      if (!gridTakes("view")) return true;
       setSort({ key: "random", dir: currentSort().dir });
       reseedRandomSort();
       return true;
     }
     case "view.subfolders.toggle": {
+      if (!gridTakes("view")) return true;
       const state = getViewState();
       setIncludeSubfolders(!state.includeSubfolders);
       return true;

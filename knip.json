@@ -53,6 +53,9 @@
     "packages/api": {
       "project": ["src/**/*.ts"]
     },
+    "packages/core": {
+      "entry": ["index.cjs", "scripts/*.mjs"]
+    },
     ".": {
       "entry": ["scripts/*.{mjs,cjs,ts}", "tools/**/*.ts"]
     }
