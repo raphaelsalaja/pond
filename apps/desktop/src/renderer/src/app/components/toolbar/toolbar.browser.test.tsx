@@ -357,7 +357,9 @@ describe("breadcrumb toolbar", () => {
     expect(button("Toggle Details").disabled).toBe(false);
     expect(labels()).not.toContain("Fish");
     await act(async () => router.history.push("/tags"));
-    expect(button("Toggle Details").disabled).toBe(false);
+    expect(button("Toggle Details").disabled).toBe(true);
+    await act(async () => router.history.push("/downloads"));
+    expect(button("Toggle Details").disabled).toBe(true);
     await act(async () => router.history.push("/settings"));
     expect(button("Toggle Details").disabled).toBe(true);
     expect(button("Toggle Details").getAttribute("aria-pressed")).toBe("false");

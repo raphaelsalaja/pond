@@ -154,7 +154,7 @@ export function SaveSelectionBar() {
           <SelectionBar.Action
             label="Add Tags"
             shortcut={shortcutGlyphs("save.add-tag")}
-            onClick={openTagPicker}
+            onClick={() => openTagPicker()}
           >
             <IconTagPlus />
           </SelectionBar.Action>

@@ -4,6 +4,7 @@ import log from "electron-log/renderer";
 import { useEffect } from "react";
 import { ReviewDeck } from "@/features/library/components/inbox-review/deck";
 import { ReviewFinished } from "@/features/library/components/inbox-review/finished";
+import { useReviewSource } from "@/features/library/components/inbox-review/use-review-source";
 import { useInboxNavigation } from "@/features/library/hooks/use-inbox-items";
 import { useSidebarCounts } from "@/features/library/hooks/use-sidebar-counts";
 import type { ReviewQueue } from "@/features/library/lib/review-queue";
@@ -38,16 +39,19 @@ export function InboxReview() {
     nav?.kind === "inbox" ? (nav.snoozed ? "snoozed" : "review") : null;
   const queue = useInboxReview();
   const loaded = useInboxReviewScope();
-  const saveOpen = useOpenSaveId() !== null;
+  const openId = useOpenSaveId();
+  const scopedQueue = scope && loaded === scope ? queue : null;
 
   useEffect(() => {
     if (scope) void inboxReview.start(scope);
     else inboxReview.exit();
   }, [scope]);
 
+  useReviewSource(scope, scopedQueue, openId);
+
   /** Stay mounted under the Save overlay: unmounting restarts the review effect and the queue loses its place. */
-  if (!scope || saveOpen) return null;
-  return <InboxPage scope={scope} queue={loaded === scope ? queue : null} />;
+  if (!scope || openId !== null) return null;
+  return <InboxPage scope={scope} queue={scopedQueue} />;
 }
 
 function InboxPage({
