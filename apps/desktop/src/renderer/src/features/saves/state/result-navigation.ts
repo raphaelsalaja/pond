@@ -33,6 +33,20 @@ let focusOnReveal = false;
 let focusOwner: Element | null = null;
 let rectangles: ReadonlyArray<ResultRectangle> = [];
 
+function publish(next: ResultSource): void {
+  if (source.key !== next.key) {
+    pendingReveal = null;
+    focusOnReveal = false;
+  }
+  source = next;
+  for (const listener of subscribers) {
+    listener();
+  }
+  if (pendingReveal && source.ids.includes(pendingReveal)) {
+    reveal?.(pendingReveal);
+  }
+}
+
 /** `loadedIds` reads the live query page, so results stay protected before the view republishes them. */
 protectSaves(() => [...source.ids, ...(source.loadedIds?.() ?? [])]);
 
@@ -73,18 +87,12 @@ export const resultNavigation = {
       (active === document.body && !focusOwner?.isConnected)
     );
   },
-  setSource(next: ResultSource): void {
-    if (source.key !== next.key) {
-      pendingReveal = null;
-      focusOnReveal = false;
-    }
-    source = next;
-    for (const listener of subscribers) {
-      listener();
-    }
-    if (pendingReveal && source.ids.includes(pendingReveal)) {
-      reveal?.(pendingReveal);
-    }
+  /** Returns a release that clears results only while this exact source is current. */
+  setSource(next: ResultSource): () => void {
+    publish(next);
+    return () => {
+      if (source === next) publish({ ids: [] });
+    };
   },
   /** Calls `listener` once, when the view next publishes its results. */
   onNextSource(listener: () => void): () => void {

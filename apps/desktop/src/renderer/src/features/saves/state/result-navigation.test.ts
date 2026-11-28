@@ -25,6 +25,28 @@ it("reports the current result position against the full result count", () => {
   expect(resultNavigation.total()).toBe(493);
 });
 
+it("clears results when the current publisher releases them", () => {
+  const release = resultNavigation.setSource({
+    key: "grid",
+    ids: ["a"],
+    total: 1,
+  });
+  expect(resultNavigation.indexOf("a")).toBe(0);
+  release();
+  expect(resultNavigation.indexOf("a")).toBe(-1);
+  expect(resultNavigation.total()).toBe(0);
+});
+
+it("ignores a release from a superseded publisher", () => {
+  const staleRelease = resultNavigation.setSource({
+    key: "grid",
+    ids: ["a"],
+  });
+  resultNavigation.setSource({ key: "grid", ids: ["b"] });
+  staleRelease();
+  expect(resultNavigation.indexOf("b")).toBe(0);
+});
+
 it("loads an unloaded result and retries reveal when virtual geometry arrives", async () => {
   let loads = 0;
   const loadMore = async () => {

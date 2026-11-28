@@ -159,7 +159,16 @@ export function LibraryView() {
   // A new scope clears its page before the first answer arrives. Publishing
   // that empty list under the new key makes an open preview treat the Save as gone.
   const publishedKey = useRef<string | null>(null);
+  const releaseResults = useRef<(() => void) | null>(null);
   const [reconcileSelection] = useState(createSelectionReconciler);
+
+  /** Release only at unmount; clearing during republication would suppress departure tracking before the next source arrives. */
+  useEffect(() => {
+    return () => {
+      releaseResults.current?.();
+      releaseResults.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const key = data.paging.queryKey;
@@ -171,7 +180,7 @@ export function LibraryView() {
     if (unsettled) return;
     publishedKey.current = key;
     libraryViewContext.set(data.filteredIds, data.mode);
-    resultNavigation.setSource({
+    releaseResults.current = resultNavigation.setSource({
       key,
       total: data.paging.total - (collapsed ? pinnedCount : 0),
       loadedIds: data.paging.loadedIds,
