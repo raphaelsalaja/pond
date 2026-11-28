@@ -35,6 +35,7 @@ import { newSaveInbox } from "./inbox";
 import { extractMediaMetadata } from "./media-metadata";
 import { persistSave } from "./persist-save";
 import type { WriteFileArgs } from "./pipeline/workers/apply";
+import { noteNewSaves } from "./rules/intake";
 import { ensureSaveThumbnail } from "./save-thumbnail";
 import { libraryMediaMetadata } from "./storage/library-media-storage";
 import { normalizeTagList, prepareTagRegistryUpdates } from "./tags";
@@ -337,6 +338,14 @@ async function importManualSave(
   }
   const registry = await prepareTagRegistryUpdates(tags);
   if (!recovering) {
+    await noteNewSaves([
+      {
+        saveId: id,
+        source,
+        channel: input.inboxChannel,
+        ownerId: input.accountId ?? null,
+      },
+    ]);
     await executeBatch([
       ...registry,
       {

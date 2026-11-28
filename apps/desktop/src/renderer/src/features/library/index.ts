@@ -2,7 +2,7 @@ export { selectLibraryNav } from "./components/folder-sidebar/navigation";
 export { viewAccountItems } from "./lib/view-account-items";
 export { enterAll } from "./operations/enter-folder";
 export { useCommandContext } from "./state/command-context";
-export { folders, useFolders } from "./state/folders";
+export { useFolders } from "./state/folders";
 export { useSearchNonce } from "./state/library-header";
 export {
   resetFilters,

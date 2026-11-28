@@ -4,6 +4,7 @@ import {
   IconPuzzle as Extension,
   IconNut as General,
   IconShieldCheck as Health,
+  IconFolderBolt as RulesIcon,
   IconImage as Images,
   IconGlobe as ShareLinks,
   IconFolder as Library,
@@ -47,6 +48,7 @@ const ICONS = new Map<string, IconComponent>([
   ["tags", Tags],
   ["library", Library],
   ["health", Health],
+  ["rules", RulesIcon],
   ["processing", Processing],
   ["backups", Backups],
   ["models", Providers],
@@ -90,6 +92,7 @@ export const SECTIONS: Array<SectionDef> = SETTINGS_SECTIONS.map((section) => {
 
 const BESPOKE_SECTION_IDS = new Set([
   "tags",
+  "rules",
   "models",
   "agent-models",
   "personalization",

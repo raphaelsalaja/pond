@@ -37,10 +37,6 @@ export interface AccountQueryInputs {
     /** Null follows the global schedule. */
     intervalHours: number | null;
   };
-  "sources.setIncoming": SourceTargetInput & {
-    folderId: string | null;
-    tags: Array<string>;
-  };
   "sources.overview": { id: string };
   "sources.extensionLastSeen": EmptyInput;
 }
@@ -75,7 +71,6 @@ export interface AccountQueryResults {
   "accounts.blueskySignIn": CancellableResult<{ handle: string | null }>;
   "accounts.blueskySignOut": OkResult;
   "sources.setSchedule": OkResult;
-  "sources.setIncoming": OkResult;
   "sources.overview": SourceOverview;
   /** Epoch ms of the last native message from any browser extension, or null since launch. */
   "sources.extensionLastSeen": { at: number | null };

@@ -46,6 +46,7 @@ export const SETTINGS_SECTIONS: ReadonlyArray<SettingsSection> = [
     label: "Library",
     group: "library",
   },
+  { id: "rules", path: "rules", label: "Rules", group: "library" },
   {
     id: "health",
     path: "health",

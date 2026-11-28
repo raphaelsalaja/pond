@@ -1,6 +1,8 @@
 import { runInNewContext } from "node:vm";
 import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
+import { recordedShort } from "../../../../lib/youtube-short-covers.fixture";
+import type { RecordedPlayer } from "../../../../lib/youtube-short-covers.fixture";
 import { buildExpression } from "./item";
 import type { YoutubeWatchPage } from "./normalize";
 
@@ -38,23 +40,53 @@ interface PlayerResponse {
   };
 }
 
-async function harvest(html: string, player?: PlayerResponse) {
+type PageFetch = (
+  url: string,
+) => Promise<{ ok: boolean; text: () => Promise<string> }>;
+
+async function harvest(
+  html: string,
+  player?: PlayerResponse | RecordedPlayer,
+  options: { videoId?: string; fetch?: PageFetch } = {},
+) {
+  const videoId = options.videoId ?? "dQw4w9WgXcQ";
   const { window } = new JSDOM(
     `<!doctype html><html><body>${html}</body></html>`,
-    { url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ" },
+    { url: `https://www.youtube.com/watch?v=${videoId}` },
   );
   const page: Promise<YoutubeWatchPage | null> = runInNewContext(
-    buildExpression("dQw4w9WgXcQ"),
+    buildExpression(videoId),
     {
       document: window.document,
       location: window.location,
       ytInitialPlayerResponse: player,
       URL,
+      AbortSignal,
+      fetch: options.fetch,
       setTimeout,
       clearTimeout,
     },
   );
   return page;
+}
+
+/** A Shorts page as youtube.com serves it: the player response sits in an inline script beside other page state. */
+function shortsPageHtml(player: RecordedPlayer): string {
+  return `<!doctype html><html><body><script>var ytInitialData = {"a":"}{"};</script><script nonce="x">var ytInitialPlayerResponse = ${JSON.stringify(player)};var meta = document.createElement('meta');</script></body></html>`;
+}
+
+function recordedPageFetch(id: string) {
+  const fetched: Array<string> = [];
+  const fetch: PageFetch = async (url) => {
+    fetched.push(url);
+    const isShorts = new URL(url).pathname === `/shorts/${id}`;
+    return {
+      ok: isShorts,
+      text: async () =>
+        isShorts ? shortsPageHtml(recordedShort(id).shortsPlayer) : "",
+    };
+  };
+  return { fetch, fetched };
 }
 
 describe("youtube watch description", () => {
@@ -152,5 +184,74 @@ describe("youtube watch metadata", () => {
     expect(page?.meta?.views).toBeUndefined();
     expect(page?.meta?.durationSec).toBeUndefined();
     expect(page?.description).not.toBe(caption);
+  });
+});
+
+describe("youtube Shorts cover", () => {
+  const watchHtml = (id: string) =>
+    `${descriptionBox}<video poster="https://i.ytimg.com/vi/${id}/hqdefault.jpg"></video>`;
+
+  it.each([
+    ["-st95jSkprQ", "/vi/-st95jSkprQ/oardefault.jpg"],
+    ["m6CRWM9sUzU", "/vi/m6CRWM9sUzU/sardefault.jpg"],
+    ["dbXWZjYJ8t8", "/vi/dbXWZjYJ8t8/hq720.jpg"],
+  ])(
+    "reads %s's cover from its Shorts page when the watch page lists only the landscape composite",
+    async (id, path) => {
+      const recorded = recordedShort(id);
+      const { fetch, fetched } = recordedPageFetch(id);
+      const page = await harvest(watchHtml(id), recorded.watchPlayer, {
+        videoId: id,
+        fetch,
+      });
+      expect(fetched).toEqual([`https://www.youtube.com/shorts/${id}`]);
+      const cover = new URL(page?.mediaUrl ?? "");
+      expect(cover.pathname).toBe(path);
+      expect(cover.searchParams.has("sqp")).toBe(true);
+      expect(page?.mediaUrls).toEqual([{ url: page?.mediaUrl, type: "video" }]);
+    },
+  );
+
+  it("keeps the watch page's poster when the Shorts page is not a Short", async () => {
+    const recorded = recordedShort("-st95jSkprQ");
+    const page = await harvest(watchHtml("-st95jSkprQ"), recorded.watchPlayer, {
+      videoId: "-st95jSkprQ",
+      fetch: async () => ({
+        ok: true,
+        text: async () => shortsPageHtml(recorded.watchPlayer),
+      }),
+    });
+    expect(page?.mediaUrl).toBe(
+      "https://i.ytimg.com/vi/-st95jSkprQ/hqdefault.jpg",
+    );
+  });
+
+  it("does not open the Shorts page for a video longer than a Short", async () => {
+    const { fetch, fetched } = recordedPageFetch("dQw4w9WgXcQ");
+    const page = await harvest(
+      watchHtml("dQw4w9WgXcQ"),
+      { videoDetails: { videoId: "dQw4w9WgXcQ", lengthSeconds: "234" } },
+      { fetch },
+    );
+    expect(fetched).toEqual([]);
+    expect(page?.mediaUrl).toBe(
+      "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    );
+  });
+
+  it("keeps the watch page's poster when the Shorts page cannot be read", async () => {
+    const page = await harvest(
+      watchHtml("dQw4w9WgXcQ"),
+      { videoDetails: { videoId: "dQw4w9WgXcQ", lengthSeconds: "40" } },
+      {
+        fetch: async () => {
+          throw new Error("offline");
+        },
+      },
+    );
+    expect(page?.title).toBe("Leg day");
+    expect(page?.mediaUrl).toBe(
+      "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
+    );
   });
 });

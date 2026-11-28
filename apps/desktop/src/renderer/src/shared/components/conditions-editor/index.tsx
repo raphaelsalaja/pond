@@ -1,6 +1,8 @@
 import type { RuleChoice as InternalRuleChoice } from "./types";
 
+export { ruleChoices } from "./choices";
 export { RuleEditor } from "./editor";
+export { RuleSelect } from "./rule-select";
 export {
   compileRuleQuery,
   editableQuery,

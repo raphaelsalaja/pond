@@ -1,0 +1,43 @@
+.popup {
+  --width: 720px;
+}
+.body {
+  max-height: min(560px, calc(100dvh - 160px));
+  padding: var(--ds-space-lg) var(--ds-space-2xl) var(--ds-space-2xl);
+  overflow: auto;
+}
+.empty {
+  margin: 0;
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-secondary);
+}
+.table {
+  width: 100%;
+  font-size: var(--ds-text-body);
+  border-collapse: collapse;
+}
+.table th {
+  padding: var(--ds-space-xs) var(--ds-space-sm);
+  font-weight: 500;
+  color: var(--ds-foreground-tertiary);
+  text-align: start;
+}
+.table td {
+  padding: var(--ds-space-sm);
+  vertical-align: top;
+  border-top: 1px solid var(--ds-border-subtle);
+}
+.table tr[data-outcome="failed"] td:last-child {
+  color: var(--ds-danger-foreground);
+}
+.table tr[data-outcome="unchanged"] td:last-child {
+  color: var(--ds-foreground-tertiary);
+}
+.link {
+  padding: 0;
+  font: inherit;
+  color: var(--ds-accent-foreground);
+  cursor: pointer;
+  background: none;
+  border: 0;
+}

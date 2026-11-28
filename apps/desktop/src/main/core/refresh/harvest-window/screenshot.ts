@@ -1,6 +1,8 @@
+import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { isJsonValue } from "@pond/schema/json";
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
+import { app, session } from "electron";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -16,10 +18,29 @@ import { looksLikeAuthWall, navigateWithTimeout } from "./navigation";
 import { leaseWindow } from "./pool";
 import { emulateColorScheme, withDeviceScaleFactor } from "./screenshot-cdp";
 import {
+  CAPTURE_ROOT_ATTRIBUTE,
   buildArticleRectExpression,
   buildCaptureMediaSettledExpression,
   buildThreadsPostRectExpression,
 } from "./screenshot-dom";
+import {
+  buildCaptureSchemeEvidenceExpression,
+  captureSchemeDomEvidenceSchema,
+  captureWithSchemeValidation,
+} from "./screenshot-scheme";
+import type {
+  CaptureColorScheme,
+  CaptureSchemeDomEvidence,
+  CaptureSchemeRect,
+  CaptureSchemeValidationResult,
+  CapturedSchemeSample,
+} from "./screenshot-scheme";
+import {
+  acquireTwitterThemeLock,
+  createTwitterThemeCookieControl,
+  restoreInterruptedTwitterThemes,
+} from "./screenshot-theme";
+import type { TwitterThemeCookieControl } from "./screenshot-theme";
 
 export interface TweetScreenshotResult {
   ok: boolean;
@@ -29,7 +50,8 @@ export interface TweetScreenshotResult {
     | "auth_required"
     | "no_article"
     | "timeout"
-    | "capture_failed";
+    | "capture_failed"
+    | "scheme_mismatch";
   quotedUrl?: string;
   media?: Array<CaptureMedia>;
 }
@@ -98,20 +120,32 @@ export async function screenshotTweetDual(
 ): Promise<TweetDualScreenshotResult> {
   if (args.signal?.aborted) return abortedDual();
   const partition = await partitionForIngest("twitter", args.accountId);
-  const lease = await leaseWindow("twitter", {
-    partition,
-    signal: args.signal,
-  });
-  const detachAbort = watchAbort(lease.win, args.signal);
+  let lease: Awaited<ReturnType<typeof leaseWindow>> | null = null;
+  let detachAbort: () => void = () => {};
+  let themeCookies: TwitterThemeCookieControl | null = null;
   let restoreEmulation: (() => Promise<void>) | null = null;
+  const releaseThemeLock = await acquireTwitterThemeLock(
+    partition,
+    args.signal,
+  ).catch(() => null);
+  if (!releaseThemeLock) return abortedDual();
   try {
     if (args.signal?.aborted) return abortedDual();
-    restoreEmulation = await emulateColorScheme(lease.win, "light");
-    const navOk = await navigateWithTimeout(
-      lease.win,
-      args.url,
-      NAV_TIMEOUT_MS,
-    );
+    lease = await leaseWindow("twitter", {
+      partition,
+      signal: args.signal,
+    });
+    const win = lease.win;
+    detachAbort = watchAbort(win, args.signal);
+    const themeCookieControl = createTwitterThemeCookieControl({
+      jar: win.webContents.session.cookies,
+      partition,
+      journalPath: themeJournalPath(),
+    });
+    themeCookies = themeCookieControl;
+    await themeCookieControl.setScheme("light");
+    restoreEmulation = await emulateColorScheme(win, "light");
+    const navOk = await navigateWithTimeout(win, args.url, NAV_TIMEOUT_MS);
     if (!navOk) {
       if (args.signal?.aborted) return abortedDual();
       log.warn("[pond screenshot:tweet] navigate failed", args.url);
@@ -121,7 +155,7 @@ export async function screenshotTweetDual(
       };
       return { light: fail, dark: fail };
     }
-    if (looksLikeAuthWall(lease.win.webContents.getURL())) {
+    if (looksLikeAuthWall(win.webContents.getURL())) {
       log.info("[pond screenshot:tweet] auth wall hit", args.url);
       const wall: TweetScreenshotResult = {
         ok: false,
@@ -131,48 +165,48 @@ export async function screenshotTweetDual(
     }
 
     const light = await captureCurrentScheme(
-      lease.win,
+      win,
       args.sourceId,
       "light",
       "tweet",
       args.parentId,
+      onceSchemeReload(() =>
+        reloadForScheme(win, args.url, "light", themeCookieControl),
+      ),
     );
 
     let media: Array<CaptureMedia> | undefined;
     let page: Capture | undefined;
     let pageFailureReason: TweetScreenshotResult["reason"];
     if (args.harvestMedia && light.ok) {
-      const harvested = await harvestPageMedia(
-        lease.win,
-        args.sourceId,
-        "tweet",
-      );
+      const harvested = await harvestPageMedia(win, args.sourceId, "tweet");
       page = harvested.page;
       pageFailureReason = harvested.failureReason;
       if (page && page.media.length > 0) media = page.media;
     }
 
     if (restoreEmulation) await restoreEmulation().catch(() => {});
-    restoreEmulation = await emulateColorScheme(lease.win, "dark");
-    const flipped = await waitForSchemeFlip(lease.win, "dark");
+    await themeCookieControl.setScheme("dark");
+    restoreEmulation = await emulateColorScheme(win, "dark");
+    const reloadDarkOnce = onceSchemeReload(() =>
+      reloadForScheme(win, args.url, "dark", themeCookieControl),
+    );
+    const flipped = await waitForSchemeFlip(win, "dark");
     if (!flipped) {
       log.debug("[pond screenshot:tweet] scheme flip needed reload", args.url);
-      await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
+      await reloadDarkOnce();
     }
     const dark = await captureCurrentScheme(
-      lease.win,
+      win,
       args.sourceId,
       "dark",
       "tweet",
       args.parentId,
+      reloadDarkOnce,
     );
 
     if (args.harvestMedia && !page && dark.ok) {
-      const harvested = await harvestPageMedia(
-        lease.win,
-        args.sourceId,
-        "tweet",
-      );
+      const harvested = await harvestPageMedia(win, args.sourceId, "tweet");
       page = harvested.page;
       pageFailureReason = harvested.failureReason;
       if (page && page.media.length > 0) media = page.media;
@@ -200,7 +234,9 @@ export async function screenshotTweetDual(
   } finally {
     detachAbort();
     if (restoreEmulation) await restoreEmulation().catch(() => {});
-    lease.release();
+    await themeCookies?.restore();
+    lease?.release();
+    releaseThemeLock();
   }
 }
 
@@ -247,6 +283,7 @@ export async function screenshotThreadsDual(
       "light",
       "threads",
       args.parentId,
+      onceSchemeReload(() => reloadForScheme(lease.win, args.url, "light")),
     );
 
     let media: Array<CaptureMedia> | undefined;
@@ -265,13 +302,16 @@ export async function screenshotThreadsDual(
 
     if (restoreEmulation) await restoreEmulation().catch(() => {});
     restoreEmulation = await emulateColorScheme(lease.win, "dark");
+    const reloadDarkOnce = onceSchemeReload(() =>
+      reloadForScheme(lease.win, args.url, "dark"),
+    );
     const flipped = await waitForSchemeFlip(lease.win, "dark");
     if (!flipped) {
       log.debug(
         "[pond screenshot:threads] scheme flip needed reload",
         args.url,
       );
-      await navigateWithTimeout(lease.win, args.url, NAV_TIMEOUT_MS);
+      await reloadDarkOnce();
     }
     const dark = await captureCurrentScheme(
       lease.win,
@@ -279,6 +319,7 @@ export async function screenshotThreadsDual(
       "dark",
       "threads",
       args.parentId,
+      reloadDarkOnce,
     );
 
     if (args.harvestMedia && !page && dark.ok) {
@@ -322,99 +363,204 @@ export async function screenshotThreadsDual(
   }
 }
 
+function themeJournalPath(): string {
+  return join(app.getPath("userData"), "screenshot-theme-journal.json");
+}
+
+/** Puts back X theme cookies that a capture interrupted by a quit or crash left overridden. */
+export async function restoreInterruptedScreenshotThemes(): Promise<void> {
+  await restoreInterruptedTwitterThemes({
+    journalPath: themeJournalPath(),
+    jarFor: (partition) => session.fromPartition(partition).cookies,
+  });
+}
+
+function onceSchemeReload(
+  reload: () => Promise<boolean>,
+): () => Promise<boolean> {
+  let used = false;
+  return async () => {
+    if (used) return false;
+    used = true;
+    return reload();
+  };
+}
+
+interface TweetSchemeCaptureSample extends CapturedSchemeSample {
+  quotedUrl?: string;
+}
+
+class ScreenshotNoArticleError extends Error {}
+
 async function captureCurrentScheme(
   win: BrowserWindow,
   sourceId: string,
-  colorScheme: "light" | "dark",
+  colorScheme: CaptureColorScheme,
   kind: "tweet" | "threads",
-  parentId?: string,
+  parentId: string | undefined,
+  correctScheme: () => Promise<boolean>,
 ): Promise<TweetScreenshotResult> {
-  const htmlBg = colorScheme === "light" ? "#fff" : "#000";
   const hideCss =
     kind === "tweet"
       ? `[data-testid="BottomBar"], [data-testid="bottomBar"], [data-testid="login"] { display: none !important; }
        a[href$="/quotes"], a[href$="/retweets/with_comments"] { display: none !important; }
        article { border: 0 !important; }
-       html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`
-      : `html { color-scheme: ${colorScheme}; background: ${htmlBg} !important; }`;
-  const cssKey = await win.webContents
-    .insertCSS(hideCss)
-    .catch(() => undefined);
+       html { color-scheme: ${colorScheme}; }`
+      : `html { color-scheme: ${colorScheme}; }`;
 
-  try {
-    const initial = await readArticleRect(win, sourceId, kind, parentId);
-    if (!initial) {
-      log.info("[pond screenshot:tweet] no article", sourceId);
-      return { ok: false, reason: "no_article" };
-    }
-
-    const [contentWidthRaw, originalContentHeightRaw] = win.getContentSize();
-    const contentWidth = contentWidthRaw ?? 1280;
-    const originalContentHeight = originalContentHeightRaw ?? 1024;
-    const requiredHeight = Math.ceil(
-      initial.y + initial.height + SCREENSHOT_VERTICAL_PADDING,
-    );
-    let rect = initial;
-    let resized = false;
-    if (requiredHeight > originalContentHeight) {
-      const target = Math.min(requiredHeight, SCREENSHOT_MAX_HEIGHT);
-      win.setContentSize(contentWidth, target);
-      resized = true;
-      await sleep(400);
-      const remeasured = await readArticleRect(win, sourceId, kind, parentId);
-      if (remeasured) rect = remeasured;
-    }
-
-    if (!(await waitForCaptureMedia(win))) {
-      log.info("[pond screenshot:tweet] media still loading", sourceId);
-    }
-
+  const attempt = async (): Promise<TweetSchemeCaptureSample> => {
+    const cssKey = await win.webContents
+      .insertCSS(hideCss)
+      .catch(() => undefined);
+    let originalSize: { width: number; height: number } | null = null;
     try {
-      return await withDeviceScaleFactor(
-        win,
-        CAPTURE_DEVICE_SCALE_FACTOR,
-        async () => {
-          const image = await Promise.race([
-            win.webContents.capturePage({
-              x: Math.max(0, Math.floor(rect.x)),
-              y: Math.max(0, Math.floor(rect.y)),
-              width: Math.max(1, Math.ceil(rect.width)),
-              height: Math.max(1, Math.ceil(rect.height)),
-            }),
-            sleep(CAPTURE_PAGE_TIMEOUT_MS).then(() => {
-              throw new ScreenshotTimeoutError(
-                `capturePage timed out after ${CAPTURE_PAGE_TIMEOUT_MS}ms`,
-              );
-            }),
-          ]);
-          const rawBytes = image.toPNG();
-          const size = image.getSize();
-          if (
-            rawBytes.byteLength === 0 ||
-            size.width === 0 ||
-            size.height === 0
-          ) {
-            log.warn("[pond screenshot:tweet] empty capture", sourceId);
-            return { ok: false, reason: "no_article" } as const;
-          }
-          const padded = await padScreenshot(rawBytes, size, colorScheme);
-          const shot: TweetScreenshotResult = { ok: true, png: padded };
-          if (rect.quotedUrl) shot.quotedUrl = rect.quotedUrl;
-          return shot;
-        },
+      const initial = await readArticleRect(win, sourceId, kind, parentId);
+      if (!initial) {
+        log.info("[pond screenshot:tweet] no article", sourceId);
+        throw new ScreenshotNoArticleError();
+      }
+
+      const [contentWidthRaw, originalContentHeightRaw] = win.getContentSize();
+      const contentWidth = contentWidthRaw ?? 1280;
+      const originalContentHeight = originalContentHeightRaw ?? 1024;
+      const requiredHeight = Math.ceil(
+        initial.y + initial.height + SCREENSHOT_VERTICAL_PADDING,
       );
-    } finally {
-      if (resized) {
-        try {
-          win.setContentSize(contentWidth, originalContentHeight);
-        } catch {
-          /** The window may already be destroyed, and the next lease resizes it anyway. */
+      let rect = initial;
+      if (requiredHeight > originalContentHeight) {
+        const target = Math.min(requiredHeight, SCREENSHOT_MAX_HEIGHT);
+        originalSize = { width: contentWidth, height: originalContentHeight };
+        win.setContentSize(contentWidth, target);
+        await sleep(400);
+        const remeasured = await readArticleRect(win, sourceId, kind, parentId);
+        if (remeasured) rect = remeasured;
+      }
+
+      if (!(await waitForCaptureMedia(win))) {
+        log.info("[pond screenshot:tweet] media still loading", sourceId);
+      }
+
+      try {
+        return await withDeviceScaleFactor(
+          win,
+          CAPTURE_DEVICE_SCALE_FACTOR,
+          async () => {
+            const evidence = await readCaptureSchemeEvidence(win, rect);
+            const image = await Promise.race([
+              win.webContents.capturePage({
+                x: Math.max(0, Math.floor(rect.x)),
+                y: Math.max(0, Math.floor(rect.y)),
+                width: Math.max(1, Math.ceil(rect.width)),
+                height: Math.max(1, Math.ceil(rect.height)),
+              }),
+              sleep(CAPTURE_PAGE_TIMEOUT_MS).then(() => {
+                throw new ScreenshotTimeoutError(
+                  `capturePage timed out after ${CAPTURE_PAGE_TIMEOUT_MS}ms`,
+                );
+              }),
+            ]);
+            const rawBytes = image.toPNG();
+            const size = image.getSize();
+            if (
+              rawBytes.byteLength === 0 ||
+              size.width === 0 ||
+              size.height === 0
+            ) {
+              log.warn("[pond screenshot:tweet] empty capture", sourceId);
+              throw new ScreenshotNoArticleError();
+            }
+            const sample: TweetSchemeCaptureSample = {
+              bytes: rawBytes,
+              width: size.width,
+              height: size.height,
+              cssWidth: rect.width,
+              cssHeight: rect.height,
+              evidence,
+            };
+            if (rect.quotedUrl) sample.quotedUrl = rect.quotedUrl;
+            return sample;
+          },
+        );
+      } finally {
+        if (originalSize) {
+          try {
+            win.setContentSize(originalSize.width, originalSize.height);
+          } catch {
+            /** The window may already be destroyed, and the next lease resizes it anyway. */
+          }
         }
       }
+    } finally {
+      if (cssKey) {
+        await win.webContents.removeInsertedCSS(cssKey).catch(() => {});
+      }
     }
-  } finally {
-    if (cssKey) await win.webContents.removeInsertedCSS(cssKey).catch(() => {});
+  };
+
+  let validated: CaptureSchemeValidationResult<TweetSchemeCaptureSample>;
+  try {
+    validated = await captureWithSchemeValidation({
+      scheme: colorScheme,
+      attempt,
+      correct: correctScheme,
+    });
+  } catch (error) {
+    if (error instanceof ScreenshotNoArticleError) {
+      return { ok: false, reason: "no_article" };
+    }
+    throw error;
   }
+  if (!validated.ok) {
+    log.info("[pond screenshot:tweet] scheme mismatch", sourceId, colorScheme);
+    return { ok: false, reason: "scheme_mismatch" };
+  }
+  if (!validated.verified) {
+    log.info(
+      "[pond screenshot:tweet] scheme unverified",
+      sourceId,
+      colorScheme,
+    );
+  }
+
+  const padded = await padScreenshot(
+    validated.sample.bytes,
+    { width: validated.sample.width, height: validated.sample.height },
+    colorScheme,
+  );
+  const shot: TweetScreenshotResult = { ok: true, png: padded };
+  if (validated.sample.quotedUrl) shot.quotedUrl = validated.sample.quotedUrl;
+  return shot;
+}
+
+async function readCaptureSchemeEvidence(
+  win: BrowserWindow,
+  rect: CaptureSchemeRect,
+): Promise<CaptureSchemeDomEvidence> {
+  try {
+    const raw: unknown = await Promise.race([
+      win.webContents.executeJavaScript(
+        buildCaptureSchemeEvidenceExpression(CAPTURE_ROOT_ATTRIBUTE, rect),
+        true,
+      ),
+      sleep(1500).then(() => null),
+    ]);
+    return captureSchemeDomEvidenceSchema.parse(raw);
+  } catch {
+    return captureSchemeDomEvidenceSchema.parse(null);
+  }
+}
+
+async function reloadForScheme(
+  win: BrowserWindow,
+  url: string,
+  colorScheme: CaptureColorScheme,
+  themeCookies?: TwitterThemeCookieControl,
+): Promise<boolean> {
+  if (themeCookies) await themeCookies.setScheme(colorScheme);
+  const navOk = await navigateWithTimeout(win, url, NAV_TIMEOUT_MS);
+  if (!navOk) return false;
+  await waitForSchemeFlip(win, colorScheme);
+  return true;
 }
 
 async function waitForSchemeFlip(

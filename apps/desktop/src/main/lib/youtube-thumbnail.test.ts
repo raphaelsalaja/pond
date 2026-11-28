@@ -1,11 +1,14 @@
 import { storedAsRawJson } from "@pond/schema/raw-schema";
 import { describe, expect, it } from "vitest";
-import { youtubeShortPosterPlan } from "./youtube-thumbnail";
+import {
+  isYoutubeAutomaticFrame,
+  youtubeShortPosterPlan,
+} from "./youtube-thumbnail";
 
 const SHORT_ID = "a88WoGBL1Mc";
 const LANDSCAPE = `https://i.ytimg.com/vi/${SHORT_ID}/hqdefault.jpg`;
 
-function watchCapture(duration: number) {
+function watchCapture(duration: number, posterUrl = LANDSCAPE) {
   return storedAsRawJson({
     capture: {
       id: SHORT_ID,
@@ -16,7 +19,7 @@ function watchCapture(duration: number) {
         {
           type: "video",
           url: `https://www.youtube.com/watch?v=${SHORT_ID}`,
-          posterUrl: LANDSCAPE,
+          posterUrl,
         },
       ],
     },
@@ -24,13 +27,14 @@ function watchCapture(duration: number) {
 }
 
 describe("youtubeShortPosterPlan", () => {
-  it("tries the upright files for a short watch URL, then the poster the page already had", () => {
+  it("tries the display covers before the automatic frame for a short watch URL", () => {
     expect(youtubeShortPosterPlan(watchCapture(39), LANDSCAPE)).toEqual({
       fallbackUrl: LANDSCAPE,
       attempts: [
-        `https://i.ytimg.com/vi/${SHORT_ID}/oar2.jpg`,
-        `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
         LANDSCAPE,
+        `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
+        `https://i.ytimg.com/vi/${SHORT_ID}/sardefault.jpg`,
+        `https://i.ytimg.com/vi/${SHORT_ID}/oar2.jpg`,
         `https://i.ytimg.com/vi/${SHORT_ID}/frame0.jpg`,
       ],
     });
@@ -51,8 +55,8 @@ describe("youtubeShortPosterPlan", () => {
         ],
       },
     });
-    expect(youtubeShortPosterPlan(rawJson, LANDSCAPE)?.attempts[0]).toBe(
-      `https://i.ytimg.com/vi/${SHORT_ID}/oar2.jpg`,
+    expect(youtubeShortPosterPlan(rawJson, LANDSCAPE)?.attempts[1]).toBe(
+      `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
     );
   });
 
@@ -60,14 +64,80 @@ describe("youtubeShortPosterPlan", () => {
     expect(youtubeShortPosterPlan(watchCapture(181), LANDSCAPE)).toBeNull();
   });
 
-  it("lists the page poster once when that poster is already an upright file", () => {
-    const upright = `https://i.ytimg.com/vi/${SHORT_ID}/oar2.jpg`;
-    expect(youtubeShortPosterPlan(watchCapture(39), upright)?.attempts).toEqual(
-      [
-        upright,
-        `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
-        `https://i.ytimg.com/vi/${SHORT_ID}/frame0.jpg`,
-      ],
-    );
+  it("keeps an automatic frame the page recorded behind the display covers", () => {
+    const frame = `https://i.ytimg.com/vi/${SHORT_ID}/oar2.jpg`;
+    expect(
+      youtubeShortPosterPlan(watchCapture(39, frame), frame)?.attempts,
+    ).toEqual([
+      `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
+      `https://i.ytimg.com/vi/${SHORT_ID}/sardefault.jpg`,
+      frame,
+      `https://i.ytimg.com/vi/${SHORT_ID}/frame0.jpg`,
+    ]);
+  });
+
+  it("upgrades a recorded display cover to its full-size unsigned file", () => {
+    const signed = `https://i.ytimg.com/vi/${SHORT_ID}/sardefault.jpg?sqp=-oaymwEd&rs=AOn4`;
+    expect(
+      youtubeShortPosterPlan(watchCapture(39, signed), signed)?.attempts.slice(
+        0,
+        3,
+      ),
+    ).toEqual([
+      `https://i.ytimg.com/vi/${SHORT_ID}/sardefault.jpg`,
+      signed,
+      `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
+    ]);
+  });
+
+  it("tries a signed portrait crop as recorded, since its bare file is the landscape composite", () => {
+    const crop = `https://i.ytimg.com/vi/${SHORT_ID}/hq720.jpg?sqp=-oaymwEd&rs=AOn4`;
+    expect(
+      youtubeShortPosterPlan(watchCapture(39, crop), crop)?.attempts[0],
+    ).toBe(crop);
+  });
+
+  it("prefers the Capture's recorded cover over the yt-dlp thumbnail", () => {
+    const cover = `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg?sqp=1`;
+    const ytdlp = `https://i.ytimg.com/vi/${SHORT_ID}/maxresdefault.jpg`;
+    const rawJson = storedAsRawJson({
+      capture: {
+        id: SHORT_ID,
+        source: "youtube",
+        url: `https://www.youtube.com/watch?v=${SHORT_ID}`,
+        duration: 39,
+        media: [
+          {
+            type: "video",
+            url: `https://www.youtube.com/watch?v=${SHORT_ID}`,
+            posterUrl: cover,
+          },
+        ],
+      },
+      ytdlp: { thumbnail: ytdlp },
+    });
+    expect(
+      youtubeShortPosterPlan(rawJson, ytdlp)?.attempts.slice(0, 3),
+    ).toEqual([
+      `https://i.ytimg.com/vi/${SHORT_ID}/oardefault.jpg`,
+      cover,
+      ytdlp,
+    ]);
+  });
+});
+
+function thumb(file: string): string {
+  return `https://i.ytimg.com/vi/${SHORT_ID}/${file}`;
+}
+
+describe("isYoutubeAutomaticFrame", () => {
+  it("names the frames YouTube picks and not the display covers", () => {
+    expect(isYoutubeAutomaticFrame(thumb("oar2.jpg"))).toBe(true);
+    expect(isYoutubeAutomaticFrame(thumb("frame0.jpg"))).toBe(true);
+    expect(isYoutubeAutomaticFrame(thumb("oardefault.jpg"))).toBe(false);
+    expect(isYoutubeAutomaticFrame(thumb("sardefault.jpg"))).toBe(false);
+    expect(isYoutubeAutomaticFrame(thumb("hq720.jpg?sqp=1"))).toBe(false);
+    expect(isYoutubeAutomaticFrame("https://cdn.test/oar2.jpg")).toBe(false);
+    expect(isYoutubeAutomaticFrame(undefined)).toBe(false);
   });
 });

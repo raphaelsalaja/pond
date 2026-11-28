@@ -155,6 +155,27 @@ const markedRef = z.object({
 
 export type MarkedRef = z.infer<typeof markedRef>;
 
+/** The parts of a Shorts page's `ytInitialPlayerResponse` that name its display cover. */
+const youtubePlayer = z.object({
+  videoDetails: optional(z.object({ videoId: text })),
+  microformat: optional(
+    z.object({
+      playerMicroformatRenderer: optional(
+        z.object({
+          thumbnail: optional(
+            z.object({
+              isOriginalAspectRatio: boolean,
+              thumbnails: optional(z.array(mediaVersion)),
+            }),
+          ),
+        }),
+      ),
+    }),
+  ),
+});
+
+export type YoutubePlayerCover = z.infer<typeof youtubePlayer>;
+
 export const browserValidators = {
   text: z.string(),
   number: z.number(),
@@ -165,5 +186,6 @@ export const browserValidators = {
   unsplashBookmarks,
   markedRef,
   markedRefs: z.array(z.catch(z.nullable(markedRef), null)),
+  youtubePlayer,
 };
 export type BrowserValidators = typeof browserValidators;

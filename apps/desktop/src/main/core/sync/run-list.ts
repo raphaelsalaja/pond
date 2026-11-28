@@ -38,7 +38,6 @@ import {
   listHarvestPlan,
   subscriptionCheck,
 } from "./import-scope";
-import { fileIncomingSaves } from "./incoming";
 import {
   loadAllKnownIds,
   loadSyncBaseline,
@@ -418,7 +417,6 @@ export async function syncListSource(
     return;
   }
   await fileIntoFolders(account, filing, collectionPass.collections);
-  await fileIncomingSaves(bulk.createdIds, accountId, source, `sync:${source}`);
 
   const lastSyncedAt = await persistWatermark(accountId, {
     full: baseline.full && harvest.reachedEnd,

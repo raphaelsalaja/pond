@@ -4,14 +4,14 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RuleDialog } from "./rule-dialog";
-import type { RuleDialogProps } from "./rule-dialog";
 import {
   compileRuleQuery,
   editableQuery,
   newRule,
   ruleQueryReady,
-} from "./rule-editor";
+} from "@/shared/components/conditions-editor";
+import { RuleDialog } from "./rule-dialog";
+import type { RuleDialogProps } from "./rule-dialog";
 
 const nameQuery = (name: string): Query => ({
   combinator: "or",
