@@ -5,3 +5,4 @@ export {
   useDownloadHealth,
 } from "./hooks/use-download-health";
 export type { DownloadRow } from "./lib/status-feed";
+export { humanizeError } from "./lib/status-feed/queue";

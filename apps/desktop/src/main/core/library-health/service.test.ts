@@ -8,7 +8,7 @@ import type {
   PayloadInspection,
 } from "../library-integrity";
 import { createLibraryHealthService } from "./service";
-import type { HealthIndexReport, HealthSave } from "./service";
+import type { HealthIndexReport, HealthSave, HealthVideoSave } from "./service";
 import { createLibraryHealthStore } from "./store";
 
 function noop(): void {}
@@ -63,6 +63,22 @@ function healthy(id: string): HealthSave {
   ]);
 }
 
+function videoFailure(
+  id: string,
+  files: HealthVideoSave["files"],
+  error: string,
+): HealthVideoSave {
+  return {
+    id,
+    title: `Title ${id}`,
+    status: "complete",
+    files,
+    mediaType: "video",
+    rawJson: null,
+    videoDownload: { error, attempts: 5, maxAttempts: 5 },
+  };
+}
+
 async function fixture(
   rows: Array<HealthSave>,
   options: {
@@ -70,6 +86,7 @@ async function fixture(
     unreadable?: Array<string>;
     index?: HealthIndexReport;
     gate?: Promise<void>;
+    videoFailures?: Array<HealthVideoSave>;
   } = {},
 ) {
   const root = await mkdtemp(join(tmpdir(), "pond-library-health-"));
@@ -124,6 +141,7 @@ async function fixture(
       integrityRuntime: runtime,
       listSaves: async () => rows,
       getSave: async (id) => byId.get(id) ?? null,
+      listVideoDownloadFailures: async () => options.videoFailures ?? [],
       verifyIndex: async () =>
         options.index ?? { orphans: [], missing: [], errors: {} },
       readCheck: store.read,
@@ -207,6 +225,83 @@ describe("Library Health check", () => {
     await expect(create().overview()).resolves.toMatchObject({
       check: { checkedAt: check?.checkedAt, saves: 4 },
     });
+  });
+
+  it("doesn't treat Saves that legitimately have no original file as damaged", async () => {
+    const { service } = await fixture([
+      {
+        ...save("repo", [
+          file("article", "repo.html"),
+          file("avatar", "avatar.png"),
+          file("thumbnail", "repo.png_thumbnail.png", { custom: true }),
+        ]),
+        source: "github",
+      },
+      save("link", [
+        file("article", "link.html"),
+        file("source_icon", "source-icon.png"),
+        file("thumbnail", "link.png_thumbnail.png", { custom: true }),
+      ]),
+      { ...save("note", []), source: "local" },
+      {
+        ...save("clip", [
+          file("poster", "clip.mp4_poster.jpg"),
+          file("thumbnail", "clip.mp4_poster.jpg_thumbnail.png", {
+            custom: true,
+          }),
+        ]),
+        source: "youtube",
+      },
+    ]);
+    service.start();
+    const { check } = await settled(service);
+    expect(check?.counts["invalid-content"]).toBe(0);
+    expect(
+      check?.issues.filter((issue) => issue.kind === "invalid-content"),
+    ).toEqual([]);
+  });
+
+  it("keeps exhausted video downloads as live findings outside the file check", async () => {
+    const stopped = videoFailure(
+      "stopped",
+      [file("poster", "stopped.mp4_poster.jpg")],
+      "fetch-video-ytdlp: no video produced for stopped",
+    );
+    const failures = [
+      stopped,
+      videoFailure(
+        "downloaded",
+        [file("video", "downloaded.mp4")],
+        "fetch-video-ytdlp: old failure",
+      ),
+      {
+        ...videoFailure(
+          "ingesting",
+          [file("poster", "ingesting.mp4_poster.jpg")],
+          "fetch-video-ytdlp: retrying",
+        ),
+        status: "ingesting" as const,
+      },
+    ];
+    const { service } = await fixture([], { videoFailures: failures });
+
+    const first = await service.overview();
+
+    expect(first.missingVideos).toEqual([
+      {
+        saveId: "stopped",
+        title: "Title stopped",
+        expected: 1,
+        found: 0,
+        error: "fetch-video-ytdlp: no video produced for stopped",
+        attempts: 5,
+        maxAttempts: 5,
+      },
+    ]);
+
+    stopped.status = "ingesting";
+    const next = await service.overview();
+    expect(next.missingVideos).toEqual([]);
   });
 
   it("leaves Saves whose download didn't finish to Downloads", async () => {

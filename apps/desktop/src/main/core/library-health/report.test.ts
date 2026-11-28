@@ -46,6 +46,18 @@ const OVERVIEW: LibraryHealthOverview = {
     index: { orphans: ["x"], missing: [], unreadable: [], backupError: null },
     indexError: null,
   },
+  missingVideos: [
+    {
+      saveId: "save-4",
+      title: "Private Video",
+      expected: 1,
+      found: 0,
+      error:
+        "fetch-video-ytdlp: no video produced for https://private.example/video",
+      attempts: 5,
+      maxAttempts: 5,
+    },
+  ],
   job: {
     id: "job",
     status: "completed",
@@ -81,7 +93,10 @@ describe("Debug Report Library Health", () => {
     const report = debugReportHealth({
       overview: OVERVIEW,
       queue: null,
-      redact: (value) => value.replaceAll(/\/Users\/[^\s]+/g, "<path>"),
+      redact: (value) =>
+        value
+          .replaceAll(/\/Users\/[^\s]+/g, "<path>")
+          .replaceAll(/https?:\/\/[^\s"']+/g, "[redacted-url]"),
     });
     const text = JSON.stringify(report);
 
@@ -107,12 +122,24 @@ describe("Debug Report Library Health", () => {
       unreadable: 0,
       backupVerified: true,
     });
+    expect(report.missingVideos).toEqual([
+      {
+        saveId: "save-4",
+        expected: 1,
+        found: 0,
+        attempts: 5,
+        maxAttempts: 5,
+        error: "fetch-video-ytdlp: no video produced for [redacted-url]",
+      },
+    ]);
     expect(report.check?.unverified).toEqual([
       { saveId: "save-3", reason: "EACCES: <path>" },
     ]);
     expect(report.media.failures[0]?.error).toBe("ffmpeg failed on <path>");
     for (const leak of [
       "Private Trip Photos",
+      "Private Video",
+      "https://private.example/video",
       "Holiday",
       "Diary",
       "secret-name.png",

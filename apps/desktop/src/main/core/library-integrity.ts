@@ -457,6 +457,8 @@ async function inspectInvalidContent(
   runtime: LibraryIntegrityRuntime,
 ): Promise<InternalLibraryRepairIssue | null> {
   const originals = row.files.filter((file) => !isAuxiliaryKind(file.kind));
+  /** A source format with no binary original is valid; only a recorded original can be damaged. */
+  if (originals.length === 0) return null;
   const directory = saveDirIn(runtime.root(), row.id);
   const payloads = await Promise.all(
     originals.map((file) =>
@@ -468,16 +470,14 @@ async function inspectInvalidContent(
     kind: "invalid-content",
     row,
     evidence: {
-      originals: originals.length === 0 ? "none" : "unusable",
+      originals: "unusable",
       files: originals.map((file, index) =>
         fileCheck(file, payloads[index] ?? failedPayload("error")),
       ),
     },
     summary: "Files are missing or damaged",
     detail:
-      originals.length === 0
-        ? "This save has no original file."
-        : "Every original file is missing, empty, or changed since it was saved.",
+      "Every original file is missing, empty, or changed since it was saved.",
     observed: { files: fileFacts(row.files), payloads },
     action: { kind: "invalid-content" },
   });

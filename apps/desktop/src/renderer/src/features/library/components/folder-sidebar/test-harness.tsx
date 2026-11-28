@@ -146,6 +146,7 @@ function sidebarQueries(): QueryHandlers {
         discovering: false,
         failures: [],
       },
+      missingVideos: [],
     }),
     "settings.getPrefs": () => storedPrefs,
     "settings.setPrefs": (patch) => {

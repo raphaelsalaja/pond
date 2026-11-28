@@ -67,21 +67,36 @@ const CHECK: LibraryHealthCheck = {
   indexError: null,
 };
 
+const MISSING_VIDEOS = [
+  {
+    saveId: "video-stopped",
+    title: "Stopped Video",
+    expected: 1,
+    found: 0,
+    error: "fetch-video-ytdlp: no video produced for video-stopped",
+    attempts: 5,
+    maxAttempts: 5,
+  },
+];
+
 let host: HTMLDivElement;
 let root: Root;
 let client: QueryClient;
 let checks: number;
 let rechecks: Array<QueryInput<"libraryHealth.recheck">>;
+let videoDownloads: Array<QueryInput<"saves.downloadVideo">>;
 
 beforeEach(() => {
   checks = 0;
   rechecks = [];
+  videoDownloads = [];
   bridge.use({
     query: {
       "libraryHealth.overview": () => ({
         check: null,
         job: null,
         media: MEDIA,
+        missingVideos: [],
       }),
       "libraryHealth.check": () => {
         checks += 1;
@@ -97,6 +112,10 @@ beforeEach(() => {
       "libraryHealth.recheck": (input) => {
         rechecks.push(input);
         return CHECK;
+      },
+      "saves.downloadVideo": (input) => {
+        videoDownloads.push(input);
+        return { ok: true, queued: input.ids.length };
       },
       "pipeline.status": () => ({ paused: false, inflight: 0 }),
       "pipeline.inflight": () => [],
@@ -166,7 +185,7 @@ it("waits for you to check the library", async () => {
 
 it("drills into a category and rechecks only the Saves you filter to", async () => {
   const categories = buildHealthCategories({
-    overview: { check: CHECK, job: null, media: MEDIA },
+    overview: { check: CHECK, job: null, media: MEDIA, missingVideos: [] },
     downloads: [],
     enrichment: { inflight: 0, failures: [], missingIds: new Set() },
     title: () => null,
@@ -191,6 +210,8 @@ it("drills into a category and rechecks only the Saves you filter to", async () 
   expect(document.body.textContent).toContain("gone.png is missing.");
   expect(document.body.textContent).toContain("Missing or damaged.");
   expect(document.body.textContent).toContain("2 KiB");
+  expect(document.body.textContent).toContain("Move to Trash");
+  expect(document.body.textContent).not.toContain("Repair Original Files");
 
   await click("Couldn't Verify 1");
 
@@ -198,6 +219,35 @@ it("drills into a category and rechecks only the Saves you filter to", async () 
   await click("Recheck 1 Save");
 
   expect(rechecks).toEqual([{ saveIds: ["locked"] }]);
+});
+
+it("offers Download Video for a stopped video download", async () => {
+  const categories = buildHealthCategories({
+    overview: {
+      check: CHECK,
+      job: null,
+      media: MEDIA,
+      missingVideos: MISSING_VIDEOS,
+    },
+    downloads: [],
+    enrichment: { inflight: 0, failures: [], missingIds: new Set() },
+    title: () => null,
+    device: "this Mac",
+  });
+  const downloads = categories.find((item) => item.id === "downloads");
+  if (!downloads) {
+    throw new Error("Missing downloads");
+  }
+
+  await render(<Drilldown category={downloads} />);
+
+  expect(document.body.textContent).toContain("Stopped Video");
+  expect(document.body.textContent).toContain("No video produced");
+  expect(document.body.textContent).toContain("Download Video 1 Save");
+
+  await click("Download Video 1 Save");
+
+  expect(videoDownloads).toEqual([{ ids: ["video-stopped"] }]);
 });
 
 function Drilldown({ category }: { category: HealthCategory }) {

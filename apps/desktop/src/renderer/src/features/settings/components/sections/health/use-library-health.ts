@@ -210,6 +210,34 @@ export async function recheckSaves(
   await qc.invalidateQueries({ queryKey: OVERVIEW_KEY });
 }
 
+function downloadVideoTitle(queued: number): string {
+  if (queued === 0) return "No videos to download";
+  if (queued === 1) return "Downloading video";
+  return `Downloading ${formatNumber(queued)} videos`;
+}
+
+export async function downloadVideos(
+  qc: QueryClient,
+  saveIds: ReadonlyArray<string>,
+): Promise<void> {
+  const unique = [...new Set(saveIds)];
+  try {
+    const result = await window.pond.query("saves.downloadVideo", {
+      ids: unique,
+    });
+    if (!result.ok) throw new Error(result.error);
+    notify({ id: "download-video", title: downloadVideoTitle(result.queued) });
+  } catch (error) {
+    notify({
+      id: "library-health",
+      title: "Couldn't download video",
+      description: errorCopy(error, "Try again."),
+    });
+    return;
+  }
+  await qc.invalidateQueries({ queryKey: OVERVIEW_KEY });
+}
+
 export function repairSaves(
   qc: QueryClient,
   category: HealthCategoryId,
@@ -221,7 +249,7 @@ export function repairSaves(
     inBackground(category, () => repairInBackground(qc, kind, unique));
   if (kind !== "invalid-content") return start();
   Dialog.confirm({
-    title: "Repair Original Files",
+    title: "Move Saves to Trash",
     description: `${formatPlural(unique.length, SAVES)} with missing or damaged files move to Trash. Restore the files from a backup first to keep them.`,
     confirmLabel: "Move to Trash",
     onConfirm: () => {
@@ -268,7 +296,8 @@ async function repairInBackground(
   saveIds: ReadonlyArray<string>,
 ): Promise<void> {
   const noun = REPAIR_NOUNS[kind];
-  const title = `Repairing ${noun}`;
+  const trash = kind === "invalid-content";
+  const title = trash ? "Moving Saves to Trash" : `Repairing ${noun}`;
   const id = notify({
     id: `library-health-repair-${kind}`,
     title,
@@ -302,7 +331,7 @@ async function repairInBackground(
     if (!token || preview.preview?.issues.length === 0) {
       updateNotification({
         id,
-        title: "Nothing to repair",
+        title: trash ? "Nothing to move" : "Nothing to repair",
         timeout: TOAST_TIMEOUT_MS,
       });
     } else {
@@ -313,7 +342,9 @@ async function repairInBackground(
       const skipped = applied.result?.skipped ?? 0;
       updateNotification({
         id,
-        title: `Repaired ${formatPlural(applied.result?.repaired ?? 0, SAVES)}`,
+        title: trash
+          ? `Moved ${formatPlural(applied.result?.repaired ?? 0, SAVES)} to Trash`
+          : `Repaired ${formatPlural(applied.result?.repaired ?? 0, SAVES)}`,
         description:
           skipped > 0 ? `${formatNumber(skipped)} skipped.` : undefined,
         timeout: TOAST_TIMEOUT_MS,
@@ -322,7 +353,7 @@ async function repairInBackground(
   } catch (error) {
     updateNotification({
       id,
-      title: `Couldn't repair ${noun}`,
+      title: trash ? "Couldn't move Saves to Trash" : `Couldn't repair ${noun}`,
       description: errorCopy(error, "Try again."),
       timeout: 5000,
     });

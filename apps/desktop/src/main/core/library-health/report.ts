@@ -11,7 +11,7 @@ export function debugReportHealth(input: {
   redact: (value: string) => string;
 }) {
   const { overview, queue, redact } = input;
-  const { check, job, media } = overview;
+  const { check, job, media, missingVideos } = overview;
   return {
     check: check
       ? {
@@ -50,6 +50,14 @@ export function debugReportHealth(input: {
           })),
         }
       : null,
+    missingVideos: missingVideos.slice(0, REPORT_LIMIT).map((video) => ({
+      saveId: video.saveId,
+      expected: video.expected,
+      found: video.found,
+      attempts: video.attempts,
+      maxAttempts: video.maxAttempts,
+      error: redact(video.error),
+    })),
     job: job
       ? {
           status: job.status,

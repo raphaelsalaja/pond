@@ -52,6 +52,17 @@ const HealthPosterGapSchema = z.object({
 });
 export type HealthPosterGap = z.infer<typeof HealthPosterGapSchema>;
 
+const HealthMissingVideoSchema = z.object({
+  saveId: z.string(),
+  title: z.string().nullable(),
+  expected: z.number(),
+  found: z.number(),
+  error: z.string(),
+  attempts: z.number(),
+  maxAttempts: z.number(),
+});
+export type HealthMissingVideo = z.infer<typeof HealthMissingVideoSchema>;
+
 const HealthUnverifiedSaveSchema = z.object({
   saveId: z.string(),
   title: z.string().nullable(),
@@ -120,6 +131,7 @@ export interface LibraryHealthOverview {
   check: LibraryHealthCheck | null;
   job: LibraryHealthJob | null;
   media: MediaWarmSnapshot;
+  missingVideos: Array<HealthMissingVideo>;
 }
 
 export const LibraryHealthSaveIdsSchema = z.object({
