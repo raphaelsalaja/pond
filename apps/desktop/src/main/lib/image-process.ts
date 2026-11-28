@@ -3,6 +3,7 @@ import type { ImageDownloadSettings, ImageFormat } from "@pond/schema/db";
 import log from "electron-log/main.js";
 import sharp from "sharp";
 import type { Sharp } from "sharp";
+import { decodeHeicOnMacIfNeeded } from "./heic";
 
 type ImageEncodeSettings = Omit<
   ImageDownloadSettings,
@@ -46,7 +47,11 @@ export async function processImage(
   if (nothingToDo) return null;
 
   try {
-    const pipeline = sharp(bytes, { failOn: "none" });
+    const decoded = await decodeHeicOnMacIfNeeded(
+      bytes,
+      prefs.maxLongEdge ?? undefined,
+    );
+    const pipeline = sharp(decoded ?? bytes, { failOn: "none" });
     const metadata = await pipeline.metadata();
     if ((metadata.pages ?? 1) > 1) return null;
 

@@ -82,4 +82,4 @@ export interface MediaIndexStatus {
   lastError: string | null;
 }
 /** Bump when preview generation changes to expire disk and renderer derivatives. */
-export const THUMBNAIL_CACHE_VERSION = 2;
+export const THUMBNAIL_CACHE_VERSION = 3;

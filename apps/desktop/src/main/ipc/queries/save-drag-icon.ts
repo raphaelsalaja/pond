@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { decodeHeicOnMacIfNeeded } from "../../lib/heic";
 
 const ICON_WIDTH = 96;
 const ICON_HEIGHT = 76;
@@ -40,7 +41,8 @@ export function saveDragIconSvg(
 async function previewDataUrl(path: string | null): Promise<string | null> {
   if (!path) return null;
   try {
-    const png = await sharp(path, { failOn: "none", pages: 1 })
+    const decoded = await decodeHeicOnMacIfNeeded(path, 60 * ICON_SCALE);
+    const png = await sharp(decoded ?? path, { failOn: "none", pages: 1 })
       .rotate()
       .resize(60 * ICON_SCALE, 60 * ICON_SCALE, { fit: "cover" })
       .png()
