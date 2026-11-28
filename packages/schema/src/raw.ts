@@ -147,6 +147,8 @@ export interface CaptureExtras {
   externalLink?: string;
   facets?: Array<CaptureFacet>;
   faviconUrl?: string;
+  /** The blob fetch exhausted its retries on these urls, so missing files are a download failure rather than a medialess post. */
+  mediaFetchExhausted?: { at: string; urls: Array<string> };
   /** The web page sells a product, book, album or magazine issue. */
   product?: boolean;
   publisher?: string;

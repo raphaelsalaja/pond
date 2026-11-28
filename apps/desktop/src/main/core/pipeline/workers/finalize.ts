@@ -6,6 +6,7 @@ import log from "electron-log/main.js";
 import { getDb } from "../../../db";
 import { commitSaveIngestEvent } from "../../../lib/wide-event";
 import { persistSave } from "../../persist-save";
+import { TaskPayloadSchema } from "../priority";
 import { CAPTURE_EXPECTATIONS } from "../specs";
 import type { CaptureField } from "../specs";
 import { readSave } from "./apply";
@@ -36,7 +37,11 @@ export async function runFinalize(saveId: string): Promise<void> {
       db.update(tasks)
         .set({
           status: "pending",
-          payload: { force: true },
+          /** The repair pass counts its attempts on this row, and dropping them would re-open dead media on every launch. */
+          payload: {
+            ...TaskPayloadSchema.parse(harvestRow?.payload),
+            force: true,
+          },
           nextRunAt: new Date(Date.now() + 60_000),
           lastError: `finalize: missing required fields ${report.required.missing.join(", ")}`,
           updatedAt: new Date(),
