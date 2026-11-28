@@ -4,7 +4,8 @@ import { extname, join, resolve } from "node:path";
 import { app, net, protocol } from "electron";
 import log from "electron-log/main.js";
 import mime from "mime-types";
-import { POND_PROTOCOL } from "../shared/constants";
+import { POND_PROTOCOL, RENDER_CARD_PAYLOAD_HOST } from "../shared/constants";
+import { renderCardPayloadResponse } from "./core/render-card/payload-store";
 import {
   libraryMediaMetadata,
   readLibraryMediaRange,
@@ -66,6 +67,9 @@ export function registerProtocol() {
       const file = decodeURIComponent(url.pathname.replace(/^\//, ""));
       if (!host || !file) {
         return new Response("bad request", { status: 400 });
+      }
+      if (host === RENDER_CARD_PAYLOAD_HOST) {
+        return renderCardPayloadResponse(file, request.method);
       }
       const { resolved, root } = resolveTarget(host, file);
       if (!root || !isPathInside(root, resolved)) {
