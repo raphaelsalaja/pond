@@ -153,12 +153,7 @@ function currentSearchView(): SearchView | null {
   return searchViewFor(meta.nav);
 }
 
-function searchAllSavesInPlace(): void {
-  const view = currentSearchView();
-  if (view && view.kind !== "trash") {
-    searchAllSaves(view);
-    return;
-  }
+function navigateToLibrarySearch(): void {
   const q = getViewState().q;
   const router = getAppRouter();
   if (!router) {
@@ -167,9 +162,24 @@ function searchAllSavesInPlace(): void {
   getAppHistory()?.push(`/${router.options.stringifySearch(q ? { q } : {})}`);
 }
 
+function searchAllSavesInPlace(): void {
+  const view = currentSearchView();
+  if (view && view.kind !== "trash") {
+    searchAllSaves(view);
+    return;
+  }
+  navigateToLibrarySearch();
+}
+
+function searchCurrentViewInPlace(): void {
+  const view = currentSearchView();
+  searchCurrentView();
+  if (!view) navigateToLibrarySearch();
+}
+
 function openSearch(scope: SearchScope): void {
   if (scope === "all") searchAllSavesInPlace();
-  else searchCurrentView();
+  else searchCurrentViewInPlace();
   libraryHeader.focusSearch();
 }
 

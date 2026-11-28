@@ -67,6 +67,23 @@ it("allows an explicit menu command while an editor has focus", () => {
   expect(shouldIgnoreMenuAction("menu", "view.sidebar.toggle")).toBe(false);
 });
 
+describe("Search Current View", () => {
+  beforeEach(() => {
+    resetFilters();
+  });
+
+  it("opens Library search from a non-grid surface", async () => {
+    setSearchDraft("poster");
+    const router = await openLibraryAt("/downloads");
+
+    handleNativeMenuAction("find.search");
+
+    expect(getViewState().searchAllView).toBeNull();
+    expect(currentLocation(router).pathname).toBe("/");
+    expect(currentLocation(router).search).toMatchObject({ q: "poster" });
+  });
+});
+
 describe("Search All Saves", () => {
   beforeEach(() => {
     resetFilters();
@@ -86,6 +103,7 @@ describe("Search All Saves", () => {
 
     handleNativeMenuAction("find.search");
     expect(getViewState().searchAllView).toBeNull();
+    expect(currentLocation(router).pathname).toBe("/folders/design");
   });
 
   it("leaves Trash for the Library instead of mixing deleted Saves in", async () => {
