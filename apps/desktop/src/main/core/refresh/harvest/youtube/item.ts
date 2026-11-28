@@ -26,7 +26,7 @@ export function buildExpression(videoId: string): string {
 }
 
 async function inPageYoutubeHarvest(
-  _videoId: string,
+  videoId: string,
   norm: ReturnType<typeof inPageYoutubeNormalize>,
 ): Promise<YoutubeWatchPage | null> {
   const deadline = Date.now() + 12_000;
@@ -38,7 +38,8 @@ async function inPageYoutubeHarvest(
       setTimeout(r, 250);
     });
   }
-  return norm.extractWatchPageMeta();
+  const page = norm.extractWatchPageMeta();
+  return page ? norm.withShortsCover(page, videoId) : null;
 }
 
 export function adapt(raw: JsonValue, ctx: HarvestAdaptCtx) {

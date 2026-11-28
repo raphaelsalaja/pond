@@ -3,6 +3,8 @@ import { storedAsRawJson } from "@pond/schema/raw-schema";
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import type { PosterWrite } from "../../../lib/poster-policy";
+import { recordedShort } from "../../../lib/youtube-short-covers.fixture";
+import type { RecordedPlayer } from "../../../lib/youtube-short-covers.fixture";
 import type { persistSave } from "../../persist-save";
 import type { ensureSaveThumbnail } from "../../save-thumbnail";
 import { chooseVideoPoster, ensureRemotePoster } from "./ensure-poster";
@@ -131,7 +133,7 @@ describe("ensureRemotePoster", () => {
     expect(persisted).toEqual([]);
   });
 
-  it("uses a portrait Shorts file and skips a landscape original-aspect file", async () => {
+  it("uses a Short's display cover without reaching the automatic frame", async () => {
     const landscape = await jpeg(4, 2);
     const portrait = await jpeg(2, 4);
     const id = "a88WoGBL1Mc";
@@ -139,10 +141,10 @@ describe("ensureRemotePoster", () => {
     const oar2 = `https://i.ytimg.com/vi/${id}/oar2.jpg`;
     const oardefault = `https://i.ytimg.com/vi/${id}/oardefault.jpg`;
     const { runtime, fetched, persisted } = recordingRuntime(async (url) => {
-      if (url === oar2) {
+      if (url === hq) {
         return image(landscape);
       }
-      if (url === oardefault) {
+      if (url === oar2 || url === oardefault) {
         return image(portrait);
       }
       return { miss: "permanent" };
@@ -171,13 +173,19 @@ describe("ensureRemotePoster", () => {
       runtime,
     );
 
-    expect(fetched).toEqual([oar2, oardefault]);
+    expect(fetched).toEqual([hq, oardefault]);
     expect(persisted).toEqual([
       [
         "s1",
         {},
         expect.objectContaining({
-          newFiles: [expect.objectContaining({ width: 2, height: 4 })],
+          newFiles: [
+            expect.objectContaining({
+              width: 2,
+              height: 4,
+              sourceUrl: oardefault,
+            }),
+          ],
         }),
       ],
     ]);
@@ -414,4 +422,113 @@ describe("chooseVideoPoster", () => {
       ),
     ).resolves.toEqual({ kind: "none" });
   });
+});
+
+/** Serves i.ytimg.com as recorded: bare files at their probed size, signed files at the size their player response lists. */
+function recordedImageHost(id: string) {
+  const recorded = recordedShort(id);
+  const listed = new Map<string, { width: number; height: number }>();
+  for (const player of [recorded.shortsPlayer, recorded.watchPlayer]) {
+    for (const entry of player.microformat.playerMicroformatRenderer.thumbnail
+      .thumbnails) {
+      listed.set(entry.url, entry);
+    }
+  }
+  return async (url: string) => {
+    const parsed = new URL(url);
+    const file = parsed.pathname.split("/").at(-1) ?? "";
+    const dims = parsed.search ? listed.get(url) : recorded.images[file];
+    if (!dims) return { miss: "permanent" as const };
+    return image(
+      await jpeg(Math.round(dims.width / 10), Math.round(dims.height / 10)),
+    );
+  };
+}
+
+/** The upright cover the Shorts player response lists, as harvest records it. */
+function tallestPortrait(player: RecordedPlayer): string {
+  const thumbs =
+    player.microformat.playerMicroformatRenderer.thumbnail.thumbnails
+      .filter((thumb) => thumb.height > thumb.width)
+      .sort((a, b) => b.height - a.height);
+  const url = thumbs[0]?.url;
+  if (!url) throw new Error("no portrait thumbnail");
+  return url;
+}
+
+function shortSave(id: string, posterUrl: string) {
+  return save({
+    rawJson: storedAsRawJson({
+      capture: {
+        id,
+        source: "youtube",
+        url: `https://www.youtube.com/watch?v=${id}`,
+        duration: Number(
+          recordedShort(id).shortsPlayer.videoDetails.lengthSeconds,
+        ),
+        media: [
+          {
+            type: "video",
+            url: `https://www.youtube.com/watch?v=${id}`,
+            posterUrl,
+          },
+        ],
+      },
+    }),
+  });
+}
+
+async function writtenPosterUrl(id: string, posterUrl: string) {
+  const { runtime } = recordingRuntime(recordedImageHost(id));
+  const written: Array<string | undefined> = [];
+  await ensureRemotePoster("s1", shortSave(id, posterUrl), false, {
+    ...runtime,
+    persistSave: async (...[id, patch, options]: PersistArgs) => {
+      written.push(...(options?.newFiles ?? []).map((file) => file.sourceUrl));
+      return runtime.persistSave(id, patch, options);
+    },
+  });
+  return written[0];
+}
+
+function thumb(id: string, file: string): string {
+  return `https://i.ytimg.com/vi/${id}/${file}`;
+}
+
+describe("ensureRemotePoster with recorded YouTube Shorts", () => {
+  it.each([
+    ["-st95jSkprQ", "oardefault.jpg"],
+    ["m6CRWM9sUzU", "sardefault.jpg"],
+  ])(
+    "upgrades %s's Shorts player cover to the full-size %s",
+    async (id, file) => {
+      const shorts = recordedShort(id).shortsPlayer;
+      expect(await writtenPosterUrl(id, tallestPortrait(shorts))).toBe(
+        thumb(id, file),
+      );
+    },
+  );
+
+  it("keeps the signed portrait crop whose bare file is the landscape composite", async () => {
+    const shorts = recordedShort("dbXWZjYJ8t8").shortsPlayer;
+    const crop = tallestPortrait(shorts);
+    expect(new URL(crop).pathname).toBe("/vi/dbXWZjYJ8t8/hq720.jpg");
+    expect(await writtenPosterUrl("dbXWZjYJ8t8", crop)).toBe(crop);
+  });
+
+  it.each([
+    ["-st95jSkprQ", "oardefault.jpg"],
+    ["m6CRWM9sUzU", "sardefault.jpg"],
+    ["dbXWZjYJ8t8", "oar2.jpg"],
+  ])(
+    "repairs %s from the watch page's landscape poster with %s",
+    async (id, file) => {
+      const watch = recordedShort(id).watchPlayer;
+      const landscape =
+        watch.microformat.playerMicroformatRenderer.thumbnail.thumbnails[0]
+          ?.url;
+      if (!landscape) throw new Error(`no recording for ${id}`);
+      expect(await writtenPosterUrl(id, landscape)).toBe(thumb(id, file));
+    },
+  );
 });

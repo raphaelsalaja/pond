@@ -19,7 +19,6 @@ import {
 } from "../../../lib/poster-policy";
 import type { PosterWrite } from "../../../lib/poster-policy";
 import { probeVideoDims } from "../../../lib/video-dims";
-import { youtubeShortPosterPlan } from "../../../lib/youtube-thumbnail";
 import { saveDir } from "../../../paths";
 import { persistSave } from "../../persist-save";
 import { ensureSaveThumbnail } from "../../save-thumbnail";
@@ -320,6 +319,9 @@ async function loadPoster(
   index: number,
   fetchImage: typeof fetchAvatarToTxFile,
 ): Promise<PosterWrite | null> {
+  /** Loaded on first use so the Shorts cover rules stay out of the startup graph. */
+  const { youtubeShortPosterPlan } =
+    await import("../../../lib/youtube-thumbnail");
   const plan = youtubeShortPosterPlan(rawJson, fallbackUrl);
   if (!plan) {
     return fallbackUrl ? posterFromUrl(fallbackUrl, index, fetchImage) : null;

@@ -95,6 +95,13 @@ export async function startLibraryBackgroundWork(): Promise<void> {
       }),
     )
     .then(
+      step("YouTube Short poster repair", async () => {
+        const module =
+          await import("./core/refresh/youtube-short-poster-repair");
+        await module.repairYoutubeShortPosters();
+      }),
+    )
+    .then(
       step("article backfill", async () => {
         const module = await import("./core/refresh/article-backfill");
         await module.startArticleBackfill();
