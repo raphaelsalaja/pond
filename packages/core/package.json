@@ -1,0 +1,21 @@
+{
+  "name": "@pond/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Spike: Pond's duplicate engine and media fingerprints as a native Node-API module, checked against the TypeScript implementation.",
+  "license": "MIT",
+  "author": {
+    "name": "Raphael Salaja",
+    "url": "https://github.com/raphaelsalaja"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/raphaelsalaja/pond.git",
+    "directory": "packages/core"
+  },
+  "main": "./index.cjs",
+  "types": "./index.d.ts",
+  "scripts": {
+    "build:native": "node scripts/build.mjs"
+  }
+}

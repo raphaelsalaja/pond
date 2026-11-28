@@ -197,8 +197,6 @@ export type PostCardArtifactRenderer = "xeet" | "react" | "screenshot";
 export interface PostCardProvenanceEntry {
   renderer: PostCardArtifactRenderer;
   captureTweetVersion: number;
-  /** Set when the renderer was inferred from image geometry rather than observed at write time. */
-  inferred?: true;
 }
 
 export interface PostCardProvenance {

@@ -82,12 +82,13 @@ export async function startLibraryBackgroundWork(): Promise<void> {
         await module.startArchiveBackfill();
       }),
     )
-    .then(
-      step("post card backfill", async () => {
+    .then(() => {
+      /** Renders cards one at a time, so the backfills after it don't wait on it. */
+      void step("post card backfill", async () => {
         const module = await import("./core/refresh/threads-card-backfill");
         await module.startThreadsCardBackfill();
-      }),
-    )
+      })();
+    })
     .then(
       step("source icon backfill", async () => {
         const module = await import("./core/refresh/source-icon-backfill");

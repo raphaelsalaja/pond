@@ -41,15 +41,30 @@ function postRaw(captureTweetVersion = 13): RawJson {
   };
 }
 
-function postCardFile(kind: string, width: number): SaveFile {
+function screenshotRaw(): RawJson {
+  return {
+    ...postRaw(),
+    postCardProvenance: {
+      light: { renderer: "screenshot", captureTweetVersion: 13 },
+      dark: { renderer: "screenshot", captureTweetVersion: 13 },
+    },
+  };
+}
+
+function postCardFile(kind: string): SaveFile {
   return {
     kind,
     path: `${kind}.png`,
     sha256: "abc",
     size: 100,
-    width,
+    width: 1196,
   };
 }
+
+const POST_CARD_FILES = [
+  postCardFile("tweet_screenshot_light"),
+  postCardFile("tweet_screenshot_dark"),
+];
 
 const databases: Array<Database.Database> = [];
 
@@ -115,25 +130,26 @@ function insertPostSave(
 }
 
 describe("post card structured repair selection", () => {
-  const files = [
-    postCardFile("tweet_screenshot_light", 1196),
-    postCardFile("tweet_screenshot_dark", 1196),
-  ];
+  it("targets only cards recorded as live screenshots", () => {
+    expect(
+      needsPostCardStructuredRepair(screenshotRaw(), POST_CARD_FILES),
+    ).toBe(true);
 
-  it("targets cards whose provenance is missing or a screenshot", () => {
-    expect(needsPostCardStructuredRepair(postRaw(), files)).toBe(true);
-
-    const screenshot = {
+    const mixed = {
       ...postRaw(),
       postCardProvenance: {
         light: { renderer: "screenshot" as const, captureTweetVersion: 13 },
         dark: { renderer: "react" as const, captureTweetVersion: 13 },
       },
     };
-    expect(needsPostCardStructuredRepair(screenshot, files)).toBe(true);
+    expect(needsPostCardStructuredRepair(mixed, POST_CARD_FILES)).toBe(true);
   });
 
-  it("leaves proven structured cards and repaired rows alone", () => {
+  it("leaves unprovenanced, structured and repaired cards alone", () => {
+    expect(needsPostCardStructuredRepair(postRaw(), POST_CARD_FILES)).toBe(
+      false,
+    );
+
     const structured = {
       ...postRaw(),
       postCardProvenance: {
@@ -141,39 +157,22 @@ describe("post card structured repair selection", () => {
         dark: { renderer: "react" as const, captureTweetVersion: 13 },
       },
     };
-    expect(needsPostCardStructuredRepair(structured, files)).toBe(false);
-
-    const repaired = withPostCardRepairAttempt(
-      postRaw(),
-      files,
-      "2026-11-16T01:00:00.000Z",
-    );
-    expect(repaired).not.toBeNull();
-    expect(needsPostCardStructuredRepair(repaired, files)).toBe(false);
-    expect(needsPostCardStructuredRepair(postRaw(), [])).toBe(false);
-  });
-
-  it("infers legacy screenshot provenance only from scale-three geometry", () => {
-    const repaired = withPostCardRepairAttempt(
-      postRaw(),
-      [
-        postCardFile("tweet_screenshot_light", 1800),
-        postCardFile("tweet_screenshot_dark", 1196),
-      ],
-      "2026-11-16T01:00:00.000Z",
+    expect(needsPostCardStructuredRepair(structured, POST_CARD_FILES)).toBe(
+      false,
     );
 
-    expect(repaired?.postCardProvenance).toEqual({
-      light: {
-        renderer: "screenshot",
-        captureTweetVersion: 13,
-        inferred: true,
-      },
-    });
+    const repaired = withPostCardRepairAttempt(
+      screenshotRaw(),
+      "2026-11-16T01:00:00.000Z",
+    );
     expect(repaired?.postCardRepair).toEqual({
       version: 1,
       attemptedAt: "2026-11-16T01:00:00.000Z",
     });
+    expect(needsPostCardStructuredRepair(repaired, POST_CARD_FILES)).toBe(
+      false,
+    );
+    expect(needsPostCardStructuredRepair(screenshotRaw(), [])).toBe(false);
   });
 });
 
@@ -238,12 +237,20 @@ describe.skipIf(!nativeSqliteAvailable())("requeueReplyCaptures", () => {
 describe.skipIf(!nativeSqliteAvailable())(
   "startThreadsCardBackfill post card repair",
   () => {
-    it("force-renders an unprovenanced legacy card and records a failed repair", async () => {
+    it("leaves a Save with no provenance alone on upgrade", async () => {
       const { db, runtime, captureCalls } = setup();
-      insertPostSave(db, "legacy", postRaw(), [
-        postCardFile("tweet_screenshot_light", 1800),
-        postCardFile("tweet_screenshot_dark", 1800),
-      ]);
+      insertPostSave(db, "legacy", postRaw(), POST_CARD_FILES);
+
+      await startThreadsCardBackfill(runtime);
+
+      expect(captureCalls).toEqual([]);
+      const row = db.select().from(saves).where(eq(saves.id, "legacy")).get();
+      expect(row?.rawJson).toEqual(postRaw());
+    });
+
+    it("force-renders a recorded screenshot card and records a failed repair", async () => {
+      const { db, runtime, captureCalls } = setup();
+      insertPostSave(db, "shot", screenshotRaw(), POST_CARD_FILES);
 
       await expect(startThreadsCardBackfill(runtime)).resolves.toMatchObject({
         ok: true,
@@ -251,32 +258,37 @@ describe.skipIf(!nativeSqliteAvailable())(
       });
 
       expect(captureCalls).toEqual([
-        { id: "legacy", opts: { nativeOnly: true, force: true } },
+        { id: "shot", opts: { nativeOnly: true, force: true } },
       ]);
-      const row = db.select().from(saves).where(eq(saves.id, "legacy")).get();
-      expect(row?.rawJson?.postCardProvenance).toEqual({
-        light: {
-          renderer: "screenshot",
-          captureTweetVersion: 13,
-          inferred: true,
-        },
-        dark: {
-          renderer: "screenshot",
-          captureTweetVersion: 13,
-          inferred: true,
-        },
-      });
+      const row = db.select().from(saves).where(eq(saves.id, "shot")).get();
       expect(row?.rawJson?.postCardRepair).toEqual({
         version: 1,
         attemptedAt: "2026-11-16T01:00:00.000Z",
       });
+
+      await startThreadsCardBackfill(runtime);
+      expect(captureCalls).toHaveLength(1);
+    });
+
+    it("records the repair attempt when the render throws", async () => {
+      const { db, runtime, captureCalls } = setup();
+      insertPostSave(db, "shot", screenshotRaw(), POST_CARD_FILES);
+      runtime.runCaptureTweet = async (id, opts) => {
+        captureCalls.push(opts ? { id, opts } : { id });
+        throw new Error("render crashed");
+      };
+
+      await startThreadsCardBackfill(runtime);
+      await startThreadsCardBackfill(runtime);
+
+      expect(captureCalls).toHaveLength(1);
+      const row = db.select().from(saves).where(eq(saves.id, "shot")).get();
+      expect(row?.rawJson?.postCardRepair?.version).toBe(1);
     });
 
     it("preserves rawJson updates made during a failed repair", async () => {
       const { db, runtime } = setup();
-      insertPostSave(db, "legacy", postRaw(), [
-        postCardFile("tweet_screenshot_light", 1800),
-      ]);
+      insertPostSave(db, "legacy", screenshotRaw(), POST_CARD_FILES);
       const runCaptureTweet = runtime.runCaptureTweet;
       runtime.runCaptureTweet = async (id, opts) => {
         const result = await runCaptureTweet(id, opts);
@@ -313,9 +325,7 @@ describe.skipIf(!nativeSqliteAvailable())(
         mediaAdded: false,
         replyParentPending: false,
       });
-      insertPostSave(db, "legacy", postRaw(), [
-        postCardFile("tweet_screenshot_light", 1800),
-      ]);
+      insertPostSave(db, "legacy", screenshotRaw(), POST_CARD_FILES);
 
       await expect(startThreadsCardBackfill(runtime)).resolves.toMatchObject({
         recaptured: 1,
@@ -340,10 +350,7 @@ describe.skipIf(!nativeSqliteAvailable())(
             dark: { renderer: "react", captureTweetVersion: 13 },
           },
         },
-        [
-          postCardFile("tweet_screenshot_light", 1196),
-          postCardFile("tweet_screenshot_dark", 1196),
-        ],
+        POST_CARD_FILES,
       );
 
       await startThreadsCardBackfill(runtime);
@@ -363,10 +370,7 @@ describe.skipIf(!nativeSqliteAvailable())(
             dark: { renderer: "react", captureTweetVersion: 12 },
           },
         },
-        [
-          postCardFile("tweet_screenshot_light", 1196),
-          postCardFile("tweet_screenshot_dark", 1196),
-        ],
+        POST_CARD_FILES,
       );
 
       await startThreadsCardBackfill(runtime);

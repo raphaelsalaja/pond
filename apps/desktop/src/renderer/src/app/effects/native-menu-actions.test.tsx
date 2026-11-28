@@ -1,10 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { currentLocation, openLibraryAt } from "@/app/test/library-router";
+import { filterToolbar } from "@/features/library/components/filter-menu/toolbar-state";
 import { searchViewKey } from "@/features/library/lib/search-view";
+import { libraryHeader } from "@/features/library/state/library-header";
 import {
   getViewState,
   resetFilters,
   setSearchDraft,
+  setSort,
 } from "@/features/library/state/view-store";
 import {
   handleNativeMenuAction,
@@ -97,5 +100,86 @@ describe("Search All Saves", () => {
     expect(getViewState().searchAllView).toBeNull();
     expect(currentLocation(router).pathname).toBe("/");
     expect(currentLocation(router).search).toMatchObject({ q: "poster" });
+  });
+});
+
+function runGridCommands() {
+  const focusSearch = vi.spyOn(libraryHeader, "focusSearch");
+  const subfolders = getViewState().includeSubfolders;
+  handleNativeMenuAction("find.search");
+  handleNativeMenuAction("find.filters.toggle");
+  handleNativeMenuAction("view.random");
+  handleNativeMenuAction("view.subfolders.toggle");
+  const result = {
+    searched: focusSearch.mock.calls.length > 0,
+    filtersOpen: filterToolbar.isOpen(),
+    sortKey: getViewState().sortKey,
+    subfoldersChanged: getViewState().includeSubfolders !== subfolders,
+  };
+  focusSearch.mockRestore();
+  return result;
+}
+
+describe("grid-only commands", () => {
+  beforeEach(() => {
+    resetFilters();
+    filterToolbar.setOpen(false);
+    setSort({ key: "savedAt", dir: "desc" });
+  });
+
+  it("apply on a Library grid", async () => {
+    await openLibraryAt("/folders/design");
+
+    expect(runGridCommands()).toEqual({
+      searched: true,
+      filtersOpen: true,
+      sortKey: "random",
+      subfoldersChanged: true,
+    });
+  });
+
+  it.each(["/downloads", "/tags", "/sources"])(
+    "leave hidden view state alone on %s",
+    async (path) => {
+      await openLibraryAt(path);
+
+      expect(runGridCommands()).toEqual({
+        searched: false,
+        filtersOpen: false,
+        sortKey: "savedAt",
+        subfoldersChanged: false,
+      });
+    },
+  );
+
+  it("leave the grid under an open Save alone", async () => {
+    await openLibraryAt("/folders/design?save=demo");
+
+    expect(runGridCommands()).toEqual({
+      searched: false,
+      filtersOpen: false,
+      sortKey: "savedAt",
+      subfoldersChanged: false,
+    });
+  });
+
+  it("keep search and filters in Inbox review but not view options", async () => {
+    await openLibraryAt("/inbox");
+
+    expect(runGridCommands()).toEqual({
+      searched: true,
+      filtersOpen: true,
+      sortKey: "savedAt",
+      subfoldersChanged: false,
+    });
+  });
+
+  it("still lets Search All Saves leave a page for All", async () => {
+    setSearchDraft("poster");
+    const router = await openLibraryAt("/downloads");
+
+    handleNativeMenuAction("find.search-all");
+
+    expect(currentLocation(router).pathname).toBe("/");
   });
 });

@@ -27,6 +27,7 @@ import {
   runNewAction,
   verifyIntegrity,
 } from "@/features/library/components/new-menu/actions";
+import { gridTakes } from "@/features/library/lib/grid-commands";
 import {
   backupLibrary,
   createLibrary,
@@ -132,19 +133,19 @@ export function MenuBridge() {
           return;
 
         case "view.layout.cycle":
-          cycleLayout();
+          if (gridTakes("view")) cycleLayout();
           return;
 
         case "view.zoom-in":
-          adjustZoom(20);
+          if (gridTakes("view")) adjustZoom(20);
           return;
 
         case "view.zoom-out":
-          adjustZoom(-20);
+          if (gridTakes("view")) adjustZoom(-20);
           return;
 
         case "view.zoom-reset":
-          setZoom(ZOOM_DEFAULT);
+          if (gridTakes("view")) setZoom(ZOOM_DEFAULT);
           return;
 
         case "library.search":
@@ -197,7 +198,7 @@ export function MenuBridge() {
         case "view.layout.justified":
         case "view.layout.list": {
           const next = id.slice("view.layout.".length);
-          if (isLayoutValue(next)) setLayout(next);
+          if (isLayoutValue(next) && gridTakes("view")) setLayout(next);
           return;
         }
 

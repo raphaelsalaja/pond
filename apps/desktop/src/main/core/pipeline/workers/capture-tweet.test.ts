@@ -360,21 +360,13 @@ describe("post card renderer provenance", () => {
     ).toBe(true);
   });
 
-  it("replaces inferred screenshot provenance and clears the repair marker after a structured render", async () => {
+  it("replaces screenshot provenance and clears the repair marker after a structured render", async () => {
     const raw: RawJson = {
       ...postRaw(),
       captureTweetVersion: 13,
       postCardProvenance: {
-        light: {
-          renderer: "screenshot",
-          captureTweetVersion: 13,
-          inferred: true,
-        },
-        dark: {
-          renderer: "screenshot",
-          captureTweetVersion: 13,
-          inferred: true,
-        },
+        light: { renderer: "screenshot", captureTweetVersion: 13 },
+        dark: { renderer: "screenshot", captureTweetVersion: 13 },
       },
       postCardRepair: { version: 1, attemptedAt: "2026-11-16T00:00:00.000Z" },
     };

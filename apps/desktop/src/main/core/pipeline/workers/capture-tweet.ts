@@ -612,8 +612,7 @@ function mergePostCardProvenance(
     const existing = provenance[scheme];
     if (
       existing?.renderer === renderer &&
-      existing.captureTweetVersion === version &&
-      existing.inferred !== true
+      existing.captureTweetVersion === version
     ) {
       continue;
     }
@@ -783,10 +782,7 @@ async function markReplyParentUnavailable<SaveRow extends CaptureTweetSave>(
   await ports.persistSave(
     saveId,
     { rawJson },
-    {
-      actorReason: "pipeline:capture-tweet:reply-parent-unavailable",
-      writeInfo: true,
-    },
+    { actorReason: "pipeline:capture-tweet:reply-parent-unavailable" },
   );
 }
 
@@ -809,7 +805,7 @@ async function mergeReplyParent<SaveRow extends CaptureTweetSave>(
   await ports.persistSave(
     saveId,
     { rawJson },
-    { actorReason: "pipeline:capture-tweet:reply-parent", writeInfo: true },
+    { actorReason: "pipeline:capture-tweet:reply-parent" },
   );
   return true;
 }

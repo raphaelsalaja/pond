@@ -89,6 +89,7 @@ export async function repairTweetLinks(
         { actorReason: "sync:twitter-link-repair" },
       );
       try {
+        /** Loaded on use so card capture stays out of the main static graph budget. */
         const { runCaptureTweet } =
           await import("../pipeline/workers/capture-tweet");
         await runCaptureTweet(row.id, { nativeOnly: true, force: true });

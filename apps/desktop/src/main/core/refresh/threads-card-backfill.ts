@@ -27,18 +27,11 @@ const POST_CARD_REPAIR_VERSION = 1;
 const REPLY_RECAPTURE_OPS = ["capture_tweet", "finalize"] as const;
 
 type PostCardScheme = "light" | "dark";
-type PostCardFile = Pick<SaveFile, "kind" | "width">;
+type PostCardFile = Pick<SaveFile, "kind">;
 
 interface BackfillRow {
   id: string;
   source: "twitter" | "threads";
-}
-
-interface PostCardBackfillRow {
-  id: string;
-  source: "twitter" | "threads" | "bluesky";
-  rawJson: RawJson | null;
-  files: Array<SaveFile>;
 }
 
 interface ReplyRecaptureRuntime {
@@ -66,6 +59,11 @@ function postCardScheme(kind: string): PostCardScheme | null {
   return null;
 }
 
+/**
+ * Only a card recorded as a live screenshot is repaired. A Save with no
+ * provenance predates it and is left alone, so upgrading never re-renders the
+ * whole Library.
+ */
 export function needsPostCardStructuredRepair(
   rawJson: RawJson | null,
   files: ReadonlyArray<PostCardFile>,
@@ -77,63 +75,39 @@ export function needsPostCardStructuredRepair(
   return files.some((file) => {
     const scheme = postCardScheme(file.kind);
     if (!scheme) return false;
-    const renderer = rawJson.postCardProvenance?.[scheme]?.renderer;
-    return renderer !== "xeet" && renderer !== "react";
+    return rawJson.postCardProvenance?.[scheme]?.renderer === "screenshot";
   });
-}
-
-/** Scale-three screenshot padding keeps widths on that grid; scale-two structured card widths do not. */
-function hasLegacyScreenshotGeometry(
-  width: number | null | undefined,
-): boolean {
-  return width !== undefined && width !== null && width > 0 && width % 3 === 0;
 }
 
 export function withPostCardRepairAttempt(
   stored: RawJson | null,
-  files: ReadonlyArray<PostCardFile>,
   attemptedAt: string,
 ): RawJson | null {
   if (!stored) return null;
-  const rawJson = structuredClone(stored);
-  const artifactVersion =
-    rawJson.captureTweetVersion !== undefined &&
-    Number.isFinite(rawJson.captureTweetVersion)
-      ? rawJson.captureTweetVersion
-      : 0;
-  const provenance = { ...rawJson.postCardProvenance };
-  let inferred = false;
-  for (const file of files) {
-    const scheme = postCardScheme(file.kind);
-    if (!scheme || provenance[scheme]) continue;
-    if (!hasLegacyScreenshotGeometry(file.width)) continue;
-    provenance[scheme] = {
-      renderer: "screenshot",
-      captureTweetVersion: artifactVersion,
-      inferred: true,
-    };
-    inferred = true;
-  }
-  if (inferred) rawJson.postCardProvenance = provenance;
-  rawJson.postCardRepair = {
-    version: POST_CARD_REPAIR_VERSION,
-    attemptedAt,
+  return {
+    ...stored,
+    postCardRepair: { version: POST_CARD_REPAIR_VERSION, attemptedAt },
   };
-  return rawJson;
 }
 
+/** Reads the row again so edits made while the render ran are kept. */
 async function persistPostCardRepairAttempt(
-  row: PostCardBackfillRow,
+  db: Db,
+  id: string,
   runtime: PostCardBackfillRuntime,
 ): Promise<void> {
+  const fresh = db
+    .select({ rawJson: saves.rawJson })
+    .from(saves)
+    .where(eq(saves.id, id))
+    .get();
   const rawJson = withPostCardRepairAttempt(
-    row.rawJson,
-    row.files,
+    fresh?.rawJson ?? null,
     runtime.now().toISOString(),
   );
   if (!rawJson) return;
   await runtime.persistSave(
-    row.id,
+    id,
     { rawJson },
     {
       actorReason: "pipeline:post-card-repair",
@@ -204,24 +178,8 @@ export async function startThreadsCardBackfill(
             if (result.captured > 0) {
               recaptured += 1;
             } else {
-              if (repair) {
-                const fresh = db
-                  .select({ rawJson: saves.rawJson, files: saves.files })
-                  .from(saves)
-                  .where(eq(saves.id, row.id))
-                  .get();
-                if (fresh) {
-                  await persistPostCardRepairAttempt(
-                    {
-                      id: row.id,
-                      source,
-                      rawJson: fresh.rawJson,
-                      files: fresh.files,
-                    },
-                    runtime,
-                  );
-                }
-              }
+              if (repair)
+                await persistPostCardRepairAttempt(db, row.id, runtime);
               if (
                 stale &&
                 source !== "bluesky" &&
@@ -232,6 +190,17 @@ export async function startThreadsCardBackfill(
             }
           } catch (error) {
             log.warn("[pond post-card-backfill] failed", row.id, error);
+            /** Without a marker, a Save that throws would be force re-rendered on every start. */
+            if (repair) {
+              await persistPostCardRepairAttempt(db, row.id, runtime).catch(
+                (cause: unknown) =>
+                  log.warn(
+                    "[pond post-card-backfill] repair marker failed",
+                    row.id,
+                    cause,
+                  ),
+              );
+            }
           }
         }),
       );
@@ -335,7 +304,7 @@ export async function requeueReplyCaptures(
         ingestStartedAt: now,
         ingestCompletedAt: null,
       },
-      { actorReason: "pipeline:reply-recapture-backfill", writeInfo: true },
+      { actorReason: "pipeline:reply-recapture-backfill" },
     );
     queued += 1;
   }

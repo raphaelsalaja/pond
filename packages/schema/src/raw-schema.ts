@@ -148,7 +148,6 @@ const RawSplitSchema = z.object({
 const PostCardProvenanceEntrySchema = z.object({
   renderer: z.enum(["xeet", "react", "screenshot"]),
   captureTweetVersion: z.number().int(),
-  inferred: z.literal(true).optional(),
 });
 
 const PostCardProvenanceSchema = z.object({
