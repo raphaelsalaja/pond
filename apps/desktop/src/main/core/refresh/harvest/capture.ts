@@ -1,15 +1,15 @@
 import type { Source } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
-import { sourceLabel } from "@pond/schema/sources";
+import { sourceIdFromUrl } from "@pond/schema/sources";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import {
-  AuthRequiredError,
   TerminalError,
   TransientError,
 } from "../../pipeline/extractors/errors";
 import { partitionForIngest } from "../../sync/accounts";
-import { harvestUrl } from "../harvest-window/harvest";
+import { harvestFailure, harvestUrl } from "../harvest-window/harvest";
 import type { HarvestArgs, HarvestResult } from "../harvest-window/harvest";
+import type { GithubGet, GithubPageReader } from "./github/api";
 import { fetchPinterestCapture, pinterestSessionGet } from "./pinterest/api";
 import type { PinterestCaptureResult, PinterestGet } from "./pinterest/api";
 
@@ -21,6 +21,8 @@ interface CaptureArgs {
   reportActivity?: ReportDownloadActivity;
   isSignedIn?: (source: Source, partition: string) => Promise<boolean>;
   signal?: AbortSignal;
+  /** The harvest task's last try, when a partial Capture beats none. */
+  finalAttempt?: boolean;
 }
 
 interface CaptureDeps {
@@ -31,6 +33,8 @@ interface CaptureDeps {
   }) => Promise<PinterestCaptureResult>;
   anonymousGet?: PinterestGet;
   signedGet?: PinterestGet;
+  githubGet?: GithubGet;
+  readGithubPage?: GithubPageReader;
   partition?: string;
 }
 
@@ -119,6 +123,22 @@ export async function captureFromSource(
     }
   }
 
+  if (args.source === "github") {
+    const sourceId =
+      args.sourceId ?? sourceIdFromUrl("github", args.url)?.toLowerCase();
+    if (!sourceId) throw new TerminalError("not a github repository url");
+    /** Cheerio's parser chain breaks the main startup budget when statically imported. */
+    const { captureGithubRepo } = await import("./github/api");
+    return captureGithubRepo(
+      { ...args, sourceId },
+      {
+        githubGet: deps.githubGet,
+        readPage: deps.readGithubPage,
+        partition: deps.partition,
+      },
+    );
+  }
+
   const result = await harvest(args);
   if (result.ok && result.capture) return result.capture;
   throw harvestFailure(args.source, result.reason);
@@ -175,26 +195,4 @@ async function capturePinterestPin(
 
 function hasMedia(capture: Capture): boolean {
   return capture.media.length > 0;
-}
-
-function harvestFailure(
-  source: Source,
-  reason: HarvestResult["reason"],
-): AuthRequiredError | TerminalError | TransientError {
-  switch (reason) {
-    case "auth_required":
-      return new AuthRequiredError(
-        `Connect ${sourceLabel(source)} with the Pond extension`,
-        source,
-      );
-    case "navigate_failed":
-      return new TransientError("navigate failed");
-    case "timeout":
-      return new TransientError("scrape timeout");
-    case "not_found":
-      return new TerminalError("page not found or no longer exists");
-    /** An empty scrape means Pond found nothing it could read, not that the page is gone, so it retries like the Pinterest path. */
-    default:
-      return new TransientError("scrape returned no data");
-  }
 }

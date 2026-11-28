@@ -29,10 +29,16 @@ interface HarvestPayload {
   linkedPage?: boolean;
 }
 
+interface HarvestContext extends TransferOptions {
+  /** This run's 1-based attempt, and the task's limit. */
+  attempt?: number;
+  maxAttempts?: number;
+}
+
 export async function runHarvestMetadata(
   saveId: string,
   payload: HarvestPayload = {},
-  ctx: TransferOptions = {},
+  ctx: HarvestContext = {},
 ): Promise<void> {
   const save = await readSave(saveId);
   if (!save) return;
@@ -65,6 +71,10 @@ export async function runHarvestMetadata(
             reportActivity: ctx.reportActivity,
             isSignedIn: isPartitionSignedIn,
             signal: ctx.signal,
+            finalAttempt:
+              ctx.attempt !== undefined &&
+              ctx.maxAttempts !== undefined &&
+              ctx.attempt >= ctx.maxAttempts,
           });
   const { capture, files } = splitArticle(
     withYtdlpAuthor(harvested, save.rawJson?.ytdlp),
