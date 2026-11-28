@@ -16,6 +16,8 @@ export const KEYCHAIN_AGENT_PREFIX = "agent";
 
 export const POND_PROTOCOL = "pond";
 
+export const RENDER_CARD_PAYLOAD_HOST = "_render-card";
+
 export const IPC = {
   tx: "pond:tx",
   txBatch: "pond:tx-batch",

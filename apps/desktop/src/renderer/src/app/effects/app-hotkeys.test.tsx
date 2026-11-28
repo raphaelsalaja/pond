@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { openLibraryAt } from "@/app/test/library-router";
 import {
   commandMenu,
   useCommandMenuOpen,
@@ -51,11 +52,12 @@ describe("app hotkeys in text fields", () => {
   let host: HTMLDivElement;
   let root: Root;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     bridge.use({
       query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
       syncRunAll: async () => ({ ok: true }),
     });
+    await openLibraryAt("/");
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -270,5 +272,55 @@ describe("app hotkeys in text fields", () => {
     const layout = getViewState().layout;
     await act(async () => bridge.emit("onShortcutAction", "view.layout-cycle"));
     expect(getViewState().layout).not.toBe(layout);
+  });
+
+  it("leaves layout, zoom, sort and View Options alone off the grid", async () => {
+    await openLibraryAt("/sources");
+    await mount();
+    const before = getViewState();
+    await act(async () => {
+      press("2");
+      press("v");
+      press("y");
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "=",
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      bridge.emit("onShortcutAction", "view.layout-cycle");
+    });
+    const after = getViewState();
+    expect(after.layout).toBe(before.layout);
+    expect(after.zoom).toBe(before.zoom);
+    expect(after.sortDir).toBe(before.sortDir);
+    expect(attr("popover")).toBe("closed");
+  });
+
+  it("does not focus a search field that a page does not have", async () => {
+    const focusSearch = vi.spyOn(libraryHeader, "focusSearch");
+    await openLibraryAt("/downloads");
+    await mount();
+    await act(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "f",
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(focusSearch).not.toHaveBeenCalled();
+    focusSearch.mockRestore();
+  });
+
+  it("changes the layout from the keyboard on the grid", async () => {
+    await mount();
+    const layout = getViewState().layout === "grid" ? "list" : "grid";
+    await act(async () => press(layout === "grid" ? "2" : "4"));
+    expect(getViewState().layout).toBe(layout);
   });
 });

@@ -161,6 +161,8 @@ export function LibraryView() {
   const publishedKey = useRef<string | null>(null);
   const [reconcileSelection] = useState(createSelectionReconciler);
 
+  useEffect(() => () => resultNavigation.clearSource(), []);
+
   useEffect(() => {
     const key = data.paging.queryKey;
     const unsettled =
