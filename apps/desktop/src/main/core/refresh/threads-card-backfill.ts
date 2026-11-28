@@ -18,6 +18,7 @@ import {
   isCaptureTweetStale,
   runCaptureTweet,
 } from "../pipeline/workers/capture-tweet";
+import { postCardFilePlausible } from "./harvest-window/screenshot-plausibility";
 
 const PAGE_SIZE = 200;
 const MAX_INFLIGHT = 1;
@@ -27,7 +28,7 @@ const POST_CARD_REPAIR_VERSION = 1;
 const REPLY_RECAPTURE_OPS = ["capture_tweet", "finalize"] as const;
 
 type PostCardScheme = "light" | "dark";
-type PostCardFile = Pick<SaveFile, "kind">;
+type PostCardFile = Pick<SaveFile, "kind" | "width" | "height">;
 
 interface BackfillRow {
   id: string;
@@ -60,9 +61,8 @@ function postCardScheme(kind: string): PostCardScheme | null {
 }
 
 /**
- * Only a card recorded as a live screenshot is repaired. A Save with no
- * provenance predates it and is left alone, so upgrading never re-renders the
- * whole Library.
+ * Screenshot-provenanced cards and unprovenanced cards too small to hold a post are repaired.
+ * @remarks Plausibly sized unprovenanced cards are left alone, so upgrading never re-renders the whole Library.
  */
 export function needsPostCardStructuredRepair(
   rawJson: RawJson | null,
@@ -75,7 +75,10 @@ export function needsPostCardStructuredRepair(
   return files.some((file) => {
     const scheme = postCardScheme(file.kind);
     if (!scheme) return false;
-    return rawJson.postCardProvenance?.[scheme]?.renderer === "screenshot";
+    const renderer = rawJson.postCardProvenance?.[scheme]?.renderer;
+    if (renderer === "screenshot") return true;
+    if (renderer) return false;
+    return !postCardFilePlausible(file);
   });
 }
 

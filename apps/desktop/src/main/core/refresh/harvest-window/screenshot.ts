@@ -23,6 +23,7 @@ import {
   buildCaptureMediaSettledExpression,
   buildThreadsPostRectExpression,
 } from "./screenshot-dom";
+import { postCardRectPlausible } from "./screenshot-plausibility";
 import {
   buildCaptureSchemeEvidenceExpression,
   captureSchemeDomEvidenceSchema,
@@ -392,6 +393,9 @@ interface TweetSchemeCaptureSample extends CapturedSchemeSample {
 
 class ScreenshotNoArticleError extends Error {}
 
+/** The rect finder latched onto page chrome rather than the post, so capturing it would persist garbage. */
+class ScreenshotImplausibleRectError extends Error {}
+
 async function captureCurrentScheme(
   win: BrowserWindow,
   sourceId: string,
@@ -434,6 +438,14 @@ async function captureCurrentScheme(
         await sleep(400);
         const remeasured = await readArticleRect(win, sourceId, kind, parentId);
         if (remeasured) rect = remeasured;
+      }
+
+      if (!postCardRectPlausible(rect)) {
+        log.warn("[pond screenshot:tweet] implausible post rect", sourceId, {
+          width: rect.width,
+          height: rect.height,
+        });
+        throw new ScreenshotImplausibleRectError();
       }
 
       if (!(await waitForCaptureMedia(win))) {
@@ -507,6 +519,10 @@ async function captureCurrentScheme(
   } catch (error) {
     if (error instanceof ScreenshotNoArticleError) {
       return { ok: false, reason: "no_article" };
+    }
+    if (error instanceof ScreenshotImplausibleRectError) {
+      /** capture_failed stays transient for reply parents; no_article would settle them as permanently unavailable. */
+      return { ok: false, reason: "capture_failed" };
     }
     throw error;
   }

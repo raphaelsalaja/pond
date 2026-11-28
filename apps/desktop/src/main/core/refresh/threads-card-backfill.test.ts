@@ -66,6 +66,23 @@ const POST_CARD_FILES = [
   postCardFile("tweet_screenshot_dark"),
 ];
 
+/** Dimensions of the generic Threads wordmark the fallback captures when the post never renders in the hidden window. */
+function wordmarkCardFile(kind: string): SaveFile {
+  return {
+    kind,
+    path: `${kind}.png`,
+    sha256: "abc",
+    size: 2659,
+    width: 276,
+    height: 194,
+  };
+}
+
+const WORDMARK_CARD_FILES = [
+  wordmarkCardFile("tweet_screenshot_light"),
+  wordmarkCardFile("tweet_screenshot_dark"),
+];
+
 const databases: Array<Database.Database> = [];
 
 afterEach(() => {
@@ -143,6 +160,31 @@ describe("post card structured repair selection", () => {
       },
     };
     expect(needsPostCardStructuredRepair(mixed, POST_CARD_FILES)).toBe(true);
+  });
+
+  it("repairs an unprovenanced card whose file is implausibly small", () => {
+    expect(needsPostCardStructuredRepair(postRaw(), WORDMARK_CARD_FILES)).toBe(
+      true,
+    );
+  });
+
+  it("leaves a plausibly sized unprovenanced card alone", () => {
+    expect(needsPostCardStructuredRepair(postRaw(), POST_CARD_FILES)).toBe(
+      false,
+    );
+  });
+
+  it("trusts structured provenance even when file dimensions are missing or small", () => {
+    const structured = {
+      ...postRaw(),
+      postCardProvenance: {
+        light: { renderer: "xeet" as const, captureTweetVersion: 13 },
+        dark: { renderer: "react" as const, captureTweetVersion: 13 },
+      },
+    };
+    expect(needsPostCardStructuredRepair(structured, WORDMARK_CARD_FILES)).toBe(
+      false,
+    );
   });
 
   it("leaves unprovenanced, structured and repaired cards alone", () => {
@@ -246,6 +288,17 @@ describe.skipIf(!nativeSqliteAvailable())(
       expect(captureCalls).toEqual([]);
       const row = db.select().from(saves).where(eq(saves.id, "legacy")).get();
       expect(row?.rawJson).toEqual(postRaw());
+    });
+
+    it("force-renders an unprovenanced Save whose card files are implausibly small", async () => {
+      const { db, runtime, captureCalls } = setup();
+      insertPostSave(db, "wordmark", postRaw(), WORDMARK_CARD_FILES);
+
+      await startThreadsCardBackfill(runtime);
+
+      expect(captureCalls).toEqual([
+        { id: "wordmark", opts: { nativeOnly: true, force: true } },
+      ]);
     });
 
     it("force-renders a recorded screenshot card and records a failed repair", async () => {
