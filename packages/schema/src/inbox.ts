@@ -13,7 +13,12 @@ export const INBOX_STATE_LABELS = {
 export const InboxStateSchema = z.enum(INBOX_STATES);
 
 /** The capture paths a new Save can arrive through, each with its own Inbox switch. */
-const INBOX_CHANNELS = ["captures", "sync", "watches", "imports"] as const;
+export const INBOX_CHANNELS = [
+  "captures",
+  "sync",
+  "watches",
+  "imports",
+] as const;
 export type InboxChannel = (typeof INBOX_CHANNELS)[number];
 
 /** One-off captures feed the Inbox; bulk paths stay out so one Sync can't bury it. */

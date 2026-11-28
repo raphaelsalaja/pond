@@ -31,6 +31,8 @@ import {
   useRevealSidebarSection,
 } from "@/features/settings";
 import { useTagGroups, useTags } from "@/features/tags";
+import { newRule } from "@/shared/components/conditions-editor";
+import { ruleChoices } from "@/shared/components/conditions-editor/choices";
 import { SIDEBAR_SORTABLE_SCREEN_READER_INSTRUCTIONS } from "@/shared/lib/dnd-kit";
 import { usePrefs } from "@/shared/state/prefs";
 import { useOrganizationTree } from "../../hooks/use-organization-tree";
@@ -38,8 +40,6 @@ import { SmartFolderEntry } from "./entry";
 import { creationItems, quickAccessIdsFor } from "./menu-items";
 import { smartFolderRows, smartFolderSortableIds } from "./reorder";
 import { RuleDialog } from "./rule-dialog";
-import { newRule } from "./rule-editor";
-import { ruleChoices } from "./rule-editor/choices";
 import type { EditorRequest } from "./types";
 import { useSmartFolderDrag } from "./use-smart-folder-drag";
 

@@ -6,8 +6,8 @@ import { newSaveInboxForTrigger } from "../inbox";
 import { persistSave } from "../persist-save";
 import type { ImportableCookie } from "../refresh/harvest-window/session";
 import { restoreSave } from "../restore-save";
+import { noteEnqueuedSaves } from "../rules/intake";
 import { listAccounts } from "../sync/accounts";
-import { fileIncomingSaves } from "../sync/incoming";
 import {
   enqueueCandidateKey,
   normalizeEnqueueItems,
@@ -253,14 +253,9 @@ async function enqueueOne(
     opts.trigger ?? "pipeline:enqueue",
     await newSaveInboxForTrigger(opts.trigger),
   );
+  await noteEnqueuedSaves([bundle.save], opts.trigger, opts.accountId);
   const insertedAction = persistence.insertBundle(bundle);
   if (insertedAction) broadcastSyncAction(insertedAction);
-  await fileIncomingSaves(
-    [bundle.save.id],
-    opts.accountId,
-    source,
-    opts.trigger ?? "pipeline:enqueue",
-  );
 
   log.info("[pond pipeline:enqueue] created save", {
     id: bundle.save.id,
@@ -335,6 +330,11 @@ async function enqueueMany(
   const bundles = fresh.map((candidate) =>
     createEnqueueBundle(candidate, opts, now, actorReason, inbox),
   );
+  await noteEnqueuedSaves(
+    bundles.map((bundle) => bundle.save),
+    opts.trigger,
+    opts.accountId,
+  );
   const insertedActions = await persistence.insertBundles(
     bundles,
     BULK_INSERT_CHUNK,
@@ -344,20 +344,6 @@ async function enqueueMany(
   result.createdIds = bundles.map((bundle) => bundle.save.id);
   for (const action of insertedActions) {
     broadcastSyncAction(action);
-  }
-  const idsBySource = new Map<Source, Array<string>>();
-  for (const bundle of bundles) {
-    const ids = idsBySource.get(bundle.save.source) ?? [];
-    ids.push(bundle.save.id);
-    idsBySource.set(bundle.save.source, ids);
-  }
-  for (const [itemSource, ids] of idsBySource) {
-    await fileIncomingSaves(
-      ids,
-      opts.accountId,
-      itemSource,
-      opts.trigger ?? "pipeline:enqueue",
-    );
   }
   kickReconciler();
   log.info("[pond pipeline:enqueue] many", {

@@ -80,6 +80,7 @@ import type {
   SystemQueryResults,
 } from "./query-contracts-system";
 import type { QueueQueryInputs, QueueQueryResults } from "./queue-contracts";
+import type { RuleQueryInputs, RuleQueryResults } from "./rule-contracts";
 import type {
   SafariExtensionQueryInputs,
   SafariExtensionQueryResults,
@@ -170,6 +171,7 @@ export interface QueryInputs
     InspectQueryInputs,
     CanvasQueryInputs,
     FishQueryInputs,
+    RuleQueryInputs,
     FishMcpQueryInputs,
     ConversionQueryInputs,
     DownloaderQueryInputs,
@@ -432,6 +434,7 @@ export interface QueryResults
     InspectQueryResults,
     CanvasQueryResults,
     FishQueryResults,
+    RuleQueryResults,
     FishMcpQueryResults,
     ConversionQueryResults,
     DownloaderQueryResults,

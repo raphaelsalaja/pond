@@ -57,7 +57,7 @@ const desktopOut = join(workspace, "apps/desktop/out");
 addResult(
   "desktop main static graph",
   mainStaticGraph(join(desktopOut, "main/index.js")),
-  3_850_000,
+  3_900_000,
 );
 
 const websiteRoot = join(workspace, "apps/website/.next");

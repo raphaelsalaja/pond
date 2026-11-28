@@ -5,6 +5,7 @@ import type Database from "better-sqlite3";
 import { z } from "zod";
 import { seededOrderKey } from "../../shared/order-key";
 import { ensureAssetIndex } from "../core/duplicates/asset-index";
+import { ensureRuleTables } from "../core/rules/ledger";
 import {
   ensureVecDeleteTrigger,
   ensureVecTables,
@@ -63,6 +64,7 @@ export function initializePondSchema(
   if (vectorEnabled) ensureVecTables(sqlite);
   migratePond(sqlite);
   ensureAssetIndex(sqlite);
+  ensureRuleTables(sqlite);
   sqlite.exec(
     "CREATE TABLE IF NOT EXISTS mutation_commits (batch_id TEXT PRIMARY KEY)",
   );

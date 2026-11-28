@@ -7,7 +7,8 @@ import {
   IconNut,
   IconSliders,
 } from "@pond/icons";
-import type { IncomingSaveRule, Source } from "@pond/schema/db";
+import type { Source } from "@pond/schema/db";
+import { sourceLabel } from "@pond/schema/sources";
 import {
   watchHandleLabel,
   watchKindLabel,
@@ -18,7 +19,7 @@ import type { MenuItemSpec } from "@pond/ui";
 import type { SourceTargetInput } from "@shared/account-contracts";
 import { useQueryClient } from "@tanstack/react-query";
 import Fuse from "fuse.js";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useCommandContext } from "@/features/library";
 import { HeroAvatar } from "@/features/sources/components/flow/detail/hero-avatar";
@@ -29,7 +30,6 @@ import {
   useImportScopeDraft,
 } from "@/features/sources/components/flow/import-scope";
 import { SourceActivity } from "@/features/sources/components/inspector/activity";
-import { SourceOrganize } from "@/features/sources/components/inspector/organize";
 import { SourceOverview } from "@/features/sources/components/inspector/overview";
 import type { SourceIdentity } from "@/features/sources/components/inspector/overview";
 import { SourceSchedule } from "@/features/sources/components/inspector/schedule";
@@ -78,6 +78,11 @@ import { formatNumber, formatTimestampLine } from "@/shared/lib/format";
 import { openSettings } from "@/shared/lib/open-settings";
 import { relativeTimeFromMs } from "@/shared/lib/relative-time";
 import styles from "./styles.module.css";
+
+/** Loaded on demand: Rules read Accounts and Watches from this feature, so a static import would be a cycle. */
+const OwnerRules = lazy(() =>
+  import("@/features/rules").then((module) => ({ default: module.OwnerRules })),
+);
 
 type SourceDetailGroup = "import" | "fetching" | "end";
 
@@ -474,7 +479,10 @@ function AccountData({
     });
   }
   pages.push(
-    organizePage(target, account.sync.incoming, changed),
+    organizePage(
+      target,
+      `${sourceLabel(account.source)} ${account.label || account.handle || ""}`.trim(),
+    ),
     schedulePage(target, account.sync, actions.fetch, model, changed),
     activityPage(account.id, account.source),
   );
@@ -560,7 +568,10 @@ function WatchData({
         avatarUrl: watch.avatarUrl,
       }),
       pages: [
-        organizePage(target, watch.sync.incoming, changed),
+        organizePage(
+          target,
+          `${sourceLabel(watch.source)} ${watch.label || handle}`.trim(),
+        ),
         schedulePage(target, watch.sync, actions.fetch, model, changed),
         activityPage(watch.id, watch.source),
       ],
@@ -785,23 +796,19 @@ function overviewPage(
 
 function organizePage(
   target: SourceTargetInput,
-  incoming: IncomingSaveRule | undefined,
-  onChanged: () => void,
+  ownerName: string,
 ): SourceDetailPageDef {
   return {
     id: "organize",
     label: "Organize",
     icon: <IconFolder />,
     group: "import",
-    description: "Files saves new to your library as they arrive.",
-    items: ["Add to Folder", "Add Tags"],
+    description: "Rules that file Saves new to your library as they arrive.",
+    items: ["Rules", "New Rule"],
     content: (
-      <SourceOrganize
-        key={target.id}
-        target={target}
-        incoming={incoming}
-        onChanged={onChanged}
-      />
+      <Suspense fallback={null}>
+        <OwnerRules key={target.id} ownerId={target.id} ownerName={ownerName} />
+      </Suspense>
     ),
   };
 }

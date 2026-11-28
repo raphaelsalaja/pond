@@ -420,7 +420,7 @@ export async function assignSaveFolders(
   });
 }
 
-async function folderAssignmentTransactions(
+export async function folderAssignmentTransactions(
   assignments: Array<{ saveId: string; folderIds: Array<string> }>,
   rows?: Array<Folder>,
   restoring: ReadonlySet<string> = new Set(),

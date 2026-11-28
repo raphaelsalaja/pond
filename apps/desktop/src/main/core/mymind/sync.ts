@@ -2,8 +2,8 @@ import type { ConnectedAccount } from "@pond/schema/db";
 import type { SyncRunEvent } from "@pond/schema/events";
 import { libraryRoot } from "../../paths";
 import { setSourceCooldown } from "../pipeline/rate-governor";
+import { noteNewSaves } from "../rules/intake";
 import { patchAccountSync } from "../sync/accounts";
-import { fileIncomingSaves } from "../sync/incoming";
 import { emit } from "../sync/sync-status";
 import { MymindApiError } from "./client";
 import type { createMymindClient } from "./client";
@@ -141,12 +141,14 @@ export async function syncMymind(
           },
         });
         if (result.imported) {
-          await fileIncomingSaves(
-            [result.id],
-            accountId,
-            "mymind",
-            "sync:mymind",
-          );
+          await noteNewSaves([
+            {
+              saveId: result.id,
+              source: "mymind",
+              channel: "sync",
+              ownerId: accountId,
+            },
+          ]);
         }
         emit({
           accountId,
