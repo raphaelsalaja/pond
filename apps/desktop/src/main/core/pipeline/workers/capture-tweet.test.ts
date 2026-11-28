@@ -465,7 +465,7 @@ describe("runCaptureTweet live screenshot validation", () => {
         light: { ok: false, reason: "scheme_mismatch" },
         dark: { ok: false, reason: "scheme_mismatch" },
       },
-      { nativeCardMisses: true },
+      { structuredCardMisses: true },
     );
 
     await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
