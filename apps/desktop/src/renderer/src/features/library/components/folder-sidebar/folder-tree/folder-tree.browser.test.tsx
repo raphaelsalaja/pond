@@ -1,11 +1,32 @@
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cdp, userEvent } from "vitest/browser";
 import { saveFolderPresentation } from "@/features/library/state/folder-presentation";
 import { folders } from "@/features/library/state/folders";
 import { getLibraryNav } from "@/features/library/state/library-chrome";
 import { getViewState } from "@/features/library/state/view-store";
 import { bridge } from "@/shared/test/pond-bridge";
+import { wireSave } from "@/shared/test/wire-save";
 import { createFolderSidebarHarness, folder } from "../test-harness";
+
+async function movePointerAway() {
+  await cdp().send("Input.dispatchMouseEvent", {
+    type: "mouseMoved",
+    x: 1278,
+    y: 798,
+  });
+}
+
+function isHTMLElement(element: Element | null): element is HTMLElement {
+  return element?.namespaceURI === "http://www.w3.org/1999/xhtml";
+}
+
+function clearFocus() {
+  const active = document.activeElement;
+  if (isHTMLElement(active)) {
+    active.blur();
+  }
+}
 
 function pointer(type: string, clientY: number) {
   const event = new MouseEvent(type, {
@@ -504,23 +525,168 @@ describe("folder sidebar tree", () => {
     await folders.refresh();
     await harness.mount();
     const toggle = harness.iconButton("Collapse Travel");
+    const expandedCaret = toggle.querySelector("svg");
+    if (!expandedCaret) {
+      throw new Error("Missing expanded disclosure caret");
+    }
     expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(getComputedStyle(expandedCaret).transform).not.toBe("none");
     expect(harness.button("Travel").contains(toggle)).toBe(false);
     expect(harness.button("Tickets")).toBeDefined();
     expect(harness.button("Receipts")).toBeDefined();
     expect(() => harness.iconButton("Collapse Tickets")).toThrow(
       "Missing icon button: Collapse Tickets",
     );
+    const navigation = getLibraryNav();
     await act(async () => toggle.click());
-    expect(
-      harness.iconButton("Expand Travel").getAttribute("aria-expanded"),
-    ).toBe("false");
+    const collapsedToggle = harness.iconButton("Expand Travel");
+    const collapsedCaret = collapsedToggle.querySelector("svg");
+    if (!collapsedCaret) {
+      throw new Error("Missing collapsed disclosure caret");
+    }
+    expect(collapsedToggle.getAttribute("aria-expanded")).toBe("false");
+    expect(getLibraryNav()).toEqual(navigation);
+    await vi.waitFor(() => {
+      expect(getComputedStyle(collapsedCaret).transform).toBe("none");
+    });
     expect(() => harness.button("Tickets")).toThrow(
       "Missing sidebar button: Tickets",
     );
     expect(() => harness.button("Receipts")).toThrow(
       "Missing sidebar button: Receipts",
     );
+  });
+
+  it("reveals the disclosure on row hover and focus without a second tab stop", async () => {
+    harness.set({ folders: [folder("Travel"), folder("Tickets", "Travel")] });
+    await folders.refresh();
+    await harness.mount();
+    clearFocus();
+    await movePointerAway();
+    const row = harness.button("Travel");
+    const toggle = harness.iconButton("Collapse Travel");
+    const icon = row.querySelector("svg");
+    if (!icon?.parentElement) {
+      throw new Error("Missing folder artwork");
+    }
+    const artwork = icon.parentElement;
+    expect(toggle.tabIndex).toBe(-1);
+    expect(getComputedStyle(toggle).opacity).toBe("0");
+    expect(getComputedStyle(artwork).opacity).toBe("1");
+
+    await userEvent.hover(row);
+    await vi.waitFor(() => {
+      expect(getComputedStyle(toggle).opacity).toBe("1");
+      expect(getComputedStyle(artwork).opacity).toBe("0");
+    });
+
+    expect(toggle.getAttribute("data-variant")).toBe("ghost");
+    await userEvent.hover(toggle);
+    expect(toggle.matches(":hover")).toBe(true);
+
+    await movePointerAway();
+    await vi.waitFor(() => {
+      expect(getComputedStyle(toggle).opacity).toBe("0");
+      expect(getComputedStyle(artwork).opacity).toBe("1");
+    });
+
+    const leafRow = harness.button("Tickets");
+    const leafIcon = leafRow.querySelector("svg");
+    if (!leafIcon?.parentElement) {
+      throw new Error("Missing leaf folder artwork");
+    }
+    await userEvent.hover(leafRow);
+    expect(leafRow.closest("[data-has-children]")).toBeNull();
+    expect(getComputedStyle(leafIcon.parentElement).opacity).toBe("1");
+    expect(() => harness.iconButton("Collapse Tickets")).toThrow(
+      "Missing icon button: Collapse Tickets",
+    );
+    await movePointerAway();
+
+    row.focus();
+    await vi.waitFor(() => {
+      expect(getComputedStyle(toggle).opacity).toBe("1");
+      expect(getComputedStyle(artwork).opacity).toBe("0");
+    });
+    expect(document.activeElement).toBe(row);
+    row.blur();
+  });
+
+  it("swaps custom icons and cover images only on their hovered rows", async () => {
+    harness.set({
+      folders: [
+        folder("Custom"),
+        folder("Nested Custom", "Custom"),
+        folder("Covered"),
+        folder("Nested Covered", "Covered"),
+      ],
+    });
+    await folders.refresh();
+    await saveFolderPresentation("Custom", { icon: "camera" });
+    const cover = wireSave({
+      id: "cover-save",
+      mediaType: "image",
+      files: [
+        {
+          kind: "cover",
+          path: "photo.png",
+          mimeType: "image/png",
+          sha256: "cover-sha256",
+          size: 1,
+        },
+      ],
+    });
+    bridge.use({
+      query: {
+        "saves.get": ({ id }) => (id === "cover-save" ? cover : null),
+      },
+    });
+    await saveFolderPresentation("Covered", { coverSaveId: "cover-save" });
+    await harness.mount();
+    clearFocus();
+    await movePointerAway();
+
+    const customRow = harness.button("Custom");
+    const coveredRow = harness.button("Covered");
+    const customIcon = customRow.querySelector("svg");
+    if (!customIcon?.parentElement) {
+      throw new Error("Missing custom folder artwork");
+    }
+    const customArtwork = customIcon.parentElement;
+    await vi.waitFor(() => {
+      expect(coveredRow.querySelector("img")).not.toBeNull();
+    });
+    const coverImage = coveredRow.querySelector("img");
+    if (!coverImage?.parentElement) {
+      throw new Error("Missing folder cover image");
+    }
+    const coverArtwork = coverImage.parentElement;
+    expect(coverImage.getAttribute("src")).toContain(
+      "pond://cover-save/photo.png",
+    );
+    const customToggle = harness.iconButton("Collapse Custom");
+    const coverToggle = harness.iconButton("Collapse Covered");
+    await vi.waitFor(() => {
+      expect(getComputedStyle(customToggle).opacity).toBe("0");
+      expect(getComputedStyle(coverToggle).opacity).toBe("0");
+    });
+
+    await userEvent.hover(customRow);
+    await vi.waitFor(() => {
+      expect(getComputedStyle(customToggle).opacity).toBe("1");
+      expect(getComputedStyle(customArtwork).opacity).toBe("0");
+    });
+    expect(getComputedStyle(coverToggle).opacity).toBe("0");
+    expect(getComputedStyle(coverArtwork).opacity).toBe("1");
+
+    await movePointerAway();
+    await userEvent.hover(coveredRow);
+    await vi.waitFor(() => {
+      expect(getComputedStyle(coverToggle).opacity).toBe("1");
+      expect(getComputedStyle(coverArtwork).opacity).toBe("0");
+      expect(getComputedStyle(customToggle).opacity).toBe("0");
+      expect(getComputedStyle(customArtwork).opacity).toBe("1");
+    });
   });
 
   it("expands a collapsed folder so a new subfolder can be named", async () => {
