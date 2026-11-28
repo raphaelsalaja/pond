@@ -12,8 +12,8 @@ import { createFolderSidebarHarness, folder } from "../test-harness";
 async function movePointerAway() {
   await cdp().send("Input.dispatchMouseEvent", {
     type: "mouseMoved",
-    x: 1278,
-    y: 798,
+    x: Math.max(0, window.innerWidth - 1),
+    y: Math.max(0, window.innerHeight - 1),
   });
 }
 

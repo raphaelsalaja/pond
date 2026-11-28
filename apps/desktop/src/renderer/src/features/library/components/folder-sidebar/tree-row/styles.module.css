@@ -68,7 +68,7 @@
   transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
 }
 
-.folderIcon {
+.artwork {
   display: inline-flex;
   transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
 }
@@ -79,8 +79,8 @@
   scale: 1;
 }
 
-.trigger[data-has-children]:hover .folderIcon,
-.trigger[data-has-children]:focus-within .folderIcon {
+.trigger[data-has-children]:hover .artwork,
+.trigger[data-has-children]:focus-within .artwork {
   opacity: 0;
 }
 
@@ -91,7 +91,7 @@
 @media (prefers-reduced-motion: reduce) {
   .disclosure,
   .caret,
-  .folderIcon {
+  .artwork {
     transition: none;
   }
 }

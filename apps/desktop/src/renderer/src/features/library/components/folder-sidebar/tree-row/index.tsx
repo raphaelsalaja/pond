@@ -88,7 +88,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
     : undefined;
   const icon = (
     <span
-      className={styles.folderIcon}
+      className={styles.artwork}
       style={colorCss ? { color: colorCss } : undefined}
     >
       <FolderCover
