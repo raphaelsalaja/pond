@@ -23,8 +23,12 @@ export function LibrarySearchActions() {
   const nav = useLibraryNav();
   return (
     <SearchChrome.Actions>
-      <FilterToggle />
-      {nav?.kind === "inbox" ? null : <ViewMenu />}
+      {nav?.kind === "inbox" ? null : (
+        <>
+          <FilterToggle />
+          <ViewMenu />
+        </>
+      )}
     </SearchChrome.Actions>
   );
 }

@@ -81,27 +81,27 @@ function viewOptionsButton(host: HTMLElement) {
   return host.querySelector('button[aria-label="View Options"]');
 }
 
-it("hides grid view options in Inbox review", async () => {
+it("hides normal grid actions in Inbox review", async () => {
   const view = await mountSearchActions("/inbox");
   try {
-    expect(filterButton(view.host)).not.toBeNull();
+    expect(filterButton(view.host)).toBeNull();
     expect(viewOptionsButton(view.host)).toBeNull();
   } finally {
     await view.unmount();
   }
 });
 
-it("hides grid view options in snoozed Inbox", async () => {
+it("hides normal grid actions in snoozed Inbox", async () => {
   const view = await mountSearchActions("/inbox/snoozed");
   try {
-    expect(filterButton(view.host)).not.toBeNull();
+    expect(filterButton(view.host)).toBeNull();
     expect(viewOptionsButton(view.host)).toBeNull();
   } finally {
     await view.unmount();
   }
 });
 
-it("keeps grid view options in the normal library grid", async () => {
+it("keeps normal grid actions in the library grid", async () => {
   const view = await mountSearchActions("/");
   try {
     expect(filterButton(view.host)).not.toBeNull();
