@@ -13,13 +13,25 @@ import type {
   IntegritySave,
   LibraryIntegrityRuntime,
 } from "./library-integrity";
+import { renderThumbnail } from "./save-thumbnail-file";
+import { noiseSceneJpeg } from "./save-thumbnail.fixtures";
 import { writeLibraryMedia } from "./storage/library-media-storage";
+
+/** Windows holds the files libvips reads open, so cached handles would block cleanup. */
+sharp.cache(false);
 
 const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
-    roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
+    roots.splice(0).map((root) =>
+      rm(root, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 50,
+      }),
+    ),
   );
 });
 
@@ -147,6 +159,31 @@ describe("Library integrity repair previews", () => {
     });
 
     expect(issue).toEqual(fixture.expected);
+  });
+
+  it("keeps the lossy thumbnail its own renderer produced from a noise-heavy source", async () => {
+    const root = await fixtureRoot();
+    const directory = join(root, "items", "save-1.info");
+    const original = await noiseSceneJpeg();
+    const thumbnail = await renderThumbnail(original);
+    expect(thumbnail).not.toBeNull();
+    if (!thumbnail) return;
+    await Promise.all([
+      writeFile(join(directory, "photo.jpg"), original),
+      writeFile(join(directory, "photo.jpg_thumbnail.webp"), thumbnail),
+    ]);
+    const row = fixtureSave([
+      file("image", "photo.jpg", original),
+      file("thumbnail", "photo.jpg_thumbnail.webp", thumbnail),
+    ]);
+
+    await expect(
+      inspectSaveIntegrity({
+        kind: "thumbnails",
+        row,
+        runtime: runtime(root),
+      }),
+    ).resolves.toBeNull();
   });
 
   it("flags a text card left beside an image", async () => {
