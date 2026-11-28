@@ -1,6 +1,8 @@
+import { join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { isJsonValue } from "@pond/schema/json";
 import type { Capture, CaptureMedia } from "@pond/schema/raw";
+import { app, session } from "electron";
 import type { BrowserWindow } from "electron";
 import log from "electron-log/main.js";
 import sharp from "sharp";
@@ -36,6 +38,7 @@ import type {
 import {
   acquireTwitterThemeLock,
   createTwitterThemeCookieControl,
+  restoreInterruptedTwitterThemes,
 } from "./screenshot-theme";
 import type { TwitterThemeCookieControl } from "./screenshot-theme";
 
@@ -134,9 +137,11 @@ export async function screenshotTweetDual(
     });
     const win = lease.win;
     detachAbort = watchAbort(win, args.signal);
-    const themeCookieControl = createTwitterThemeCookieControl(
-      win.webContents.session.cookies,
-    );
+    const themeCookieControl = createTwitterThemeCookieControl({
+      jar: win.webContents.session.cookies,
+      partition,
+      journalPath: themeJournalPath(),
+    });
     themeCookies = themeCookieControl;
     await themeCookieControl.setScheme("light");
     restoreEmulation = await emulateColorScheme(win, "light");
@@ -358,6 +363,18 @@ export async function screenshotThreadsDual(
   }
 }
 
+function themeJournalPath(): string {
+  return join(app.getPath("userData"), "screenshot-theme-journal.json");
+}
+
+/** Puts back X theme cookies that a capture interrupted by a quit or crash left overridden. */
+export async function restoreInterruptedScreenshotThemes(): Promise<void> {
+  await restoreInterruptedTwitterThemes({
+    journalPath: themeJournalPath(),
+    jarFor: (partition) => session.fromPartition(partition).cookies,
+  });
+}
+
 function onceSchemeReload(
   reload: () => Promise<boolean>,
 ): () => Promise<boolean> {
@@ -496,6 +513,13 @@ async function captureCurrentScheme(
   if (!validated.ok) {
     log.info("[pond screenshot:tweet] scheme mismatch", sourceId, colorScheme);
     return { ok: false, reason: "scheme_mismatch" };
+  }
+  if (!validated.verified) {
+    log.info(
+      "[pond screenshot:tweet] scheme unverified",
+      sourceId,
+      colorScheme,
+    );
   }
 
   const padded = await padScreenshot(

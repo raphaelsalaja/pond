@@ -1,9 +1,11 @@
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { JSDOM } from "jsdom";
 import sharp from "sharp";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { CAPTURE_ROOT_ATTRIBUTE } from "./screenshot-dom";
 import {
-  assessCapturedScheme,
   buildCaptureSchemeEvidenceExpression,
   captureSchemeDomEvidenceSchema,
   captureWithSchemeValidation,
@@ -17,8 +19,12 @@ import type {
 import {
   acquireTwitterThemeLock,
   createTwitterThemeCookieControl,
+  restoreInterruptedTwitterThemes,
 } from "./screenshot-theme";
-import type { ThemeCookieJar } from "./screenshot-theme";
+
+type ThemeCookieJar = Parameters<
+  typeof createTwitterThemeCookieControl
+>[0]["jar"];
 
 const WIDTH = 320;
 const HEIGHT = 240;
@@ -230,32 +236,43 @@ describe("screenshot scheme validation", () => {
   it("does not mistake masked dark media in a light post for dark chrome", async () => {
     const current = await sample("light", { direct: false, darkMedia: true });
 
-    await expect(assessCapturedScheme(current)).resolves.toBe("light");
     const { result } = await validateSample("light", current);
-    expect(result.ok).toBe(true);
+    expect(result).toMatchObject({ ok: true, verified: true });
   });
 
-  it("rejects light pixels when foreground evidence still belongs to dark chrome", async () => {
+  it("keeps a capture with conflicting evidence without a correction", async () => {
     const current = await sample("light");
     current.evidence.foregrounds = [{ luminance: 1, weight: 5, direct: false }];
 
-    await expect(assessCapturedScheme(current)).resolves.toBe("conflict");
-    const { result } = await validateSample("light", current);
-    expect(result).toEqual({ ok: false, reason: "scheme_mismatch" });
+    const { result, corrections } = await validateSample("light", current);
+    expect(result).toMatchObject({ ok: true, verified: false });
+    expect(corrections).toBe(0);
   });
 
-  it("does not accept matching pixels without page chrome evidence", async () => {
+  it("keeps an unverified capture when the page gives no chrome evidence", async () => {
     const current = await sample("light");
     current.evidence = { backgrounds: [], foregrounds: [], mediaRects: [] };
 
-    await expect(assessCapturedScheme(current)).resolves.toBe("unknown");
-    const { result } = await validateSample("light", current);
+    const { result, corrections } = await validateSample("light", current);
+    expect(result).toMatchObject({ ok: true, verified: false });
+    expect(corrections).toBe(0);
+  });
+
+  it("rejects a confident opposite scheme when the correction cannot reload", async () => {
+    const { result, corrections } = await validateSample(
+      "light",
+      await sample("dark"),
+    );
+
     expect(result).toEqual({ ok: false, reason: "scheme_mismatch" });
+    expect(corrections).toBe(1);
   });
 });
 
 function memoryCookieJar(initial: Array<Electron.Cookie>): ThemeCookieJar & {
   values(host: string): Array<string>;
+  persistent(host: string): Array<string>;
+  persistentCookies(): Array<Electron.Cookie>;
 } {
   const cookies = new Map<string, Electron.Cookie>();
   const keyFor = (
@@ -277,6 +294,14 @@ function memoryCookieJar(initial: Array<Electron.Cookie>): ThemeCookieJar & {
     );
   };
   for (const cookie of initial) write(cookie);
+  const themeCookiesFor = (host: string) =>
+    Array.from(cookies.values()).filter((cookie) => {
+      const domain = cookie.domain?.replace(/^\./, "") ?? "";
+      return (
+        cookie.name === "night_mode" &&
+        (domain === host || host.endsWith(`.${domain}`))
+      );
+    });
   return {
     get: async (filter) =>
       Array.from(cookies.values()).filter(
@@ -312,40 +337,106 @@ function memoryCookieJar(initial: Array<Electron.Cookie>): ThemeCookieJar & {
         }
       }
     },
-    values: (host) =>
-      Array.from(cookies.values())
-        .filter((cookie) => {
-          const domain = cookie.domain?.replace(/^\./, "") ?? "";
-          return (
-            cookie.name === "night_mode" &&
-            (domain === host || host.endsWith(`.${domain}`))
-          );
-        })
+    values: (host) => themeCookiesFor(host).map((cookie) => cookie.value),
+    persistent: (host) =>
+      themeCookiesFor(host)
+        .filter((cookie) => cookie.expirationDate !== undefined)
         .map((cookie) => cookie.value),
+    persistentCookies: () =>
+      Array.from(cookies.values()).filter(
+        (cookie) => cookie.expirationDate !== undefined,
+      ),
   };
 }
 
 describe("twitter theme cookie control", () => {
-  it("forces both schemes and restores the account cookie", async () => {
-    const jar = memoryCookieJar([
-      {
-        name: "night_mode",
-        value: "1",
-        domain: ".x.com",
-        path: "/",
-        secure: true,
-        sameSite: "lax",
-      },
-    ]);
-    const control = createTwitterThemeCookieControl(jar);
+  const directories: Array<string> = [];
+  afterEach(async () => {
+    for (const directory of directories.splice(0)) {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
+
+  async function journalPath(): Promise<string> {
+    const directory = await mkdtemp(join(tmpdir(), "pond-theme-journal-"));
+    directories.push(directory);
+    return join(directory, "screenshot-theme-journal.json");
+  }
+
+  const accountCookie: Electron.Cookie = {
+    name: "night_mode",
+    value: "1",
+    domain: ".x.com",
+    path: "/",
+    secure: true,
+    sameSite: "lax",
+    expirationDate: 2_000_000_000,
+  };
+
+  it("forces both schemes with session cookies and restores the account cookie", async () => {
+    const jar = memoryCookieJar([accountCookie]);
+    const path = await journalPath();
+    const control = createTwitterThemeCookieControl({
+      jar,
+      partition: "persist:twitter-a",
+      journalPath: path,
+    });
 
     await expect(control.setScheme("light")).resolves.toBe(true);
     expect(jar.values("x.com")).toEqual(["0"]);
+    expect(jar.persistent("x.com")).toEqual([]);
     await expect(control.setScheme("dark")).resolves.toBe(true);
     expect(jar.values("x.com")).toEqual(["2"]);
+    expect(jar.persistent("x.com")).toEqual([]);
 
     await control.restore();
     expect(jar.values("x.com")).toEqual(["1"]);
+    expect(jar.persistent("x.com")).toEqual(["1"]);
+    await expect(readFile(path, "utf8")).rejects.toThrow();
+  });
+
+  it("restores the account cookie at the next startup after an interrupted capture", async () => {
+    const path = await journalPath();
+    const before = memoryCookieJar([accountCookie]);
+    const control = createTwitterThemeCookieControl({
+      jar: before,
+      partition: "persist:twitter-a",
+      journalPath: path,
+    });
+    await control.setScheme("dark");
+
+    /** A restart drops session cookies, so the next launch starts from the persisted ones. */
+    const afterRestart = memoryCookieJar(before.persistentCookies());
+    expect(afterRestart.values("x.com")).toEqual([]);
+
+    await restoreInterruptedTwitterThemes({
+      journalPath: path,
+      jarFor: (partition) => {
+        expect(partition).toBe("persist:twitter-a");
+        return afterRestart;
+      },
+    });
+    expect(afterRestart.persistent("x.com")).toEqual(["1"]);
+    await expect(readFile(path, "utf8")).rejects.toThrow();
+  });
+
+  it("leaves no theme cookie behind when the account had none", async () => {
+    const path = await journalPath();
+    const before = memoryCookieJar([]);
+    const control = createTwitterThemeCookieControl({
+      jar: before,
+      partition: "persist:twitter-b",
+      journalPath: path,
+    });
+    await control.setScheme("light");
+
+    const afterRestart = memoryCookieJar(before.persistentCookies());
+    await restoreInterruptedTwitterThemes({
+      journalPath: path,
+      jarFor: () => afterRestart,
+    });
+    expect(afterRestart.values("x.com")).toEqual([]);
+    expect(afterRestart.values("twitter.com")).toEqual([]);
   });
 });
 

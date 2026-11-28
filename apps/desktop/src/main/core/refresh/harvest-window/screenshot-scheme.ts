@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { z } from "zod";
 
 export type CaptureColorScheme = "light" | "dark";
-export type SchemeAssessment = CaptureColorScheme | "unknown" | "conflict";
+type SchemeAssessment = CaptureColorScheme | "unknown" | "conflict";
 
 export interface CaptureSchemeRect {
   x: number;
@@ -34,8 +34,9 @@ export interface CapturedSchemeSample {
   evidence: CaptureSchemeDomEvidence;
 }
 
+/** `verified` is false when the evidence could not tell the scheme apart; such a capture is kept. */
 export type CaptureSchemeValidationResult<T extends CapturedSchemeSample> =
-  | { ok: true; sample: T }
+  | { ok: true; sample: T; verified: boolean }
   | { ok: false; reason: "scheme_mismatch" };
 
 const LIGHT_LUMINANCE = 0.72;
@@ -235,7 +236,7 @@ function weightedSchemeVote(samples: Array<WeightedLuminance>): SchemeVote {
   return { scheme: "unknown", strong: false };
 }
 
-export interface DomSchemeAssessment {
+interface DomSchemeAssessment {
   scheme: SchemeAssessment;
   strong: boolean;
 }
@@ -386,7 +387,7 @@ function combineSchemeAssessments(
   return pixels === "unknown" ? "unknown" : "conflict";
 }
 
-export async function assessCapturedScheme(
+async function assessCapturedScheme(
   sample: CapturedSchemeSample,
 ): Promise<SchemeAssessment> {
   const dom = assessDomSchemeEvidence(sample.evidence);
@@ -414,6 +415,11 @@ export async function assessCapturedScheme(
   }
 }
 
+/**
+ * Rejects a capture only when the evidence confidently shows the opposite scheme, after one
+ * correction. Unknown or conflicting evidence keeps the capture, because platforms expose no
+ * rendered-theme flag and failing closed would drop captures that are fine.
+ */
 export async function captureWithSchemeValidation<
   T extends CapturedSchemeSample,
 >(args: {
@@ -421,10 +427,14 @@ export async function captureWithSchemeValidation<
   attempt: () => Promise<T>;
   correct: () => Promise<boolean>;
 }): Promise<CaptureSchemeValidationResult<T>> {
+  const opposite: CaptureColorScheme =
+    args.scheme === "light" ? "dark" : "light";
   for (let attemptIndex = 0; attemptIndex < 2; attemptIndex += 1) {
     const sample = await args.attempt();
     const assessment = await assessCapturedScheme(sample);
-    if (assessment === args.scheme) return { ok: true, sample };
+    if (assessment !== opposite) {
+      return { ok: true, sample, verified: assessment === args.scheme };
+    }
     if (attemptIndex === 0 && (await args.correct())) continue;
     break;
   }
