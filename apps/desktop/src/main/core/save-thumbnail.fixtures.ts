@@ -10,10 +10,10 @@ function mulberry32(seed: number) {
   };
 }
 
-export const NOISE_SCENE_SIZE = 480;
+const NOISE_SCENE_SIZE = 480;
 
 /** A textured scene in four distinct regions; the sensor-noise grain is where lossy compression flips hash bits. */
-export function noiseScenePixels(seed: number) {
+function noiseScenePixels(seed: number) {
   const rand = mulberry32(seed);
   const size = NOISE_SCENE_SIZE;
   const pixels = Buffer.alloc(size * size * 3);

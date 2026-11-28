@@ -17,11 +17,21 @@ import { renderThumbnail } from "./save-thumbnail-file";
 import { noiseSceneJpeg } from "./save-thumbnail.fixtures";
 import { writeLibraryMedia } from "./storage/library-media-storage";
 
+/** Windows holds the files libvips reads open, so cached handles would block cleanup. */
+sharp.cache(false);
+
 const roots: Array<string> = [];
 
 afterEach(async () => {
   await Promise.all(
-    roots.splice(0).map((root) => rm(root, { recursive: true, force: true })),
+    roots.splice(0).map((root) =>
+      rm(root, {
+        recursive: true,
+        force: true,
+        maxRetries: 5,
+        retryDelay: 50,
+      }),
+    ),
   );
 });
 
