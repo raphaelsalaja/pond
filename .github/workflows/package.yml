@@ -195,6 +195,19 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
+      # Posts on X, Threads and Bluesky draw through a WebAssembly build of
+      # upstream xeet with packages/render/patches/xeet applied.
+      # verify-binaries fails the pack when it is missing.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Fetch xeet and apply Pond's patches
+        run: node packages/render/scripts/fetch-xeet.mjs
+
+      - name: Build the post renderer
+        run: node packages/render/scripts/build.mjs --required
+
       # No signing identity is available to pull requests. Disabling discovery
       # keeps electron-builder from picking up a stray keychain certificate,
       # and notarization is skipped because the Apple variables are absent.

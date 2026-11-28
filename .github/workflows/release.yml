@@ -177,6 +177,19 @@ jobs:
       - name: Build workspace
         run: pnpm build
 
+      # Posts on X, Threads and Bluesky draw through a WebAssembly build of
+      # upstream xeet with packages/render/patches/xeet applied.
+      # verify-binaries fails the pack when it is missing.
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Fetch xeet and apply Pond's patches
+        run: node packages/render/scripts/fetch-xeet.mjs
+
+      - name: Build the post renderer
+        run: node packages/render/scripts/build.mjs --required
+
       - name: Desktop end-to-end smoke
         run: pnpm --filter @pond/desktop smoke:desktop
 

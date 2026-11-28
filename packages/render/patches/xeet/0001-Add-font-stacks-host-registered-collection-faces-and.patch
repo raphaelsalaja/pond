@@ -1,0 +1,973 @@
+From 8c13cff7165b3f8425d376523f4790fea50dfd1a Mon Sep 17 00:00:00 2001
+From: Raphael Salaja <52125687+raphaelsalaja@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 13:13:47 +0000
+Subject: [PATCH 1/2] Add font stacks, host-registered collection faces and
+ extra manifests for non-X layouts
+
+---
+ crates/xeet-cli/src/main.rs                |   6 +-
+ crates/xeet-core/build.rs                  |  87 +++++++-
+ crates/xeet-core/examples/paint_bench.rs   |   1 +
+ crates/xeet-core/examples/paint_fixture.rs |   1 +
+ crates/xeet-core/examples/paint_text.rs    |   1 +
+ crates/xeet-core/examples/ship_bench.rs    |   1 +
+ crates/xeet-core/src/cards/card.rs         |  15 +-
+ crates/xeet-core/src/cards/mod.rs          |   3 +
+ crates/xeet-core/src/fonts.rs              | 247 ++++++++++++++++-----
+ crates/xeet-core/src/frame/actions.rs      |   1 +
+ crates/xeet-core/src/frame/header.rs       |   1 +
+ crates/xeet-core/src/frame/mod.rs          |   3 +
+ crates/xeet-core/src/inline.rs             |  20 +-
+ crates/xeet-core/src/paint/fonts.rs        |   4 +-
+ crates/xeet-core/src/paint/icons.rs        |  14 +-
+ crates/xeet-core/src/paint/images.rs       |   1 +
+ crates/xeet-core/src/render.rs             |   1 +
+ 17 files changed, 320 insertions(+), 87 deletions(-)
+
+diff --git a/crates/xeet-cli/src/main.rs b/crates/xeet-cli/src/main.rs
+index 78097d0..06af51b 100644
+--- a/crates/xeet-cli/src/main.rs
++++ b/crates/xeet-cli/src/main.rs
+@@ -68,6 +68,7 @@ fn debug_text(args: &[String]) {
+             _ => Dir::Auto,
+         },
+         tab_size: num(args, "--tab-size", 4.0),
++        stack: xeet_core::fonts::X,
+     };
+     let mut input = String::new();
+     std::io::stdin().read_to_string(&mut input).unwrap();
+@@ -199,6 +200,7 @@ fn layout_response(req: LayoutRequest) -> serde_json::Value {
+             _ => Dir::Auto,
+         },
+         tab_size: req.tab_size,
++        stack: xeet_core::fonts::X,
+     };
+     let mut results = Vec::with_capacity(widths.len());
+     for width in widths {
+@@ -286,7 +288,7 @@ fn line_runs(block: &TextBlock, line: &inline::Line, _with_meta: bool) -> Vec<se
+                     "weight": face.weight,
+                     "subset": face.subset,
+                     "kind": match face.kind {
+-                        xeet_core::fonts::FaceKind::Chirp => "chirp",
++                        xeet_core::fonts::FaceKind::Primary => "chirp",
+                         xeet_core::fonts::FaceKind::Fallback => "fallback",
+                         xeet_core::fonts::FaceKind::Emoji => "emoji",
+                     },
+@@ -309,7 +311,7 @@ fn info() {
+                 "weight": f.weight,
+                 "subset": f.subset,
+                 "kind": match f.kind {
+-                    xeet_core::fonts::FaceKind::Chirp => "chirp",
++                    xeet_core::fonts::FaceKind::Primary => "chirp",
+                     xeet_core::fonts::FaceKind::Fallback => "fallback",
+                     xeet_core::fonts::FaceKind::Emoji => "emoji",
+                 },
+diff --git a/crates/xeet-core/build.rs b/crates/xeet-core/build.rs
+index fcc0f60..3800597 100644
+--- a/crates/xeet-core/build.rs
++++ b/crates/xeet-core/build.rs
+@@ -18,12 +18,19 @@ fn main() {
+     // left empty and registered at runtime from a pack the host fetched. The
+     // native CLI keeps the default (all faces embedded), the WebAssembly build
+     // opts in so its module starts at ~6.4 MB instead of ~45 MB.
+-    let core_only = matches!(
+-        env::var("XEET_FONT_PACKS").as_deref(),
+-        Ok("core") | Ok("lazy")
+-    );
++    // `XEET_FONT_PACKS=chirp` embeds Chirp alone, for hosts that supply Arial
++    // and the platform fonts from the machine instead of shipping them.
++    let packs_mode = env::var("XEET_FONT_PACKS").unwrap_or_default();
++    let core_only = matches!(packs_mode.as_str(), "core" | "lazy" | "chirp");
++    let chirp_only = packs_mode == "chirp";
+     println!("cargo:rerun-if-env-changed=XEET_FONT_PACKS");
+ 
++    // `XEET_EXTRA_FONTS` names a second manifest of faces the host always
++    // registers at runtime: other font stacks (`"stack": "name"`) and extra
++    // fallbacks. Its faces are never embedded.
++    let extra_manifest = env::var("XEET_EXTRA_FONTS").ok().map(PathBuf::from);
++    println!("cargo:rerun-if-env-changed=XEET_EXTRA_FONTS");
++
+     let fonts_manifest = vendor.join("fonts/manifest.json");
+     let Ok(manifest_text) = fs::read_to_string(&fonts_manifest) else {
+         panic!(
+@@ -36,23 +43,61 @@ fn main() {
+     let manifest: serde_json::Value =
+         serde_json::from_str(&manifest_text).expect("fonts/manifest.json is not valid JSON");
+ 
++    let mut faces: Vec<(serde_json::Value, bool)> = manifest
++        .as_array()
++        .expect("manifest must be an array")
++        .iter()
++        .map(|face| (face.clone(), false))
++        .collect();
++    if let Some(path) = &extra_manifest {
++        println!("cargo:rerun-if-changed={}", path.display());
++        let text = fs::read_to_string(path)
++            .unwrap_or_else(|e| panic!("xeet: XEET_EXTRA_FONTS {}: {e}", path.display()));
++        let extra: serde_json::Value =
++            serde_json::from_str(&text).expect("XEET_EXTRA_FONTS is not valid JSON");
++        for face in extra.as_array().expect("XEET_EXTRA_FONTS must be an array") {
++            faces.push((face.clone(), true));
++        }
++    }
++
++    // Stack 0 is X's; the rest are numbered in the order they first appear.
++    let mut stacks: Vec<String> = vec!["x".to_string()];
++    for (face, _) in &faces {
++        if let Some(name) = face["stack"].as_str() {
++            if !stacks.iter().any(|s| s == name) {
++                stacks.push(name.to_string());
++            }
++        }
++    }
++
+     let mut out = String::new();
+     out.push_str("pub static FACES: &[FaceData] = &[\n");
+-    for face in manifest.as_array().expect("manifest must be an array") {
++    for (face, extra) in &faces {
+         let kind = match face["kind"].as_str().unwrap_or("chirp") {
+             "emoji" => "Emoji",
+             "fallback" => "Fallback",
+-            _ => "Chirp",
++            _ => "Primary",
+         };
+-        let file = vendor.join("fonts").join(face["file"].as_str().unwrap());
+-        println!("cargo:rerun-if-changed={}", file.display());
++        let stack = face["stack"]
++            .as_str()
++            .and_then(|name| stacks.iter().position(|s| s == name))
++            .unwrap_or(0);
+         let family = face["family"].as_str().unwrap();
+-        let pack = pack_for(family);
++        let pack: String = match face["pack"].as_str() {
++            Some(pack) => pack.to_string(),
++            None if *extra => "host".to_string(),
++            None => pack_for(family).to_string(),
++        };
+         // `data: &[]` is the lazy marker: `fonts::face_bytes` looks the file up
+         // in the runtime pack registry instead. Core faces always embed.
+-        let data = if core_only && pack != "core" {
++        let lazy = *extra
++            || (core_only && pack != "core")
++            || (chirp_only && family != "TwitterChirp");
++        let data = if lazy {
+             "&[]".to_string()
+         } else {
++            let file = vendor.join("fonts").join(face["file"].as_str().unwrap());
++            println!("cargo:rerun-if-changed={}", file.display());
+             format!("include_bytes!({:?})", file.display().to_string())
+         };
+         let mut ranges = String::new();
+@@ -67,15 +112,16 @@ fn main() {
+         }
+         writeln!(
+             out,
+-            "    FaceData {{ kind: FaceKind::{kind}, weight: {}, family: {:?}, subset: {:?}, file: {:?}, pack: {pack:?}, ranges: &[{ranges}], data: {data} }},",
++            "    FaceData {{ kind: FaceKind::{kind}, stack: {stack}, weight: {}, family: {:?}, subset: {:?}, file: {:?}, pack: {pack:?}, ranges: &[{ranges}], data: {data} }},",
+             face["weight"].as_u64().unwrap(),
+             family,
+-            face["subset"].as_str().unwrap(),
++            face["subset"].as_str().unwrap_or(""),
+             face["file"].as_str().unwrap(),
+         )
+         .unwrap();
+     }
+     out.push_str("];\n");
++    writeln!(out, "pub static STACKS: &[&str] = &{stacks:?};").unwrap();
+ 
+     let icons = vendor.join("icons.json");
+     println!("cargo:rerun-if-changed={}", icons.display());
+@@ -86,6 +132,23 @@ fn main() {
+     )
+     .unwrap();
+ 
++    // `XEET_EXTRA_ICONS` adds symbols in the same `{ name: { viewBox, body } }`
++    // shape, for layouts that draw another site's icons.
++    println!("cargo:rerun-if-env-changed=XEET_EXTRA_ICONS");
++    match env::var("XEET_EXTRA_ICONS").ok().map(PathBuf::from) {
++        Some(path) => {
++            println!("cargo:rerun-if-changed={}", path.display());
++            let path = path.canonicalize().expect("XEET_EXTRA_ICONS does not exist");
++            writeln!(
++                out,
++                "pub static EXTRA_ICONS_JSON: &str = include_str!({:?});",
++                path.display().to_string()
++            )
++            .unwrap();
++        }
++        None => out.push_str("pub static EXTRA_ICONS_JSON: &str = \"{}\";\n"),
++    }
++
+     // X's default profile image: what x.com draws for an account with no avatar.
+     // Embedded so every target (native, HTTP, WASM) draws the same thing without
+     // I/O. Tolerated as absent — a tree whose vendor snapshot predates this file
+diff --git a/crates/xeet-core/examples/paint_bench.rs b/crates/xeet-core/examples/paint_bench.rs
+index f14a221..975b6b2 100644
+--- a/crates/xeet-core/examples/paint_bench.rs
++++ b/crates/xeet-core/examples/paint_bench.rs
+@@ -77,6 +77,7 @@ fn text_block(width: f32, size: f32, lh: f32, text: &str, color: Rgba) -> inline
+         preserve: true,
+         dir: Dir::Auto,
+         tab_size: 4.0,
++        stack: xeet_core::fonts::X,
+     };
+     inline::layout(&[Span::new(text, color, 400)], &st)
+ }
+diff --git a/crates/xeet-core/examples/paint_fixture.rs b/crates/xeet-core/examples/paint_fixture.rs
+index 8e16699..5c62ebe 100644
+--- a/crates/xeet-core/examples/paint_fixture.rs
++++ b/crates/xeet-core/examples/paint_fixture.rs
+@@ -189,6 +189,7 @@ fn main() {
+                     preserve: true,
+                     dir: Dir::Auto,
+                     tab_size: 4.0,
++                    stack: xeet_core::fonts::X,
+                 };
+                 let text = item["text"].as_str().unwrap_or("");
+                 let block = inline::layout(
+diff --git a/crates/xeet-core/examples/paint_text.rs b/crates/xeet-core/examples/paint_text.rs
+index 5d6907b..2238b44 100644
+--- a/crates/xeet-core/examples/paint_text.rs
++++ b/crates/xeet-core/examples/paint_text.rs
+@@ -64,6 +64,7 @@ fn main() {
+         preserve: true,
+         dir: Dir::Auto,
+         tab_size: 4.0,
++        stack: xeet_core::fonts::X,
+     };
+     let block = inline::layout(&[Span::new(text.as_str(), fg, weight)], &st);
+     let height = block.height + 2.0 * padding;
+diff --git a/crates/xeet-core/examples/ship_bench.rs b/crates/xeet-core/examples/ship_bench.rs
+index 89bb491..2f6ae11 100644
+--- a/crates/xeet-core/examples/ship_bench.rs
++++ b/crates/xeet-core/examples/ship_bench.rs
+@@ -194,6 +194,7 @@ fn main() {
+             preserve: true,
+             dir: xeet_core::inline::Dir::Auto,
+             tab_size: 4.0,
++            stack: xeet_core::fonts::X,
+         };
+         run_stage("inline_body_280", &mut || {
+             let block = xeet_core::inline::layout(
+diff --git a/crates/xeet-core/src/cards/card.rs b/crates/xeet-core/src/cards/card.rs
+index f38445a..2debd62 100644
+--- a/crates/xeet-core/src/cards/card.rs
++++ b/crates/xeet-core/src/cards/card.rs
+@@ -103,13 +103,10 @@ fn has_image(i: &ImageMeta) -> bool {
+     i.width > 0 && i.height > 0
+ }
+ 
++/// The domain line. An explicit empty `domain` hides it: a host that only has
++/// a shortener URL (`t.co`) knows the line would be wrong.
+ fn domain_of(meta: &LinkMeta, url: &str) -> String {
+-    if let Some(d) = meta
+-        .domain
+-        .as_deref()
+-        .map(str::trim)
+-        .filter(|d| !d.is_empty())
+-    {
++    if let Some(d) = meta.domain.as_deref().map(str::trim) {
+         return d.strip_prefix("www.").unwrap_or(d).to_string();
+     }
+     // `https://www.host/path` → `host`.
+@@ -174,7 +171,11 @@ fn image_card(
+     );
+ 
+     // `flex flex-col gap-1`: the credit line sits 4 px below the card.
+-    let label = format!("From {}", domain_of(meta, url));
++    let domain = domain_of(meta, url);
++    if domain.is_empty() {
++        return h;
++    }
++    let label = format!("From {domain}");
+     let block = credit(cx, &label, w);
+     push_text(out, &block, 0.0, y0 + h + 4.0, w);
+     h + 4.0 + block.height
+diff --git a/crates/xeet-core/src/cards/mod.rs b/crates/xeet-core/src/cards/mod.rs
+index 9b6faef..a2aca38 100644
+--- a/crates/xeet-core/src/cards/mod.rs
++++ b/crates/xeet-core/src/cards/mod.rs
+@@ -480,6 +480,7 @@ pub(crate) fn paragraph_wrapped(
+         preserve: true,
+         dir: Dir::Auto,
+         tab_size: 4.0,
++        stack: crate::fonts::X,
+     };
+     inline::layout(&[span], &st)
+ }
+@@ -518,6 +519,7 @@ pub(crate) fn body_block(
+         preserve: true,
+         dir: Dir::Auto,
+         tab_size: 4.0,
++        stack: crate::fonts::X,
+     };
+     inline::layout(&spans, &st)
+ }
+@@ -544,6 +546,7 @@ pub(crate) fn tnum_paragraph(
+         preserve: true,
+         dir: Dir::Auto,
+         tab_size: 4.0,
++        stack: crate::fonts::X,
+     };
+     inline::layout(&[span], &st)
+ }
+diff --git a/crates/xeet-core/src/fonts.rs b/crates/xeet-core/src/fonts.rs
+index 8b73b86..71c0743 100644
+--- a/crates/xeet-core/src/fonts.rs
++++ b/crates/xeet-core/src/fonts.rs
+@@ -33,16 +33,29 @@ use std::sync::{Arc, Mutex, OnceLock, RwLock};
+ 
+ #[derive(Clone, Copy, PartialEq, Eq, Debug)]
+ pub enum FaceKind {
+-    /// One of X's Chirp files.
+-    Chirp,
+-    /// Open-licensed stand-in for characters Chirp lacks.
++    /// The first family of a font stack: one of X's Chirp files for stack 0.
++    Primary,
++    /// Open-licensed stand-in for characters the primary family lacks.
+     Fallback,
+     /// Color emoji.
+     Emoji,
+ }
+ 
++/// A font stack: which primary family text starts with. Fallbacks and emoji
++/// are shared by every stack.
++pub type Stack = u8;
++
++/// X's stack, `TwitterChirp` first. Everything that names no stack uses it.
++pub const X: Stack = 0;
++
++/// The stack a manifest names `name`, if this build has it.
++pub fn stack(name: &str) -> Option<Stack> {
++    STACKS.iter().position(|s| *s == name).map(|i| i as Stack)
++}
++
+ pub struct FaceData {
+     pub kind: FaceKind,
++    pub stack: Stack,
+     pub weight: u16,
+     pub family: &'static str,
+     pub subset: &'static str,
+@@ -69,6 +82,7 @@ pub struct Face {
+     /// selection and painting check before using it.
+     pub font: Font,
+     pub kind: FaceKind,
++    pub stack: Stack,
+     pub weight: u16,
+     pub family: &'static str,
+     pub subset: &'static str,
+@@ -121,12 +135,19 @@ impl Face {
+ pub struct FontDb {
+     pub faces: Vec<Face>,
+     emoji: Option<FaceId>,
+-    /// The Chirp Latin face of each weight bucket (400, 500, 700, 800).
+-    primary: [FaceId; 4],
+-    /// [`select_with`](Self::select_with) for every code point under U+0100 at
+-    /// each weight bucket, with no emoji or text-presentation request: what
+-    /// almost every character of a post asks for, as one array index.
+-    latin: Box<[[FaceId; 256]; 4]>,
++    /// One entry per [`STACKS`] name, indexed by [`Stack`].
++    stacks: Vec<StackFaces>,
++}
++
++struct StackFaces {
++    /// The primary family's weights, ascending. X's are 400, 500, 700, 800.
++    weights: Vec<u16>,
++    /// The primary Latin face of each weight.
++    primary: Vec<FaceId>,
++    /// [`FontDb::select_in`] for every code point under U+0100 at each weight,
++    /// with no emoji or text-presentation request: what almost every character
++    /// of a post asks for, as one array index.
++    latin: Vec<[FaceId; 256]>,
+ }
+ 
+ /// The process-wide font set. It is rebuilt when a host registers a lazy pack,
+@@ -145,9 +166,10 @@ static GENERATION: AtomicU64 = AtomicU64::new(1);
+ /// Runtime font bytes registered by the host, keyed by [`FaceData::file`].
+ /// The bytes are leaked: a registered face lives for the rest of the process,
+ /// exactly like an embedded one, which keeps `Face`'s `'static` borrows honest.
+-static RUNTIME: OnceLock<RwLock<HashMap<&'static str, &'static [u8]>>> = OnceLock::new();
++/// The index is the face's position in a collection (`.ttc`), 0 for a lone font.
++static RUNTIME: OnceLock<RwLock<HashMap<&'static str, (&'static [u8], u32)>>> = OnceLock::new();
+ 
+-fn runtime() -> &'static RwLock<HashMap<&'static str, &'static [u8]>> {
++fn runtime() -> &'static RwLock<HashMap<&'static str, (&'static [u8], u32)>> {
+     RUNTIME.get_or_init(|| RwLock::new(HashMap::new()))
+ }
+ 
+@@ -202,22 +224,31 @@ fn ensure_loaded() {
+ /// Core faces are embedded and need no registration; registering one is a
+ /// no-op, so a host can safely send a whole pack without special-casing it.
+ pub fn register_font(file: &str, data: Vec<u8>) -> Result<(), String> {
++    register_font_at(file, data, 0)
++}
++
++/// [`register_font`] for one face of a font collection, such as a system
++/// `.ttc` the host read from disk.
++pub fn register_font_at(file: &str, data: Vec<u8>, index: u32) -> Result<(), String> {
+     let Some(spec) = FACES.iter().find(|face| face.file == file) else {
+         return Err(format!("xeet: no font named `{file}` in this build"));
+     };
+-    if spec.pack == "core" || face_bytes(spec.file).is_some() {
+-        // Core is embedded; a second registration of the same file would leak
+-        // another copy and rebuild for no reason.
++    if face_bytes(spec.file).is_some() {
++        // Embedded or already registered; a second registration of the same
++        // file would leak another copy and rebuild for no reason.
+         return Ok(());
+     }
+     if data.is_empty() {
+         return Err(format!("xeet: `{file}` is empty"));
+     }
++    if skrifa::FontRef::from_index(&data, index).is_err() {
++        return Err(format!("xeet: `{file}` has no font at index {index}"));
++    }
+     let leaked: &'static [u8] = Box::leak(data.into_boxed_slice());
+     runtime()
+         .write()
+         .unwrap_or_else(|e| e.into_inner())
+-        .insert(spec.file, leaked);
++        .insert(spec.file, (leaked, index));
+     DIRTY.store(true, Ordering::Release);
+     Ok(())
+ }
+@@ -233,7 +264,16 @@ pub fn face_bytes(file: &str) -> Option<&'static [u8]> {
+         .read()
+         .unwrap_or_else(|e| e.into_inner())
+         .get(file)
+-        .copied()
++        .map(|(bytes, _)| *bytes)
++}
++
++/// Where `file`'s face sits in its bytes: nonzero only for a registered collection.
++pub fn face_index(file: &str) -> u32 {
++    runtime()
++        .read()
++        .unwrap_or_else(|e| e.into_inner())
++        .get(file)
++        .map_or(0, |(_, index)| *index)
+ }
+ 
+ /// True when any face in this build was omitted from the binary and must be
+@@ -244,11 +284,9 @@ pub fn has_lazy_packs() -> bool {
+     FACES.iter().any(|face| face.data.is_empty())
+ }
+ 
+-/// True once every file in `pack` has bytes. `core` is always loaded.
++/// True once every file in `pack` has bytes. `core` is loaded unless the build
++/// left Arial to the host (`XEET_FONT_PACKS=chirp`).
+ pub fn pack_loaded(pack: &str) -> bool {
+-    if pack == "core" {
+-        return true;
+-    }
+     FACES
+         .iter()
+         .filter(|face| face.pack == pack)
+@@ -406,13 +444,17 @@ impl FontDb {
+         // handle, so cloning it is cheap.
+         let mut loaded: Vec<(&'static FaceData, Option<Font>)> = Vec::with_capacity(FACES.len());
+         for data in FACES {
+-            let font = face_bytes(data.file).and_then(|bytes| Font::new(bytes, 0));
++            let font = face_bytes(data.file)
++                .and_then(|bytes| Font::new(bytes, face_index(data.file)));
+             loaded.push((data, font));
+         }
+         let placeholder = loaded
+             .iter()
+             .find_map(|(data, font)| {
+-                (data.kind == FaceKind::Chirp && data.weight == 400 && data.subset == "latin")
++                (data.kind == FaceKind::Primary
++                    && data.stack == X
++                    && data.weight == 400
++                    && data.subset == "latin")
+                     .then(|| font.clone())
+                     .flatten()
+             })
+@@ -441,6 +483,7 @@ impl FontDb {
+                 id: index as FaceId,
+                 font,
+                 kind: data.kind,
++                stack: data.stack,
+                 weight: data.weight,
+                 family: data.family,
+                 subset: data.subset,
+@@ -459,32 +502,100 @@ impl FontDb {
+             .iter()
+             .find(|f| f.available && f.kind == FaceKind::Emoji)
+             .map(|f| f.id);
+-        let primary = [400u16, 500, 700, 800].map(|w| {
+-            faces
+-                .iter()
+-                .find(|f| {
+-                    f.available && f.kind == FaceKind::Chirp && f.weight == w && f.subset == "latin"
+-                })
+-                .or_else(|| faces.iter().find(|f| f.available))
+-                .expect("xeet: the core pack must contain a Chirp Latin face")
+-                .id
+-        });
++        let stacks = (0..STACKS.len() as Stack)
++            .map(|stack| {
++                let weights = if stack == X {
++                    vec![400u16, 500, 700, 800]
++                } else {
++                    let mut w: Vec<u16> = FACES
++                        .iter()
++                        .filter(|f| f.kind == FaceKind::Primary && f.stack == stack)
++                        .map(|f| f.weight)
++                        .collect();
++                    w.sort_unstable();
++                    w.dedup();
++                    if w.is_empty() {
++                        w.push(400);
++                    }
++                    w
++                };
++                let primary = weights
++                    .iter()
++                    .map(|&w| {
++                        faces
++                            .iter()
++                            .find(|f| {
++                                f.available
++                                    && f.kind == FaceKind::Primary
++                                    && f.stack == stack
++                                    && f.weight == w
++                                    && (f.subset == "latin" || f.subset.is_empty())
++                            })
++                            .or_else(|| faces.iter().find(|f| f.available))
++                            .expect("xeet: no font is available")
++                            .id
++                    })
++                    .collect();
++                let latin = vec![[0; 256]; weights.len()];
++                StackFaces { weights, primary, latin }
++            })
++            .collect();
+         let mut db = FontDb {
+             faces,
+             emoji,
+-            primary,
+-            latin: Box::new([[0; 256]; 4]),
++            stacks,
+         };
+         // The table is exactly the general algorithm's answer, computed once.
+-        for (bucket, weight) in [400u16, 500, 700, 800].into_iter().enumerate() {
+-            for cp in 0..256u32 {
+-                let ch = char::from_u32(cp).unwrap();
+-                db.latin[bucket][cp as usize] = db.select_uncached(ch, weight, false, false);
++        for stack in 0..db.stacks.len() {
++            for bucket in 0..db.stacks[stack].weights.len() {
++                let weight = db.stacks[stack].weights[bucket];
++                for cp in 0..256u32 {
++                    let ch = char::from_u32(cp).unwrap();
++                    let id = db.select_uncached(stack as Stack, ch, weight, false, false);
++                    db.stacks[stack].latin[bucket][cp as usize] = id;
++                }
+             }
+         }
+         db
+     }
+ 
++    /// The index into a stack's weights that CSS font matching picks for `weight`.
++    fn bucket(&self, stack: Stack, weight: u16) -> usize {
++        if stack == X {
++            return bucket(weight);
++        }
++        let weights = &self.stacks[stack as usize].weights;
++        let pick = |w: u16| weights.iter().position(|&x| x == w).unwrap_or(0);
++        if let Some(i) = weights.iter().position(|&w| w == weight) {
++            return i;
++        }
++        let below = weights.iter().rev().find(|&&w| w < weight).copied();
++        let above = weights.iter().find(|&&w| w > weight).copied();
++        let up_to_500 = weights.iter().find(|&&w| w > weight && w <= 500).copied();
++        let chosen = if (400..=500).contains(&weight) {
++            up_to_500.or(below).or(above)
++        } else if weight < 400 {
++            below.or(above)
++        } else {
++            above.or(below)
++        };
++        chosen.map_or(0, pick)
++    }
++
++    /// The primary family's weight that `weight` resolves to in `stack`.
++    pub fn stack_weight(&self, stack: Stack, weight: u16) -> u16 {
++        let stack = self.stack_or_x(stack);
++        self.stacks[stack as usize].weights[self.bucket(stack, weight)]
++    }
++
++    fn stack_or_x(&self, stack: Stack) -> Stack {
++        if (stack as usize) < self.stacks.len() {
++            stack
++        } else {
++            X
++        }
++    }
++
+     #[inline]
+     pub fn face(&self, id: FaceId) -> &Face {
+         &self.faces[id as usize]
+@@ -496,7 +607,14 @@ impl FontDb {
+ 
+     /// The Chirp file Chrome would start with: the Latin subset at `weight`.
+     pub fn primary(&self, weight: u16) -> &Face {
+-        self.face(self.primary[bucket(weight)])
++        self.primary_in(X, weight)
++    }
++
++    /// [`primary`](Self::primary) for any stack.
++    pub fn primary_in(&self, stack: Stack, weight: u16) -> &Face {
++        let stack = self.stack_or_x(stack);
++        let faces = &self.stacks[stack as usize];
++        self.face(faces.primary[self.bucket(stack, weight)])
+     }
+ 
+     /// Picks the face for one character at a CSS weight.
+@@ -521,15 +639,29 @@ impl FontDb {
+         weight: u16,
+         emoji: bool,
+         text_presentation: bool,
++    ) -> FaceId {
++        self.select_in(X, ch, weight, emoji, text_presentation)
++    }
++
++    /// [`select_with`](Self::select_with) starting from `stack`'s primary family.
++    pub fn select_in(
++        &self,
++        stack: Stack,
++        ch: char,
++        weight: u16,
++        emoji: bool,
++        text_presentation: bool,
+     ) -> FaceId {
+         // Latin text with no emoji request is the common case by a wide
+         // margin, and its answer depends on the code point and the weight
+         // only: one array index instead of a walk of X's font stack.
++        let stack = self.stack_or_x(stack);
+         let cp = ch as u32;
+         if cp < 256 && !emoji && !text_presentation {
+-            return self.latin[bucket(weight)][cp as usize];
++            let faces = &self.stacks[stack as usize];
++            return faces.latin[self.bucket(stack, weight)][cp as usize];
+         }
+-        self.select_uncached(ch, weight, emoji, text_presentation)
++        self.select_uncached(stack, ch, weight, emoji, text_presentation)
+     }
+ 
+     /// The general selection: X's stack, in order, per character.
+@@ -539,6 +671,7 @@ impl FontDb {
+     /// and a hit in [`SELECT_CACHE`] answers them without walking the stack.
+     fn select_uncached(
+         &self,
++        stack: Stack,
+         ch: char,
+         weight: u16,
+         emoji: bool,
+@@ -547,7 +680,7 @@ impl FontDb {
+         let cp = ch as u32;
+         if cp < 256 && !emoji && !text_presentation {
+             // The Latin table already answered this one for every weight.
+-            return self.select_stack(ch, weight, emoji, text_presentation);
++            return self.select_stack(stack, ch, weight, emoji, text_presentation);
+         }
+         // The stack walk depends on the code point, the Chirp weight bucket
+         // (which also decides the 700/400 fallback weight below) and the two
+@@ -557,10 +690,11 @@ impl FontDb {
+         // render changes the answer for the same code point, and the old
+         // entry must miss rather than keep the pre-pack face.
+         let key = (cp as u64)
+-            | ((bucket(weight) as u64) << 24)
++            | ((self.bucket(stack, weight) as u64 & 0xF) << 24)
+             | ((emoji as u64) << 28)
+             | ((text_presentation as u64) << 29)
+-            | ((GENERATION.load(Ordering::Relaxed) & 0xFFFF_FFFF) << 32);
++            | ((stack as u64 & 0x3F) << 30)
++            | ((GENERATION.load(Ordering::Relaxed) & 0x0FFF_FFFF) << 36);
+         let slot = cache_slot(key);
+         if let Some(id) = SELECT_CACHE.with(|c| {
+             let slots = c.borrow();
+@@ -569,14 +703,22 @@ impl FontDb {
+         }) {
+             return id;
+         }
+-        let id = self.select_stack(ch, weight, emoji, text_presentation);
++        let id = self.select_stack(stack, ch, weight, emoji, text_presentation);
+         SELECT_CACHE.with(|c| c.borrow_mut()[slot] = (key, id));
+         id
+     }
+ 
+     /// X's stack walked per character: the answer [`select_uncached`] caches.
+-    fn select_stack(&self, ch: char, weight: u16, emoji: bool, text_presentation: bool) -> FaceId {
++    fn select_stack(
++        &self,
++        stack: Stack,
++        ch: char,
++        weight: u16,
++        emoji: bool,
++        text_presentation: bool,
++    ) -> FaceId {
+         let cp = ch as u32;
++        let primary = |f: &Face| f.kind == FaceKind::Primary && f.stack == stack;
+         // An explicit emoji sequence (VS16, a keycap, a skin tone, a ZWJ
+         // sequence) wins over everything, Chirp included: "©️" is emoji while
+         // "©" is not.
+@@ -585,14 +727,13 @@ impl FontDb {
+                 return e;
+             }
+         }
+-        let w = chirp_weight(weight);
++        let w = self.stack_weight(stack, weight);
+         // Chirp comes first in X's stack and wins every character it has,
+         // including the few that Unicode draws as emoji by default: Chrome
+         // renders U+1F503 with Chirp, not with the emoji font.
+         // Later @font-face rules win where ranges overlap.
+         for f in self.faces.iter().rev() {
+-            if f.kind == FaceKind::Chirp && f.weight == w && f.in_range(cp) && f.glyph(ch).is_some()
+-            {
++            if primary(f) && f.weight == w && f.in_range(cp) && f.glyph(ch).is_some() {
+                 return f.id;
+             }
+         }
+@@ -615,7 +756,7 @@ impl FontDb {
+                 .faces
+                 .iter()
+                 .rev()
+-                .find(|f| f.kind == FaceKind::Chirp && f.weight == w && f.in_range(cp))
++                .find(|f| primary(f) && f.weight == w && f.in_range(cp))
+             {
+                 return f.id;
+             }
+@@ -630,7 +771,7 @@ impl FontDb {
+         let fw = if weight >= 600 { 700 } else { 400 };
+         let mut regular_hit = None;
+         for f in &self.faces {
+-            if f.kind == FaceKind::Chirp || !f.in_range(cp) || f.glyph(ch).is_none() {
++            if f.kind == FaceKind::Primary || !f.in_range(cp) || f.glyph(ch).is_none() {
+                 continue;
+             }
+             if f.kind == FaceKind::Emoji && text_presentation {
+@@ -649,7 +790,7 @@ impl FontDb {
+                 return e;
+             }
+         }
+-        self.primary(weight).id
++        self.primary_in(stack, weight).id
+     }
+ }
+ 
+@@ -1110,7 +1251,7 @@ mod tests {
+             let found = db
+                 .faces
+                 .iter()
+-                .find(|f| f.kind == FaceKind::Chirp && f.weight == w && f.subset == "latin")
++                .find(|f| f.kind == FaceKind::Primary && f.stack == X && f.weight == w && f.subset == "latin")
+                 .expect("a Latin Chirp face per weight");
+             assert_eq!(db.primary(weight).id, found.id, "weight {weight}");
+         }
+diff --git a/crates/xeet-core/src/frame/actions.rs b/crates/xeet-core/src/frame/actions.rs
+index 14e6505..b31ef57 100644
+--- a/crates/xeet-core/src/frame/actions.rs
++++ b/crates/xeet-core/src/frame/actions.rs
+@@ -265,6 +265,7 @@ fn count_block(label: &str, style: tokens::TypeStyle, color: Rgba, width: f32) -
+             preserve: false,
+             dir: Dir::Ltr,
+             tab_size: 4.0,
++            stack: crate::fonts::X,
+         },
+     );
+     let (ascent, descent) = crate::fonts::db()
+diff --git a/crates/xeet-core/src/frame/header.rs b/crates/xeet-core/src/frame/header.rs
+index 0c860dc..90feb85 100644
+--- a/crates/xeet-core/src/frame/header.rs
++++ b/crates/xeet-core/src/frame/header.rs
+@@ -123,6 +123,7 @@ pub fn one_line(
+             preserve: false,
+             dir: Dir::Auto,
+             tab_size: 4.0,
++            stack: crate::fonts::X,
+         },
+     )
+ }
+diff --git a/crates/xeet-core/src/frame/mod.rs b/crates/xeet-core/src/frame/mod.rs
+index fbb7c2e..b0105b7 100644
+--- a/crates/xeet-core/src/frame/mod.rs
++++ b/crates/xeet-core/src/frame/mod.rs
+@@ -399,6 +399,7 @@ fn body_block(ctx: &Ctx, column: f32, decisions: &Decisions) -> (TextBlock, Opti
+         preserve: true,
+         dir: Dir::Auto,
+         tab_size: 4.0,
++        stack: crate::fonts::X,
+     };
+     let full = inline::layout(&spans, &block_style);
+     let ios_cap = if decisions.attachment.is_some()
+@@ -542,6 +543,7 @@ fn show_more_block(ctx: &Ctx, width: f32) -> TextBlock {
+             preserve: false,
+             dir: Dir::Ltr,
+             tab_size: 4.0,
++            stack: crate::fonts::X,
+         },
+     )
+ }
+@@ -1476,6 +1478,7 @@ mod clamp_tests {
+                 preserve: true,
+                 dir,
+                 tab_size: 4.0,
++                stack: crate::fonts::X,
+             },
+         )
+     }
+diff --git a/crates/xeet-core/src/inline.rs b/crates/xeet-core/src/inline.rs
+index 9438b8a..bc41d02 100644
+--- a/crates/xeet-core/src/inline.rs
++++ b/crates/xeet-core/src/inline.rs
+@@ -92,6 +92,8 @@ pub struct BlockStyle {
+     pub dir: Dir,
+     /// CSS `tab-size`, in multiples of the space advance. X sets 4.
+     pub tab_size: f32,
++    /// The font stack the block's `font-family` names.
++    pub stack: fonts::Stack,
+ }
+ 
+ #[derive(Clone, Debug)]
+@@ -166,6 +168,7 @@ pub struct TextBlock {
+     pub natural_lines: usize,
+     pub size: f32,
+     pub weight: u16,
++    pub stack: fonts::Stack,
+     /// Resolved paragraph direction.
+     pub rtl: bool,
+ }
+@@ -331,7 +334,7 @@ pub fn layout(spans: &[Span], st: &BlockStyle) -> TextBlock {
+     }
+ 
+     let space_width = if text.contains('\t') {
+-        shape::measure(db().primary(st.weight), " ", st.size, false)
++        shape::measure(db().primary_in(st.stack, st.weight), " ", st.size, false)
+     } else {
+         0.0
+     };
+@@ -391,6 +394,7 @@ pub fn layout(spans: &[Span], st: &BlockStyle) -> TextBlock {
+         natural_lines,
+         size: st.size,
+         weight: st.weight,
++        stack: st.stack,
+         rtl,
+     }
+ }
+@@ -600,7 +604,13 @@ fn shape_segment(ctx: &Ctx, abs: usize, s: &str, gbs: &[usize], trail: usize) ->
+         // character Unicode draws as emoji by default is handled by
+         // `select_with`, after Chirp, as in X's stack.
+         let emoji = !cluster.is_ascii() && fonts::cluster_requests_emoji(cluster);
+-        let face = fonts.select_with(first, span.weight, emoji, cluster.contains('\u{FE0E}'));
++        let face = fonts.select_in(
++            ctx.st.stack,
++            first,
++            span.weight,
++            emoji,
++            cluster.contains('\u{FE0E}'),
++        );
+         // L1: tabs, and trailing whitespace, take the paragraph level.
+         let level = if first == '\t' || abs + a >= trail {
+             ctx.base
+@@ -979,7 +989,7 @@ fn make_line(ctx: &Ctx, mut runs: Vec<Run>, start: usize, end: usize, width: f32
+     }
+     // With a fixed line-height, Chrome sizes every line from the block's
+     // primary font alone; fallback and emoji fonts do not change the line box.
+-    let (a, d) = db().primary(st.weight).rounded_metrics(st.size);
++    let (a, d) = db().primary_in(st.stack, st.weight).rounded_metrics(st.size);
+     let leading = st.line_height - (a + d);
+     let half = (leading / 2.0).floor();
+     Line {
+@@ -997,7 +1007,7 @@ fn make_line(ctx: &Ctx, mut runs: Vec<Run>, start: usize, end: usize, width: f32
+ fn ellipsize(ctx: &Ctx, line: &mut Line) {
+     let st = ctx.st;
+     let fonts = db();
+-    let face = fonts.primary(st.weight);
++    let face = fonts.primary_in(st.stack, st.weight);
+     let mut ell = Vec::new();
+     shape::shape(face, "\u{2026}", st.size, false, false, None, &mut ell);
+     let ell_w: f32 = ell.iter().map(|g| g.adv).sum();
+@@ -1067,7 +1077,7 @@ impl TextBlock {
+             let first_of_line = out.len();
+             // A text box is as tall as the primary font's ascent plus descent,
+             // which is the line box minus its leading.
+-            let (a, d) = db().primary(self.weight).rounded_metrics(self.size);
++            let (a, d) = db().primary_in(self.stack, self.weight).rounded_metrics(self.size);
+             let top = line.top + line.baseline - a;
+             let bottom = line.top + line.baseline + d;
+             for run in &line.runs {
+diff --git a/crates/xeet-core/src/paint/fonts.rs b/crates/xeet-core/src/paint/fonts.rs
+index 16eee69..420abdf 100644
+--- a/crates/xeet-core/src/paint/fonts.rs
++++ b/crates/xeet-core/src/paint/fonts.rs
+@@ -14,7 +14,7 @@
+ //! pay for the forty-odd faces it never touches. A slot for an unregistered
+ //! pack stays empty, so it can still be filled when the pack arrives.
+ 
+-use crate::fonts::{face_bytes, FaceId, FACES};
++use crate::fonts::{face_bytes, face_index, FaceId, FACES};
+ use skrifa::FontRef;
+ use std::sync::OnceLock;
+ 
+@@ -35,6 +35,6 @@ pub(crate) fn font(id: FaceId) -> Option<&'static FontRef<'static>> {
+     }
+     let spec = FACES.get(id as usize)?;
+     let data = face_bytes(spec.file)?;
+-    let font = FontRef::new(data).ok()?;
++    let font = FontRef::from_index(data, face_index(spec.file)).ok()?;
+     Some(slot.get_or_init(|| font))
+ }
+diff --git a/crates/xeet-core/src/paint/icons.rs b/crates/xeet-core/src/paint/icons.rs
+index d06e464..5c51e9f 100644
+--- a/crates/xeet-core/src/paint/icons.rs
++++ b/crates/xeet-core/src/paint/icons.rs
+@@ -141,13 +141,15 @@ fn icons() -> &'static HashMap<String, Icon> {
+     static ICONS: OnceLock<HashMap<String, Icon>> = OnceLock::new();
+     ICONS.get_or_init(|| {
+         let mut out = HashMap::new();
+-        let Ok(json) = serde_json::from_str::<serde_json::Value>(crate::fonts::ICONS_JSON) else {
+-            return out;
++        let parse = |json: &str| {
++            serde_json::from_str::<serde_json::Value>(json)
++                .ok()
++                .and_then(|v| v.as_object().cloned())
++                .unwrap_or_default()
+         };
+-        let Some(map) = json.as_object() else {
+-            return out;
+-        };
+-        for (name, v) in map {
++        let mut map = parse(crate::fonts::ICONS_JSON);
++        map.extend(parse(crate::fonts::EXTRA_ICONS_JSON));
++        for (name, v) in &map {
+             let Some(body) = v.get("body").and_then(|b| b.as_str()) else {
+                 continue;
+             };
+diff --git a/crates/xeet-core/src/paint/images.rs b/crates/xeet-core/src/paint/images.rs
+index 48a864e..d727bc9 100644
+--- a/crates/xeet-core/src/paint/images.rs
++++ b/crates/xeet-core/src/paint/images.rs
+@@ -797,6 +797,7 @@ pub(crate) fn placeholder(r: &mut Renderer, shape: &Shape, label: &str) {
+         preserve: false,
+         dir: inline::Dir::Auto,
+         tab_size: 4.0,
++        stack: crate::fonts::X,
+     };
+     let block = inline::layout(&[inline::Span::new(label, PLACEHOLDER_LABEL, 400)], &st);
+     let x = shape.rect.x + (shape.rect.w - block.width) / 2.0;
+diff --git a/crates/xeet-core/src/render.rs b/crates/xeet-core/src/render.rs
+index 3078d9e..8af04cc 100644
+--- a/crates/xeet-core/src/render.rs
++++ b/crates/xeet-core/src/render.rs
+@@ -405,6 +405,7 @@ pub fn sheet_with(
+                     preserve: false,
+                     dir: Dir::Auto,
+                     tab_size: 4.0,
++                    stack: crate::fonts::X,
+                 },
+             );
+             out.push_text(&block, x, y);
+-- 
+2.54.0 (Apple Git-157)
+
