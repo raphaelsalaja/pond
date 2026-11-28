@@ -3,6 +3,7 @@ import { pickCardFile } from "@shared/save-file-names";
 import { encode } from "blurhash";
 import sharp from "sharp";
 import { isStaticThumbnailFile } from "../../shared/media-index";
+import { decodeHeicOnMacIfNeeded } from "./heic";
 
 const ENCODE_SIZE = 32;
 
@@ -32,7 +33,8 @@ export async function encodeBlurhash(
         .resize(ENCODE_SIZE, ENCODE_SIZE, { fit: "inside" })
         .raw()
         .toBuffer({ resolveWithObject: true });
-    const { data, info } = await decodePixels(input);
+    const decoded = await decodeHeicOnMacIfNeeded(input, ENCODE_SIZE);
+    const { data, info } = await decodePixels(decoded ?? input);
     if (info.channels !== 4 || info.width < 1 || info.height < 1) return null;
     return encode(
       new Uint8ClampedArray(data.buffer, data.byteOffset, data.byteLength),

@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import log from "electron-log/main.js";
 import sharp from "sharp";
+import { decodeHeicOnMacIfNeeded } from "../../lib/heic";
 import { saveDirIn } from "../../paths";
 import type { MediaJob, StagedMedia, StagedSize } from "./plan";
 
@@ -72,7 +73,10 @@ async function stageStill(
   to: string,
   job: MediaJob,
 ): Promise<StagedSize> {
-  let image = sharp(await readFile(from), { animated: true }).autoOrient();
+  const decoded = await decodeHeicOnMacIfNeeded(from);
+  let image = sharp(decoded ?? (await readFile(from)), {
+    animated: true,
+  }).autoOrient();
   if (job.orient.rotate) image = image.rotate(job.orient.rotate);
   if (job.orient.flipX) image = image.flop();
   if (job.orient.flipY) image = image.flip();

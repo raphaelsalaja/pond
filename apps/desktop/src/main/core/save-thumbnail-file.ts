@@ -8,6 +8,7 @@ import {
   THUMBNAIL_KIND,
 } from "@shared/save-file-names";
 import sharp from "sharp";
+import { decodeHeicOnMacIfNeeded } from "../lib/heic";
 
 const MAX_EDGE = 1024;
 
@@ -15,7 +16,8 @@ export async function renderThumbnail(
   input: string | Buffer,
 ): Promise<Buffer | null> {
   try {
-    return await sharp(input, { failOn: "none", pages: 1 })
+    const decoded = await decodeHeicOnMacIfNeeded(input, MAX_EDGE);
+    return await sharp(decoded ?? input, { failOn: "none", pages: 1 })
       .rotate()
       .resize({
         width: MAX_EDGE,
@@ -53,7 +55,8 @@ const THUMBNAIL_MISMATCH_BITS = 20;
 
 async function differenceHash(input: string | Buffer): Promise<bigint | null> {
   try {
-    const pixels = await sharp(input, { failOn: "none", pages: 1 })
+    const decoded = await decodeHeicOnMacIfNeeded(input, 64);
+    const pixels = await sharp(decoded ?? input, { failOn: "none", pages: 1 })
       .rotate()
       .greyscale()
       .resize(9, 8, { fit: "fill" })

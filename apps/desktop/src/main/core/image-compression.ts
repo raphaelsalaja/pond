@@ -10,6 +10,7 @@ import sharp from "sharp";
 import type { ImageCompressionRequest } from "../../shared/conversion-contracts";
 import { getDb } from "../db";
 import { encodeBlurhash } from "../lib/blurhash";
+import { decodeHeicOnMacIfNeeded } from "../lib/heic";
 import { extractPalette } from "../lib/palette";
 import { resolvePaths, saveDirIn } from "../paths";
 import { executeBatch } from "./executor";
@@ -161,10 +162,11 @@ export async function encodeCompressedImage(
   quality: number,
 ): Promise<Buffer | null> {
   const extension = extname(path).slice(1).toLowerCase();
+  const input = (await decodeHeicOnMacIfNeeded(source)) ?? source;
   if (mode === "upscale") {
-    const metadata = await sharp(source).metadata();
+    const metadata = await sharp(input).metadata();
     if (!metadata.width || !metadata.height) return null;
-    return sharp(source)
+    return sharp(input)
       .resize(metadata.width * 2, metadata.height * 2, {
         fit: "fill",
         kernel: sharp.kernel.lanczos3,
@@ -175,7 +177,7 @@ export async function encodeCompressedImage(
       .toBuffer();
   }
   if (mode === "remove-background") {
-    const decoded = await sharp(source).ensureAlpha().raw().toBuffer({
+    const decoded = await sharp(input).ensureAlpha().raw().toBuffer({
       resolveWithObject: true,
     });
     const pixels = decoded.data;
@@ -199,7 +201,7 @@ export async function encodeCompressedImage(
       .toBuffer();
   }
   if (mode === "webp") {
-    return sharp(source, {
+    return sharp(input, {
       animated: extension === "gif" || extension === "webp",
       failOn: "warning",
       limitInputPixels: 100_000_000,
@@ -212,7 +214,7 @@ export async function encodeCompressedImage(
     if (mode !== "lossless") return null;
     return optimizeSvg(source);
   }
-  const image = sharp(source, {
+  const image = sharp(input, {
     animated: extension === "gif" || extension === "webp",
     failOn: "warning",
     limitInputPixels: 100_000_000,

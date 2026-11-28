@@ -5,12 +5,14 @@ import {
   dhashFromGray,
   hashToHex,
 } from "./fingerprint/dhash";
+import { decodeHeicOnMacIfNeeded } from "./heic";
 
 export async function encodePhash(
   source: string | Buffer,
 ): Promise<string | null> {
   try {
-    const pixels = await sharp(source)
+    const decoded = await decodeHeicOnMacIfNeeded(source, 64);
+    const pixels = await sharp(decoded ?? source)
       .resize(DHASH_WIDTH, DHASH_HEIGHT, { fit: "fill" })
       .greyscale()
       .raw()

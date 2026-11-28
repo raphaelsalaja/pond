@@ -24,6 +24,7 @@ import {
   videoPrintFromFrames,
   videoSampleTimes,
 } from "../../lib/fingerprint/video-print";
+import { decodeHeicOnMacIfNeeded } from "../../lib/heic";
 import { binariesAvailable } from "../refresh/binaries";
 import { FFMPEG_UNAVAILABLE, FINGERPRINT_ALGORITHMS } from "./fingerprints";
 import type { FingerprintAlgorithm, FingerprintStatus } from "./fingerprints";
@@ -42,7 +43,11 @@ const NO_AUDIO_STREAM =
 export async function imageFingerprint(
   source: string | Buffer,
 ): Promise<FingerprintOutcome> {
-  const pixels = await sharp(source, { pages: 1 })
+  const decoded = await decodeHeicOnMacIfNeeded(
+    source,
+    IMAGE_PRINT_DECODE_SIZE,
+  );
+  const pixels = await sharp(decoded ?? source, { pages: 1 })
     .rotate()
     .resize(IMAGE_PRINT_DECODE_SIZE, IMAGE_PRINT_DECODE_SIZE, { fit: "fill" })
     .greyscale()

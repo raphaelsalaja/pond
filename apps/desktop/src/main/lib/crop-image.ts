@@ -1,5 +1,6 @@
 import type { ImageCrop } from "@pond/schema/db";
 import sharp from "sharp";
+import { decodeHeicOnMacIfNeeded } from "./heic";
 
 export async function cropImage(
   source: string | Buffer,
@@ -17,7 +18,11 @@ export async function cropImage(
   ) {
     throw new Error("Select a crop inside the image.");
   }
-  const { data, info } = await sharp(source, { pages: 1, page: frameIndex })
+  const decoded = await decodeHeicOnMacIfNeeded(source);
+  const { data, info } = await sharp(decoded ?? source, {
+    pages: 1,
+    page: frameIndex,
+  })
     .autoOrient()
     .toBuffer({ resolveWithObject: true });
   const left = Math.min(info.width - 1, Math.floor(crop.x * info.width));

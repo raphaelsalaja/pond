@@ -8,12 +8,11 @@ import type { Metadata } from "sharp";
 import { eagleFormatGroup } from "../../shared/eagle-formats";
 import { THUMBNAIL_CACHE_VERSION } from "../../shared/media-index";
 import { thumbnailSidecarCandidates } from "../../shared/save-file-names";
-import { decodeHeicOnMac } from "../lib/heic";
+import { decodeHeicOnMacIfNeeded } from "../lib/heic";
 import {
   createThumbnailScheduler,
   isIsoBaseMediaHeader,
   isRasterImageHeader,
-  NATIVE_RASTER_EXT,
   thumbnailKindForExtension,
 } from "../lib/thumbnail";
 import type { ThumbnailKind, ThumbnailPriority } from "../lib/thumbnail";
@@ -252,11 +251,9 @@ async function nativeThumbnailPipeline(
 } | null> {
   const imported = await importedThumbnailSidecarPipeline(sourcePath);
   if (imported) return imported;
-  if (
-    process.platform === "darwin" &&
-    NATIVE_RASTER_EXT.has(extname(sourcePath).toLowerCase())
-  ) {
-    const pipeline = sharp(await decodeHeicOnMac(sourcePath, width));
+  const heic = await decodeHeicOnMacIfNeeded(sourcePath, width);
+  if (heic) {
+    const pipeline = sharp(heic);
     return { pipeline, metadata: await pipeline.metadata() };
   }
   const raw = await rawThumbnailPipeline(sourcePath);

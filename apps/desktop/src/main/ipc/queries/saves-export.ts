@@ -24,6 +24,7 @@ import {
 import { runTransferJob } from "../../core/transfer-jobs";
 import { getDb } from "../../db";
 import { toCsv } from "../../lib/csv";
+import { decodeHeicOnMacIfNeeded } from "../../lib/heic";
 import { showNativeShareMenu } from "../../lib/native-share";
 import { libraryRoot } from "../../paths";
 import { resolveSaveFilePath } from "../helpers";
@@ -223,7 +224,8 @@ export const savesExportQueries = {
         const target = await resolveSaveFilePath(id, 0);
         if (!target.ok) continue;
         try {
-          const bytes = await sharp(target.path)
+          const decoded = await decodeHeicOnMacIfNeeded(target.path);
+          const bytes = await sharp(decoded ?? target.path)
             .webp({ quality: 80 })
             .toBuffer();
           await writeExportFile(dir, `${id}.webp`, bytes);

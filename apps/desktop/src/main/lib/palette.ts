@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import { decodeHeicOnMacIfNeeded } from "./heic";
 
 interface Bucket {
   count: number;
@@ -28,7 +29,8 @@ export async function extractPalette(
         .removeAlpha()
         .raw()
         .toBuffer({ resolveWithObject: true });
-    const { data, info } = await read(input);
+    const decoded = await decodeHeicOnMacIfNeeded(input, size);
+    const { data, info } = await read(decoded ?? input);
 
     const channels = info.channels;
     const buckets = new Map<string, Bucket>();

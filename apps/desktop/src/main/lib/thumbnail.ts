@@ -7,10 +7,7 @@ const MAX_WIDTH = 2048;
 /** `foreground` is one item the user opened, `visible` an on-screen card, `background` work nobody waits on. */
 export type ThumbnailPriority = "foreground" | "visible" | "background";
 
-export const NATIVE_RASTER_EXT: ReadonlySet<string> = new Set([
-  ".heic",
-  ".heif",
-]);
+const NATIVE_RASTER_EXT: ReadonlySet<string> = new Set([".heic", ".heif"]);
 
 export function isThumbnailable(ext: string): boolean {
   return isThumbnailFileExtension(ext);

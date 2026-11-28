@@ -5,6 +5,7 @@ import { basename, extname, join } from "node:path";
 import sharp from "sharp";
 import type { Sharp } from "sharp";
 import type { ConversionPreset } from "../../shared/conversion-contracts";
+import { decodeHeicOnMacIfNeeded } from "../lib/heic";
 import { killProcessTree, trackChildProcess } from "../lib/process-tree";
 import { requireConversionCapability } from "./conversion-capabilities";
 import { copyExportFile, writeExportFile } from "./export-files";
@@ -39,7 +40,10 @@ export async function convertMedia(input: {
     });
   }
 
-  const image = sharp(source, { limitInputPixels: 100_000_000 }).rotate();
+  const decoded = await decodeHeicOnMacIfNeeded(source);
+  const image = sharp(decoded ?? source, {
+    limitInputPixels: 100_000_000,
+  }).rotate();
   const abort = () => image.destroy(new Error("Conversion canceled."));
   signal.addEventListener("abort", abort, { once: true });
   try {

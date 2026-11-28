@@ -5,6 +5,7 @@ import type { Capture, CaptureMedia } from "@pond/schema/raw";
 import type { TxSaveFile } from "@pond/schema/tx";
 import sharp from "sharp";
 import { fetchAvatarToTxFile } from "../../../lib/blob";
+import { decodeHeicOnMacIfNeeded } from "../../../lib/heic";
 import { saveFile } from "../../../paths";
 import { readLibraryMedia } from "../../storage/library-media-storage";
 import { mediaFilesByUrl } from "./card-media-files";
@@ -193,7 +194,8 @@ async function bytesToCardDataUrl(
   mime: string,
 ): Promise<string | null> {
   try {
-    const pipeline = sharp(bytes, { failOn: "none" });
+    const decoded = await decodeHeicOnMacIfNeeded(bytes, CARD_IMAGE_LONG_EDGE);
+    const pipeline = sharp(decoded ?? bytes, { failOn: "none" });
     const meta = await pipeline.metadata();
     if ((meta.pages ?? 1) > 1) {
       if (bytes.byteLength > CARD_FETCH_MAX_BYTES) return null;
