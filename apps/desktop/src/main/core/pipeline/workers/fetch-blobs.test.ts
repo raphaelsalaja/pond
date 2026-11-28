@@ -3,8 +3,10 @@ import { expect, it } from "vitest";
 import { TerminalError, TransientError } from "../extractors/errors";
 import {
   collectMediaUrls,
+  exhaustedMediaUrls,
   requireFetchedMedia,
   settleMediaFetches,
+  unfetchedMediaUrls,
 } from "./fetch-blobs";
 
 const previewFile = {
@@ -172,4 +174,42 @@ it("skips the author's avatar stored as tweet media", () => {
   });
 
   expect(collectMediaUrls(withAvatar, { includeVideo: false })).toEqual([]);
+});
+
+it("records only settled misses as exhausted", () => {
+  const mediaUrl = "https://i.pinimg.com/originals/96/1a/da/a.jpg";
+  const other = "https://i.pinimg.com/originals/96/1a/da/b.jpg";
+
+  expect(
+    exhaustedMediaUrls([
+      { url: mediaUrl, file: null, miss: "permanent" },
+      { url: other, file: null, miss: "transient" },
+      {
+        url: "https://i.pinimg.com/originals/96/1a/da/c.jpg",
+        file: previewFile,
+      },
+    ]),
+  ).toEqual([mediaUrl]);
+
+  expect(
+    exhaustedMediaUrls([{ url: mediaUrl, file: null, miss: "challenged" }]),
+  ).toEqual([mediaUrl]);
+
+  expect(
+    exhaustedMediaUrls([{ url: mediaUrl, file: null, miss: "transient" }]),
+  ).toEqual([]);
+});
+
+it("records every unfetched url for the final generated-card fallback", () => {
+  const generated = "https://opengraph.githubassets.com/1/vercel/next.js";
+
+  expect(
+    unfetchedMediaUrls([
+      { url: generated, file: null, miss: "transient" },
+      {
+        url: "https://i.pinimg.com/originals/96/1a/da/c.jpg",
+        file: previewFile,
+      },
+    ]),
+  ).toEqual([generated]);
 });

@@ -1,6 +1,7 @@
 export { SourcesSidebar } from "./components/sidebar";
 export { BrandTile } from "./components/sync-monitor-source-tile";
 export { useAccounts } from "./hooks/use-accounts";
+export { useWatches } from "./hooks/use-watches";
 export { startConnect } from "./lib/create";
 export {
   connectableSourceItems,

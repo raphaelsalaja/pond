@@ -10,7 +10,6 @@ import { commitEvent, startSyncEvent, toErrorInfo } from "../../lib/wide-event";
 import { enqueue } from "../pipeline/enqueue";
 import { isSyncBlockedByStorageGuard } from "../storage-watcher";
 import { listAccountsForSource, partitionForAccount } from "../sync/accounts";
-import { fileIncomingSaves } from "../sync/incoming";
 import { emit, inFlight } from "../sync/sync-status";
 import { getWatch, getWatchSync, patchWatchSync } from "../sync/watches";
 import { listArenaWatch } from "./arena";
@@ -257,7 +256,6 @@ async function runWatch(
     ev.outcome = "aborted";
     return;
   }
-  await fileIncomingSaves(bulk.createdIds, watchId, source, `watch:${source}`);
 
   const lastSyncedAt = await persistWatchWatermark(watchId, {
     firstCheck,

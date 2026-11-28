@@ -1,7 +1,10 @@
 /// <reference lib="dom" />
 
 import type { MediaType } from "@pond/schema/db";
-import type { BrowserValidators } from "../lib/browser-validation";
+import type {
+  BrowserValidators,
+  YoutubePlayerCover,
+} from "../lib/browser-validation";
 
 interface YoutubeThumbnail {
   url?: string;
@@ -195,9 +198,13 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
 
   /** Shorts publish an upright original-aspect image beside the blurred 16:9 poster. */
   function readPortraitThumbnail(): string | undefined {
-    const thumbnail =
-      currentPlayerResponse()?.microformat?.playerMicroformatRenderer
-        ?.thumbnail;
+    return portraitThumbnailOf(currentPlayerResponse());
+  }
+
+  function portraitThumbnailOf(
+    player: YoutubePlayerCover | undefined,
+  ): string | undefined {
+    const thumbnail = player?.microformat?.playerMicroformatRenderer?.thumbnail;
     if (thumbnail?.isOriginalAspectRatio !== true) return undefined;
     const thumbs = thumbnail.thumbnails;
     if (!Array.isArray(thumbs)) return undefined;
@@ -218,6 +225,82 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
       }
     }
     return best?.url;
+  }
+
+  /**
+   * The watch page only lists the landscape composite for a Short. The Shorts
+   * page lists the cover the Shorts player shows, so a page that may be a
+   * Short and has no upright image reads it from there.
+   */
+  async function withShortsCover(
+    page: YoutubeWatchPage,
+    videoId: string,
+  ): Promise<YoutubeWatchPage> {
+    const duration = page.meta?.durationSec;
+    const mayBeShort =
+      location.pathname.startsWith("/shorts/") ||
+      (duration !== undefined && duration > 0 && duration <= 180);
+    if (!mayBeShort || readPortraitThumbnail()) return page;
+    const cover = await readShortsCover(videoId);
+    if (!cover) return page;
+    return {
+      ...page,
+      mediaType: "video",
+      mediaUrl: cover,
+      mediaUrls: [{ url: cover, type: "video" }],
+    };
+  }
+
+  async function readShortsCover(videoId: string): Promise<string | undefined> {
+    try {
+      const response = await fetch(
+        `${location.origin}/shorts/${encodeURIComponent(videoId)}`,
+        { credentials: "include", signal: AbortSignal.timeout(5000) },
+      );
+      if (!response.ok) return undefined;
+      const player = playerResponseFromHtml(await response.text());
+      /** A video that is not a Short redirects to its watch page, which has no upright image. */
+      if (player?.videoDetails?.videoId !== videoId) return undefined;
+      return portraitThumbnailOf(player);
+    } catch {
+      return undefined;
+    }
+  }
+
+  function playerResponseFromHtml(
+    html: string,
+  ): YoutubePlayerCover | undefined {
+    const marker = html.indexOf("ytInitialPlayerResponse = {");
+    if (marker < 0) return undefined;
+    const start = html.indexOf("{", marker);
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    for (let i = start; i < html.length; i += 1) {
+      const char = html[i];
+      if (inString) {
+        if (escaped) escaped = false;
+        else if (char === "\\") escaped = true;
+        else if (char === '"') inString = false;
+        continue;
+      }
+      if (char === '"') inString = true;
+      else if (char === "{") depth += 1;
+      else if (char === "}") {
+        depth -= 1;
+        if (depth === 0) {
+          try {
+            const parsed = validators.youtubePlayer.safeParse(
+              JSON.parse(html.slice(start, i + 1)),
+            );
+            return parsed.success ? parsed.data : undefined;
+          } catch {
+            return undefined;
+          }
+        }
+      }
+    }
+    return undefined;
   }
 
   /** The `<video>` element reports the pre-roll ad's length while one plays, and the info line moves between layouts. */
@@ -343,5 +426,5 @@ export function inPageYoutubeNormalize(validators: BrowserValidators) {
     return line.replaceAll(/\D/g, "").length >= 10;
   }
 
-  return { extractVideoId, parseCount, extractWatchPageMeta };
+  return { extractVideoId, parseCount, extractWatchPageMeta, withShortsCover };
 }

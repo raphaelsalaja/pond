@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-const CAPTURE_ROOT_ATTRIBUTE = "data-pond-capture";
+export const CAPTURE_ROOT_ATTRIBUTE = "data-pond-capture";
 
 function markCaptureRoots(post: string, parent: string): string {
   const attribute = JSON.stringify(CAPTURE_ROOT_ATTRIBUTE);

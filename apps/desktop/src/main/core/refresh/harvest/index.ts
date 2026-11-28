@@ -24,10 +24,6 @@ import {
 } from "./dribbble/item";
 import type { HarvestAdaptCtx } from "./from-page";
 import {
-  adapt as githubAdapt,
-  buildExpression as githubExpression,
-} from "./github/item";
-import {
   adapt as instagramAdapt,
   buildExpression as instagramExpression,
 } from "./instagram";
@@ -140,9 +136,12 @@ const REGISTRY = {
     adapt: threadsAdapt,
     sourceIdFromUrl: (url) => sourceIdFromUrl("threads", url),
   },
+  /** GitHub reads its page HTML through `captureGithubRepo`, which parses both transports with `parseRepoPage`. */
   github: {
-    buildExpression: githubExpression,
-    adapt: githubAdapt,
+    buildExpression: () => {
+      throw new Error("github harvests through captureGithubRepo");
+    },
+    adapt: () => null,
     sourceIdFromUrl: (url) =>
       sourceIdFromUrl("github", url)?.toLowerCase() ?? null,
   },

@@ -95,11 +95,27 @@ export async function startLibraryBackgroundWork(): Promise<void> {
       }),
     )
     .then(
+      step("YouTube Short poster repair", async () => {
+        const module =
+          await import("./core/refresh/youtube-short-poster-repair");
+        await module.repairYoutubeShortPosters();
+      }),
+    )
+    .then(
       step("article backfill", async () => {
         const module = await import("./core/refresh/article-backfill");
         await module.startArticleBackfill();
       }),
+    )
+    .then(
+      step("media cover backfill", async () => {
+        const module = await import("./core/refresh/media-cover-backfill");
+        await module.startMediaCoverBackfill();
+      }),
     );
+  void import("./core/rules/service")
+    .then((module) => (live() ? module.startRules() : undefined))
+    .catch((cause: unknown) => log.warn("[pond] rules failed to start", cause));
   void enrichmentModule
     .backfillEnrichmentSidecars()
     .catch((cause: unknown) =>
@@ -109,6 +125,7 @@ export async function startLibraryBackgroundWork(): Promise<void> {
 
 export function stopLibraryBackgroundWork(): void {
   generation += 1;
+  void import("./core/rules/service").then((module) => module.stopRules());
   stopMediaWarmer?.();
   stopFingerprintWorker?.();
   stopDisplacementWatch?.();

@@ -48,6 +48,7 @@ const rendered = {
   bytes: Buffer.from("png"),
   width: 10,
   height: 10,
+  renderer: "xeet" as const,
 };
 
 type TweetShotArgs = Parameters<TestPorts["screenshotTweetDual"]>[0];
@@ -223,6 +224,27 @@ describe("isCaptureTweetStale", () => {
         captureTweetVersion: 13,
       }),
     ).toBe(false);
+  });
+});
+
+describe("runCaptureTweet live screenshot validation", () => {
+  it("does not persist either variant when scheme validation fails", async () => {
+    const raw = replyRaw();
+    raw.capture.isReply = false;
+    delete raw.capture.replyTo;
+    const harness = makePorts(
+      save(raw),
+      {
+        light: { ok: false, reason: "scheme_mismatch" },
+        dark: { ok: false, reason: "scheme_mismatch" },
+      },
+      { nativeCardMisses: true },
+    );
+
+    await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
+      captured: 0,
+    });
+    expect(harness.persisted).toEqual([]);
   });
 });
 

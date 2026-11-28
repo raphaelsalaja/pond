@@ -36,7 +36,10 @@ import { disposeQueueWorkerHost } from "./core/pipeline/worker-host";
 import { getPrefs, subscribePrefs } from "./core/prefs";
 import { closePreviewWindows } from "./core/preview-windows";
 import { closeQuickCapture } from "./core/quick-capture-overlay";
-import { disposeHiddenWindow } from "./core/refresh/harvest-window";
+import {
+  disposeHiddenWindow,
+  restoreInterruptedScreenshotThemes,
+} from "./core/refresh/harvest-window";
 import { disposeRenderCardWindow } from "./core/render-card";
 import {
   startStorageWatcher,
@@ -500,6 +503,9 @@ async function postLaunchInit(): Promise<void> {
     }
   }
 
+  await restoreInterruptedScreenshotThemes().catch((cause: unknown) =>
+    log.warn("[pond] screenshot theme restore failed", cause),
+  );
   await recoverInterruptedSyncs().catch((cause: unknown) =>
     log.warn("[pond] interrupted-sync recovery failed", cause),
   );

@@ -10,7 +10,11 @@ export async function splitNewPost(save: Save): Promise<Save | null> {
   if (!splitsOnImport(save, prefs)) return save;
   const { splitSave } = await import("./split-save");
   try {
-    await splitSave(save.id, "system");
+    const result = await splitSave(save.id, "system");
+    if (result.ok) {
+      const { inheritRuleIntake } = await import("./rules/intake");
+      await inheritRuleIntake(save.id, result.created);
+    }
   } catch (error) {
     log.warn("[pond pipeline:finalize] split failed, keeping one save", {
       saveId: save.id,

@@ -1,9 +1,12 @@
+import { POND_PROTOCOL, RENDER_CARD_PAYLOAD_HOST } from "@shared/constants";
 import { SearchCardDataSchema } from "@shared/search-card";
+import type { SearchCardData } from "@shared/search-card";
 import { TextCardDataSchema } from "@shared/text-card";
+import type { TextCardData } from "@shared/text-card";
 import { TweetCardDataSchema } from "@shared/tweet-card";
-import { useEffect, useRef } from "react";
+import type { TweetCardData } from "@shared/tweet-card";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
-import type { z } from "zod";
 import { SearchCard } from "./features/captures/components/search-card";
 import { TextCard } from "./features/captures/components/text-card";
 import { ThreadsCard } from "./features/captures/components/threads/card";
@@ -17,7 +20,8 @@ const DEFAULT_WIDTH = 550;
 const IMAGE_WAIT_MS = 6000;
 
 const params = new URLSearchParams(location.search);
-document.documentElement.dataset.card = params.get("card") ?? "";
+const CARD_TOKEN = params.get("card") ?? "";
+document.documentElement.dataset.card = CARD_TOKEN;
 delete document.documentElement.dataset.ready;
 const kindParam = params.get("kind");
 const KIND =
@@ -27,29 +31,33 @@ const KIND =
 const SCHEME: "light" | "dark" =
   params.get("scheme") === "dark" ? "dark" : "light";
 const WIDTH = Number(params.get("w") ?? DEFAULT_WIDTH) || DEFAULT_WIDTH;
+const PAYLOAD_URL = `${POND_PROTOCOL}://${RENDER_CARD_PAYLOAD_HOST}/${encodeURIComponent(CARD_TOKEN)}`;
 
 document.documentElement.style.background = SCHEME === "dark" ? "#000" : "#fff";
 
-function decodePayload<T>(schema: z.ZodType<T>, fallback: T): T {
-  try {
-    const raw = location.hash.replace(/^#/, "") || params.get("data") || "";
-    const parsed = schema.safeParse(
-      JSON.parse(decodeURIComponent(escape(atob(raw)))),
-    );
-    return parsed.success ? parsed.data : fallback;
-  } catch {
-    return fallback;
-  }
-}
+type CapturePayload =
+  | { kind: "post"; data: TweetCardData }
+  | { kind: "text"; data: TextCardData }
+  | { kind: "search"; data: SearchCardData };
 
-const TWEET_PAYLOAD = decodePayload(TweetCardDataSchema, {
-  author: { name: "", handle: "" },
-});
-const TEXT_PAYLOAD = decodePayload(TextCardDataSchema, { text: "" });
-const SEARCH_PAYLOAD = decodePayload(SearchCardDataSchema, {
-  engine: "",
-  query: "",
-});
+async function fetchPayload(): Promise<CapturePayload> {
+  if (!CARD_TOKEN) throw new Error("capture payload token missing");
+  const response = await fetch(PAYLOAD_URL, { cache: "no-store" });
+  if (!response.ok) throw new Error("capture payload missing");
+  const json: unknown = await response.json();
+
+  if (KIND === "text") {
+    const parsed = TextCardDataSchema.safeParse(json);
+    if (parsed.success) return { kind: "text", data: parsed.data };
+  } else if (KIND === "search") {
+    const parsed = SearchCardDataSchema.safeParse(json);
+    if (parsed.success) return { kind: "search", data: parsed.data };
+  } else {
+    const parsed = TweetCardDataSchema.safeParse(json);
+    if (parsed.success) return { kind: "post", data: parsed.data };
+  }
+  throw new Error("capture payload invalid");
+}
 
 function waitForImages(root: HTMLElement): Promise<void> {
   const imgs = Array.from(root.querySelectorAll("img")).filter((img) =>
@@ -68,8 +76,24 @@ function waitForImages(root: HTMLElement): Promise<void> {
 
 function CaptureCard() {
   const ref = useRef<HTMLDivElement>(null);
+  const [payload, setPayload] = useState<CapturePayload | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+    void fetchPayload()
+      .then((next) => {
+        if (!cancelled) setPayload(next);
+      })
+      .catch(() => {
+        if (!cancelled) document.documentElement.dataset.captureError = "1";
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!payload) return undefined;
     let cancelled = false;
     const run = async () => {
       try {
@@ -97,19 +121,19 @@ function CaptureCard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [payload]);
 
   return (
     <div ref={ref} data-capture-card style={{ width: WIDTH }}>
-      {KIND === "text" ? (
-        <TextCard data={TEXT_PAYLOAD} scheme={SCHEME} />
-      ) : KIND === "search" ? (
-        <SearchCard data={SEARCH_PAYLOAD} scheme={SCHEME} />
-      ) : KIND === "threads" ? (
-        <ThreadsCard data={TWEET_PAYLOAD} scheme={SCHEME} />
-      ) : (
-        <TweetCard data={TWEET_PAYLOAD} scheme={SCHEME} />
-      )}
+      {payload?.kind === "text" ? (
+        <TextCard data={payload.data} scheme={SCHEME} />
+      ) : payload?.kind === "search" ? (
+        <SearchCard data={payload.data} scheme={SCHEME} />
+      ) : payload?.kind === "post" && KIND === "threads" ? (
+        <ThreadsCard data={payload.data} scheme={SCHEME} />
+      ) : payload?.kind === "post" ? (
+        <TweetCard data={payload.data} scheme={SCHEME} />
+      ) : null}
     </div>
   );
 }
