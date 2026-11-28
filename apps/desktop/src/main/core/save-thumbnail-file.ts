@@ -48,7 +48,7 @@ export function thumbnailSource(
   );
 }
 
-/** Out of 64 bits; a resized copy of the same image lands under 10, an unrelated image near 32. */
+/** Out of 64 bits; a correct thumbnail lands near 0 once both sides are compressed alike, an unrelated image near 32. */
 const THUMBNAIL_MISMATCH_BITS = 20;
 
 async function differenceHash(input: string | Buffer): Promise<bigint | null> {
@@ -83,13 +83,16 @@ function hammingDistance(a: bigint, b: bigint): number {
   return count;
 }
 
+/** The source passes through the same lossy encode as the thumbnail first, so compression noise cancels instead of counting as difference. */
 export async function thumbnailLooksLikeSource(
   thumbnail: Buffer,
   source: Buffer,
 ): Promise<boolean | null> {
+  const reference = await renderThumbnail(source);
+  if (!reference) return null;
   const [left, right] = await Promise.all([
     differenceHash(thumbnail),
-    differenceHash(source),
+    differenceHash(reference),
   ]);
   if (left === null || right === null) return null;
   return hammingDistance(left, right) <= THUMBNAIL_MISMATCH_BITS;

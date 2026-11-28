@@ -7,6 +7,11 @@ import {
   thumbnailSource,
   thumbnailToRender,
 } from "./save-thumbnail-file";
+import {
+  flatArtJpeg,
+  noiseSceneJpeg,
+  noiseSceneRegionJpeg,
+} from "./save-thumbnail.fixtures";
 
 const poster = { kind: "poster", path: "clip.mp4_poster.jpg" };
 const generated = { kind: "thumbnail", path: "clip.mp4_thumbnail.webp" };
@@ -76,6 +81,68 @@ describe("thumbnail repair", () => {
 
     expect(await thumbnailLooksLikeSource(resized, own)).toBe(true);
     expect(await thumbnailLooksLikeSource(other, own)).toBe(false);
+  });
+});
+
+describe("thumbnail lossy comparison", () => {
+  it("passes the lossy thumbnail its own renderer produced from a noise-heavy source", async () => {
+    const source = await noiseSceneJpeg();
+    const thumbnail = await renderThumbnail(source);
+    expect(thumbnail).not.toBeNull();
+    if (!thumbnail) return;
+
+    expect(await thumbnailLooksLikeSource(thumbnail, source)).toBe(true);
+  });
+
+  it.each([60, 90])(
+    "passes a correct thumbnail encoded at quality %i instead of 80",
+    async (quality) => {
+      const source = await noiseSceneJpeg();
+      const drifted = await sharp(source, { failOn: "none", pages: 1 })
+        .rotate()
+        .resize({
+          width: 1024,
+          height: 1024,
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality })
+        .toBuffer();
+
+      expect(await thumbnailLooksLikeSource(drifted, source)).toBe(true);
+    },
+  );
+
+  it("passes a correct thumbnail recompressed through a second lossy generation", async () => {
+    const source = await noiseSceneJpeg();
+    const thumbnail = await renderThumbnail(source);
+    expect(thumbnail).not.toBeNull();
+    if (!thumbnail) return;
+    const recompressed = await sharp(thumbnail)
+      .webp({ quality: 80 })
+      .toBuffer();
+
+    expect(await thumbnailLooksLikeSource(recompressed, source)).toBe(true);
+  });
+
+  it("rejects a thumbnail of a different image", async () => {
+    const source = await noiseSceneJpeg();
+    const other = await flatArtJpeg();
+    const thumbnail = await renderThumbnail(other);
+    expect(thumbnail).not.toBeNull();
+    if (!thumbnail) return;
+
+    expect(await thumbnailLooksLikeSource(thumbnail, source)).toBe(false);
+  });
+
+  it("rejects a thumbnail showing only one region of the scene", async () => {
+    const source = await noiseSceneJpeg();
+    const region = await noiseSceneRegionJpeg();
+    const thumbnail = await renderThumbnail(region);
+    expect(thumbnail).not.toBeNull();
+    if (!thumbnail) return;
+
+    expect(await thumbnailLooksLikeSource(thumbnail, source)).toBe(false);
   });
 });
 
