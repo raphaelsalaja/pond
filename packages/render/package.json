@@ -25,6 +25,10 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke:packaged": "vitest run --config vitest.smoke.config.ts"
+  },
+  "devDependencies": {
+    "vitest": "catalog:"
   }
 }

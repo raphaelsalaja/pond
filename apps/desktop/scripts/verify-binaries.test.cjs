@@ -19,7 +19,7 @@ function buildContext(appOutDir, electronPlatformName, arch = "x64") {
 }
 
 /** Packaging hosts that are not the target platform skip host-only probes; the fakes keep runs identical. */
-function verify(context) {
+function verify(context, overrides = {}) {
   const slices =
     context.arch === "arm64"
       ? ["arm64"]
@@ -30,6 +30,8 @@ function verify(context) {
     runBinaryVersion: () => ({ status: 0 }),
     runOnnx: () => ({ status: 0 }),
     readArchs: () => slices,
+    runRenderSmoke: () => ({ status: 0 }),
+    ...overrides,
   });
 }
 
@@ -573,3 +575,49 @@ for (const font of [
     });
   });
 }
+
+/** The smoke reads macOS system fonts, so only a Mac host runs it. */
+const onMac = { skip: process.platform !== "darwin" };
+
+void test("draws posts through the packaged render folder", onMac, async () => {
+  await withTemporaryDirectory(async (appOutDir) => {
+    const resources = path.join(appOutDir, "Pond.app", "Contents", "Resources");
+    await writeMacRuntime(resources, "arm64");
+    const drawn = [];
+
+    await verify(buildContext(appOutDir, "darwin", "arm64"), {
+      runRenderSmoke: (renderDir) => {
+        drawn.push(renderDir);
+        return { status: 0 };
+      },
+    });
+
+    assert.deepEqual(drawn, [path.join(resources, "render")]);
+  });
+});
+
+void test(
+  "rejects a macOS package whose post renderer cannot draw",
+  onMac,
+  async () => {
+    await withTemporaryDirectory(async (appOutDir) => {
+      const resources = path.join(
+        appOutDir,
+        "Pond.app",
+        "Contents",
+        "Resources",
+      );
+      await writeMacRuntime(resources, "arm64");
+
+      await assert.rejects(
+        verify(buildContext(appOutDir, "darwin", "arm64"), {
+          runRenderSmoke: () => ({
+            status: 1,
+            stdout: "FAIL draws a bluesky post in light",
+          }),
+        }),
+        /failed to draw X, Threads and Bluesky posts: FAIL draws a bluesky post/,
+      );
+    });
+  },
+);
