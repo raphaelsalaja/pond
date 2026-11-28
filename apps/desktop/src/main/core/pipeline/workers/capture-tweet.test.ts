@@ -473,6 +473,47 @@ describe("runCaptureTweet live screenshot validation", () => {
     });
     expect(harness.persisted).toEqual([]);
   });
+
+  it("stamps no version and stays stale when both screenshots fail as capture_failed", async () => {
+    const raw = replyRaw();
+    raw.capture.isReply = false;
+    delete raw.capture.replyTo;
+    const harness = makePorts(
+      save(raw),
+      {
+        light: { ok: false, reason: "capture_failed" },
+        dark: { ok: false, reason: "capture_failed" },
+      },
+      { structuredCardMisses: true },
+    );
+
+    await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
+      captured: 0,
+    });
+    expect(harness.persisted).toEqual([]);
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBeUndefined();
+    expect(harness.getStored().rawJson?.postCardProvenance).toBeUndefined();
+    expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(true);
+  });
+
+  it("stamps no version when only one screenshot survives", async () => {
+    const raw = replyRaw();
+    raw.capture.isReply = false;
+    delete raw.capture.replyTo;
+    const harness = makePorts(
+      save(raw),
+      {
+        light: { ok: false, reason: "capture_failed" },
+        dark: { ok: true, png: rendered },
+      },
+      { structuredCardMisses: true },
+    );
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBeUndefined();
+    expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(true);
+  });
 });
 
 describe("runCaptureTweet reply parent enrichment", () => {
