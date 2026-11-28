@@ -121,7 +121,7 @@ async function addArchiveTask(saveId: string): Promise<void> {
 
 /**
  * A medialess re-harvest of the same content keeps the previous evidence instead of erasing it.
- * @remarks Only GitHub merges the media itself, because a resolving repository page always serves an og card, while other sources can genuinely lose media.
+ * @remarks Only GitHub merges the media itself, because a resolving repository page always serves an og card, while other sources can genuinely lose media. A GitHub harvest that reads no media retries, so this merge applies to the Capture its last attempt keeps.
  */
 export function preserveReharvestMedia(
   capture: Capture,

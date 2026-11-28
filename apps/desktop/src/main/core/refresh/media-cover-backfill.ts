@@ -1,30 +1,22 @@
 import { saves, tasks } from "@pond/schema/db";
-import type { NewTask, Op, SaveFile, Source } from "@pond/schema/db";
-import type { RawJson } from "@pond/schema/raw";
-import { walkCaptureMedia } from "@pond/schema/raw";
+import type { SaveFile, Source } from "@pond/schema/db";
 import {
   inferKindFromFilename,
   isOriginalImageKind,
   VIDEO_KIND,
 } from "@shared/save-file-names";
-import { and, eq, inArray, isNull, ne, notInArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notInArray, or, sql } from "drizzle-orm";
 import log from "electron-log/main.js";
 import { ulid } from "ulid";
 import { z } from "zod";
 import type { Db } from "../../db";
 import { getDb } from "../../db";
-import { persistSave } from "../persist-save";
-import { kickReconciler } from "../pipeline/reconciler-client";
 import { maxAttemptsFor } from "../pipeline/specs";
-import { collectMediaUrls } from "../pipeline/workers/fetch-blobs";
 
-const PAGE_SIZE = 200;
 /** Stays well under SQLite's bound-parameter limit for `inArray`. */
 const ID_BATCH = 500;
-/** Dead media stays dead past two repair cycles, so a launch never re-opens the same save a third time. */
+/** Dead media stays dead past two repairs, so a launch never tries the same Save a third time. */
 const MAX_REPAIR_ATTEMPTS = 2;
-
-const REPAIR_OPS = ["harvest_metadata", "fetch_blobs", "finalize"] as const;
 
 const RepairCountSchema = z
   .looseObject({ mediaRepair: z.number().optional() })
@@ -32,199 +24,198 @@ const RepairCountSchema = z
 
 interface MediaCoverRepairRuntime {
   getDb: () => Promise<Db>;
-  kickReconciler: () => void;
-  persistSave: typeof persistSave;
+  /** Re-harvests and refetches one Save in place, throwing when either step fails. */
+  repair: (saveId: string) => Promise<void>;
 }
 
 const defaultRuntime: MediaCoverRepairRuntime = {
   getDb,
-  kickReconciler,
-  persistSave,
+  async repair(saveId) {
+    const { runHarvestMetadata } =
+      await import("../pipeline/workers/harvest-metadata");
+    await runHarvestMetadata(saveId, { force: true });
+    const { runFetchBlobs } = await import("../pipeline/workers/fetch-blobs");
+    await runFetchBlobs(saveId);
+  },
 };
 
-interface ScanRow {
-  id: string;
+interface RepairCandidate {
   source: Source;
   files: Array<SaveFile>;
-  rawJson: RawJson | null;
+  /** The blob fetch recorded `mediaFetchExhausted` on the Capture. */
+  exhausted: boolean;
 }
 
 /**
- * A save whose files hold no original media is broken only when evidence says media existed: the capture still lists image urls, the blob fetch recorded its exhaustion, or a GitHub capture lists no media at all, which a resolving repository page never does.
+ * A Save with no original image or video on disk is broken only when evidence
+ * says media existed: the blob fetch recorded that it gave up, or it is a
+ * GitHub repository, whose page always serves at least the generated card.
  */
-export function needsMediaCoverRepair(
-  row: Pick<ScanRow, "source" | "files" | "rawJson">,
-): boolean {
+export function needsMediaCoverRepair(row: RepairCandidate): boolean {
   if (row.source === "local") return false;
-  const hasMedia = (row.files ?? []).some(
+  if (hasOriginalMedia(row.files)) return false;
+  return row.exhausted || row.source === "github";
+}
+
+function hasOriginalMedia(files: ReadonlyArray<SaveFile> | null): boolean {
+  return (files ?? []).some(
     (file) =>
       isOriginalImageKind(file.kind) ||
       file.kind === VIDEO_KIND ||
       inferKindFromFilename(file.path) === VIDEO_KIND,
   );
-  if (hasMedia) return false;
-  const capture = row.rawJson?.capture;
-  if (!capture) return false;
-  if (capture.extras?.mediaFetchExhausted !== undefined) return true;
-  /* Videos stay out of the evidence: their downloads are optional and removable, so a missing video file proves nothing. */
-  if (collectMediaUrls(row.rawJson, { includeVideo: false }).length > 0) {
-    return true;
-  }
-  return row.source === "github" && walkCaptureMedia(capture).length === 0;
 }
 
-/** Runs on every launch; the scan is one indexed read and the per-save attempt count bounds what it requeues. */
+/**
+ * Repairs Saves left with a text cover by a missed media fetch. The query
+ * reads only GitHub Saves and Saves carrying the exhaustion marker, and each
+ * Save records its attempts on its harvest task, so a launch skips what it
+ * already tried twice.
+ * @remarks Harvests in place, like the article backfill: the Save stays complete throughout, so a failed repair leaves it as it was.
+ */
 export async function startMediaCoverBackfill(
   runtime: MediaCoverRepairRuntime = defaultRuntime,
-): Promise<{ ok: true; repaired: number }> {
+): Promise<{ ok: true; attempted: number; repaired: number }> {
   const db = await runtime.getDb();
-  const cohort: Array<{ id: string; source: Source }> = [];
-  let offset = 0;
-  for (;;) {
-    const page = db
-      .select({
-        id: saves.id,
-        source: saves.source,
-        files: saves.files,
-        rawJson: saves.rawJson,
-      })
-      .from(saves)
-      .where(
-        and(
-          inArray(saves.status, ["complete", "failed"]),
-          isNull(saves.deletedAt),
-          ne(saves.source, "local"),
-        ),
-      )
-      .limit(PAGE_SIZE)
-      .offset(offset)
-      .all();
-    if (page.length === 0) break;
-    offset += page.length;
-    for (const row of page) {
-      if (needsMediaCoverRepair(row)) {
-        cohort.push({ id: row.id, source: row.source });
-      }
-    }
-    if (page.length < PAGE_SIZE) break;
-  }
-  if (cohort.length === 0) return { ok: true, repaired: 0 };
+  const exhausted = sql<number>`json_extract(${saves.rawJson}, '$.capture.extras.mediaFetchExhausted') is not null`;
+  const rows = db
+    .select({
+      id: saves.id,
+      source: saves.source,
+      files: saves.files,
+      exhausted,
+    })
+    .from(saves)
+    .where(
+      and(
+        eq(saves.status, "complete"),
+        isNull(saves.deletedAt),
+        ne(saves.source, "local"),
+        sql`json_extract(${saves.rawJson}, '$.capture') is not null`,
+        or(eq(saves.source, "github"), exhausted),
+      ),
+    )
+    .all();
+  const cohort = rows.filter((row) =>
+    needsMediaCoverRepair({ ...row, exhausted: Boolean(row.exhausted) }),
+  );
+  if (cohort.length === 0) return { ok: true, attempted: 0, repaired: 0 };
 
+  let attempted = 0;
   let repaired = 0;
-  for (const batch of batches(cohort)) {
-    repaired += await reopenMedialessSaves(db, batch, runtime);
+  for (const batch of batches(cohort.map((row) => row.id))) {
+    const busy = busySaves(db, batch);
+    const attempts = repairAttempts(db, batch);
+    for (const id of batch) {
+      if (busy.has(id)) continue;
+      const tried = attempts.get(id) ?? 0;
+      if (tried >= MAX_REPAIR_ATTEMPTS) continue;
+      recordAttempt(db, id, tried + 1);
+      attempted += 1;
+      try {
+        await runtime.repair(id);
+      } catch (error) {
+        log.warn("[pond media-cover-backfill] repair failed", id, error);
+        continue;
+      }
+      if (hasOriginalMedia(currentFiles(db, id))) repaired += 1;
+    }
   }
-  if (repaired > 0) {
-    log.info("[pond media-cover-backfill] reopened saves", {
+  if (attempted > 0) {
+    log.info("[pond media-cover-backfill] repaired text covers", {
       cohort: cohort.length,
+      attempted,
       repaired,
     });
-    runtime.kickReconciler();
   }
-  return { ok: true, repaired };
+  return { ok: true, attempted, repaired };
 }
 
-async function reopenMedialessSaves(
-  db: Db,
-  rows: ReadonlyArray<{ id: string; source: Source }>,
-  runtime: MediaCoverRepairRuntime,
-): Promise<number> {
-  const now = new Date();
-  const ids = rows.map((row) => row.id);
-  /** A non-done earlier task holds the sequential gate, so the requeued work would never run. */
-  const blocked = new Set(
+/** A Save with queued work belongs to the pipeline; repairing beside it would race its tasks. */
+function busySaves(db: Db, ids: Array<string>): Set<string> {
+  return new Set(
     db
       .select({ saveId: tasks.saveId })
       .from(tasks)
       .where(
         and(
           inArray(tasks.saveId, ids),
-          notInArray(tasks.op, [...REPAIR_OPS]),
-          notInArray(tasks.status, ["done", "cancelled"]),
+          notInArray(tasks.status, ["done", "cancelled", "dead"]),
         ),
       )
       .all()
       .map((row) => row.saveId),
   );
-  const existing = db
-    .select({
-      id: tasks.id,
-      saveId: tasks.saveId,
-      op: tasks.op,
-      payload: tasks.payload,
-    })
-    .from(tasks)
-    .where(and(inArray(tasks.saveId, ids), inArray(tasks.op, [...REPAIR_OPS])))
-    .all();
-  const existingByKey = new Map(
-    existing.map((row) => [`${row.saveId}:${row.op}`, row]),
-  );
-
-  let repaired = 0;
-  for (const row of rows) {
-    if (blocked.has(row.id)) continue;
-    const harvest = existingByKey.get(`${row.id}:harvest_metadata`);
-    const attempts = RepairCountSchema.parse(harvest?.payload).mediaRepair ?? 0;
-    if (attempts >= MAX_REPAIR_ATTEMPTS) continue;
-    const harvestPayload = { force: true, mediaRepair: attempts + 1 };
-    for (const op of REPAIR_OPS) {
-      requestTask(
-        db,
-        row,
-        op,
-        existingByKey.get(`${row.id}:${op}`)?.id,
-        op === "harvest_metadata" ? harvestPayload : undefined,
-        now,
-      );
-    }
-    await runtime.persistSave(
-      row.id,
-      { status: "ingesting", ingestStartedAt: now, ingestCompletedAt: null },
-      { actorReason: "pipeline:media-cover-backfill" },
-    );
-    repaired += 1;
-  }
-  return repaired;
 }
 
-function requestTask(
-  db: Db,
-  save: { id: string; source: Source },
-  op: Op,
-  existingId: string | undefined,
-  payload: NewTask["payload"],
-  now: Date,
-): void {
-  if (existingId) {
+function repairAttempts(db: Db, ids: Array<string>): Map<string, number> {
+  return new Map(
+    db
+      .select({ saveId: tasks.saveId, payload: tasks.payload })
+      .from(tasks)
+      .where(and(inArray(tasks.saveId, ids), eq(tasks.op, "harvest_metadata")))
+      .all()
+      .map((row) => [
+        row.saveId,
+        RepairCountSchema.parse(row.payload).mediaRepair ?? 0,
+      ]),
+  );
+}
+
+/** Counted before the repair runs, so a crash or quit mid-repair still uses up the attempt. */
+function recordAttempt(db: Db, saveId: string, count: number): void {
+  const now = new Date();
+  const harvest = db
+    .select({ id: tasks.id, payload: tasks.payload })
+    .from(tasks)
+    .where(and(eq(tasks.saveId, saveId), eq(tasks.op, "harvest_metadata")))
+    .get();
+  if (harvest) {
     db.update(tasks)
       .set({
-        status: "pending",
-        attempts: 0,
-        maxAttempts: maxAttemptsFor(op),
-        payload,
-        generationId: null,
-        lastError: null,
-        nextRunAt: now,
+        payload: {
+          ...RepairCountSchema.parse(harvest.payload),
+          mediaRepair: count,
+        },
         updatedAt: now,
       })
-      .where(eq(tasks.id, existingId))
+      .where(eq(tasks.id, harvest.id))
       .run();
     return;
   }
-  const task: NewTask = {
-    id: ulid(),
-    saveId: save.id,
-    source: save.source,
-    op,
-    status: "pending",
-    attempts: 0,
-    maxAttempts: maxAttemptsFor(op),
-    payload,
-    nextRunAt: now,
-    createdAt: now,
-    updatedAt: now,
-  };
-  db.insert(tasks).values(task).onConflictDoNothing().run();
+  const save = db
+    .select({ source: saves.source })
+    .from(saves)
+    .where(eq(saves.id, saveId))
+    .get();
+  if (!save) return;
+  db.insert(tasks)
+    .values({
+      id: ulid(),
+      saveId,
+      source: save.source,
+      op: "harvest_metadata",
+      status: "done",
+      attempts: 0,
+      maxAttempts: maxAttemptsFor("harvest_metadata"),
+      payload: { mediaRepair: count },
+      nextRunAt: now,
+      completedAt: now,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoNothing()
+    .run();
+}
+
+function currentFiles(db: Db, saveId: string): Array<SaveFile> | null {
+  return (
+    db
+      .select({ files: saves.files })
+      .from(saves)
+      .where(eq(saves.id, saveId))
+      .get()?.files ?? null
+  );
 }
 
 function batches<T>(rows: ReadonlyArray<T>): Array<Array<T>> {

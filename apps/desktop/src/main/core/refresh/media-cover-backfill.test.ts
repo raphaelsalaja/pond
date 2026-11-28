@@ -13,7 +13,6 @@ import { and, eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
 import { wrapSqlite } from "../../database/client";
 import { initializePondSchema } from "../../db";
-import type { persistSave } from "../persist-save";
 import {
   needsMediaCoverRepair,
   startMediaCoverBackfill,
@@ -36,31 +35,39 @@ afterEach(() => {
   for (const db of databases.splice(0)) db.close();
 });
 
-type PersistOptions = Parameters<typeof persistSave>[2];
+const MEDIA_FILE: SaveFile = {
+  kind: "image",
+  path: "media-1.png",
+  sha256: "m",
+  size: 1,
+};
 
-function setup() {
+/** Repairs succeed or fail the way the real harvest and fetch do: by writing an image, or by throwing. */
+function setup(outcome: "fixed" | "still-medialess" | "throws" = "fixed") {
   const sqlite = new Database(":memory:");
   databases.push(sqlite);
   initializePondSchema(sqlite, () => false);
   const db = wrapSqlite(sqlite);
-  const kicks: Array<number> = [];
-  const persisted: Array<{ id: string; options: PersistOptions }> = [];
+  const repaired: Array<string> = [];
   const runtime = {
     getDb: async () => db,
-    kickReconciler: () => {
-      kicks.push(Date.now());
-    },
-    async persistSave(
-      id: string,
-      patch: Partial<NewSave>,
-      options: PersistOptions,
-    ) {
-      persisted.push({ id, options });
-      db.update(saves).set(patch).where(eq(saves.id, id)).run();
-      return null;
+    async repair(id: string) {
+      repaired.push(id);
+      if (outcome === "throws") throw new Error("github repository is gone");
+      if (outcome === "fixed") {
+        const row = db
+          .select({ files: saves.files })
+          .from(saves)
+          .where(eq(saves.id, id))
+          .get();
+        db.update(saves)
+          .set({ files: [...(row?.files ?? []), MEDIA_FILE] })
+          .where(eq(saves.id, id))
+          .run();
+      }
     },
   };
-  return { db, runtime, kicks, persisted };
+  return { db, runtime, repaired };
 }
 
 const TEXT_COVERS: Array<SaveFile> = [
@@ -105,114 +112,55 @@ function taskRow(
   };
 }
 
+const EXHAUSTED = {
+  at: "2026-11-27T14:57:50.000Z",
+  urls: ["https://example.com/og.png"],
+};
+
 describe("needsMediaCoverRepair", () => {
-  it("repairs a text-cover save whose capture lists image urls", () => {
-    expect(
-      needsMediaCoverRepair({
-        source: "twitter",
-        files: TEXT_COVERS,
-        rawJson: storedAsRawJson({
-          capture: {
-            media: [
-              { type: "image", url: "https://pbs.twimg.com/media/a.jpg" },
-            ],
-          },
-        }),
-      }),
-    ).toBe(true);
-  });
-
-  it("leaves a genuinely medialess post alone", () => {
-    expect(
-      needsMediaCoverRepair({
-        source: "twitter",
-        files: TEXT_COVERS,
-        rawJson: storedAsRawJson({ capture: { media: [] } }),
-      }),
-    ).toBe(false);
-  });
-
-  it("repairs a github save whose capture recorded no media", () => {
+  it("repairs a github save with no media on disk", () => {
     expect(
       needsMediaCoverRepair({
         source: "github",
         files: TEXT_COVERS,
-        rawJson: storedAsRawJson({ capture: { media: [] } }),
+        exhausted: false,
       }),
     ).toBe(true);
   });
 
-  it("repairs a save carrying the exhaustion marker", () => {
+  it("repairs a save of any source carrying the exhaustion marker", () => {
     expect(
       needsMediaCoverRepair({
         source: "web",
         files: TEXT_COVERS,
-        rawJson: storedAsRawJson({
-          capture: {
-            media: [],
-            extras: {
-              mediaFetchExhausted: {
-                at: "2026-11-27T14:57:50.000Z",
-                urls: ["https://example.com/og.png"],
-              },
-            },
-          },
-        }),
+        exhausted: true,
       }),
     ).toBe(true);
+  });
+
+  it("leaves other medialess saves alone, since their media may really be gone", () => {
+    expect(
+      needsMediaCoverRepair({
+        source: "twitter",
+        files: TEXT_COVERS,
+        exhausted: false,
+      }),
+    ).toBe(false);
   });
 
   it("leaves saves with original media on disk alone", () => {
     expect(
       needsMediaCoverRepair({
         source: "github",
-        files: [
-          ...TEXT_COVERS,
-          { kind: "image", path: "media-1.png", sha256: "m", size: 1 },
-        ],
-        rawJson: storedAsRawJson({
-          capture: {
-            media: [
-              {
-                type: "image",
-                url: "https://opengraph.githubassets.com/1/os6/x-minimal",
-              },
-            ],
-          },
-        }),
+        files: [...TEXT_COVERS, MEDIA_FILE],
+        exhausted: true,
       }),
     ).toBe(false);
   });
 
-  it("ignores video-only evidence, since video downloads are optional and removable", () => {
+  it("ignores local saves", () => {
     expect(
-      needsMediaCoverRepair({
-        source: "twitter",
-        files: TEXT_COVERS,
-        rawJson: storedAsRawJson({
-          capture: {
-            media: [
-              {
-                type: "video",
-                url: "https://video.twimg.com/ext_tw_video/1/vid/b.mp4",
-              },
-            ],
-          },
-        }),
-      }),
-    ).toBe(false);
-  });
-
-  it("ignores local saves and captures that never harvested", () => {
-    expect(
-      needsMediaCoverRepair({
-        source: "local",
-        files: [],
-        rawJson: null,
-      }),
-    ).toBe(false);
-    expect(
-      needsMediaCoverRepair({ source: "github", files: [], rawJson: null }),
+      needsMediaCoverRepair({ source: "local", files: [], exhausted: true }),
     ).toBe(false);
   });
 });
@@ -236,129 +184,125 @@ function saveStatus(db: ReturnType<typeof setup>["db"], id: string) {
 const githubMedialess = medialessSave("a", "github", { media: [] });
 
 describe.skipIf(!nativeSqliteAvailable())("startMediaCoverBackfill", () => {
-  it("reopens a broken save with a forced harvest, refetch, and finalize", async () => {
-    const { db, runtime, kicks } = setup();
-    db.insert(saves).values(githubMedialess).run();
-
-    expect(await startMediaCoverBackfill(runtime)).toEqual({
-      ok: true,
-      repaired: 1,
-    });
-
-    const harvest = taskFor(db, "a", "harvest_metadata");
-    expect(harvest?.status).toBe("pending");
-    expect(harvest?.payload).toEqual({ force: true, mediaRepair: 1 });
-    expect(taskFor(db, "a", "fetch_blobs")?.status).toBe("pending");
-    expect(taskFor(db, "a", "finalize")?.status).toBe("pending");
-    expect(saveStatus(db, "a")).toBe("ingesting");
-    expect(kicks).toHaveLength(1);
-  });
-
-  it("resets a dead fetch_blobs task so the retry can run", async () => {
-    const { db, runtime } = setup();
+  it("repairs a github text-cover save in place and records the attempt", async () => {
+    const { db, runtime, repaired } = setup("fixed");
     db.insert(saves).values(githubMedialess).run();
     db.insert(tasks)
-      .values({
-        ...taskRow("a", "fetch_blobs", "dead"),
-        attempts: 7,
-        maxAttempts: 7,
-        lastError: "fetch-blobs: 1/1 media permanently unavailable",
-      })
+      .values(taskRow("a", "harvest_metadata", "done", { force: true }))
       .run();
 
     expect(await startMediaCoverBackfill(runtime)).toEqual({
       ok: true,
+      attempted: 1,
       repaired: 1,
     });
-    const fetch = taskFor(db, "a", "fetch_blobs");
-    expect(fetch?.status).toBe("pending");
-    expect(fetch?.attempts).toBe(0);
-    expect(fetch?.lastError).toBeNull();
-  });
-
-  it("skips a save whose unfinished earlier tasks would block the gate", async () => {
-    const { db, runtime, kicks } = setup();
-    db.insert(saves).values(githubMedialess).run();
-    db.insert(tasks)
-      .values(taskRow("a", "render_text_cover", "dead"))
-      .run();
-
-    expect(await startMediaCoverBackfill(runtime)).toEqual({
-      ok: true,
-      repaired: 0,
-    });
-    expect(taskFor(db, "a", "harvest_metadata")).toBeUndefined();
+    expect(repaired).toEqual(["a"]);
     expect(saveStatus(db, "a")).toBe("complete");
-    expect(kicks).toHaveLength(0);
-  });
-
-  it("stops re-opening a save after two failed repair attempts", async () => {
-    const { db, runtime, kicks } = setup();
-    db.insert(saves).values(githubMedialess).run();
-    db.insert(tasks)
-      .values(
-        taskRow("a", "harvest_metadata", "done", {
-          force: true,
-          mediaRepair: 2,
-        }),
-      )
-      .run();
-
-    expect(await startMediaCoverBackfill(runtime)).toEqual({
-      ok: true,
-      repaired: 0,
-    });
-    expect(saveStatus(db, "a")).toBe("complete");
-    expect(kicks).toHaveLength(0);
-  });
-
-  it("counts a second repair pass on top of the first", async () => {
-    const { db, runtime } = setup();
-    db.insert(saves).values(githubMedialess).run();
-    db.insert(tasks)
-      .values(
-        taskRow("a", "harvest_metadata", "done", {
-          force: true,
-          mediaRepair: 1,
-        }),
-      )
-      .run();
-
-    expect(await startMediaCoverBackfill(runtime)).toEqual({
-      ok: true,
-      repaired: 1,
-    });
     expect(taskFor(db, "a", "harvest_metadata")?.payload).toEqual({
       force: true,
+      mediaRepair: 1,
+    });
+  });
+
+  it("leaves the Save complete and as it was when the repair fails", async () => {
+    const { db, runtime } = setup("throws");
+    db.insert(saves).values(githubMedialess).run();
+
+    expect(await startMediaCoverBackfill(runtime)).toEqual({
+      ok: true,
+      attempted: 1,
+      repaired: 0,
+    });
+    const row = db.select().from(saves).where(eq(saves.id, "a")).get();
+    expect(row?.status).toBe("complete");
+    expect(row?.files).toEqual(TEXT_COVERS);
+    expect(taskFor(db, "a", "harvest_metadata")).toMatchObject({
+      status: "done",
+      payload: { mediaRepair: 1 },
+    });
+  });
+
+  it("does not count a repair that still left no media", async () => {
+    const { db, runtime } = setup("still-medialess");
+    db.insert(saves).values(githubMedialess).run();
+
+    expect(await startMediaCoverBackfill(runtime)).toEqual({
+      ok: true,
+      attempted: 1,
+      repaired: 0,
+    });
+  });
+
+  it("repairs a non-github save only when it carries the exhaustion marker", async () => {
+    const { db, runtime, repaired } = setup("fixed");
+    db.insert(saves)
+      .values([
+        medialessSave("marked", "twitter", {
+          media: [{ type: "image", url: "https://pbs.twimg.com/media/a.jpg" }],
+          extras: { mediaFetchExhausted: EXHAUSTED },
+        }),
+        medialessSave("unmarked", "twitter", {
+          media: [{ type: "image", url: "https://pbs.twimg.com/media/b.jpg" }],
+        }),
+      ])
+      .run();
+
+    await startMediaCoverBackfill(runtime);
+    expect(repaired).toEqual(["marked"]);
+  });
+
+  it("skips a save the pipeline is still working on", async () => {
+    const { db, runtime, repaired } = setup("fixed");
+    db.insert(saves).values(githubMedialess).run();
+    db.insert(tasks)
+      .values(taskRow("a", "fetch_blobs", "pending"))
+      .run();
+
+    expect(await startMediaCoverBackfill(runtime)).toEqual({
+      ok: true,
+      attempted: 0,
+      repaired: 0,
+    });
+    expect(repaired).toEqual([]);
+  });
+
+  it("stops after two repair attempts", async () => {
+    const { db, runtime, repaired } = setup("throws");
+    db.insert(saves).values(githubMedialess).run();
+
+    await startMediaCoverBackfill(runtime);
+    await startMediaCoverBackfill(runtime);
+    await startMediaCoverBackfill(runtime);
+    expect(repaired).toEqual(["a", "a"]);
+    expect(taskFor(db, "a", "harvest_metadata")?.payload).toEqual({
       mediaRepair: 2,
     });
   });
 
-  it("leaves healthy and genuinely medialess saves untouched", async () => {
-    const { db, runtime, kicks } = setup();
+  it("leaves failed, trashed, and healthy saves untouched", async () => {
+    const { db, runtime, repaired } = setup("fixed");
     db.insert(saves)
       .values([
-        medialessSave("a", "twitter", { media: [] }),
-        medialessSave("b", "twitter", {
-          media: [{ type: "image", url: "https://pbs.twimg.com/media/a.jpg" }],
-        }),
-      ])
-      .run();
-    db.update(saves)
-      .set({
-        files: [
+        {
+          ...medialessSave("failed", "github", { media: [] }),
+          status: "failed",
+        },
+        {
+          ...medialessSave("trashed", "github", { media: [] }),
+          deletedAt: new Date(),
+        },
+        medialessSave("healthy", "github", { media: [] }, [
           ...TEXT_COVERS,
-          { kind: "image", path: "media-1.png", sha256: "m", size: 1 },
-        ],
-      })
-      .where(eq(saves.id, "b"))
+          MEDIA_FILE,
+        ]),
+      ])
       .run();
 
     expect(await startMediaCoverBackfill(runtime)).toEqual({
       ok: true,
+      attempted: 0,
       repaired: 0,
     });
-    expect(kicks).toHaveLength(0);
-    expect(saveStatus(db, "a")).toBe("complete");
+    expect(repaired).toEqual([]);
   });
 });
