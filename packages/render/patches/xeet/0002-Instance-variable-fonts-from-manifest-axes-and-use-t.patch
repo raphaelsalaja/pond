@@ -1,0 +1,131 @@
+From 3cce35e8f4a7d2f78e22275dde94340f4223d7c5 Mon Sep 17 00:00:00 2001
+From: Raphael Salaja <52125687+raphaelsalaja@users.noreply.github.com>
+Date: Mon, 16 Nov 2026 13:50:04 +0000
+Subject: [PATCH 2/2] Instance variable fonts from manifest axes and use the
+ font's own emoji advance outside X
+
+---
+ crates/xeet-core/build.rs           | 10 +++++++++-
+ crates/xeet-core/src/fonts.rs       | 30 ++++++++++++++++++++++++++++-
+ crates/xeet-core/src/inline.rs      |  3 ++-
+ crates/xeet-core/src/paint/glyph.rs |  5 ++++-
+ 4 files changed, 44 insertions(+), 4 deletions(-)
+
+diff --git a/crates/xeet-core/build.rs b/crates/xeet-core/build.rs
+index 3800597..30484a9 100644
+--- a/crates/xeet-core/build.rs
++++ b/crates/xeet-core/build.rs
+@@ -110,9 +110,17 @@ fn main() {
+             )
+             .unwrap();
+         }
++        // `"variations": {"wght": 600, "opsz": 17}` instances a variable face.
++        let mut variations = String::new();
++        if let Some(axes) = face["variations"].as_object() {
++            for (tag, value) in axes {
++                assert_eq!(tag.len(), 4, "variation axis tags are four bytes: {tag}");
++                write!(variations, "(*b{tag:?}, {:?}_f32), ", value.as_f64().unwrap()).unwrap();
++            }
++        }
+         writeln!(
+             out,
+-            "    FaceData {{ kind: FaceKind::{kind}, stack: {stack}, weight: {}, family: {:?}, subset: {:?}, file: {:?}, pack: {pack:?}, ranges: &[{ranges}], data: {data} }},",
++            "    FaceData {{ kind: FaceKind::{kind}, stack: {stack}, weight: {}, family: {:?}, subset: {:?}, file: {:?}, pack: {pack:?}, ranges: &[{ranges}], variations: &[{variations}], data: {data} }},",
+             face["weight"].as_u64().unwrap(),
+             family,
+             face["subset"].as_str().unwrap_or(""),
+diff --git a/crates/xeet-core/src/fonts.rs b/crates/xeet-core/src/fonts.rs
+index 71c0743..d8522cb 100644
+--- a/crates/xeet-core/src/fonts.rs
++++ b/crates/xeet-core/src/fonts.rs
+@@ -66,6 +66,9 @@ pub struct FaceData {
+     /// is always embedded; the rest are fetched and registered by the host.
+     pub pack: &'static str,
+     pub ranges: &'static [(u32, u32)],
++    /// Axis settings for a variable file, in user space. Several faces can
++    /// share one file at different locations (one per weight).
++    pub variations: &'static [([u8; 4], f32)],
+     /// The face's bytes. Empty in a lazy build: the file was left out of the
+     /// module and is looked up in [`RUNTIME`] instead.
+     pub data: &'static [u8],
+@@ -437,6 +440,20 @@ fn sha256_hex(bytes: &[u8]) -> String {
+     out
+ }
+ 
++/// `font` at the manifest's axis location, or unchanged for a static face.
++fn instance(font: Font, variations: &[([u8; 4], f32)]) -> Font {
++    if variations.is_empty() {
++        return font;
++    }
++    font.instance_builder()
++        .variations(
++            variations
++                .iter()
++                .map(|(tag, value)| (harfrust::Tag::new(tag), *value)),
++        )
++        .build()
++}
++
+ impl FontDb {
+     fn load() -> FontDb {
+         // Parse what is available in a first pass, so an unavailable face can
+@@ -445,7 +462,8 @@ impl FontDb {
+         let mut loaded: Vec<(&'static FaceData, Option<Font>)> = Vec::with_capacity(FACES.len());
+         for data in FACES {
+             let font = face_bytes(data.file)
+-                .and_then(|bytes| Font::new(bytes, face_index(data.file)));
++                .and_then(|bytes| Font::new(bytes, face_index(data.file)))
++                .map(|font| instance(font, data.variations));
+             loaded.push((data, font));
+         }
+         let placeholder = loaded
+@@ -1012,6 +1030,16 @@ pub fn emoji_advance(size: f32) -> f32 {
+     (size * 1.25).round()
+ }
+ 
++/// Emoji advance in `stack`. The 1.25 em is x.com's; elsewhere Chromium uses
++/// Apple Color Emoji's own 1 em `hmtx` advance.
++pub fn emoji_advance_in(stack: Stack, size: f32) -> f32 {
++    if stack == X {
++        emoji_advance(size)
++    } else {
++        size
++    }
++}
++
+ /// CSS weight matching against the four Chirp weights (400, 500, 700, 800).
+ pub fn chirp_weight(weight: u16) -> u16 {
+     match weight {
+diff --git a/crates/xeet-core/src/inline.rs b/crates/xeet-core/src/inline.rs
+index bc41d02..7936e45 100644
+--- a/crates/xeet-core/src/inline.rs
++++ b/crates/xeet-core/src/inline.rs
+@@ -544,7 +544,8 @@ fn shape_segment(ctx: &Ctx, abs: usize, s: &str, gbs: &[usize], trail: usize) ->
+         // font cannot ligate, or an emoji newer than it, is still one emoji
+         // on the devices people read X on.
+         let emoji_adv =
+-            (face.kind == fonts::FaceKind::Emoji).then(|| fonts::emoji_advance(ctx.st.size));
++            (face.kind == fonts::FaceKind::Emoji)
++                .then(|| fonts::emoji_advance_in(ctx.st.stack, ctx.st.size));
+         // The graphemes already given their emoji advance. Glyphs arrive in
+         // visual order, which reverses the clusters of a right-to-left run, so
+         // this is a set rather than a "last seen" index; it is a reused bitset
+diff --git a/crates/xeet-core/src/paint/glyph.rs b/crates/xeet-core/src/paint/glyph.rs
+index 7486a32..67f372d 100644
+--- a/crates/xeet-core/src/paint/glyph.rs
++++ b/crates/xeet-core/src/paint/glyph.rs
+@@ -143,7 +143,10 @@ pub(crate) fn outline_path(face: &Face, glyph: u32, size: f32) -> Option<tiny_sk
+     // FreeType's point order: Chrome rasterizes through FreeType, so the
+     // contour start conventions have to match it, not HarfBuzz's.
+     g.draw(
+-        DrawSettings::unhinted(Size::new(size), LocationRef::default()),
++        DrawSettings::unhinted(
++            Size::new(size),
++            LocationRef::new(face.font.normalized_coords()),
++        ),
+         &mut pen,
+     )
+     .ok()?;
+-- 
+2.54.0 (Apple Git-157)
+

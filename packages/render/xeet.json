@@ -1,4 +1,9 @@
 {
-  "repository": "raphaelsalaja/xeet",
-  "rev": "3cce35e8f4a7d2f78e22275dde94340f4223d7c5"
+  "repository": "rauchg/xeet",
+  "rev": "71079ff11ab2847c1c2e5973b3901b2c7203c89d",
+  "patches": [
+    "patches/xeet/0001-Add-font-stacks-host-registered-collection-faces-and.patch",
+    "patches/xeet/0002-Instance-variable-fonts-from-manifest-axes-and-use-t.patch"
+  ],
+  "tree": "e3427eb0602f8e68a31eaaadc38bc73fccb708b0"
 }

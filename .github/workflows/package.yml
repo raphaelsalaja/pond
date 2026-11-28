@@ -195,15 +195,14 @@ jobs:
         with:
           team: ${{ vars.TURBO_TEAM }}
 
-      # Posts on X, Threads and Bluesky draw through this WebAssembly build of
-      # the xeet fork. verify-binaries fails the pack when it is missing.
+      # Posts on X, Threads and Bluesky draw through a WebAssembly build of
+      # upstream xeet with packages/render/patches/xeet applied.
+      # verify-binaries fails the pack when it is missing.
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
 
-      - name: Fetch the pinned xeet fork
-        env:
-          POND_XEET_TOKEN: ${{ secrets.POND_XEET_TOKEN }}
+      - name: Fetch xeet and apply Pond's patches
         run: node packages/render/scripts/fetch-xeet.mjs
 
       - name: Build the post renderer

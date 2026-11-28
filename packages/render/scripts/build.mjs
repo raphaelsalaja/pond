@@ -7,7 +7,8 @@
  *
  * `POND_XEET_DIR` points at the xeet checkout (default: a sibling of the repo).
  * `--required` (or `POND_RENDER_REQUIRED`) fails instead of skipping, and needs
- * the checkout at the commit `xeet.json` pins. Release builds use it.
+ * the checkout to be upstream xeet at the commit `xeet.json` pins with
+ * `patches/xeet/` applied. Release builds use it.
  */
 
 import { execFileSync } from "node:child_process";
@@ -19,7 +20,7 @@ import {
   statSync,
 } from "node:fs";
 import { join, resolve } from "node:path";
-import { checkedOutRev, readPin, XEET } from "./xeet.mjs";
+import { gitOutput, readPin, XEET } from "./xeet.mjs";
 
 const PACKAGE = resolve(import.meta.dirname, "..");
 const REPO = resolve(PACKAGE, "../..");
@@ -44,12 +45,17 @@ if (!existsSync(join(XEET, "crates/xeet-core"))) {
 }
 
 if (required) {
-  const { repository, rev } = readPin();
-  const head = checkedOutRev();
-  if (head !== rev) {
+  /** Upstream plus Pond's patches has one tree, whether fetch applied them or a local branch carries them. */
+  const { repository, rev, tree } = readPin();
+  const fetch = "Run `node packages/render/scripts/fetch-xeet.mjs`.";
+  const head = gitOutput("rev-parse", "HEAD^{tree}");
+  if (head !== tree) {
     fail(
-      `xeet at ${XEET} is ${head ?? "not a git checkout"}, but xeet.json pins ${repository}@${rev}. Run \`node packages/render/scripts/fetch-xeet.mjs\`.`,
+      `xeet at ${XEET} has tree ${head ?? "none (not a git checkout)"}, but xeet.json pins ${tree}: ${repository}@${rev.slice(0, 7)} with patches/xeet applied. ${fetch}`,
     );
+  }
+  if (gitOutput("status", "--porcelain", "--untracked-files=no")) {
+    fail(`xeet at ${XEET} has uncommitted changes. ${fetch}`);
   }
 }
 
