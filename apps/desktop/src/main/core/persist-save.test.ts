@@ -3,11 +3,14 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { saves } from "@pond/schema/db";
+import type { RawJson } from "@pond/schema/raw";
+import { StoredRawJsonSchema } from "@pond/schema/raw-schema";
 import Database from "better-sqlite3";
 import { eq } from "drizzle-orm";
 import { app } from "electron";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "../db";
+import { SOURCE_FILE } from "../lib/library-format";
 import { invalidatePaths, resolvePaths, saveDir } from "../paths";
 import { withMutationScope } from "./executor";
 import { persistSave } from "./persist-save";
@@ -70,6 +73,35 @@ describe.skipIf(!nativeSqliteAvailable())("persistSave files", () => {
     expect(
       readdirSync(saveDir("save")).filter((name) => name.startsWith(".pond-")),
     ).toEqual([]);
+  });
+
+  it("writes a rawJson-only patch to source.json when writeInfo is requested", async () => {
+    await seedSave("save");
+    const rawJson: RawJson = {
+      extractorId: "test",
+      extractedAt: "2026-11-16T00:00:00.000Z",
+      capture: {
+        id: "9",
+        source: "twitter",
+        url: "https://x.com/alice/status/9",
+        media: [],
+      },
+      postCardProvenance: {
+        light: { renderer: "react", captureTweetVersion: 13 },
+        dark: { renderer: "screenshot", captureTweetVersion: 13 },
+      },
+    };
+
+    await persistSave(
+      "save",
+      { rawJson },
+      { actorReason: "test", writeInfo: true },
+    );
+
+    const source = StoredRawJsonSchema.parse(
+      JSON.parse(readFileSync(join(saveDir("save"), SOURCE_FILE), "utf8")),
+    );
+    expect(source.postCardProvenance).toEqual(rawJson.postCardProvenance);
   });
 
   it("lets other edits run while a Save's files are being written", async () => {

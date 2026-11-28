@@ -194,6 +194,23 @@ export interface RawSplit {
   media: Array<number>;
 }
 
+export type PostCardArtifactRenderer = "xeet" | "react" | "screenshot";
+
+export interface PostCardProvenanceEntry {
+  renderer: PostCardArtifactRenderer;
+  captureTweetVersion: number;
+}
+
+export interface PostCardProvenance {
+  light?: PostCardProvenanceEntry;
+  dark?: PostCardProvenanceEntry;
+}
+
+export interface PostCardRepair {
+  version: number;
+  attemptedAt: string;
+}
+
 export interface RawJson {
   capture: Capture;
   extractorId: string;
@@ -201,6 +218,8 @@ export interface RawJson {
   ytdlp?: RawYtdlp;
   captureTweetVersion?: number;
   renderTextCoverVersion?: number;
+  postCardProvenance?: PostCardProvenance;
+  postCardRepair?: PostCardRepair;
   /** Set when the Account's import filters skipped this save, so a scope change can release it. */
   importFilter?: "list" | "media" | "since";
   split?: RawSplit;

@@ -145,6 +145,21 @@ const RawSplitSchema = z.object({
   media: z.array(z.number().int().min(0)),
 });
 
+const PostCardProvenanceEntrySchema = z.object({
+  renderer: z.enum(["xeet", "react", "screenshot"]),
+  captureTweetVersion: z.number().int(),
+});
+
+const PostCardProvenanceSchema = z.object({
+  light: PostCardProvenanceEntrySchema.optional(),
+  dark: PostCardProvenanceEntrySchema.optional(),
+});
+
+const PostCardRepairSchema = z.object({
+  version: z.number().int(),
+  attemptedAt: z.string(),
+});
+
 export const RawJsonSchema = z.object({
   capture: CaptureSchema,
   extractorId: z.string(),
@@ -152,6 +167,8 @@ export const RawJsonSchema = z.object({
   ytdlp: z.looseObject({}).optional(),
   captureTweetVersion: z.number().optional(),
   renderTextCoverVersion: z.number().optional(),
+  postCardProvenance: PostCardProvenanceSchema.optional().catch(undefined),
+  postCardRepair: PostCardRepairSchema.optional().catch(undefined),
   importFilter: z.enum(["list", "media", "since"]).optional().catch(undefined),
   split: RawSplitSchema.optional().catch(undefined),
 });
@@ -167,6 +184,8 @@ export const StoredRawJsonSchema = z.object({
   ytdlp: z.looseObject({ duration: z.number().optional() }).optional(),
   captureTweetVersion: z.number().optional(),
   renderTextCoverVersion: z.number().optional(),
+  postCardProvenance: PostCardProvenanceSchema.optional().catch(undefined),
+  postCardRepair: PostCardRepairSchema.optional().catch(undefined),
   importFilter: z.enum(["list", "media", "since"]).optional().catch(undefined),
   split: RawSplitSchema.optional().catch(undefined),
 });

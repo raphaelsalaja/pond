@@ -1,5 +1,5 @@
 import { setTimeout as sleep } from "node:timers/promises";
-import type { Capture } from "@pond/schema/raw";
+import type { Capture, PostCardArtifactRenderer } from "@pond/schema/raw";
 import type { SearchCardData } from "@shared/search-card";
 import { buildTextCardData } from "@shared/text-card";
 import type { TextCardData } from "@shared/text-card";
@@ -28,7 +28,8 @@ export interface RenderedCard {
   height: number;
 }
 
-export type PostCardRenderer = "xeet" | "react";
+/** Structured renderers only; a live screenshot is recorded by the capture pipeline, not here. */
+export type PostCardRenderer = Exclude<PostCardArtifactRenderer, "screenshot">;
 
 export interface RenderedPostCard extends RenderedCard {
   renderer: PostCardRenderer;

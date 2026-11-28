@@ -1,5 +1,11 @@
 import type { NewSave, Source } from "@pond/schema/db";
-import type { Capture, CaptureMedia, RawJson } from "@pond/schema/raw";
+import type {
+  Capture,
+  CaptureMedia,
+  PostCardArtifactRenderer,
+  PostCardProvenance,
+  RawJson,
+} from "@pond/schema/raw";
 import { QUOTE_DEPTH_CAP } from "@pond/schema/raw";
 import { rendersPostCard } from "@shared/save-file-names";
 import log from "electron-log/main.js";
@@ -14,12 +20,28 @@ import {
   renderThreadsCardPng,
   renderTweetCardPng,
 } from "../../render-card";
-import type { RenderedCard } from "../../render-card";
+import type {
+  PostCardRenderer,
+  RenderedCard,
+  RenderedPostCard,
+} from "../../render-card";
 import { CaptureIncompleteError, TransientError } from "../extractors/errors";
 import { readSave } from "./apply";
 import type { WriteFileArgs } from "./apply";
 import { inlineCaptureAvatars } from "./inline-card-avatars";
 import type { InlinedAvatars } from "./inline-card-avatars";
+
+type RenderPostCardPng = (
+  capture: Capture | undefined | null,
+  fallbackAuthor: string | null | undefined,
+  scheme: "light" | "dark",
+) => Promise<RenderedPostCard | null>;
+
+type PostCardScheme = keyof PostCardProvenance;
+type PostCardRenderers = Partial<
+  Record<PostCardScheme, PostCardArtifactRenderer>
+>;
+type StructuredPostCardRenderers = Record<PostCardScheme, PostCardRenderer>;
 
 const TWEET_SCREENSHOT_LIGHT_KIND = "tweet_screenshot_light";
 const TWEET_SCREENSHOT_DARK_KIND = "tweet_screenshot_dark";
@@ -63,6 +85,7 @@ interface PersistSaveOptions {
   actorReason: string;
   newFiles?: Array<WriteFileArgs>;
   replaceFilesWithKind?: WriteFileArgs["kind"] | Array<WriteFileArgs["kind"]>;
+  writeInfo?: boolean;
 }
 
 export interface CaptureTweetPorts<SaveRow extends CaptureTweetSave> {
@@ -74,9 +97,9 @@ export interface CaptureTweetPorts<SaveRow extends CaptureTweetSave> {
   ): Promise<void>;
   screenshotTweetDual: typeof screenshotTweetDual;
   screenshotThreadsDual: typeof screenshotThreadsDual;
-  renderTweetCardPng: typeof renderTweetCardPng;
-  renderThreadsCardPng: typeof renderThreadsCardPng;
-  renderBlueskyCardPng: typeof renderBlueskyCardPng;
+  renderTweetCardPng: RenderPostCardPng;
+  renderThreadsCardPng: RenderPostCardPng;
+  renderBlueskyCardPng: RenderPostCardPng;
   inlineCaptureAvatars(
     capture: Capture,
     save: SaveRow,
@@ -188,11 +211,25 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
   }
 
   if (opts?.signal?.aborted) return idle;
-  const rendered = await tryNativeRender(saveId, { ...save, rawJson }, ports);
+  const rendered = await tryStructuredRender(
+    saveId,
+    { ...save, rawJson },
+    ports,
+  );
   if (opts?.signal?.aborted) return idle;
   if (rendered) {
-    await finalizeRawJson(saveId, rawJson, [], { stampVersion: true }, ports);
-    log.info("[pond pipeline:capture-tweet] native card done", { saveId });
+    await finalizeRawJson(
+      saveId,
+      rawJson,
+      [],
+      { stampVersion: true, postCardRenderers: rendered },
+      ports,
+    );
+    log.info("[pond pipeline:capture-tweet] structured card done", {
+      saveId,
+      lightRenderer: rendered.light,
+      darkRenderer: rendered.dark,
+    });
     return {
       captured: 2,
       authWall: false,
@@ -201,10 +238,10 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     };
   }
 
-  /** Bluesky posts have no live screenshot path; the native card is the only card. */
+  /** Bluesky posts have no live screenshot path; the structured card is the only card. */
   if (opts?.nativeOnly || save.source === "bluesky") {
     log.debug(
-      "[pond pipeline:capture-tweet] native miss, skipping live screenshot",
+      "[pond pipeline:capture-tweet] structured miss, skipping live screenshot",
       saveId,
     );
     return idle;
@@ -223,6 +260,7 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     lightFilename: "tweet-light.png",
     darkFilename: "tweet-dark.png",
     harvestMedia: false,
+    primaryPostCard: true,
   };
   if (opts?.signal) mainArgs.signal = opts.signal;
   if (opts?.signal?.aborted) return idle;
@@ -240,7 +278,8 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     };
   }
 
-  let completed = main.complete;
+  const mainComplete = main.complete;
+  let quoteChainComplete = true;
   let nextUrl = main.quotedUrl ?? quotedUrlFromCapture(rawJson);
   for (let depth = 1; nextUrl && depth <= QUOTE_DEPTH_CAP; depth += 1) {
     if (opts?.signal?.aborted) return idle;
@@ -269,10 +308,10 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     if (quote.media) harvested.push(...quote.media);
     if (quote.authWall) {
       authWall = true;
-      completed = false;
+      quoteChainComplete = false;
       break;
     }
-    if (!quote.complete) completed = false;
+    if (!quote.complete) quoteChainComplete = false;
     nextUrl = quote.quotedUrl;
   }
 
@@ -280,7 +319,10 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     saveId,
     rawJson,
     harvested,
-    { stampVersion: completed },
+    {
+      stampVersion: quoteChainComplete,
+      postCardRenderers: main.postCardRenderers,
+    },
     ports,
   );
 
@@ -288,7 +330,8 @@ async function runCaptureTweetWithPorts<SaveRow extends CaptureTweetSave>(
     saveId,
     captured,
     mediaAdded,
-    completed,
+    mainComplete,
+    quoteChainComplete,
   });
   return {
     captured,
@@ -313,13 +356,13 @@ export const runCaptureTweet = createCaptureTweetRunner({
 
 export const runCaptureTweetTask = createCaptureTweetTask(runCaptureTweet);
 
-async function tryNativeRender<SaveRow extends CaptureTweetSave>(
+async function tryStructuredRender<SaveRow extends CaptureTweetSave>(
   saveId: string,
   save: SaveRow,
   ports: CaptureTweetPorts<SaveRow>,
-): Promise<boolean> {
+): Promise<StructuredPostCardRenderers | null> {
   const capture = save.rawJson?.capture ?? null;
-  if (!capture) return false;
+  if (!capture) return null;
   const inlined = await ports.inlineCaptureAvatars(capture, save);
   const render =
     save.source === "threads"
@@ -328,9 +371,9 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
         ? ports.renderBlueskyCardPng
         : ports.renderTweetCardPng;
   const light = await render(inlined.capture, save.author, "light");
-  if (!light) return false;
+  if (!light) return null;
   const dark = await render(inlined.capture, save.author, "dark");
-  if (!dark) return false;
+  if (!dark) return null;
   await writeCardPng(
     saveId,
     TWEET_SCREENSHOT_LIGHT_KIND,
@@ -374,7 +417,7 @@ async function tryNativeRender<SaveRow extends CaptureTweetSave>(
       );
     }
   }
-  return true;
+  return { light: light.renderer, dark: dark.renderer };
 }
 
 async function writeCardPng(
@@ -415,6 +458,7 @@ interface CaptureVariantsArgs {
   darkFilename: string;
   harvestMedia: boolean;
   persistScreenshots?: boolean;
+  primaryPostCard?: boolean;
   signal?: AbortSignal;
 }
 
@@ -426,6 +470,7 @@ interface CaptureVariantsResult {
   media?: Array<CaptureMedia>;
   page?: Capture;
   failureReason?: TweetScreenshotResult["reason"];
+  postCardRenderers?: PostCardRenderers;
 }
 
 async function captureVariants<SaveRow extends CaptureTweetSave>(
@@ -437,6 +482,7 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
   let authWall = false;
   let lightOk = false;
   let darkOk = false;
+  const postCardRenderers: PostCardRenderers = {};
 
   if (args.signal?.aborted) {
     return { captured: 0, complete: false, authWall: false };
@@ -464,6 +510,7 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
         ports,
       );
       captured += 1;
+      if (args.primaryPostCard) postCardRenderers.light = "screenshot";
     }
     lightOk = true;
   } else if (light.reason === "auth_required") {
@@ -481,6 +528,7 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
         ports,
       );
       captured += 1;
+      if (args.primaryPostCard) postCardRenderers.dark = "screenshot";
     }
     darkOk = true;
   } else if (dark.reason === "auth_required") {
@@ -497,6 +545,9 @@ async function captureVariants<SaveRow extends CaptureTweetSave>(
   };
   if (quotedUrl) result.quotedUrl = quotedUrl;
   if (media) result.media = media;
+  if (postCardRenderers.light || postCardRenderers.dark) {
+    result.postCardRenderers = postCardRenderers;
+  }
   if (dual.page) result.page = dual.page;
   const variantFailureReason =
     args.harvestMedia && !dual.page && (light.ok || dark.ok)
@@ -547,11 +598,54 @@ async function writeScreenshot(
   );
 }
 
+function mergePostCardProvenance(
+  rawJson: RawJson,
+  renderers: PostCardRenderers | undefined,
+): boolean {
+  if (!renderers) return false;
+  const version = targetCaptureTweetVersion(rawJson);
+  const provenance = { ...rawJson.postCardProvenance };
+  let changed = false;
+  for (const scheme of ["light", "dark"] as const) {
+    const renderer = renderers[scheme];
+    if (!renderer) continue;
+    const existing = provenance[scheme];
+    if (
+      existing?.renderer === renderer &&
+      existing.captureTweetVersion === version
+    ) {
+      continue;
+    }
+    provenance[scheme] = { renderer, captureTweetVersion: version };
+    changed = true;
+  }
+  if (changed) rawJson.postCardProvenance = provenance;
+  if (
+    Object.values(renderers).some(
+      (renderer) => renderer === "xeet" || renderer === "react",
+    ) &&
+    rawJson.postCardRepair
+  ) {
+    delete rawJson.postCardRepair;
+    changed = true;
+  }
+  return changed;
+}
+
+function hasCurrentPostCardProvenance(rawJson: RawJson): boolean {
+  const version = targetCaptureTweetVersion(rawJson);
+  return (["light", "dark"] as const).every(
+    (scheme) =>
+      (rawJson.postCardProvenance?.[scheme]?.captureTweetVersion ?? 0) >=
+      version,
+  );
+}
+
 async function finalizeRawJson<SaveRow extends CaptureTweetSave>(
   saveId: string,
   stored: RawJson | null,
   harvested: Array<CaptureMedia>,
-  opts: { stampVersion: boolean },
+  opts: { stampVersion: boolean; postCardRenderers?: PostCardRenderers },
   ports: CaptureTweetPorts<SaveRow>,
 ): Promise<boolean> {
   if (!stored) return false;
@@ -569,18 +663,26 @@ async function finalizeRawJson<SaveRow extends CaptureTweetSave>(
   }
   if (mediaAdded) rawJson.capture.media = existing;
 
-  const willStamp = opts.stampVersion && isCaptureTweetStale(rawJson);
+  const provenanceChanged = mergePostCardProvenance(
+    rawJson,
+    opts.postCardRenderers,
+  );
+  const willStamp =
+    opts.stampVersion &&
+    hasCurrentPostCardProvenance(rawJson) &&
+    isCaptureTweetStale(rawJson);
   if (willStamp) {
     rawJson.captureTweetVersion = targetCaptureTweetVersion(rawJson);
   }
 
-  if (!mediaAdded && !willStamp) return mediaAdded;
+  if (!mediaAdded && !willStamp && !provenanceChanged) return mediaAdded;
 
   await ports.persistSave(
     saveId,
     { rawJson },
     {
       actorReason: "pipeline:capture-tweet:quote-merge",
+      writeInfo: true,
     },
   );
   return mediaAdded;

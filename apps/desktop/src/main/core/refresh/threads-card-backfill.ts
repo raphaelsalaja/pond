@@ -1,6 +1,10 @@
 import { saves, tasks } from "@pond/schema/db";
-import type { NewTask } from "@pond/schema/db";
+import type { NewTask, SaveFile } from "@pond/schema/db";
 import type { RawJson } from "@pond/schema/raw";
+import {
+  POST_RENDER_DARK_KIND,
+  POST_RENDER_LIGHT_KIND,
+} from "@shared/save-file-names";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import log from "electron-log/main.js";
 import pLimit from "p-limit";
@@ -17,8 +21,13 @@ import {
 
 const PAGE_SIZE = 200;
 const MAX_INFLIGHT = 1;
+/** Bump when structured renderer support changes enough to reopen repairs that already failed. */
+const POST_CARD_REPAIR_VERSION = 1;
 
 const REPLY_RECAPTURE_OPS = ["capture_tweet", "finalize"] as const;
+
+type PostCardScheme = "light" | "dark";
+type PostCardFile = Pick<SaveFile, "kind">;
 
 interface BackfillRow {
   id: string;
@@ -31,18 +40,90 @@ interface ReplyRecaptureRuntime {
   persistSave: typeof persistSave;
 }
 
-const defaultRuntime: ReplyRecaptureRuntime = {
+interface PostCardBackfillRuntime extends ReplyRecaptureRuntime {
+  runCaptureTweet: typeof runCaptureTweet;
+  now: () => Date;
+}
+
+const defaultRuntime: PostCardBackfillRuntime = {
   getDb,
   kickReconciler,
   persistSave,
+  runCaptureTweet,
+  now: () => new Date(),
 };
 
-export async function startThreadsCardBackfill(): Promise<{
+function postCardScheme(kind: string): PostCardScheme | null {
+  if (kind === POST_RENDER_LIGHT_KIND) return "light";
+  if (kind === POST_RENDER_DARK_KIND) return "dark";
+  return null;
+}
+
+/**
+ * Only a card recorded as a live screenshot is repaired. A Save with no
+ * provenance predates it and is left alone, so upgrading never re-renders the
+ * whole Library.
+ */
+export function needsPostCardStructuredRepair(
+  rawJson: RawJson | null,
+  files: ReadonlyArray<PostCardFile>,
+): boolean {
+  if (!rawJson?.capture) return false;
+  if ((rawJson.postCardRepair?.version ?? 0) >= POST_CARD_REPAIR_VERSION) {
+    return false;
+  }
+  return files.some((file) => {
+    const scheme = postCardScheme(file.kind);
+    if (!scheme) return false;
+    return rawJson.postCardProvenance?.[scheme]?.renderer === "screenshot";
+  });
+}
+
+export function withPostCardRepairAttempt(
+  stored: RawJson | null,
+  attemptedAt: string,
+): RawJson | null {
+  if (!stored) return null;
+  return {
+    ...stored,
+    postCardRepair: { version: POST_CARD_REPAIR_VERSION, attemptedAt },
+  };
+}
+
+/** Reads the row again so edits made while the render ran are kept. */
+async function persistPostCardRepairAttempt(
+  db: Db,
+  id: string,
+  runtime: PostCardBackfillRuntime,
+): Promise<void> {
+  const fresh = db
+    .select({ rawJson: saves.rawJson })
+    .from(saves)
+    .where(eq(saves.id, id))
+    .get();
+  const rawJson = withPostCardRepairAttempt(
+    fresh?.rawJson ?? null,
+    runtime.now().toISOString(),
+  );
+  if (!rawJson) return;
+  await runtime.persistSave(
+    id,
+    { rawJson },
+    {
+      actorReason: "pipeline:post-card-repair",
+      writeInfo: true,
+    },
+  );
+}
+
+export async function startThreadsCardBackfill(
+  runtime: PostCardBackfillRuntime = defaultRuntime,
+): Promise<{
   ok: true;
   recaptured: number;
   requeued: number;
 }> {
-  const db = await getDb();
+  const db = await runtime.getDb();
   let recaptured = 0;
   let offset = 0;
   const limit = pLimit(MAX_INFLIGHT);
@@ -55,6 +136,7 @@ export async function startThreadsCardBackfill(): Promise<{
         id: saves.id,
         source: saves.source,
         rawJson: saves.rawJson,
+        files: saves.files,
       })
       .from(saves)
       .where(
@@ -71,7 +153,6 @@ export async function startThreadsCardBackfill(): Promise<{
     offset += page.length;
 
     for (const row of page) {
-      if (!isCaptureTweetStale(row.rawJson)) continue;
       const source = row.source;
       if (
         source !== "twitter" &&
@@ -80,20 +161,46 @@ export async function startThreadsCardBackfill(): Promise<{
       ) {
         continue;
       }
+      const stale = isCaptureTweetStale(row.rawJson);
+      const repair = needsPostCardStructuredRepair(row.rawJson, row.files);
+      if (!stale && !repair) continue;
       jobs.push(
         limit(async () => {
           try {
-            const result = await runCaptureTweet(row.id, { nativeOnly: true });
+            const captureOptions: NonNullable<
+              Parameters<typeof runCaptureTweet>[1]
+            > = { nativeOnly: true };
+            if (repair) captureOptions.force = true;
+            const result = await runtime.runCaptureTweet(
+              row.id,
+              captureOptions,
+            );
             if (result.captured > 0) {
               recaptured += 1;
-            } else if (
-              source !== "bluesky" &&
-              needsLiveReplyRecapture(row.rawJson)
-            ) {
-              liveReplies.push({ id: row.id, source });
+            } else {
+              if (repair)
+                await persistPostCardRepairAttempt(db, row.id, runtime);
+              if (
+                stale &&
+                source !== "bluesky" &&
+                needsLiveReplyRecapture(row.rawJson)
+              ) {
+                liveReplies.push({ id: row.id, source });
+              }
             }
           } catch (error) {
-            log.warn("[pond native-card-backfill] failed", row.id, error);
+            log.warn("[pond post-card-backfill] failed", row.id, error);
+            /** Without a marker, a Save that throws would be force re-rendered on every start. */
+            if (repair) {
+              await persistPostCardRepairAttempt(db, row.id, runtime).catch(
+                (cause: unknown) =>
+                  log.warn(
+                    "[pond post-card-backfill] repair marker failed",
+                    row.id,
+                    cause,
+                  ),
+              );
+            }
           }
         }),
       );
@@ -103,9 +210,9 @@ export async function startThreadsCardBackfill(): Promise<{
   }
 
   await Promise.all(jobs);
-  const requeued = await requeueReplyCaptures(liveReplies);
+  const requeued = await requeueReplyCaptures(liveReplies, runtime);
   if (recaptured > 0 || requeued > 0) {
-    log.info("[pond native-card-backfill] recaptured", {
+    log.info("[pond post-card-backfill] recaptured", {
       recaptured,
       requeued,
     });

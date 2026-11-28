@@ -1,4 +1,5 @@
 import type { Capture, RawJson } from "@pond/schema/raw";
+import { StoredRawJsonSchema } from "@pond/schema/raw-schema";
 import { describe, expect, it } from "vitest";
 import { CaptureIncompleteError } from "../extractors/errors";
 import {
@@ -54,18 +55,38 @@ const rendered = {
 type TweetShotArgs = Parameters<TestPorts["screenshotTweetDual"]>[0];
 type ThreadsShotArgs = Parameters<TestPorts["screenshotThreadsDual"]>[0];
 type PersistOptions = Parameters<TestPorts["persistSave"]>[2];
+type StructuredRenderer = NonNullable<
+  Awaited<ReturnType<TestPorts["renderTweetCardPng"]>>
+>["renderer"];
 
 function makePorts(
   initial: CaptureTweetSave,
   screenshotResult: TweetDualResult,
-  { nativeCardMisses = false }: { nativeCardMisses?: boolean } = {},
+  {
+    structuredCardMisses = false,
+    renderers = {},
+    tweetScreenshotForArgs,
+  }: {
+    structuredCardMisses?: boolean;
+    renderers?: Partial<Record<"light" | "dark", StructuredRenderer>>;
+    tweetScreenshotForArgs?: (args: TweetShotArgs) => TweetDualResult;
+  } = {},
 ) {
   let stored = initial;
   const persisted: Array<PersistOptions> = [];
   const tweetShots: Array<TweetShotArgs> = [];
   const threadsShots: Array<ThreadsShotArgs> = [];
   const renders = { tweet: 0, threads: 0, bluesky: 0 };
-  const card = nativeCardMisses ? null : rendered;
+  const cardFor = (scheme: "light" | "dark") => {
+    if (structuredCardMisses) return null;
+    return {
+      ...rendered,
+      renderer:
+        scheme === "light"
+          ? (renderers.light ?? "xeet")
+          : (renderers.dark ?? "xeet"),
+    };
+  };
   const ports = {
     readSave: async () => stored,
     persistSave: async (
@@ -80,7 +101,7 @@ function makePorts(
       args: TweetShotArgs,
     ): Promise<TweetDualResult> => {
       tweetShots.push(args);
-      return screenshotResult;
+      return tweetScreenshotForArgs?.(args) ?? screenshotResult;
     },
     screenshotThreadsDual: async (
       args: ThreadsShotArgs,
@@ -88,23 +109,29 @@ function makePorts(
       threadsShots.push(args);
       return screenshotResult;
     },
-    renderTweetCardPng: async (): Promise<
-      Awaited<ReturnType<TestPorts["renderTweetCardPng"]>>
-    > => {
+    renderTweetCardPng: async (
+      _capture,
+      _author,
+      scheme,
+    ): Promise<Awaited<ReturnType<TestPorts["renderTweetCardPng"]>>> => {
       renders.tweet += 1;
-      return card;
+      return cardFor(scheme);
     },
-    renderThreadsCardPng: async (): Promise<
-      Awaited<ReturnType<TestPorts["renderThreadsCardPng"]>>
-    > => {
+    renderThreadsCardPng: async (
+      _capture,
+      _author,
+      scheme,
+    ): Promise<Awaited<ReturnType<TestPorts["renderThreadsCardPng"]>>> => {
       renders.threads += 1;
-      return card;
+      return cardFor(scheme);
     },
-    renderBlueskyCardPng: async (): Promise<
-      Awaited<ReturnType<TestPorts["renderBlueskyCardPng"]>>
-    > => {
+    renderBlueskyCardPng: async (
+      _capture,
+      _author,
+      scheme,
+    ): Promise<Awaited<ReturnType<TestPorts["renderBlueskyCardPng"]>>> => {
       renders.bluesky += 1;
-      return card;
+      return cardFor(scheme);
     },
     inlineCaptureAvatars: async (capture: Capture) => ({ capture }),
   } satisfies TestPorts;
@@ -116,6 +143,20 @@ function makePorts(
     tweetShots,
     threadsShots,
     renders,
+  };
+}
+
+function postRaw(): RawJson {
+  return {
+    extractorId: "test",
+    extractedAt: "2026-10-16T00:00:00.000Z",
+    capture: {
+      id: "9",
+      source: "twitter",
+      url: "https://x.com/alice/status/9",
+      description: "A post",
+      media: [],
+    },
   };
 }
 
@@ -141,7 +182,7 @@ function blueskySave(): CaptureTweetSave {
 }
 
 describe("runCaptureTweet for Bluesky", () => {
-  it("writes the native card and stamps the version", async () => {
+  it("writes the structured card, its renderer provenance, and the version", async () => {
     const harness = makePorts(blueskySave(), {
       light: { ok: true, png: rendered },
       dark: { ok: true, png: rendered },
@@ -152,17 +193,24 @@ describe("runCaptureTweet for Bluesky", () => {
     });
     expect(harness.renders.bluesky).toBe(2);
     expect(harness.renders.tweet).toBe(0);
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "xeet", captureTweetVersion: 13 },
+      dark: { renderer: "xeet", captureTweetVersion: 13 },
+    });
     expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
+    expect(
+      harness.persisted.some((options) => options.writeInfo === true),
+    ).toBe(true);
   });
 
-  it("never opens a live screenshot when the native card misses", async () => {
+  it("never opens a live screenshot when the structured card misses", async () => {
     const harness = makePorts(
       blueskySave(),
       {
         light: { ok: true, png: rendered },
         dark: { ok: true, png: rendered },
       },
-      { nativeCardMisses: true },
+      { structuredCardMisses: true },
     );
 
     await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
@@ -170,6 +218,185 @@ describe("runCaptureTweet for Bluesky", () => {
     });
     expect(harness.tweetShots).toEqual([]);
     expect(harness.threadsShots).toEqual([]);
+  });
+});
+
+describe("post card renderer provenance", () => {
+  it("records the React renderer without conflating it with xeet", async () => {
+    const harness = makePorts(
+      save(postRaw()),
+      {
+        light: { ok: true, png: rendered },
+        dark: { ok: true, png: rendered },
+      },
+      { renderers: { light: "react", dark: "react" } },
+    );
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "react", captureTweetVersion: 13 },
+      dark: { renderer: "react", captureTweetVersion: 13 },
+    });
+  });
+
+  it("records mixed structured outcomes per scheme", async () => {
+    const harness = makePorts(
+      save(postRaw()),
+      {
+        light: { ok: true, png: rendered },
+        dark: { ok: true, png: rendered },
+      },
+      { renderers: { light: "xeet", dark: "react" } },
+    );
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "xeet", captureTweetVersion: 13 },
+      dark: { renderer: "react", captureTweetVersion: 13 },
+    });
+  });
+
+  it("records live screenshots per scheme when structured rendering misses", async () => {
+    const harness = makePorts(
+      save(postRaw()),
+      {
+        light: { ok: true, png: rendered },
+        dark: { ok: true, png: rendered },
+      },
+      { structuredCardMisses: true },
+    );
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "screenshot", captureTweetVersion: 13 },
+      dark: { renderer: "screenshot", captureTweetVersion: 13 },
+    });
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBe(13);
+    expect(
+      harness.persisted.some((options) => options.writeInfo === true),
+    ).toBe(true);
+  });
+
+  it("keeps partial screenshot provenance and completes the version across runs", async () => {
+    const shots: TweetDualResult = {
+      light: { ok: true, png: rendered },
+      dark: { ok: false, reason: "capture_failed" },
+    };
+    const harness = makePorts(save(postRaw()), shots, {
+      structuredCardMisses: true,
+    });
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "screenshot", captureTweetVersion: 13 },
+    });
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBeUndefined();
+    expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(true);
+
+    shots.light = { ok: false, reason: "capture_failed" };
+    shots.dark = { ok: true, png: rendered };
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "screenshot", captureTweetVersion: 13 },
+      dark: { renderer: "screenshot", captureTweetVersion: 13 },
+    });
+    expect(harness.getStored().rawJson?.captureTweetVersion).toBe(13);
+    expect(isCaptureTweetStale(harness.getStored().rawJson)).toBe(false);
+  });
+
+  it("does not attribute quote screenshots to the primary post card", async () => {
+    const harness = makePorts(
+      save(postRaw()),
+      {
+        light: { ok: false, reason: "capture_failed" },
+        dark: { ok: false, reason: "capture_failed" },
+      },
+      {
+        structuredCardMisses: true,
+        tweetScreenshotForArgs: (args) => {
+          if (args.sourceId === "2") {
+            return {
+              light: { ok: true, png: rendered },
+              dark: { ok: false, reason: "capture_failed" },
+              quotedUrl: "https://x.com/bob/status/7",
+            };
+          }
+          return {
+            light: { ok: true, png: rendered },
+            dark: { ok: true, png: rendered },
+          };
+        },
+      },
+    );
+
+    await harness.runCaptureTweet("save-1");
+
+    expect(harness.tweetShots.some((args) => args.sourceId === "7")).toBe(true);
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "screenshot", captureTweetVersion: 13 },
+    });
+  });
+
+  it("writes provenance even when a forced refresh does not need a version stamp", async () => {
+    const raw = { ...postRaw(), captureTweetVersion: 13 };
+    const harness = makePorts(save(raw), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+
+    await harness.runCaptureTweet("save-1", { force: true });
+
+    expect(harness.getStored().rawJson?.postCardProvenance?.light).toEqual({
+      renderer: "xeet",
+      captureTweetVersion: 13,
+    });
+    expect(
+      harness.persisted.some((options) => options.writeInfo === true),
+    ).toBe(true);
+  });
+
+  it("replaces screenshot provenance and clears the repair marker after a structured render", async () => {
+    const raw: RawJson = {
+      ...postRaw(),
+      captureTweetVersion: 13,
+      postCardProvenance: {
+        light: { renderer: "screenshot", captureTweetVersion: 13 },
+        dark: { renderer: "screenshot", captureTweetVersion: 13 },
+      },
+      postCardRepair: { version: 1, attemptedAt: "2026-11-16T00:00:00.000Z" },
+    };
+    const harness = makePorts(save(raw), {
+      light: { ok: true, png: rendered },
+      dark: { ok: true, png: rendered },
+    });
+
+    await harness.runCaptureTweet("save-1", { force: true });
+
+    expect(harness.getStored().rawJson?.postCardProvenance).toEqual({
+      light: { renderer: "xeet", captureTweetVersion: 13 },
+      dark: { renderer: "xeet", captureTweetVersion: 13 },
+    });
+    expect(harness.getStored().rawJson?.postCardRepair).toBeUndefined();
+  });
+
+  it("survives the stored rawJson schema used by source.json", () => {
+    const parsed = StoredRawJsonSchema.parse({
+      capture: postRaw().capture,
+      postCardProvenance: {
+        light: { renderer: "xeet", captureTweetVersion: 13 },
+        dark: { renderer: "screenshot", captureTweetVersion: 13 },
+      },
+      postCardRepair: { version: 1, attemptedAt: "2026-11-16T00:00:00.000Z" },
+    });
+
+    expect(parsed.postCardProvenance?.light?.renderer).toBe("xeet");
+    expect(parsed.postCardProvenance?.dark?.renderer).toBe("screenshot");
+    expect(parsed.postCardRepair?.version).toBe(1);
   });
 });
 
@@ -238,7 +465,7 @@ describe("runCaptureTweet live screenshot validation", () => {
         light: { ok: false, reason: "scheme_mismatch" },
         dark: { ok: false, reason: "scheme_mismatch" },
       },
-      { nativeCardMisses: true },
+      { structuredCardMisses: true },
     );
 
     await expect(harness.runCaptureTweet("save-1")).resolves.toMatchObject({
@@ -280,14 +507,14 @@ describe("runCaptureTweet reply parent enrichment", () => {
     );
   });
 
-  it("screenshots a reply without the parent post when the native card misses", async () => {
+  it("screenshots a reply without the parent post when the structured card misses", async () => {
     const harness = makePorts(
       save(replyRaw()),
       {
         light: { ok: true, png: rendered },
         dark: { ok: true, png: rendered },
       },
-      { nativeCardMisses: true },
+      { structuredCardMisses: true },
     );
 
     await harness.runCaptureTweet("save-1");
@@ -316,7 +543,7 @@ describe("runCaptureTweet reply parent enrichment", () => {
         light: { ok: true, png: rendered },
         dark: { ok: true, png: rendered },
       },
-      { nativeCardMisses: true },
+      { structuredCardMisses: true },
     );
 
     await harness.runCaptureTweet("save-1");
