@@ -86,6 +86,11 @@ export const resultNavigation = {
       reveal?.(pendingReveal);
     }
   },
+  /** Withdraws the results when the grid that published them unmounts, so a Save opened elsewhere has no stale neighbors. */
+  clearSource(): void {
+    if (source.key === undefined && source.ids.length === 0) return;
+    this.setSource({ ids: [] });
+  },
   /** Calls `listener` once, when the view next publishes its results. */
   onNextSource(listener: () => void): () => void {
     const stop = subscribe(() => {

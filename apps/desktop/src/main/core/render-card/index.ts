@@ -16,11 +16,22 @@ import {
   renderXPostPng,
 } from "../render-post";
 import { captureDocumentTarget } from "./capture-target";
+import {
+  clearRenderCardPayloads,
+  releaseRenderCardPayload,
+  storeRenderCardPayload,
+} from "./payload-store";
 
 export interface RenderedCard {
   bytes: Buffer;
   width: number;
   height: number;
+}
+
+export type PostCardRenderer = "xeet" | "react";
+
+export interface RenderedPostCard extends RenderedCard {
+  renderer: PostCardRenderer;
 }
 
 type CaptureKind = "tweet" | "text" | "search" | "threads";
@@ -44,8 +55,6 @@ const IDLE_DISPOSE_MS = 60_000;
 let win: BrowserWindow | null = null;
 let chain: Promise<unknown> = Promise.resolve();
 let idleTimer: ReturnType<typeof setTimeout> | null = null;
-/** Chromium treats a hash-only change as a same-document navigation; the next capturePage then never gets a frame. */
-let loadSeq = 0;
 
 function clearIdleDispose(): void {
   if (idleTimer) {
@@ -114,22 +123,15 @@ async function loadCapture(
   target: BrowserWindow,
   kind: CaptureKind,
   scheme: "light" | "dark",
-  data: CardData,
+  token: string,
 ): Promise<string> {
-  const documentTarget = captureDocumentTarget(
-    kind,
-    scheme,
-    CARD_WIDTH,
-    JSON.stringify(data),
-  );
-  /** A repeated card has the same token, so the nonce still forces a fresh document and frame. */
-  const search = `${documentTarget.search}&v=${++loadSeq}`;
+  const documentTarget = captureDocumentTarget(kind, scheme, CARD_WIDTH, token);
+  const search = documentTarget.search;
   const devUrl = process.env.ELECTRON_RENDERER_URL;
   const load = devUrl
-    ? target.loadURL(`${devUrl}/capture.html?${search}#${documentTarget.hash}`)
+    ? target.loadURL(`${devUrl}/capture.html?${search}`)
     : target.loadFile(resolveMainOut("../renderer/capture.html"), {
         search,
-        hash: documentTarget.hash,
       });
   await withTimeout(load, LOAD_TIMEOUT_MS, "capture load");
   return documentTarget.token;
@@ -152,9 +154,10 @@ async function readCardRect(
     const token = ${JSON.stringify(token)};
     const deadline = Date.now() + ${READY_TIMEOUT_MS};
     const root = () => document.documentElement;
-    while (Date.now() < deadline && (root().dataset.card !== token || root().dataset.ready !== "1")) {
+    while (Date.now() < deadline && root().dataset.captureError !== "1" && (root().dataset.card !== token || root().dataset.ready !== "1")) {
       await new Promise((r) => setTimeout(r, 50));
     }
+    if (root().dataset.captureError === "1") return null;
     if (root().dataset.card !== token || root().dataset.ready !== "1") return null;
     const el = document.querySelector("[data-capture-card] > *");
     if (!el) return null;
@@ -292,14 +295,14 @@ async function pad(
 
 async function renderOne(
   kind: CaptureKind,
-  data: CardData,
   scheme: "light" | "dark",
   padCss: number,
   radiusCss: number,
+  payloadToken: string,
 ): Promise<RenderedCard | null> {
   const target = ensureWindow();
   /** Run no script before this load: Electron holds executeJavaScript on a window that has never loaded a page, so it never settles. */
-  const token = await loadCapture(target, kind, scheme, data);
+  const token = await loadCapture(target, kind, scheme, payloadToken);
 
   let rect = await readCardRect(target, token);
   if (!rect) {
@@ -331,9 +334,10 @@ async function enqueueRender(
 ): Promise<RenderedCard | null> {
   clearIdleDispose();
   const run = chain.then(async () => {
+    const payload = storeRenderCardPayload(JSON.stringify(data));
     try {
       return await withTimeout(
-        renderOne(kind, data, scheme, padCss, radiusCss),
+        renderOne(kind, scheme, padCss, radiusCss, payload.token),
         RENDER_TIMEOUT_MS,
         "render",
       );
@@ -342,6 +346,7 @@ async function enqueueRender(
       disposeRenderCardWindow();
       return null;
     } finally {
+      releaseRenderCardPayload(payload.token);
       scheduleIdleDispose();
     }
   });
@@ -353,34 +358,58 @@ export async function renderTweetCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
-): Promise<RenderedCard | null> {
+): Promise<RenderedPostCard | null> {
   const data = buildTweetCardData(capture, fallbackAuthor);
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
   const native = await renderXPostPng(capture, fallbackAuthor, scheme);
-  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
-  return enqueueRender("tweet", data, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
+  if (native) {
+    const rendered = await pad(
+      native.png,
+      scheme,
+      TWEET_PAD_CSS,
+      TWEET_RADIUS_CSS,
+    );
+    return { ...rendered, renderer: "xeet" };
+  }
+  const rendered = await enqueueRender(
+    "tweet",
+    data,
+    scheme,
+    TWEET_PAD_CSS,
+    TWEET_RADIUS_CSS,
+  );
+  return rendered ? { ...rendered, renderer: "react" } : null;
 }
 
 export async function renderThreadsCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
-): Promise<RenderedCard | null> {
+): Promise<RenderedPostCard | null> {
   const data = buildTweetCardData(capture, fallbackAuthor);
   if (!data || (!data.text && (!data.media || data.media.length === 0))) {
     return null;
   }
   const native = await renderThreadsPostPng(data, scheme);
-  if (native) return pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS);
-  return enqueueRender(
+  if (native) {
+    const rendered = await pad(
+      native.png,
+      scheme,
+      TWEET_PAD_CSS,
+      TWEET_RADIUS_CSS,
+    );
+    return { ...rendered, renderer: "xeet" };
+  }
+  const rendered = await enqueueRender(
     "threads",
     data,
     scheme,
     TWEET_PAD_CSS,
     TWEET_RADIUS_CSS,
   );
+  return rendered ? { ...rendered, renderer: "react" } : null;
 }
 
 /** There is no React Bluesky card to fall back to. */
@@ -388,11 +417,16 @@ export async function renderBlueskyCardPng(
   capture: Capture | undefined | null,
   fallbackAuthor: string | null | undefined,
   scheme: "light" | "dark",
-): Promise<RenderedCard | null> {
+): Promise<RenderedPostCard | null> {
   const native = await renderBlueskyPostPng(capture, fallbackAuthor, scheme);
-  return native
-    ? pad(native.png, scheme, TWEET_PAD_CSS, TWEET_RADIUS_CSS)
-    : null;
+  if (!native) return null;
+  const rendered = await pad(
+    native.png,
+    scheme,
+    TWEET_PAD_CSS,
+    TWEET_RADIUS_CSS,
+  );
+  return { ...rendered, renderer: "xeet" };
 }
 
 export async function renderTextCardPng(
@@ -413,6 +447,7 @@ export function renderSearchCardPng(
 
 export function disposeRenderCardWindow(): void {
   clearIdleDispose();
+  clearRenderCardPayloads();
   if (win && !win.isDestroyed()) win.destroy();
   win = null;
 }

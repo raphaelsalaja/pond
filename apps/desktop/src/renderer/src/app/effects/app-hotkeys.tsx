@@ -14,6 +14,7 @@ import {
   newTag,
   runNewAction,
 } from "@/features/library/components/new-menu/actions";
+import { gridTakes } from "@/features/library/lib/grid-commands";
 import type { LayoutValue } from "@/features/library/lib/view-prefs";
 import { ZOOM_DEFAULT } from "@/features/library/lib/zoom";
 import { commandMenu } from "@/features/library/state/command-menu";
@@ -74,6 +75,13 @@ function scrollActiveViewport(position: "top" | "bottom"): void {
   });
 }
 
+/** Runs a layout, sort, zoom or View Options command only while a grid shows its result. */
+function onGrid(run: () => void): () => void {
+  return () => {
+    if (gridTakes("view")) run();
+  };
+}
+
 function go(path: string): void {
   getAppHistory()?.push(path);
 }
@@ -98,7 +106,7 @@ export function AppHotkeys() {
   useEffect(() => {
     return window.pond.onShortcutAction((id) => {
       if (isEditableTarget()) return;
-      if (id === "view.layout-cycle") cycleLayout();
+      if (id === "view.layout-cycle" && gridTakes("view")) cycleLayout();
     });
   }, []);
   const shortcuts = useShortcutBindings();
@@ -216,27 +224,27 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "view.layout-waterfall"),
-        callback: () => setLayout("waterfall" satisfies LayoutValue),
+        callback: onGrid(() => setLayout("waterfall" satisfies LayoutValue)),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.layout-grid"),
-        callback: () => setLayout("grid"),
+        callback: onGrid(() => setLayout("grid")),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.layout-justified"),
-        callback: () => setLayout("justified"),
+        callback: onGrid(() => setLayout("justified")),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.layout-list"),
-        callback: () => setLayout("list"),
+        callback: onGrid(() => setLayout("list")),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.layout-cycle"),
-        callback: () => cycleLayout(),
+        callback: onGrid(cycleLayout),
         options: { ignoreInputs: true },
       },
       {
@@ -246,17 +254,17 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "view.zoom-in"),
-        callback: () => adjustZoom(20),
+        callback: onGrid(() => adjustZoom(20)),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.zoom-out"),
-        callback: () => adjustZoom(-20),
+        callback: onGrid(() => adjustZoom(-20)),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.zoom-reset"),
-        callback: () => setZoom(ZOOM_DEFAULT),
+        callback: onGrid(() => setZoom(ZOOM_DEFAULT)),
         options: { ignoreInputs: true },
       },
       {
@@ -274,22 +282,22 @@ export function AppHotkeys() {
       },
       {
         hotkey: bindingKeys(shortcuts, "view.options"),
-        callback: () => libraryHeader.togglePopover(),
+        callback: onGrid(() => libraryHeader.togglePopover()),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.display"),
-        callback: () => libraryHeader.togglePopover(),
+        callback: onGrid(() => libraryHeader.togglePopover()),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.sort-dir"),
-        callback: () => toggleSortDir(),
+        callback: onGrid(toggleSortDir),
         options: { ignoreInputs: true },
       },
       {
         hotkey: bindingKeys(shortcuts, "view.sort-key"),
-        callback: () => cycleSortKey(),
+        callback: onGrid(cycleSortKey),
         options: { ignoreInputs: true },
       },
       {

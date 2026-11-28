@@ -116,3 +116,32 @@ it("ignores a result that leaves because the scope changed", () => {
   expect(onLeave).not.toHaveBeenCalled();
   off();
 });
+
+it("withdraws the results so a Save opened elsewhere has no neighbors", async () => {
+  resultNavigation.setSource({ key: "grid", ids: ["a", "b"], total: 2 });
+  const left = vi.fn();
+  const stop = resultNavigation.watchDeparture("a", left);
+  const published = vi.fn();
+  const unsubscribe = resultNavigation.onNextSource(published);
+
+  resultNavigation.clearSource();
+
+  expect(published).toHaveBeenCalledOnce();
+  expect(resultNavigation.indexOf("a")).toBe(-1);
+  expect(resultNavigation.total()).toBe(0);
+  expect(await resultNavigation.next("a", 1)).toBeNull();
+  expect(left).not.toHaveBeenCalled();
+  stop();
+  unsubscribe();
+});
+
+it("does not announce withdrawing results that were never published", () => {
+  resultNavigation.clearSource();
+  const published = vi.fn();
+  const unsubscribe = resultNavigation.onNextSource(published);
+
+  resultNavigation.clearSource();
+
+  expect(published).not.toHaveBeenCalled();
+  unsubscribe();
+});
