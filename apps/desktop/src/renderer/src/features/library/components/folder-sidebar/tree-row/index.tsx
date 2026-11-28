@@ -1,6 +1,7 @@
 import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { IconCaretRight } from "@pond/icons";
 import type { Folder, SidebarBadgeStyle } from "@pond/schema/db";
 import { Button, cssVars } from "@pond/ui";
 import type { MenuItemSpec } from "@pond/ui";
@@ -86,7 +87,10 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
     ? `Add ${formatPlural(saveDropCount, { one: "Save", other: "Saves" })}`
     : undefined;
   const icon = (
-    <span style={colorCss ? { color: colorCss } : undefined}>
+    <span
+      className={styles.artwork}
+      style={colorCss ? { color: colorCss } : undefined}
+    >
       <FolderCover
         icon={props.folderIcon}
         coverSaveId={props.coverSaveId}
@@ -128,6 +132,7 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
         className={styles.trigger}
         data-hover-row={props.editing ? undefined : ""}
         data-folder-sortable={folder.id}
+        data-has-children={props.hasChildren || undefined}
         data-drop={
           props.folderDrop?.id === folder.id ? props.folderDrop.kind : undefined
         }
@@ -143,10 +148,11 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
           <Button
             icon
             size="xs"
-            variant="bare"
+            variant="ghost"
             className={styles.disclosure}
             aria-label={`${props.collapsed ? "Expand" : "Collapse"} ${folder.name}`}
             aria-expanded={!props.collapsed}
+            data-expanded={!props.collapsed || undefined}
             tabIndex={-1}
             onClick={(event) => {
               event.stopPropagation();
@@ -155,7 +161,9 @@ function FolderTreeRowInner(props: FolderTreeRowProps) {
                 ?.querySelector<HTMLElement>('[role="treeitem"]')
                 ?.focus();
             }}
-          />
+          >
+            <IconCaretRight size={10} className={styles.caret} aria-hidden />
+          </Button>
         ) : null}
         {props.editing ? (
           <FolderNameEditor

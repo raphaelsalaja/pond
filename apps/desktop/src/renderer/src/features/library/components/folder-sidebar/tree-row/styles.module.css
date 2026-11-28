@@ -42,7 +42,6 @@
   }
 }
 
-/* An invisible hit area over the row's icon; the icon itself shows open or closed. */
 .disclosure {
   --ds-focus-offset: 0px;
   position: absolute;
@@ -54,8 +53,45 @@
   width: 16px;
   min-width: 16px;
   height: 16px;
+  opacity: 0;
+  scale: 0.75;
+  transition:
+    opacity var(--ds-duration-fast) var(--ds-easing-standard),
+    scale var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &[data-expanded] .caret {
+    transform: rotate(90deg);
+  }
+}
+
+.caret {
+  transition: transform var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.artwork {
+  display: inline-flex;
+  transition: opacity var(--ds-duration-fast) var(--ds-easing-standard);
+}
+
+.trigger:hover .disclosure,
+.trigger:focus-within .disclosure {
+  opacity: 1;
+  scale: 1;
+}
+
+.trigger[data-has-children]:hover .artwork,
+.trigger[data-has-children]:focus-within .artwork {
+  opacity: 0;
 }
 
 [data-folder-drag] .disclosure {
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure,
+  .caret,
+  .artwork {
+    transition: none;
+  }
 }
