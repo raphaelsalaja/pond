@@ -7,6 +7,7 @@ import { currentLocation, openLibraryAt } from "@/app/test/library-router";
 import { libraryChrome } from "@/features/library/state/library-chrome";
 import { getViewState } from "@/features/library/state/view-store";
 import { selectOnlySave } from "@/features/saves";
+import { primarySelection, selection } from "@/features/saves/state/selection";
 import { bridge } from "@/shared/test/pond-bridge";
 import { MenuBridge } from "./menu-bridge";
 
@@ -80,5 +81,49 @@ describe("menu bridge inspector", () => {
       bridge.emit("onMenuAction", { id: "view.zoom-out", source: "menu" });
     });
     expect(getViewState().zoom).not.toBe(zoom);
+  });
+});
+
+describe("menu bridge Save commands", () => {
+  let host: HTMLDivElement;
+  let root: Root;
+  const revealed: Array<string> = [];
+
+  beforeEach(() => {
+    revealed.length = 0;
+    bridge.use({
+      query: { "settings.getPrefs": () => PrefsSchema.parse({}) },
+      revealSave: async (id) => {
+        revealed.push(id);
+        return { ok: true };
+      },
+    });
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    selectOnlySave("picked");
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    host.remove();
+    selection.clear();
+    primarySelection.set(null);
+  });
+
+  it.each([
+    ["the grid's selection", "/", ["picked"]],
+    ["the Save open over Downloads", "/downloads?save=open", ["open"]],
+    ["nothing on Downloads without an open Save", "/downloads", []],
+    ["nothing on Tags without an open Save", "/tags", []],
+  ])("reveals %s", async (_label, path, expected) => {
+    await openLibraryAt(path);
+    await act(async () => {
+      root.render(<MenuBridge />);
+    });
+    await act(async () => {
+      bridge.emit("onMenuAction", { id: "save.reveal", source: "menu" });
+    });
+    expect(revealed).toEqual(expected);
   });
 });

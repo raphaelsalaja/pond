@@ -66,6 +66,10 @@ export const inboxReview = {
   rewind(id: string): void {
     update((queue) => rewindQueue(queue, id));
   },
+  /** Moves the deck to a Save the viewer reached, so closing the viewer shows that Save's card. */
+  land(id: string): void {
+    update((queue) => jumpQueue(queue, queue.ids.indexOf(id)));
+  },
 };
 
 /** A selected notification or running-work row replaces the deck card in the Inbox pane until a Save is picked again. */

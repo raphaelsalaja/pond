@@ -104,6 +104,7 @@ export function LibraryView() {
   const paging = useSavePaging();
   const [folderViews] = usePrefs("folderViews");
   const folderId = nav.kind === "folder" ? nav.id : null;
+  const reviewing = nav.kind === "inbox";
   const pinnedIds = data.paging.pinnedIds;
   const { allIds: pagedAllIds, loadMore: loadMorePages } = data.paging;
   const sections = useMemo(
@@ -173,14 +174,17 @@ export function LibraryView() {
     if (unsettled) return;
     publishedKey.current = key;
     libraryViewContext.set(data.filteredIds, data.mode);
-    resultNavigation.setSource({
-      key,
-      total: data.paging.total - (collapsed ? pinnedCount : 0),
-      loadedIds: data.paging.loadedIds,
-      ids: visibleIds,
-      allIds,
-      loadMore: data.paging.loadMore,
-    });
+    /** Inbox review covers this grid and publishes its own queue, so the viewer steps through that instead. */
+    if (!reviewing) {
+      resultNavigation.setSource({
+        key,
+        total: data.paging.total - (collapsed ? pinnedCount : 0),
+        loadedIds: data.paging.loadedIds,
+        ids: visibleIds,
+        allIds,
+        loadMore: data.paging.loadMore,
+      });
+    }
     /** After setSource, so an open preview has already followed a departed Save to its neighbor. */
     reconcileSelection({
       key,
@@ -200,6 +204,7 @@ export function LibraryView() {
     data.paging.loadedIds,
     pinnedCount,
     reconcileSelection,
+    reviewing,
     visibleIds,
   ]);
 

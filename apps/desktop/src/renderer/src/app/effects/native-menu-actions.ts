@@ -33,6 +33,10 @@ import {
 import { saveLibraryBridge } from "@/features/saves/lib/library-bridge";
 import { rateSaves } from "@/features/saves/lib/rating";
 import { REVERSE_SEARCH_ENGINES } from "@/features/saves/lib/reverse-image-search";
+import {
+  requireSaveTargets,
+  routeOwnsSaveSelection,
+} from "@/features/saves/lib/save-targets";
 import { selectResults } from "@/features/saves/lib/select-results";
 import {
   clearTagsForSelection,
@@ -59,24 +63,6 @@ import { currentRouteMeta } from "@/shared/lib/route-meta";
 import { notify } from "@/shared/lib/toast";
 import { whatsNewDialog } from "@/shared/state/whats-new";
 
-function selectedIds(): Array<string> {
-  const selected = [...selection.snapshot()];
-  if (selected.length > 0) return selected;
-  const primary = primarySelection.get();
-  return primary ? [primary] : [];
-}
-
-function requireSelection(): Array<string> {
-  const ids = selectedIds();
-  if (ids.length === 0) {
-    notify({
-      id: "native-menu-selection",
-      title: "Select Saves first",
-    });
-  }
-  return ids;
-}
-
 function selectIds(ids: ReadonlyArray<string>): void {
   selection.set(ids);
   selection.setCursor(ids[0] ?? null);
@@ -95,7 +81,7 @@ function invertSaveSelection(): void {
 }
 
 async function exportPackage(kind: "eagle" | "pond"): Promise<void> {
-  const ids = requireSelection();
+  const ids = requireSaveTargets();
   if (ids.length === 0) return;
   if (kind === "eagle") {
     const result = await window.pond.query("saves.exportEaglePackage", { ids });
@@ -119,13 +105,13 @@ async function exportPackage(kind: "eagle" | "pond"): Promise<void> {
 }
 
 async function addToLastFolder(): Promise<void> {
-  const ids = requireSelection();
+  const ids = requireSaveTargets();
   if (ids.length === 0) return;
   await addSavesToLastUsedFolder(ids);
 }
 
 async function removeFromCurrentFolder(): Promise<void> {
-  const ids = requireSelection();
+  const ids = requireSaveTargets();
   if (ids.length === 0) return;
   const nav = saveLibraryBridge.getNav();
   if (nav?.kind !== "folder") {
@@ -178,9 +164,9 @@ function openSearch(scope: SearchScope): void {
 }
 
 function addTag(): void {
-  const ids = requireSelection();
+  const ids = requireSaveTargets();
   if (ids.length === 0) return;
-  openTagPicker();
+  openTagPicker(ids);
 }
 
 function createSmartFolderGroup(): void {
@@ -223,37 +209,37 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
   }
   const engine = reverseImageEngine(id);
   if (engine) {
-    const ids = requireSelection();
+    const ids = requireSaveTargets();
     if (ids.length > 0) void reverseImageSearchForSelection(ids, engine);
     return true;
   }
   const rating = ratingValue(id);
   if (rating !== null) {
-    const ids = requireSelection();
+    const ids = requireSaveTargets();
     if (ids.length > 0) void rateSaves(ids, rating);
     return true;
   }
 
   switch (id) {
     case "selection.select-all":
-      selectAllSaves();
+      if (routeOwnsSaveSelection()) selectAllSaves();
       return true;
     case "selection.clear":
-      selectIds([]);
+      if (routeOwnsSaveSelection()) selectIds([]);
       return true;
     case "selection.invert":
-      invertSaveSelection();
+      if (routeOwnsSaveSelection()) invertSaveSelection();
       return true;
     case "library.new-smart-folder-group":
       createSmartFolderGroup();
       return true;
     case "save.export-files": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void exportSelectionFiles(ids);
       return true;
     }
     case "save.export-converted": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) saveLibraryBridge.openConversion(ids, 0);
       return true;
     }
@@ -264,49 +250,49 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       void exportPackage("pond");
       return true;
     case "save.export-csv": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void exportSelectionCsv(ids);
       return true;
     }
     case "save.copy-name": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void copyNamesForSelection(ids);
       return true;
     }
     case "save.copy-file-path": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void copyFilePathsForSelection(ids);
       return true;
     }
     case "save.copy-pond-link": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) {
         void window.pond.query("saves.copyInternalLinks", { ids });
       }
       return true;
     }
     case "organize.copy-tags": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void copyTagsForSelection(ids);
       return true;
     }
     case "organize.paste-tags": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void pasteTagsForSelection(ids);
       return true;
     }
     case "save.copy-media": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void copyFilesForSelection(ids);
       return true;
     }
     case "save.copy-url": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void copyUrlsForSelection(ids);
       return true;
     }
     case "save.copy-id": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 1) void copyIdsForSelection(ids);
       else if (ids[0]) void copyId(ids[0]);
       return true;
@@ -321,13 +307,13 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       openSearch("all");
       return true;
     case "organize.add-to-folders": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) saveLibraryBridge.openFolderPicker(ids);
       return true;
     }
     case "organize.add-to-multiple-folders":
     case "organize.add-to-recent-folder": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) {
         saveLibraryBridge.openFolderPicker(
           ids,
@@ -337,7 +323,7 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       return true;
     }
     case "organize.favorite": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void toggleFavorite(ids);
       return true;
     }
@@ -351,7 +337,7 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       if (gridTakes("search")) resetFilters();
       return true;
     case "find.visual-search": {
-      const id = requireSelection()[0];
+      const id = requireSaveTargets()[0];
       const save = id ? pool.get(id) : null;
       if (save) {
         saveLibraryBridge.setVisualProbe({
@@ -365,17 +351,17 @@ export function handleNativeMenuAction(id: MenuActionId): boolean {
       addTag();
       return true;
     case "organize.mark-processed": {
-      const ids = waitingInInbox(requireSelection());
+      const ids = waitingInInbox(requireSaveTargets());
       if (ids.length > 0) void markProcessed(ids);
       return true;
     }
     case "organize.snooze": {
-      const ids = waitingInInbox(requireSelection());
+      const ids = waitingInInbox(requireSaveTargets());
       if (ids.length > 0) openSnoozeDialog(ids);
       return true;
     }
     case "organize.clear-tags": {
-      const ids = requireSelection();
+      const ids = requireSaveTargets();
       if (ids.length > 0) void clearTagsForSelection(ids);
       return true;
     }

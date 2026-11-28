@@ -61,12 +61,16 @@ import {
 } from "@/features/saves/lib/actions";
 import { confirmEmptyTrash } from "@/features/saves/lib/empty-trash";
 import {
+  requirePrimarySaveTarget,
+  requireSaveTargets,
+  saveTargets,
+} from "@/features/saves/lib/save-targets";
+import {
   moveSavesToTrash,
   moveSelectionToTrash,
 } from "@/features/saves/lib/triage";
 import { inspect } from "@/features/saves/state/inspect";
 import { pool } from "@/features/saves/state/pool";
-import { primarySelection, selection } from "@/features/saves/state/selection";
 import { CONNECTABLE, WATCH_MENU_SOURCES } from "@/features/sources/lib/create";
 import { openSources } from "@/features/sources/lib/open";
 import { pickWatchedFolder } from "@/features/sources/lib/watched-folder";
@@ -388,7 +392,7 @@ export function MenuBridge() {
         }
 
         case "save.reveal": {
-          const sid = primarySelection.get();
+          const sid = requirePrimarySaveTarget();
           if (!sid) return;
           void window.pond.revealSave(sid);
           return;
@@ -409,7 +413,7 @@ export function MenuBridge() {
         }
 
         case "save.copy-id": {
-          const sid = primarySelection.get();
+          const sid = requirePrimarySaveTarget();
           if (!sid) return;
           void copyId(sid);
           return;
@@ -422,13 +426,14 @@ export function MenuBridge() {
           return;
         }
 
-        case "save.add-tag":
-          if (!primarySelection.get()) return;
-          openTagPicker();
+        case "save.add-tag": {
+          const ids = requireSaveTargets();
+          if (ids.length > 0) openTagPicker(ids);
           return;
+        }
 
         case "save.refresh": {
-          const ids = selection.snapshot();
+          const ids = saveTargets();
           if (ids.length > 1) {
             void (async () => {
               for (const sid of ids) {
@@ -444,7 +449,7 @@ export function MenuBridge() {
         }
 
         case "save.trash": {
-          const ids = selection.snapshot();
+          const ids = saveTargets();
           if (ids.length > 1) {
             void moveSelectionToTrash(ids);
             return;
@@ -478,8 +483,9 @@ export function MenuBridge() {
   return null;
 }
 
+/** Off a surface that owns Save selection, this is the open Save or nothing. */
 function currentSave() {
-  const id = primarySelection.get();
+  const id = requirePrimarySaveTarget();
   if (!id) return null;
   return pool.get(id) ?? null;
 }

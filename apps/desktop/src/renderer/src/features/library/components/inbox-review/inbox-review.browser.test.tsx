@@ -16,7 +16,12 @@ import type { LibraryTestRouter } from "@/app/test/library-router";
 import { folders } from "@/features/library/state/folders";
 import { inboxReview } from "@/features/library/state/inbox-review";
 import { normalise, SavePatchSchema } from "@/features/saves/lib/reconcile";
-import { closeSave, openSave } from "@/features/saves/navigation";
+import {
+  closeSave,
+  openSave,
+  resultNavigation,
+  stepSave,
+} from "@/features/saves/navigation";
 import { pool } from "@/features/saves/state/pool";
 import { ToastHost } from "@/shared/components/toast-host";
 import { bridge } from "@/shared/test/pond-bridge";
@@ -29,7 +34,11 @@ let router: LibraryTestRouter;
 const bulkEdits: Array<BulkEdit> = [];
 let pageQueries = 0;
 
-function addInboxSave(id: string, title: string) {
+function addInboxSave(
+  id: string,
+  title: string,
+  inboxState: "review" | "processed" = "review",
+) {
   const save = normalise(
     SavePatchSchema.parse({
       id,
@@ -52,7 +61,7 @@ function addInboxSave(id: string, title: string) {
   if (!save) {
     throw new Error("Invalid Save fixture");
   }
-  pool.upsert({ ...save, inboxState: "review" });
+  pool.upsert({ ...save, inboxState });
 }
 
 function keyCode(key: string): string {
@@ -167,6 +176,7 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   inboxReview.exit();
+  resultNavigation.clearSource();
   pool.clear();
 });
 
@@ -265,4 +275,49 @@ it("closes on Escape and returns to the Library", async () => {
   await act(async () => press("Escape"));
   expect(currentLocation(router).pathname).toBe("/");
   expect(stage()).toBeNull();
+});
+
+it("steps the Save viewer through the review queue and lands the deck where it stopped", async () => {
+  resultNavigation.setSource({ key: "grid", ids: ["x", "b", "a"] });
+  await mount();
+  expect(progress()).toBe("1 / 2");
+
+  await act(async () => openSave("a"));
+  expect(resultNavigation.indexOf("a")).toBe(0);
+  expect(resultNavigation.total()).toBe(2);
+
+  await act(async () => {
+    const moved = new Promise<void>((resolve) => {
+      const stop = router.history.subscribe(() => {
+        stop();
+        resolve();
+      });
+    });
+    stepSave("a", 1);
+    await moved;
+  });
+  expect(currentLocation(router).search).toMatchObject({ save: "b" });
+
+  await act(async () => closeSave());
+  expect(progress()).toBe("2 / 2");
+  expect(topCard()?.textContent).toContain("Second");
+});
+
+it("drops a Save processed from the viewer out of the queue it steps through", async () => {
+  await mount();
+  await act(async () => openSave("a"));
+  expect(resultNavigation.indexOf("b")).toBe(1);
+
+  await act(async () => addInboxSave("a", "First", "processed"));
+  expect(resultNavigation.indexOf("a")).toBe(-1);
+  expect(resultNavigation.indexOf("b")).toBe(0);
+});
+
+it("hands previous and next back when review closes", async () => {
+  await mount();
+  expect(resultNavigation.key()).toBe("inbox-review:review");
+
+  await act(async () => press("Escape"));
+  expect(resultNavigation.key()).toBeUndefined();
+  expect(resultNavigation.total()).toBe(0);
 });

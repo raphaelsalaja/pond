@@ -46,6 +46,11 @@ export interface RouteMeta {
   crumb: RouteCrumb | null;
   params: RouteParams;
   routeId: string | null;
+  /**
+   * Whether the route renders Saves you can select: the grid, Inbox review and Canvas. Only those keep the
+   * Save Details column, so every other route opts out of it and Save commands there act on the open Save alone.
+   */
+  ownsSaveSelection: boolean;
 }
 
 function isRouteId(value: unknown): value is string {
@@ -69,9 +74,10 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
   }
   const data = leaf?.options.staticData;
   const routeId: unknown = leaf?.id;
+  const shellDetails = details === undefined ? "save" : details;
   return {
     surface: surface ?? (data?.railPage ? "rail" : "page"),
-    details: details === undefined ? "save" : details,
+    details: shellDetails,
     railPage: data?.railPage ?? null,
     railOnly: data?.sidebar === "rail",
     sidebarHidden: data?.sidebar === null,
@@ -79,6 +85,7 @@ function resolve(router: AnyRouter, pathname: string): RouteMeta {
     crumb: data?.crumb ?? null,
     params,
     routeId: isRouteId(routeId) ? routeId : null,
+    ownsSaveSelection: shellDetails === "save",
   };
 }
 

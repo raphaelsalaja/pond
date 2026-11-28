@@ -146,8 +146,10 @@ function openAfterMenuCloses(open: () => void): void {
   requestAnimationFrame(attempt);
 }
 
-export function openTagPicker(): void {
-  const ids = selectedSaveIds();
+/** Tags `ids`, or the selection when a caller has not resolved its own Saves. */
+export function openTagPicker(
+  ids: ReadonlyArray<string> = selectedSaveIds(),
+): void {
   if (ids.length === 0) return;
   const primary = primarySelection.get();
   const anchorId =

@@ -26,17 +26,18 @@ export function Library() {
   const saveOpen = saveId !== null;
   const grid = surface === "grid";
 
+  const reviewing = grid && nav?.kind === "inbox";
   const wasOpen = useRef(saveOpen);
-  /** Focus only lands once this commit lifts `inert` from the grid, not when the URL changes. */
+  /** Focus only lands once this commit lifts `inert` from the grid, not when the URL changes. Inbox review keeps the grid covered and focuses its own deck. */
   useLayoutEffect(() => {
     const closed = wasOpen.current && !saveOpen;
     wasOpen.current = saveOpen;
-    if (!closed || !grid) return;
+    if (!closed || !grid || reviewing) return;
     const cursor = selection.getCursor();
     if (cursor) void resultNavigation.reveal(cursor, { focus: true });
-  }, [saveOpen, grid]);
+  }, [saveOpen, grid, reviewing]);
 
-  const covered = saveOpen || (grid && nav?.kind === "inbox");
+  const covered = saveOpen || reviewing;
 
   return (
     <>
