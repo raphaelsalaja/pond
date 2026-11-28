@@ -22,6 +22,7 @@ async function verify(
     runBinaryVersion = runVersionProbe,
     runOnnx = runOnnxSmoke,
     readArchs = lipoArchs,
+    runRenderSmoke = runPostRendererSmoke,
   } = {},
 ) {
   const platform = normalizePlatform(context.electronPlatformName);
@@ -35,7 +36,20 @@ async function verify(
   if (platform === "win32") verifySharpWindowsRuntime(resourcesDir, arch);
   if (platform === "win32" || platform === "linux") assertAppIcon(context);
   if (platform === "darwin") assertIconCatalog(resourcesDir);
-  if (platform === "darwin") assertPostRenderer(resourcesDir);
+  if (platform === "darwin") {
+    assertPostRenderer(resourcesDir);
+    // It reads Arial, Hiragino and Apple Color Emoji from the running Mac.
+    if (process.platform === "darwin") {
+      const renderDir = nodePath.join(resourcesDir, "render");
+      const result = runRenderSmoke(renderDir);
+      if (result.error || result.status !== 0) {
+        throw new Error(
+          `[pond verify] packaged post renderer at ${renderDir} failed to draw X, Threads and Bluesky posts: ` +
+            `${result.error?.message ?? (lastLines(result.stdout) || `exit status ${result.status}`)}`,
+        );
+      }
+    }
+  }
   assertTintIcons(resourcesDir);
   const onnxShipped = verifyOnnxRuntime(resourcesDir, platform, arch);
   const ffmpegPath = nodePath.join(resourcesDir, "bin", ffmpegName(platform));
@@ -217,6 +231,32 @@ function assertPostRenderer(resourcesDir) {
       `[pond verify] post renderer fonts in ${fontsDir} are missing ${missing.join(", ")}. ${hint}`,
     );
   }
+}
+
+const RENDER_PACKAGE = nodePath.resolve(__dirname, "../../../packages/render");
+
+/** Renders recorded posts through the packed wasm and fonts with `@pond/render`'s `smoke:packaged`. */
+function runPostRendererSmoke(renderDir) {
+  const vitest = nodePath.join(
+    nodePath.dirname(
+      require.resolve("vitest/package.json", { paths: [RENDER_PACKAGE] }),
+    ),
+    "vitest.mjs",
+  );
+  return spawnSync(
+    process.execPath,
+    [vitest, "run", "--config", "vitest.smoke.config.ts"],
+    {
+      cwd: RENDER_PACKAGE,
+      encoding: "utf8",
+      env: { ...process.env, POND_RENDER_DIR: renderDir },
+      timeout: 120_000,
+    },
+  );
+}
+
+function lastLines(output, count = 30) {
+  return (output ?? "").trim().split("\n").slice(-count).join("\n");
 }
 
 const ARCH_NAMES = ["ia32", "x64", "armv7l", "arm64", "universal"];
