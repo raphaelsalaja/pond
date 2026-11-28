@@ -1,0 +1,80 @@
+/* Three columns, so the links stay centred on the page whatever the brand and actions measure. */
+.root {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: var(--ds-space-xl);
+  align-items: center;
+  width: 100%;
+  min-height: 64px;
+}
+
+.brand {
+  --ds-focus-offset: var(--ds-focus-inset);
+  display: inline-flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  justify-self: start;
+  font-size: var(--ds-text-title);
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-foreground-primary);
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+
+  &:not(:focus-visible) {
+    outline: var(--ds-focus-width) solid transparent;
+  }
+}
+
+.list {
+  display: flex;
+  grid-column: 2;
+  gap: var(--ds-space-xs);
+  align-items: center;
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+}
+
+.link {
+  --ds-focus-offset: var(--ds-focus-inset);
+  display: inline-flex;
+  align-items: center;
+  height: var(--ds-size-sm);
+  padding: 0 var(--ds-space-md);
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
+  white-space: nowrap;
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+  transition:
+    color var(--ds-duration-fast) var(--ds-easing-standard),
+    background var(--ds-duration-fast) var(--ds-easing-standard),
+    outline-color var(--ds-duration-snap) var(--ds-easing-snap);
+
+  &:hover {
+    color: var(--ds-foreground-primary);
+    background: var(--ds-surface-primary);
+  }
+
+  &[data-current] {
+    color: var(--ds-foreground-primary);
+  }
+
+  &:not(:focus-visible, [data-demo-state="focus"]) {
+    outline: var(--ds-focus-width) solid transparent;
+  }
+}
+
+.actions {
+  display: flex;
+  grid-column: 3;
+  gap: var(--ds-space-md);
+  align-items: center;
+  justify-self: end;
+}

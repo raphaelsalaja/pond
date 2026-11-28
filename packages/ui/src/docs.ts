@@ -23,6 +23,7 @@ import { docs as loader } from "./loader/examples";
 import { docs as logo } from "./logo/examples";
 import { docs as menu } from "./menu/examples";
 import { docs as message } from "./message/examples";
+import { docs as navBar } from "./nav-bar/examples";
 import { docs as numberField } from "./number-field/examples";
 import { docs as paneHeader } from "./pane-header/examples";
 import { docs as pickerPanel } from "./picker-panel/examples";
@@ -93,6 +94,7 @@ export const COMPONENT_DOCS: ReadonlyArray<ComponentDocs> = [
   logo,
   menu,
   message,
+  navBar,
   numberField,
   paneHeader,
   pickerPanel,

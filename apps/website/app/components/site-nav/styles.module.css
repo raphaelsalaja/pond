@@ -1,0 +1,16 @@
+/* Over the top of the hero, so it shares the hero's surface, and lined up with the hero's text column. */
+.dock {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  padding-inline: max(var(--page-inset), calc((100vw - 1320px) / 2));
+}
+
+/* A phone keeps the name and Download; the pages are in the footer. */
+.list {
+  @media (max-width: 520px) {
+    display: none;
+  }
+}

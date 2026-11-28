@@ -1,0 +1,125 @@
+/*
+ * The words take a fixed left column; the window column is wider than what is left of the page,
+ * so the window runs off the right edge. Off-white down to the window's fade, then white.
+ */
+.hero {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 72px;
+  align-items: center;
+  min-height: min(900px, 100dvh);
+  padding: 96px 0 0 max(var(--page-inset), calc((100vw - 1320px) / 2));
+  overflow: hidden;
+  background: linear-gradient(
+    to bottom,
+    var(--ds-background-secondary) 80%,
+    var(--ds-background-primary)
+  );
+
+  @media (max-width: 960px) {
+    grid-template-columns: minmax(0, 1fr);
+    /* Leaves room for the update pill above the window. */
+    gap: 72px;
+    min-height: 0;
+    /* Clears the 64px nav bar above it. */
+    padding: 104px 0 0 var(--page-inset);
+  }
+}
+
+.intro {
+  display: flex;
+  flex-direction: column;
+
+  /* Stacked, the hero has no right padding of its own, so the words keep the page inset. */
+  @media (max-width: 960px) {
+    padding-right: var(--page-inset);
+  }
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(28px, 2.1vw, 30px);
+  font-weight: var(--ds-weight-semibold);
+  line-height: 1.1;
+}
+
+.line {
+  max-width: 340px;
+  margin: var(--ds-space-lg) 0 0;
+  font-size: var(--ds-text-heading);
+  line-height: var(--ds-leading-title);
+  color: var(--ds-foreground-secondary);
+  text-wrap: pretty;
+}
+
+.downloads {
+  margin-top: var(--ds-space-xl);
+}
+
+/*
+ * 1280 wide by 700 of the window's 796 shows. The capture carries 72px of shadow room either side
+ * of its 1280px window and 56px above it, so the image is 1424 / 1280 of the slot, pulled up and
+ * left by that room. Margins in percent follow the slot's width.
+ */
+.window {
+  position: relative;
+  align-self: end;
+  width: 1280px;
+  /* Without it the image's height becomes the slot's minimum and the ratio is ignored. */
+  min-height: 0;
+  aspect-ratio: 1280 / 700;
+
+  @media (max-width: 960px) {
+    width: 720px;
+  }
+}
+
+/* The slot's bottom sits at 79% of the image's height, so the fade ends there. */
+.capture {
+  display: block;
+  width: 111.25%;
+  max-width: none;
+  height: auto;
+  margin: -4.375% 0 0 -5.625%;
+  user-select: none;
+  mask-image: linear-gradient(to bottom, #000 64%, transparent 79%);
+}
+
+/* The latest release as plain text above the window, starting at its left edge. */
+.update {
+  position: absolute;
+  bottom: calc(100% + var(--ds-space-xl));
+  left: 0;
+  display: inline-flex;
+  gap: var(--ds-space-md);
+  align-items: center;
+  max-width: min(720px, calc(100vw - 2 * var(--page-inset)));
+  height: var(--ds-size-md);
+  font-size: var(--ds-text-body);
+  color: var(--ds-foreground-tertiary);
+  white-space: nowrap;
+  text-decoration: none;
+  border-radius: var(--ds-radius-sm);
+  transition: color var(--ds-duration-fast) var(--ds-easing-standard);
+
+  &:hover {
+    color: var(--ds-foreground-secondary);
+  }
+
+  & > svg {
+    flex-shrink: 0;
+  }
+}
+
+.version {
+  flex-shrink: 0;
+  font-weight: var(--ds-weight-semibold);
+  color: var(--ds-foreground-primary);
+}
+
+.headline {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

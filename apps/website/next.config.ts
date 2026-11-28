@@ -18,6 +18,10 @@ const config: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@pond/ui"],
   poweredByHeader: false,
+  /** 90 keeps the small text in captured app scenes sharp. */
+  images: {
+    qualities: [75, 90],
+  },
   /** TypeScript 7 drops the JS compiler API; next build must shell out to tsc. */
   experimental: {
     useTypeScriptCli: true,

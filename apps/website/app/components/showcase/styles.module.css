@@ -1,0 +1,56 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  min-height: 320px;
+  overflow: hidden;
+  background: var(--ds-background-primary);
+  border-radius: 12px;
+  box-shadow: var(--ds-shadow-border);
+
+  @media (max-width: 640px) {
+    grid-template-rows: auto 260px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 26px;
+}
+
+.body {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 26px;
+  color: var(--ds-foreground-tertiary);
+  text-wrap: pretty;
+}
+
+/* The app sits on the page's second background, cropped by the card. */
+.picture {
+  position: relative;
+  overflow: hidden;
+  background: var(--ds-background-secondary);
+  border-left: var(--ds-border-width) solid var(--ds-border-subtle);
+
+  @media (max-width: 640px) {
+    border-top: var(--ds-border-width) solid var(--ds-border-subtle);
+    border-left: none;
+  }
+}

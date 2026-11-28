@@ -1,0 +1,88 @@
+.root {
+  padding: 48px max(var(--page-inset), calc((100vw - 1320px) / 2));
+  border-bottom: var(--ds-border-width) solid var(--ds-border-subtle);
+}
+
+/* The label and the row side by side, stacked on phones. */
+.inner {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: var(--ds-space-xl);
+  }
+}
+
+.label {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  height: var(--ds-size-md);
+  padding: 0 var(--ds-space-lg);
+  margin: 0;
+  font-size: var(--ds-text-body);
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-tertiary);
+  white-space: nowrap;
+  border: var(--ds-border-width) solid var(--ds-border-subtle);
+  border-radius: var(--ds-radius-md);
+}
+
+/*
+ * Two copies of the row slide left by one copy's width and repeat, so the loop never shows a
+ * seam. Both ends fade out over 80px.
+ */
+.marquee {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  height: 60px;
+  overflow: hidden;
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 80px,
+    #000 calc(100% - 80px),
+    transparent
+  );
+
+  &:hover > .track {
+    animation-play-state: paused;
+  }
+}
+
+.track {
+  display: flex;
+  flex-shrink: 0;
+  gap: 80px;
+  align-items: center;
+  padding: 0 80px 0 0;
+  margin: 0;
+  list-style: none;
+  animation: scroll 40s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes scroll {
+  to {
+    translate: -100% 0;
+  }
+}
+
+.item {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* One near-black for every mark, so no single brand colour pulls the eye. */
+.mark {
+  display: block;
+  opacity: 0.85;
+}

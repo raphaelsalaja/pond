@@ -1,0 +1,89 @@
+/* The gaps show the grid's background, which draws the rule between the cards. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--ds-border-width);
+  overflow: hidden;
+  background: var(--ds-border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--ds-shadow-border);
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px;
+  background: var(--ds-background-primary);
+
+  &[data-tint] {
+    background: var(--ds-background-secondary);
+  }
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.name {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 16px;
+  font-weight: var(--ds-weight-medium);
+  color: var(--ds-foreground-secondary);
+}
+
+.heart {
+  color: #e5484d;
+}
+
+.price {
+  font-size: 30px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 38px;
+  letter-spacing: -0.02em;
+}
+
+.body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 26px;
+  color: var(--ds-foreground-secondary);
+  text-wrap: pretty;
+}
+
+.checks {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 15px;
+  color: var(--ds-foreground-secondary);
+}
+
+.tick {
+  flex: none;
+  color: var(--ds-foreground-tertiary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

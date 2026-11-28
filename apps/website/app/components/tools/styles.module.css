@@ -1,0 +1,52 @@
+/* The gaps show the grid's background, which draws the rules between cells. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-border-width);
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  list-style: none;
+  background: var(--ds-border-subtle);
+  border-radius: 12px;
+  box-shadow: var(--ds-shadow-border);
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tool {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+  background: var(--ds-background-primary);
+}
+
+.icon {
+  color: var(--ds-foreground-secondary);
+}
+
+.words {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 26px;
+}
+
+.body {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 26px;
+  color: var(--ds-foreground-tertiary);
+  text-wrap: pretty;
+}

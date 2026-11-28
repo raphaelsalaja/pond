@@ -20,16 +20,6 @@
 
 :root {
   --page-inset: 36px;
-  --splash-delay: 200ms;
-  --splash-hold: 1.4s;
-  --splash-fly: 0.7s;
-  --splash-land: calc(
-    var(--splash-delay) + var(--splash-hold) + var(--splash-fly)
-  );
-}
-
-:root:has([data-splash-seen]) {
-  --splash-land: 0s;
 }
 
 /* The page uses one text size; hierarchy comes from weight and color. */
@@ -65,10 +55,6 @@ main {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
-    --splash-land: 0s;
-  }
-
   *,
   *::before,
   *::after {

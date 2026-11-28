@@ -1,0 +1,69 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 64px 32px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+
+  @media (max-width: 640px) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  margin-bottom: 4px;
+  color: var(--ds-foreground-secondary);
+}
+
+.marks {
+  display: flex;
+  gap: 8px;
+}
+
+.mark {
+  width: 28px;
+  height: 28px;
+  overflow: hidden;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 0.5px oklch(0 0 0 / 0.08);
+}
+
+.words {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 26px;
+}
+
+.body {
+  margin: 0;
+  font-size: 18px;
+  font-weight: var(--ds-weight-medium);
+  line-height: 26px;
+  color: var(--ds-foreground-tertiary);
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
