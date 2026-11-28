@@ -85,6 +85,7 @@ beforeEach(() => {
           discovering: false,
           failures: [],
         },
+        missingVideos: [],
       }),
     },
   });

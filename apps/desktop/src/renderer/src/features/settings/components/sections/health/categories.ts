@@ -7,6 +7,7 @@ import type {
 } from "@shared/library-health-contracts";
 import type { LibraryRepairKind } from "@shared/library-repair-contracts";
 import type { DownloadHealthRow } from "@/features/downloads/health";
+import { humanizeError } from "@/features/downloads/health";
 import type { EnrichmentFailure } from "@/features/enrichment/status";
 import { formatBytes, formatNumber, formatPlural } from "@/shared/lib/format";
 
@@ -35,7 +36,13 @@ export type HealthCategoryId =
   | "processing"
   | "downloads";
 
-export type HealthResolution = "repair" | "retry" | "wait" | "user";
+export type HealthResolution =
+  | "repair"
+  | "retry"
+  | "wait"
+  | "user"
+  | "trash"
+  | "download";
 
 export interface HealthEntry {
   id: string;
@@ -97,6 +104,8 @@ export const RESOLUTION_LABELS = {
   retry: "Retry it from this page.",
   wait: "Pond tries again on its own.",
   user: "Needs you to fix it outside Pond.",
+  trash: "Move it to Trash from this page.",
+  download: "Download the video from this page.",
 } satisfies Record<HealthResolution, string>;
 
 /** Worst first, so a category takes the status of its most urgent entry. */
@@ -202,21 +211,21 @@ const INTEGRITY = {
 >;
 
 function integrityEntry(issue: HealthIntegrityIssue): HealthEntry {
-  const userFix = issue.kind === "invalid-content";
+  const invalidContent = issue.kind === "invalid-content";
   const duplicate = issue.kind === "eagle-previews";
   return {
     id: `${issue.kind}:${issue.saveId}`,
     saveId: issue.saveId,
     title: issue.title?.trim() || issue.saveId,
     status: "damaged",
-    resolution: "repair",
+    resolution: invalidContent ? "trash" : "repair",
     summary: issue.summary,
     expected: INTEGRITY[issue.kind].expected,
     found: duplicate
       ? "A second Save holding only the preview."
       : foundFromFiles(issue.files),
-    reason: userFix
-      ? `${issue.detail} Repair moves it to Trash. Restore the files from a backup first to keep it.`
+    reason: invalidContent
+      ? `${issue.detail} Move it to Trash only if you don't need this Save. Restore the files from a backup first to keep it.`
       : duplicate
         ? `${issue.detail} Moving it to Trash leaves the original untouched.`
         : issue.detail,
@@ -582,6 +591,12 @@ function downloadStatus(item: DownloadHealthRow): HealthStatus | null {
   }
 }
 
+function missingVideoSummary(error: string, saveId: string): string {
+  const summary = humanizeError(error);
+  const suffix = ` for ${saveId}`;
+  return summary.endsWith(suffix) ? summary.slice(0, -suffix.length) : summary;
+}
+
 function downloadResolution(
   item: DownloadHealthRow,
   status: HealthStatus,
@@ -625,6 +640,32 @@ function downloadsCategory(input: HealthInput): HealthCategory {
         row.status === "failed" || row.status === "dead"
           ? null
           : (row.nextRunAt ?? null),
+      repair: null,
+      openable: true,
+    });
+  }
+  const activeSaveIds = new Set(entries.map((entry) => entry.saveId));
+  for (const missing of input.overview?.missingVideos ?? []) {
+    if (activeSaveIds.has(missing.saveId)) continue;
+    entries.push({
+      id: `missing-video:${missing.saveId}`,
+      saveId: missing.saveId,
+      title:
+        missing.title?.trim() || input.title(missing.saveId) || missing.saveId,
+      status: "terminal",
+      resolution: "download",
+      summary: missingVideoSummary(missing.error, missing.saveId),
+      expected: "Every video downloaded and saved.",
+      found:
+        missing.found === 0
+          ? "No video file."
+          : `${formatNumber(missing.found)} of ${formatNumber(missing.expected)} videos.`,
+      reason:
+        "Pond stopped retrying after the last attempt. Download Video starts it again.",
+      originals: "unknown",
+      files: [],
+      attempts: { count: missing.attempts, max: missing.maxAttempts },
+      nextAttemptAt: null,
       repair: null,
       openable: true,
     });

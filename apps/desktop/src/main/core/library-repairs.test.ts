@@ -51,7 +51,7 @@ function createFixture() {
         source: "web",
         sourceId: "empty",
         url: "https://example.com/empty",
-        files: [],
+        files: [{ kind: "image", path: "missing.png", size: 4, sha256: "sha" }],
       },
     ],
     getSave: async () => null,
@@ -128,7 +128,7 @@ describe("Library repair previews", () => {
       source: "web",
       sourceId: "empty",
       url: "https://example.com/empty",
-      files: [],
+      files: [{ kind: "image", path: "missing.png", size: 4, sha256: "sha" }],
       deletedAt: null,
     };
     const committed: Array<Array<Transaction>> = [];
@@ -178,6 +178,47 @@ describe("Library repair previews", () => {
       skipped: 0,
       undoRecorded: true,
     });
+  });
+
+  it("doesn't offer Trash for a Save whose source format has no original file", async () => {
+    const row: RepairSave = {
+      id: "repo-save",
+      title: "Repository Save",
+      source: "github",
+      sourceId: "repo",
+      url: "https://github.com/example/repo",
+      files: [
+        { kind: "article", path: "repo.html", size: 4, sha256: "article" },
+        { kind: "avatar", path: "avatar.png", size: 4, sha256: "avatar" },
+      ],
+      deletedAt: null,
+    };
+    const service = createLibraryRepairService({
+      now: () => 1000,
+      libraryId: () => "pond",
+      root: () => "/library",
+      integrityRuntime: {
+        root: () => "/library",
+        listSaves: async () => [row],
+        getSave: async () => row,
+        inspectPayload: async () => ({
+          ok: true,
+          size: 4,
+          sha256: "sha",
+          reason: "ok",
+        }),
+        canRenderThumbnail: async () => false,
+        readInfo: async () => ({ status: "missing" }),
+      },
+      commit: async () => {},
+      recordUndo: () => {},
+      repairMetadata: async () => {},
+    });
+
+    const preview = await service.preview({ kind: "invalid-content" });
+
+    expect(preview.issues).toEqual([]);
+    expect(preview.confirmation.movesToTrash).toBe(false);
   });
 
   it("moves Eagle preview duplicates to Trash and skips one whose original left", async () => {

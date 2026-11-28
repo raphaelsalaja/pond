@@ -40,5 +40,8 @@ describe("humanizeError", () => {
     expect(humanizeError("TransientError: fetch_blobs: no media")).toBe(
       "No media",
     );
+    expect(humanizeError("fetch-video-ytdlp: no video produced for save")).toBe(
+      "No video produced for save",
+    );
   });
 });

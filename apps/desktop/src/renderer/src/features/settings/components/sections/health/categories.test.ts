@@ -98,6 +98,18 @@ const CHECK: LibraryHealthCheck = {
   indexError: null,
 };
 
+const MISSING_VIDEOS = [
+  {
+    saveId: "video-stopped",
+    title: "Stopped Video",
+    expected: 1,
+    found: 0,
+    error: "fetch-video-ytdlp: no video produced for video-stopped",
+    attempts: 5,
+    maxAttempts: 5,
+  },
+];
+
 function row(
   status: DownloadRow["status"],
   extra: Partial<DownloadRow> = {},
@@ -171,6 +183,7 @@ describe("Library Health categories", () => {
       check: CHECK,
       job: null,
       media: MEDIA,
+      missingVideos: [],
     };
     const categories = buildHealthCategories(input({ overview }));
     const originals = category(categories, "originals");
@@ -217,6 +230,7 @@ describe("Library Health categories", () => {
           },
         ],
       },
+      missingVideos: [],
     };
     const posters = category(
       buildHealthCategories(input({ overview })),
@@ -296,6 +310,59 @@ describe("Library Health categories", () => {
     ).toBe(50);
     expect(downloads.status).toBe("terminal");
     expect(downloads).toMatchObject({ attention: 4, progress: 3 });
+  });
+
+  it("lists a stopped video download as a downloadable terminal row", () => {
+    const downloads = category(
+      buildHealthCategories(
+        input({
+          overview: {
+            check: CHECK,
+            job: null,
+            media: MEDIA,
+            missingVideos: MISSING_VIDEOS,
+          },
+        }),
+      ),
+      "downloads",
+    );
+    expect(downloads.entries).toHaveLength(1);
+    expect(downloads.entries[0]).toMatchObject({
+      saveId: "video-stopped",
+      status: "terminal",
+      resolution: "download",
+      summary: "No video produced",
+      found: "No video file.",
+      attempts: { count: 5, max: 5 },
+    });
+    expect(downloads).toMatchObject({
+      status: "terminal",
+      attention: 1,
+      progress: 0,
+    });
+  });
+
+  it("doesn't duplicate a stopped video once its download is live again", () => {
+    const downloads = category(
+      buildHealthCategories(
+        input({
+          overview: {
+            check: CHECK,
+            job: null,
+            media: MEDIA,
+            missingVideos: MISSING_VIDEOS,
+          },
+          downloads: [
+            download("failed", { saveId: "video-stopped", id: "video-live" }),
+          ],
+        }),
+      ),
+      "downloads",
+    );
+    expect(
+      downloads.entries.filter((entry) => entry.saveId === "video-stopped"),
+    ).toHaveLength(1);
+    expect(downloads.entries[0]?.id).toBe("download:video-live");
   });
 
   it("summarizes a download by its error or reason, never its status", () => {

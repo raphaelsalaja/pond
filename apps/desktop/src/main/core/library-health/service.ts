@@ -6,6 +6,7 @@ import type {
   HealthCountKey,
   HealthIndexCheck,
   HealthIntegrityIssue,
+  HealthMissingVideo,
   HealthPosterGap,
   HealthUnverifiedSave,
   LibraryHealthCheck,
@@ -21,9 +22,23 @@ import type {
   PayloadInspection,
 } from "../library-integrity";
 import { mediaWarmCandidates } from "../media-warm/candidates";
+import { expectedVideoDownloads } from "../pipeline/specs";
+
+interface HealthVideoDownloadFailure {
+  error: string;
+  attempts: number;
+  maxAttempts: number;
+}
 
 export type HealthSave = IntegritySave &
   Pick<Save, "status" | "blurhash" | "coverIndex">;
+
+export type HealthVideoSave = Pick<
+  Save,
+  "id" | "title" | "status" | "files" | "mediaType" | "rawJson"
+> & {
+  videoDownload: HealthVideoDownloadFailure;
+};
 
 export interface HealthIndexReport {
   orphans: Array<string>;
@@ -37,6 +52,7 @@ export interface LibraryHealthDependencies {
   integrityRuntime: LibraryIntegrityRuntime;
   listSaves(): Promise<Array<HealthSave>>;
   getSave(id: string): Promise<HealthSave | null>;
+  listVideoDownloadFailures(): Promise<Array<HealthVideoSave>>;
   verifyIndex(): Promise<HealthIndexReport>;
   readCheck(libraryId: string): Promise<LibraryHealthCheck | null>;
   writeCheck(libraryId: string, check: LibraryHealthCheck): Promise<void>;
@@ -95,8 +111,20 @@ export function createLibraryHealthService(deps: LibraryHealthDependencies) {
   }
 
   async function overview(): Promise<LibraryHealthOverview> {
-    const [check, media] = await Promise.all([current(), deps.media()]);
-    return { check: check ? settled(check) : null, job: currentJob(), media };
+    const [check, media, videoFailures] = await Promise.all([
+      current(),
+      deps.media(),
+      deps.listVideoDownloadFailures(),
+    ]);
+    return {
+      check: check ? settled(check) : null,
+      job: currentJob(),
+      media,
+      missingVideos: videoFailures.flatMap((row) => {
+        const video = missingVideo(row);
+        return video ? [video] : [];
+      }),
+    };
   }
 
   function start(): LibraryHealthJob {
@@ -289,6 +317,23 @@ function posterGap(row: HealthSave): HealthPosterGap | null {
     title: row.title,
     videos: row.files.filter(isVideoFile).length,
     posters: row.files.filter((file) => file.kind === "poster").length,
+  };
+}
+
+function missingVideo(row: HealthVideoSave): HealthMissingVideo | null {
+  if (row.status !== "complete") return null;
+  const failure = row.videoDownload;
+  const expected = expectedVideoDownloads(row);
+  const found = row.files.filter(isVideoFile).length;
+  if (expected <= found) return null;
+  return {
+    saveId: row.id,
+    title: row.title,
+    expected,
+    found,
+    error: failure.error,
+    attempts: failure.attempts,
+    maxAttempts: failure.maxAttempts,
   };
 }
 

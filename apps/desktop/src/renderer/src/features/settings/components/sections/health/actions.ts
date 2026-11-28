@@ -5,6 +5,7 @@ import { getAppHistory } from "@/shared/lib/app-router";
 import { openSettings } from "@/shared/lib/open-settings";
 import type { HealthCategoryId, HealthEntry } from "./categories";
 import {
+  downloadVideos,
   inBackground,
   recheckSaves,
   repairSaves,
@@ -71,7 +72,9 @@ export function healthActions(
         ...(kind
           ? action(
               "repair",
-              category === "duplicates" ? "Move to Trash" : "Repair",
+              category === "duplicates" || kind === "invalid-content"
+                ? "Move to Trash"
+                : "Repair",
               repairable,
               () => repairSaves(qc, category, kind, ids(repairable)),
               { primary: true },
@@ -120,14 +123,22 @@ export function healthActions(
         ),
       ];
     case "downloads": {
+      const videos = entries.filter((entry) => entry.resolution === "download");
       const retryable = entries.filter((entry) => entry.resolution === "retry");
       return [
+        ...action(
+          "download-video",
+          "Download Video",
+          videos,
+          () => downloadVideos(qc, ids(videos)),
+          { primary: true },
+        ),
         ...action(
           "retry",
           "Retry",
           retryable,
           () => retryDownloads(downloads, ids(retryable)),
-          { primary: true },
+          { primary: videos.length === 0 },
         ),
         ...action(
           "open-downloads",
