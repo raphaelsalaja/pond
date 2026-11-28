@@ -3,7 +3,8 @@
 import { runInContext } from "node:vm";
 import { JSDOM } from "jsdom";
 import { describe, expect, it } from "vitest";
-import { adapt, buildExpression } from "./item";
+import { adapt, buildPageExpression, RepoPageHtmlSchema } from "./item";
+import { parseRepoPage } from "./page";
 
 const REPO_URL = "https://github.com/vercel/next.js";
 
@@ -42,13 +43,17 @@ ${repoMeta}
 </body></html>`;
 }
 
+/** Runs the browser fallback's in-page script, then the same parse the direct fetch uses. */
 async function harvest(html: string) {
   const dom = new JSDOM(html, { url: REPO_URL, runScripts: "outside-only" });
-  const raw = await runInContext(
-    buildExpression("vercel/next.js"),
+  const raw: unknown = await runInContext(
+    buildPageExpression("vercel/next.js"),
     dom.getInternalVMContext(),
   );
-  return adapt(raw, {
+  const rendered = RepoPageHtmlSchema.parse(raw);
+  const page = parseRepoPage(rendered.html, rendered.url);
+  if (!page) return null;
+  return adapt(page, {
     source: "github",
     url: REPO_URL,
     sourceId: "vercel/next.js",

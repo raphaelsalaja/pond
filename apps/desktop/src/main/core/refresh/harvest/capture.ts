@@ -1,5 +1,6 @@
 import type { Source } from "@pond/schema/db";
 import type { Capture } from "@pond/schema/raw";
+import { sourceIdFromUrl } from "@pond/schema/sources";
 import type { ReportDownloadActivity } from "@shared/download-activity";
 import {
   TerminalError,
@@ -8,7 +9,7 @@ import {
 import { partitionForIngest } from "../../sync/accounts";
 import { harvestFailure, harvestUrl } from "../harvest-window/harvest";
 import type { HarvestArgs, HarvestResult } from "../harvest-window/harvest";
-import type { GithubGet } from "./github/api";
+import type { GithubGet, GithubPageReader } from "./github/api";
 import { fetchPinterestCapture, pinterestSessionGet } from "./pinterest/api";
 import type { PinterestCaptureResult, PinterestGet } from "./pinterest/api";
 
@@ -20,6 +21,8 @@ interface CaptureArgs {
   reportActivity?: ReportDownloadActivity;
   isSignedIn?: (source: Source, partition: string) => Promise<boolean>;
   signal?: AbortSignal;
+  /** The harvest task's last try, when a partial Capture beats none. */
+  finalAttempt?: boolean;
 }
 
 interface CaptureDeps {
@@ -31,6 +34,7 @@ interface CaptureDeps {
   anonymousGet?: PinterestGet;
   signedGet?: PinterestGet;
   githubGet?: GithubGet;
+  readGithubPage?: GithubPageReader;
   partition?: string;
 }
 
@@ -119,10 +123,20 @@ export async function captureFromSource(
     }
   }
 
-  if (args.source === "github" && args.sourceId) {
+  if (args.source === "github") {
+    const sourceId =
+      args.sourceId ?? sourceIdFromUrl("github", args.url)?.toLowerCase();
+    if (!sourceId) throw new TerminalError("not a github repository url");
     /** Cheerio's parser chain breaks the main startup budget when statically imported. */
     const { captureGithubRepo } = await import("./github/api");
-    return captureGithubRepo(args, deps, harvest);
+    return captureGithubRepo(
+      { ...args, sourceId },
+      {
+        githubGet: deps.githubGet,
+        readPage: deps.readGithubPage,
+        partition: deps.partition,
+      },
+    );
   }
 
   const result = await harvest(args);

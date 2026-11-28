@@ -10,9 +10,9 @@ import {
 import { acquire, report } from "../../../pipeline/rate-governor";
 import { partitionForIngest } from "../../../sync/accounts";
 import { browserUserAgent } from "../../harvest-window/constants";
-import { harvestFailure } from "../../harvest-window/harvest";
-import type { HarvestArgs, HarvestResult } from "../../harvest-window/harvest";
-import { adapt } from "./item";
+import { harvestFailure, readHarvestPage } from "../../harvest-window/harvest";
+import type { HarvestArgs, PageReadResult } from "../../harvest-window/harvest";
+import { adapt, buildPageExpression, RepoPageHtmlSchema } from "./item";
 import { parseRepoPage } from "./page";
 
 const FETCH_TIMEOUT_MS = 15_000;
@@ -69,15 +69,11 @@ function githubSessionGet(partition: string): GithubGet {
 export async function fetchGithubRepoCapture(args: {
   url: string;
   sourceId: string;
-  accountId?: string | null;
-  get?: GithubGet;
+  get: GithubGet;
 }): Promise<GithubRepoResult> {
-  const get =
-    args.get ??
-    githubSessionGet(await partitionForIngest("github", args.accountId));
   let res: Response;
   try {
-    res = await get(args.url);
+    res = await args.get(args.url);
   } catch (error) {
     log.warn("[pond github-api] fetch threw", args.url, error);
     return { ok: false, reason: "fetch_failed" };
@@ -97,20 +93,40 @@ export async function fetchGithubRepoCapture(args: {
   if (!res.ok) {
     return { ok: false, reason: "client_error", status: res.status };
   }
-  const html = await res.text();
-  const page = parseRepoPage(html, res.url || args.url);
-  if (!page) return { ok: false, reason: "no_repo" };
-  const capture = adapt(page, {
-    source: "github",
-    url: args.url,
-    sourceId: args.sourceId,
-  });
+  const capture = captureFromHtml(await res.text(), res.url || args.url, args);
   if (!capture) return { ok: false, reason: "no_repo" };
   return { ok: true, capture };
 }
 
+function captureFromHtml(
+  html: string,
+  pageUrl: string,
+  args: { url: string; sourceId: string },
+): Capture | null {
+  const page = parseRepoPage(html, pageUrl);
+  if (!page) return null;
+  return adapt(page, {
+    source: "github",
+    url: args.url,
+    sourceId: args.sourceId,
+  });
+}
+
+/** Reads a page in a harvest window, so tests can answer for the browser. */
+export type GithubPageReader = (
+  args: HarvestArgs,
+  expression: (sourceId: string) => string,
+) => Promise<PageReadResult>;
+
+interface GithubCaptureArgs extends HarvestArgs {
+  sourceId: string;
+  /** The harvest task's last try keeps a medialess Capture rather than failing the Save. */
+  finalAttempt?: boolean;
+}
+
 interface GithubCaptureDeps {
   githubGet?: GithubGet;
+  readPage?: GithubPageReader;
   partition?: string;
 }
 
@@ -118,11 +134,11 @@ interface GithubCaptureDeps {
  * GitHub server-renders everything the repo extractor reads into the initial
  * HTML, so a direct fetch answers first and the hidden browser only backs up
  * bot walls, transport failures, and page variants the parse cannot read.
+ * Both transports go through `parseRepoPage`.
  */
 export async function captureGithubRepo(
-  args: HarvestArgs,
+  args: GithubCaptureArgs,
   deps: GithubCaptureDeps,
-  harvest: (args: HarvestArgs) => Promise<HarvestResult>,
 ): Promise<Capture> {
   const get =
     deps.githubGet ??
@@ -131,18 +147,11 @@ export async function captureGithubRepo(
     );
   const result = await fetchGithubRepoCapture({
     url: args.url,
-    sourceId: args.sourceId ?? "",
-    accountId: args.accountId,
+    sourceId: args.sourceId,
     get,
   });
 
-  if (result.ok) {
-    /** Every repository serves at least GitHub's generated card, so a valid page with zero media is a partial read, not a finished harvest. */
-    if (result.capture.media.length === 0) {
-      throw new CaptureIncompleteError("github repo capture read no media");
-    }
-    return result.capture;
-  }
+  if (result.ok) return withMedia(result.capture, args);
   if (result.reason === "not_found") {
     throw new TerminalError("github repository is gone or private");
   }
@@ -156,14 +165,27 @@ export async function captureGithubRepo(
     throw new TerminalError(`github fetch ${result.status ?? 400}`);
   }
 
-  const fallback = await harvest(args);
-  if (fallback.ok && fallback.capture) {
-    if (fallback.capture.media.length === 0) {
-      throw new CaptureIncompleteError("github repo capture read no media");
-    }
-    return fallback.capture;
-  }
-  throw harvestFailure("github", fallback.reason);
+  const page = await (deps.readPage ?? readHarvestPage)(
+    args,
+    buildPageExpression,
+  );
+  if (!page.ok) throw harvestFailure("github", page.reason);
+  const parsed = RepoPageHtmlSchema.safeParse(page.raw);
+  const capture = parsed.success
+    ? captureFromHtml(parsed.data.html, parsed.data.url || args.url, args)
+    : null;
+  if (!capture) throw harvestFailure("github", "harvest_failed");
+  return withMedia(capture, args);
+}
+
+/**
+ * Every repository serves at least GitHub's generated card, so a valid page
+ * with zero media is a partial read: retry it, and on the last attempt keep the
+ * README and About text so the Save still completes with a text cover.
+ */
+function withMedia(capture: Capture, args: GithubCaptureArgs): Capture {
+  if (capture.media.length > 0 || args.finalAttempt) return capture;
+  throw new CaptureIncompleteError("github repo capture read no media");
 }
 
 /** Retry-After is either delta-seconds or an HTTP date. */

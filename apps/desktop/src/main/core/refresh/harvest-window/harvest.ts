@@ -57,19 +57,23 @@ export interface HarvestResult {
     | "not_found";
 }
 
-export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
+export type PageReadResult =
+  | { ok: true; raw: unknown; sourceId: string }
+  | {
+      ok: false;
+      reason: NonNullable<HarvestResult["reason"]>;
+      sourceId: string;
+    };
+
+/** Runs one in-page expression in a leased harvest window and hands back what it returned. */
+export async function readHarvestPage(
+  args: HarvestArgs,
+  expression: (sourceId: string) => string,
+): Promise<PageReadResult> {
   const partition = await partitionForIngest(args.source, args.accountId);
   const harv = harvesterFor(args.source);
   const navUrl = harv.urlForHarvest?.(args.url) ?? args.url;
   const sourceId = args.sourceId ?? harv.sourceIdFromUrl(navUrl) ?? "";
-
-  if (args.source === "reddit" && sourceId) {
-    const { fetchRedditPostCapture } = await import("../harvest/reddit/api");
-    const capture = await fetchRedditPostCapture(sourceId, partition);
-    if (capture) {
-      return { ok: true, sourceId, capture };
-    }
-  }
 
   const lease = await leaseWindow(args.source, {
     partition,
@@ -98,9 +102,8 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
       return { ok: false, reason: "auth_required", sourceId };
     }
 
-    const expr = harv.buildExpression(sourceId);
     const raw: unknown = await Promise.race([
-      lease.win.webContents.executeJavaScript(expr, true),
+      lease.win.webContents.executeJavaScript(expression(sourceId), true),
       sleep(HARVEST_TIMEOUT_MS).then(() => "__pond_harvest_timeout__"),
     ]);
     if (raw === "__pond_harvest_timeout__") {
@@ -113,31 +116,59 @@ export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
     if (HarvestFailureSchema.safeParse(raw).success) {
       return { ok: false, reason: "not_found", sourceId };
     }
-
-    const capture = harv.adapt(isJsonValue(raw) ? raw : null, {
-      source: args.source,
-      url: args.url,
-      sourceId,
-    });
-    if (!capture) {
-      if (args.isSignedIn && !(await args.isSignedIn(args.source, partition))) {
-        const label = sourceLabel(args.source);
-        log.warn("[pond refresh:window] empty harvest while signed out", {
-          source: args.source,
-          url: args.url,
-          fix: `Pond is not signed in to ${label}. Install the Pond browser extension in Chrome, Brave, Edge, or Arc, sign in to ${label} in that browser, then in Pond choose New → Sources → New Source → ${label} and retry the download.`,
-        });
-        return { ok: false, reason: "auth_required", sourceId };
-      }
-      return { ok: false, reason: "harvest_failed", sourceId };
-    }
-    return { ok: true, capture, sourceId };
+    return { ok: true, raw, sourceId };
   } catch (error) {
     log.warn("[pond refresh:window] unexpected error", args.url, error);
     return { ok: false, reason: "harvest_failed", sourceId };
   } finally {
     lease.release();
   }
+}
+
+export async function harvestUrl(args: HarvestArgs): Promise<HarvestResult> {
+  const harv = harvesterFor(args.source);
+
+  if (args.source === "reddit") {
+    const navUrl = harv.urlForHarvest?.(args.url) ?? args.url;
+    const sourceId = args.sourceId ?? harv.sourceIdFromUrl(navUrl) ?? "";
+    if (sourceId) {
+      const partition = await partitionForIngest(args.source, args.accountId);
+      const { fetchRedditPostCapture } = await import("../harvest/reddit/api");
+      const capture = await fetchRedditPostCapture(sourceId, partition);
+      if (capture) {
+        return { ok: true, sourceId, capture };
+      }
+    }
+  }
+
+  const page = await readHarvestPage(args, harv.buildExpression);
+  if (!page.ok) return page;
+  const { raw, sourceId } = page;
+  let capture: Capture | null;
+  try {
+    capture = harv.adapt(isJsonValue(raw) ? raw : null, {
+      source: args.source,
+      url: args.url,
+      sourceId,
+    });
+  } catch (error) {
+    log.warn("[pond refresh:window] unexpected error", args.url, error);
+    return { ok: false, reason: "harvest_failed", sourceId };
+  }
+  if (!capture) {
+    const partition = await partitionForIngest(args.source, args.accountId);
+    if (args.isSignedIn && !(await args.isSignedIn(args.source, partition))) {
+      const label = sourceLabel(args.source);
+      log.warn("[pond refresh:window] empty harvest while signed out", {
+        source: args.source,
+        url: args.url,
+        fix: `Pond is not signed in to ${label}. Install the Pond browser extension in Chrome, Brave, Edge, or Arc, sign in to ${label} in that browser, then in Pond choose New → Sources → New Source → ${label} and retry the download.`,
+      });
+      return { ok: false, reason: "auth_required", sourceId };
+    }
+    return { ok: false, reason: "harvest_failed", sourceId };
+  }
+  return { ok: true, capture, sourceId };
 }
 
 export function harvestFailure(
