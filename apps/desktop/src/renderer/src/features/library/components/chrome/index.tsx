@@ -1,6 +1,7 @@
 import { Input } from "@pond/ui";
 import { FilterToggle } from "@/features/library/components/filter-menu";
 import { ViewMenu } from "@/features/library/components/view-menu";
+import { useLibraryNav } from "@/features/library/state/library-chrome";
 import { SearchComposer } from "@/features/search";
 import { SearchChrome } from "@/shared/components/search-chrome";
 
@@ -19,10 +20,11 @@ export function LibrarySearch({ className }: LibrarySearchProps) {
 }
 
 export function LibrarySearchActions() {
+  const nav = useLibraryNav();
   return (
     <SearchChrome.Actions>
       <FilterToggle />
-      <ViewMenu />
+      {nav?.kind === "inbox" ? null : <ViewMenu />}
     </SearchChrome.Actions>
   );
 }
